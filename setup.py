@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 from glob import glob
 
 classes = """
@@ -21,14 +21,12 @@ classes = """
 classifiers = [s.strip() for s in classes.split('\n') if s]
 
 description = ('Determination of conformational continua of macromolecules from single-particle cryo-EM data.')
-
-
 setup(name='ManifoldEM',
       version='0.2.0',
       description=description,
       author_email="evan.e.seitz@gmail.com",
       maintainer_email="evan.e.seitz@gmail.com",
-      packages=find_packages(),
+      packages=['ManifoldEM', 'ManifoldEM/CC'],
       install_requires=[
           'numpy',
           'mayavi',
@@ -47,7 +45,5 @@ setup(name='ManifoldEM',
       ],
       scripts=glob('scripts/*'),
       classifiers=classifiers,
-      # package_data={
-      #     'deepblast': ['pretrained_models/lstm2x.pt'],
-      # }
+      data_files=[('share/ManifoldEM/icons', ['icons/200x200.png', 'icons/256x256.png', 'icons/70x70.png'])],
       )

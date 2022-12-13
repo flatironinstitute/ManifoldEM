@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
-import sys, os, os.path, time, psutil
-from PyQt5.QtWidgets import QApplication
+import sys
+import os
+import time
+import psutil
 import csv
-from subprocess import call
 import multiprocessing
 import optparse
+
+from PyQt5.QtWidgets import QApplication
+from subprocess import call
 
 # CV2 changes plugin path, which can break Qt. Just use the QT plugin path
 import cv2
@@ -14,7 +18,7 @@ for k, v in os.environ.items():
         del os.environ[k]
 
 time_init = time.strftime("%Y%m%d_%H%M%S")
-pyDir = os.path.join(os.getcwd(), 'output')
+output_dir = os.path.join(os.getcwd(), 'output')
 
 from pyface.qt import QtGui, QtCore
 import threading
@@ -45,7 +49,7 @@ import pickle
 
 from ManifoldEM import p
 p.init() #only initiate once
-p.user_dir = pyDir #default
+p.user_dir = output_dir #default
 from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie,
                         embedd, clusterAvg, FindConformationalCoord, EL1D, backup, PrepareOutputS2,
                         set_params)
@@ -94,7 +98,7 @@ else:
     p.dim = 2
 p.ncpu = 1
 p.num_psis = 8
-p.user_dir = pyDir
+p.user_dir = output_dir
 p.proj_name = time_init
 p.temperature = 25
 # as a note, the word 'ZULU' is used throughout this document as a bookmark for pending items by E. Seitz.
@@ -711,7 +715,7 @@ class P1(QtGui.QWidget):
     user_stack = ''
     user_alignment = ''
     user_name = time_init
-    user_directory = pyDir
+    user_directory = output_dir
     # full S2 angles:
     x1 = []
     y1 = []
@@ -4433,7 +4437,7 @@ class Erg2dUpdate(Erg2dCanvas):
             LS2d = np.random.uniform(0, 2, (70, 70)) #ZULU, P4.Occ2d
         else: #plot energies
             #ZULU #P4.Erg2d #energy path for plot
-            fnameLS = os.path.join(pyDir,'demo/EL_Ribo_70x70.txt')
+            fnameLS = os.path.join(output_dir,'demo/EL_Ribo_70x70.txt')
             try:
                 LS2d = loadtxt(fnameLS,float,delimiter=',')
             except ValueError:
@@ -8413,14 +8417,14 @@ class MainWindow(QtGui.QMainWindow):
 
         MainWindow.inputsFile = ''
         if userInput != 'empty':
-            MainWindow.inputsFile = os.path.join(pyDir, 'params_' + userInput + '.pkl')
+            MainWindow.inputsFile = os.path.join(output_dir, 'params_' + userInput + '.pkl')
         
         elif userInput == 'empty':
             msg = 'Would you like to initiate a new project or return to progress already made on a previous one?'
             box = QtGui.QMessageBox()
             box.setWindowTitle('%s Startup' % progname)
             box.setText('<b>Project Initiation</b>')
-            iconDir = os.path.join(pyDir, 'icons/70x70.png')
+            iconDir = os.path.join(output_dir, 'icons/70x70.png')
             if iconDir:
                 box.setIconPixmap(QtGui.QPixmap(iconDir))
             box.setFont(font_standard)
@@ -9319,8 +9323,7 @@ class MainWindow(QtGui.QMainWindow):
                 except KeyError:
                     from inspect import currentframe, getframeinfo
                     frameinfo = getframeinfo(currentframe())
-                    print(frameinfo.filename, frameinfo.lineno)
-                    print("{}:{} Warning: attempting to disable anchor before initialization".format(frameinfo.filename, frameinfo.lineno))
+                    print("{}:{}: Warning: attempting to disable anchor before initialization".format(frameinfo.filename, frameinfo.lineno))
 
 
     def closeEvent(self, ce): #safety message if user clicks to exit via window button
@@ -9726,7 +9729,7 @@ class MainWindow(QtGui.QMainWindow):
         box.setWindowTitle('%s About' % progname)
         box.setText('<b>%s v.%s Python 3</b>' % (progname, progversion))
         box.setFont(font_standard)
-        iconDir = os.path.join(pyDir, 'icons/200x200.png')
+        iconDir = os.path.join(output_dir, 'icons/200x200.png')
         if iconDir:
             box.setIconPixmap(QtGui.QPixmap(iconDir)) #ZULU
         box.setInformativeText('<span style="font-weight:normal;">\
@@ -9773,8 +9776,8 @@ class MainWindow(QtGui.QMainWindow):
 
                 if reply == QtGui.QMessageBox.Yes: #overwrite directory and continue to page 2
                     call(["rm", "-r", os.path.join(P1.user_directory, 'outputs_{}'.format(p.proj_name))]) #delete output directory if it exists
-                    if os.path.exists(os.path.join(pyDir, 'params_{}.pkl'.format(p.proj_name))):
-                        os.remove(os.path.join(pyDir, 'params_{}.pkl'.format(p.proj_name)))
+                    if os.path.exists(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name))):
+                        os.remove(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name)))
                     set_params.op(0) #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
@@ -9784,7 +9787,7 @@ class MainWindow(QtGui.QMainWindow):
                 elif reply == QtGui.QMessageBox.No:
                     pass
 
-            elif os.path.exists(os.path.join(pyDir, 'params_{}.pkl'.format(p.proj_name))):
+            elif os.path.exists(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name))):
                 box = QtGui.QMessageBox(self)
 
                 box.setWindowTitle('%s Conflict' % progname)
@@ -9798,7 +9801,7 @@ class MainWindow(QtGui.QMainWindow):
                 reply = box.exec_()
 
                 if reply == QtGui.QMessageBox.Yes: #overwrite directory and continue to page 2
-                    os.remove(os.path.join(pyDir, 'params_{}.pkl'.format(p.proj_name)))
+                    os.remove(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name)))
                     set_params.op(0) #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
@@ -9895,7 +9898,7 @@ if __name__ == '__main__':
     # =========================================================================
         
     # set app icon for tray:
-    iconDir = os.path.join(pyDir, 'icons')
+    iconDir = os.path.join(sys.prefix, 'share/ManifoldEM/icons')
     app_icon = QtGui.QIcon()
     app_icon.addFile(os.path.join(iconDir, '256x256.png'), QtCore.QSize(256,256))
     app.setWindowIcon(app_icon)
