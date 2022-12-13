@@ -5,6 +5,12 @@ from subprocess import call
 import multiprocessing
 import optparse
 
+# CV2 changes plugin path, which can break Qt. Just use the QT plugin path
+import cv2
+for k, v in os.environ.items():
+    if k.startswith("QT_") and "cv2" in v:
+        del os.environ[k]
+
 time_init = time.strftime("%Y%m%d_%H%M%S")
 pyDir = os.path.dirname(os.path.abspath(__file__)) #python file location
 inputDir = os.path.join(pyDir, 'data_input')
