@@ -13,9 +13,6 @@ from subprocess import call
 import os
 import time
 
-#from pyface.qt import QtGui, QtCore
-#os.environ['ETS_TOOLKIT'] = 'qt4'
-
 '''	
 Copyright (c) Columbia University Suvrajit Maji 2019	
 Modified:Sept 21,2021

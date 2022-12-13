@@ -9,16 +9,12 @@ import ComputePsiMovieEdgeMeasurements
 import datetime
 import runGlobalOptimization
 import FindCCGraphPruned
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
 import os,os.path
 import set_params
 import time
 import q2Spider
 import rotatefill
 import math
-#from pyface.qt import QtGui, QtCore
-#os.environ['ETS_TOOLKIT'] = 'qt4'
 
 
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu

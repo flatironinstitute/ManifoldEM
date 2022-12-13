@@ -18,9 +18,6 @@ import set_params
 import p
 import copy
 
-#from pyface.qt import QtGui, QtCore
-#os.environ['ETS_TOOLKIT'] = 'qt4'
-
 sys.path.append('../')
 
 _logger = logging.getLogger(__name__)

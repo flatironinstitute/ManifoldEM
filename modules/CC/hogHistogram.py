@@ -1,5 +1,3 @@
-from __future__ import division
-
 # Author: Jean KOSSAIFI <jean.kossaifi@gmail.com>
 
 import numpy as np
