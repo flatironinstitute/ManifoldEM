@@ -122,7 +122,8 @@ def op(*argv):
     for i in range(p.numberofJobs):
         for j in range(p.num_psis):
             subdir = p.out_dir + '/topos/PrD_{}/psi_{}'.format(i + 1, j + 1)
-            Popen(["mkdir", "-p", subdir])
+            os.makedirs(subdir, exist_ok=True)
+
     if p.machinefile:
         print('using MPI')
         Popen(["mpirun", "-n", str(p.ncpu), "-machinefile", str(p.machinefile),

@@ -62,7 +62,7 @@ def op(*argv):
             "python", "modules/manifoldAnalysis_mpi.py",str(p.proj_name)],close_fds=True)
         for i in range(p.numberofJobs):
             subdir = p.out_dir + '/topos/PrD_{}'.format(i + 1)
-            Popen(["mkdir", "-p", subdir])
+            os.makedirs(subdir, exist_ok=True)
         if argv:
             progress2 = argv[0]
             offset = 0
@@ -87,7 +87,7 @@ def op(*argv):
         print("Processing {} projection directions.".format(len(input_data)))
         for i in range(p.numberofJobs):
             subdir = p.out_dir+'/topos/PrD_{}'.format(i+1)
-            Popen(["mkdir", "-p", subdir])
+            os.makedirs(subdir, exist_ok=True)
 
         if p.ncpu == 1: #avoids the multiprocessing package
             for i in range(len(input_data)):
@@ -108,7 +108,7 @@ def op(*argv):
                 pool.join()
 
     set_params.op(0)
-    return
+
 
 if __name__ == '__main__':
     p.init()
