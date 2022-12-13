@@ -6,11 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.io import loadmat
-from subprocess import call
-
 
 from ManifoldEM import p, DMembeddingII, myio
-
 
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -91,12 +88,12 @@ def op(input_data,posPath,tune,rad,visual,doSave):
         open(progress_fname, 'a').close() #create empty file to signify non-corrupted Pickle dump
         #######################################################
 
-    call(["rm", "-f", eig_file])
+    if os.path.exists(eig_file):
+        os.remove(eig_file)
+
     for i in range(len(lamb)-1):
         with open(eig_file, "a") as file:
             file.write("%d\t%.5f\n" %(i+1,lamb[i+1]))
-    
-    return None
 
 
 if __name__ == '__main__':

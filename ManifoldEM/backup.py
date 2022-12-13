@@ -1,7 +1,7 @@
-from subprocess import call
+from os import remove
+from shutil import rmtree, copytree, copy
 
 from ManifoldEM import p
-
 
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
@@ -21,25 +21,23 @@ def op(PrD,choice):
         tm_orig_file = '{}/topos/PrD_{}/topos_orig_{}.png'.format(p.out_dir, PrD, j + 1)
         if choice == 1:  # need to make backup copy
             # dirs with frames
-            call(["rm", "-rf", subdir1])
-            call(["cp", "-r", subdir, subdir1])
+            rmtree(subdir1)
+            copytree(subdir, subdir1)
             # movies
-            call(["cp", mov_file, mov_orig_file])
+            copy(mov_file, mov_orig_file)
             # topos
-            call(["cp", tm_file, tm_orig_file])
-            #shutil.rmtree(subdir1)
-            #os.renames(subdir, subdir1)
+            copy(tm_file, tm_orig_file)
         else:  # restore original backup copy
             # dirs with frames
-            call(["rm", "-rf", subdir])
-            call(["cp", "-r", subdir1, subdir])
-            call(["rm", "-rf", subdir1])
+            rmtree(subdir)
+            copytree(subdir1, subdir)
+            rmtree(subdir1)
             # movies
-            call(["cp", mov_orig_file, mov_file])
-            call(["rm", mov_orig_file])
+            copy(mov_orig_file, mov_file)
+            remove(mov_orig_file)
             # topos
-            call(["cp", tm_orig_file, tm_file])
-            call(["rm", tm_orig_file])
+            copy(tm_orig_file, tm_file)
+            remove(tm_orig_file)
 
     # diff maps
     psi_file = '{}prD_{}'.format(p.psi_file, PrD-1)
@@ -56,24 +54,26 @@ def op(PrD,choice):
 
 
     if choice == 1:
-        call(["cp", psi_file, psi_orig_file])  # create backup copy
-        call(["cp", ca_file, ca_orig_file])
-        call(["cp", eig_file, eig_orig_file])
-        #shutil.copyfile(psi_file, psi_orig_file)
+        copy(psi_file, psi_orig_file)
+        copy(ca_file, ca_orig_file)
+        copy(eig_file, eig_orig_file)
+
         for i in range(p.num_psis):
             psi2 = '{}_psi_{}'.format(psi2_file, i)
             psi2_orig = '{}_psi_{}'.format(psi2_orig_file, i)
-            call(["cp", psi2, psi2_orig])  # create backup copy
+            copy(psi2, psi2_orig)
+
     else:
-        call(["cp", psi_orig_file, psi_file])  # restore original copy
-        call(["rm", psi_orig_file])
-        call(["cp", ca_orig_file, ca_file])
-        call(["rm", ca_orig_file])
-        call(["cp", eig_orig_file, eig_file])
-        call(["rm", eig_orig_file])
+        copy(psi_orig_file, psi_file)
+        remove(psi_orig_file)
+        copy(ca_orig_file, ca_file)
+        remove(ca_orig_file)
+        copy(eig_orig_file, eig_file)
+        remove(eig_orig_file)
+
         for i in range(p.num_psis):
             psi2 = '{}_psi_{}'.format(psi2_file, i)
             psi2_orig = '{}_psi_{}'.format(psi2_orig_file, i)
-            call(["cp", psi2_orig, psi2])
-            call(["rm", psi2_orig])
+            copy(psi2_orig, psi2)
+            remove(psi2_orig)
 

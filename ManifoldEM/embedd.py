@@ -1,16 +1,15 @@
+import os
+
 import numpy as np
-from subprocess import call
 
 from ManifoldEM import myio, DMembeddingII, p
-
 
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2020 (python version) 
 '''
 
-
-def op(orig_zip,new_zip,PrD):
+def op(orig_zip, new_zip, PrD):
     print('Initiating re-embedding...')
     dist_file = '{}prD_{}'.format(p.dist_file, PrD)
     psi_file = '{}prD_{}'.format(p.psi_file, PrD)
@@ -42,8 +41,9 @@ def op(orig_zip,new_zip,PrD):
     #print 'new',len(posPath)
     lamb = lamb[lamb > 0]
 
-    call(["rm", "-f", eig_file])
-    #os.remove(eig_file)
+    if os.path.exists(eig_file):
+        os.remove(eig_file)
+
     for i in range(len(lamb) - 1):
         with open(eig_file, "a") as file: #updated 9/11/21
             file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
@@ -55,11 +55,12 @@ def op(orig_zip,new_zip,PrD):
     for psinum in range(p.num_psis):
         psi2_file = '{}prD_{}_psi_{}'.format(p.psi2_file, PrD, psinum)
         progress_fname = os.path.join(p.psi2_prog, '%s_%s' % (PrD, psinum))
-        call(["rm", "-rf", psi2_file])
-        call(["rm", "-rf", progress_fname])
-    # class avg
+        if os.path.exists(psi2_file):
+            os.remove(psi2_file)
+        if os.path.exists(progress_fname):
+            os.remove(progress_fname)
+
     ca_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, PrD + 1)
-    #file = '{}/topos'.format(p.out_dir)
-    #call(['ls','-R', file])
-    call(["rm", '-f',ca_file])
-    #call(['ls','-R', file])
+    if os.path.exists(ca_file):
+        os.remove(ca_file)
+

@@ -9,7 +9,7 @@ import numpy as np
 from numpy import linalg as LA
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen, call
+from subprocess import Popen
 
 from ManifoldEM import p, myio, set_params
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
@@ -127,10 +127,9 @@ def CompareOrientMatrix(FlowVecSelA,FlowVecSelB,prds_psinums,labels):
     prD_B=prds_psinums[2]
     psinum_B=prds_psinums[3]
 
-
     Hog_fig_dir = os.path.join(p.CC_dir,'CC_OF_fig/hog')
     if p.opt_movie['printFig']:
-        call(["mkdir", "-p", Hog_fig_dir])
+        os.makedirs(Hog_fig_dir, exist_ok=True)
 
     filenameA = "hog_prd_" + str(prD_A) + '_psi_' + str(psinum_A) + '_' + str(labels[0])
     hogFigfile_A = os.path.join(Hog_fig_dir,filenameA)
@@ -413,8 +412,9 @@ def op(G, nodeEdgeNumRange, *argv):
 
     if p.machinefile:
         print('using MPI')
+        # FIXME: BROKEN (modules doesn't even exist anymore)
         Popen(["mpirun", "-n", str(p.ncpu), "-machinefile", str(p.machinefile),
-              "python", "modules/CC/ComputeMeasureEdgeAll_mpi.py"],close_fds=True)
+              "python", "modules/CC/ComputeMeasureEdgeAll_mpi.py"], close_fds=True)
         if argv:
             progress5 = argv[0]
             offset = 0

@@ -4,8 +4,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from subprocess import call
-
 from ManifoldEM import p
 
 _logger = logging.getLogger(__name__)
@@ -83,8 +81,9 @@ def transformFunction(M,elist,printPotFig):
 
 
             e,n1,n2=elist[:]
-            CC_meas_dir = os.path.join(p.CC_dir,'CC_meas_fig/')
-            call(["mkdir", "-p", CC_meas_dir])
+            CC_meas_dir = os.path.join(p.CC_dir, 'CC_meas_fig')
+            os.makedirs(CC_meas_dir, exist_ok=True)
+
             potfilename='pot_edge'+str(e+1)+'_'+str(n1+1)+'_'+str(n2+1)
             potfile = os.path.join(CC_meas_dir,potfilename)
             fig.savefig(potfile + '.png')
@@ -123,7 +122,8 @@ def transformFunction_tblock(M,elist,label,printPotFig):
 
         if printPotFig:
             CC_meas_dir = os.path.join(p.CC_dir,'CC_meas_fig/')
-            call(["mkdir", "-p", CC_meas_dir])
+            os.makedirs(CC_meas_dir, exist_ok=True)
+
             potfilename=label+'pot_edge'+str(e+1)+'_'+str(n1+1)+'_'+str(n2+1)
             potfile = os.path.join(CC_meas_dir,potfilename)
             fig.savefig(potfile + '.png')

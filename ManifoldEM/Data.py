@@ -3,7 +3,6 @@ import numpy as np
 import datetime
 import math
 import numpy as np
-from subprocess import call
 
 from ManifoldEM import S2tessellation, read_alignfile, myio, FindCCGraph, set_params, util, p
 
@@ -33,7 +32,8 @@ def genColorConnComp(G):
     return nodesColor
 
 def write_angles(ang_file,color,S20,full,NC):
-    call(["rm", "-f", ang_file])
+    if os.path.exists(ang_file):
+        os.remove(ang_file)
 
     if full == 1: #already thresholded S20
         L = range(0,S20.shape[1])

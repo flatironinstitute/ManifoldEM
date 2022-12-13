@@ -10,7 +10,6 @@ import matplotlib.colors as mcolors
 import matplotlib.colorbar as mcolorbar
 
 from cv2 import calcOpticalFlowFarneback
-from subprocess import call
 from scipy.ndimage import uniform_filter
 
 from ManifoldEM import p
@@ -551,7 +550,8 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
         # uses indexing 1 for user output
         filename = "flow_prd_" + str(prD+1) + '_psi_' + str(psinum_prD+1) + '_' + str(label)
         CC_OF_fig_dir = os.path.join(p.CC_dir,'CC_OF_fig/PrD_'+str(prD+1)+'/')
-        call(["mkdir", "-p", CC_OF_fig_dir])
+        os.makedirs(CC_OF_fig_dir, exist_ok=True)
+
         figOutfile = os.path.join(CC_OF_fig_dir, filename)
 
         dim = VxM.shape[0]

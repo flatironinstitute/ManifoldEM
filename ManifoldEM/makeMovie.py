@@ -44,15 +44,3 @@ def op(IMG1,prD,psinum,fps):
 
     gifDir = p.out_dir + '/topos/PrD_{}/'.format(prD + 1)
     imageio.mimsave(gifDir + 'psi_{}.gif'.format(psinum + 1), gifImgs, subrectangles=False)#,quantizer='nq')
-
-    return None
-
-        
-    # call(["mkdir", "-p", 'tmp'])            # create a temp dir for video creation
-    #os.chdir('tmp')
-    #call(['/home/hstau/anaconda2/bin/ffmpeg', '-framerate', '50', '-i', 'file%02d.png', '-r','30', '-pix_fmt', 'yuv420p','tmp.mp4'])
-    #for file_name in glob.glob("*.png"):
-    #    os.remove(file_name)
-    #os.chdir('../')
-    #call(['mv', 'tmp/tmp.mp4', outFile])
-

@@ -9,16 +9,13 @@ import time
 import numpy as np
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen, call
-
+from subprocess import Popen
 
 from ManifoldEM import myio, set_params, p
-
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-
 
 @contextmanager
 def poolcontext(*args, **kwargs):
@@ -183,30 +180,17 @@ def ComputeOptFlowPrDPsiAll1(input_data):
     FlowVecPrD = np.empty(p.num_psis,dtype=object)
     psiSelcurrPrD = range(p.num_psis)
 
-    #print ('currPrD',currPrD)
     #load movie and tau param first
     moviePrDPsi, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc  = LoadPrDPsiMoviesMasked.op(currPrD)
 
-    #print 'curr PD',currPrD
     badPsis = np.array(badPsis)
-    #print('badPsis',badPsis,len(badPsis),tauPsisIQR)
-    #print('badPsis for prD',currPrD,badPsis,len(badPsis),tauPsisIQR)
     CC_dir_temp = '{}temp/'.format(p.CC_dir)
-    #print(CC_dir_temp)
-    if not os.path.exists(CC_dir_temp):
-      call(["mkdir", "-p", CC_dir_temp])
+
+    os.makedirs(CC_dir_temp, exist_ok=True)
 
     badNodesPsisTaufile_pd = '{}badNodesPsisTauFile_PD_{}'.format(CC_dir_temp,currPrD)
 
-
-    #badNodesPsisTau = dataR['badNodesPsisTau']
-    #NodesPsisTauIQR = dataR['NodesPsisTauIQR']
-    #NodesPsisTauVals = dataR['NodesPsisTauVals']
-    #print ('read badNodesPsisTau', badNodesPsisTau,len(badPsis))
-    #print ('read NodesPsisTauIQR',NodesPsisTauIQR[0:10,:])
-    #if len(badPsis)>0:
     badNodesPsisTau = np.copy(badPsis)
-    #print ('tauPsisIQR',tauPsisIQR,np.shape(tauPsisIQR))
     NodesPsisTauIQR = tauPsisIQR
     NodesPsisTauOcc = tauPsisOcc
     NodesPsisTauVals = tauPrDPsis
@@ -215,8 +199,6 @@ def ComputeOptFlowPrDPsiAll1(input_data):
     time.sleep(2)
     myio.fout1(badNodesPsisTaufile_pd,['badNodesPsisTau','NodesPsisTauIQR' ,'NodesPsisTauOcc','NodesPsisTauVals'], [badNodesPsisTau,NodesPsisTauIQR,NodesPsisTauOcc, NodesPsisTauVals])
     time.sleep(2)
-    #except:
-    #    print('badNodes File: ',badNodesPsisTaufile,', does not exist.')
 
     computeOF = 1
     if computeOF:
@@ -225,15 +207,13 @@ def ComputeOptFlowPrDPsiAll1(input_data):
         for psinum_currPrD in psiSelcurrPrD:
             IMGcurrPrD = moviePrDPsi[psinum_currPrD]
 
-            #print('Current-PrD:{}, Current-PrD-Psi:{}'.format(currPrD, psinum_currPrD))
             prds_psinums = [currPrD, psinum_currPrD]
             FlowVecPrDPsi = ComputePsiMovieOpticalFlow(IMGcurrPrD,p.opt_movie,prds_psinums)
             FlowVecPrD[psinum_currPrD] =  FlowVecPrDPsi
 
-        #print('Writing OpticalFlow-Node {} data to file\n\n'.format(currPrD))
         CC_OF_file = '{}'.format(CC_OF_file)
         myio.fout1(CC_OF_file,['FlowVecPrD'],[FlowVecPrD])
-        #return FlowVecPrD
+
 
 # If computing for a specified set of nodes, then call the function with nodeRange
 def op(nodeEdgeNumRange, *argv):

@@ -4,12 +4,8 @@ import time
 
 import numpy as np
 
-from subprocess import call
-
 from ManifoldEM import myio, FindCCGraphPruned, set_params, q2Spider, rotatefill, p
-
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
-
 
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
@@ -71,11 +67,9 @@ def op(*argv):
     CC_graph_file_pruned = '{}_pruned'. format(p.CC_graph_file)
 
     #if OF_CC, OF_CC_fig directory doesn't exist then
-    if not os.path.exists(p.CC_OF_dir):
-      call(["mkdir", "-p", p.CC_OF_dir])
+    os.makedirs(p.CC_OF_dir, exist_ok=True)
 
-
-   # if trash PDs were created manually
+    # if trash PDs were created manually
     #print 'p.trash_list',trash_list
     trash_list_PDs = np.nonzero(p.trash_list==int(1))[0]
     numTrashPDs = len(trash_list_PDs)
