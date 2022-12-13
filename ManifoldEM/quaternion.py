@@ -57,7 +57,6 @@ def q2Spider(q):
 
     lb = -np.inf
     ub = np.inf
-    # options = optimset('Display', 'iter', 'TolFun', 1e-16);
     tol = 1e-12
     exitflag = np.nan
     resnorm = np.inf
@@ -67,17 +66,6 @@ def q2Spider(q):
     # tic
     res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol)
     a = res.x
-    '''
-    while exitflag != 1 or resnorm > 1e-12:
-        res = optimize.least_squares(dev1,a0,bounds=(lb, ub), ftol=tol)
-        a=res.x
-        resnorm = res.cost
-        exitflag = res.status
-        print resnorm, exitflag
-        nTry = nTry + 1
-        a0 = (np.pi / 2) * (np.random.uniform(0,1,3) - 0.5) # use random guess for next try end
-    # toc
-    '''
     phi = a[0]  #% (2*np.pi) * 180 / np.pi
     theta = a[1]#% (2*np.pi) * 180 / np.pi
     psi = a[2]  #% (2*np.pi) * 180 / np.pi

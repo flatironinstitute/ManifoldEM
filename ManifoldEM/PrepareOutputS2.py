@@ -15,9 +15,6 @@ from ManifoldEM import writeRelionS2, p, myio, set_params
     Copyright (c) Columbia University Suvrajit Maji 2020 (python version)    
 '''
 
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
-
 def op(*argv):
     time.sleep(5)
 
@@ -31,11 +28,7 @@ def op(*argv):
     range1 = np.arange(p.numberofJobs)
     # read reaction coordinates
 
-    #psis, posPaths, imgLabelsAll, taus, listBads, ConOrders, inds = \
-    #   registerVarsS2.op(psiNumsAll, sensesAll, p.remote_file, range1, p.conOrderRange, p.tau_file, p.num_ang)
-
     a = np.nonzero(psiNumsAll[0,:] == -1)[0] #unassigned states, python
-    #print psiNumsAll.shape,'a=',a
     range = np.delete(range1, a)
     a = np.nonzero(p.trash_list == 1)[0]  # unassigned states, python
     range = np.delete(range,a)
@@ -50,8 +43,6 @@ def op(*argv):
     for x in xSelect:
         EL_file = '{}prD_{}'.format(p.EL_file, x)
         File = '{}_{}_{}'.format(EL_file,p.trajName,1)
-        #print('var x',x)
-        #print File
         if os.path.exists(File):
             data = myio.fin1(File)
             trajTaus[x] = data['tau']
@@ -65,7 +56,6 @@ def op(*argv):
 
     # Section II
     visual = 0
-    #trajTauOut_, sense_, start_ = trajTausAlign.op(trajTaus, xSelect, p.isTrajClosed, visual)
     tauAvg = np.array([])
     for x in xSelect:
         tau = trajTaus[x]
@@ -73,12 +63,10 @@ def op(*argv):
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
         tauAvg = np.concatenate((tauAvg,tau.flatten()))
 
-
     ## added June 2020, S.M.
     traj_file2 = "{}name{}_vars".format(p.traj_file,p.trajName)
     myio.fout1(traj_file2, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'], [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
     gc.collect()
-
 
     # Section III
     if argv:

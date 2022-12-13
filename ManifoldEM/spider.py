@@ -32,19 +32,14 @@ def parse(filename):
 
 def write(filename,table):
     with open(filename, 'w') as fout:
-       #key = np.arange(len(table).reshape(len(table),1)
        count = 1
        for ind in table:
-           print >>fout, '{:5d}'.format(count),'{:2d}'.format(1),'{:5d}'.format(int(ind)),
+           print >> fout, '{:5d}'.format(count),'{:2d}'.format(1),'{:5d}'.format(int(ind)),
            count += 1
-           #print >>fout, count,1,'{:16.8f}'.format(ind),
-           
-           print >>fout
-          #   print >>fout, '{:16.8f}'.format(val),
+           print >> fout
              
-                 
 if __name__ == '__main__':
     filename = sys.argv[1]   
     table = parse(filename)
-    #print numpy.array(table)
+
       

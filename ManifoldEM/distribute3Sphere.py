@@ -15,8 +15,10 @@
 % Copyright (c) Columbia University Hstau Liao 2018 (python version)    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """
+
 import numpy as np
 import math
+
 def op(numPts):
     maxIter = 100
     K = numPts

@@ -55,20 +55,6 @@ def initialize(nS, nN, D):
     yVal1 = yVal1.flatten('F')
     return (yInd1,yVal1)
 
-'''def construct_matrix(yVal, nS):
-    ifZero = yVal < 1e-6
-    yRowNZ = yRow[~ifZero]
-    yColNZ = yCol[~ifZero]
-    yValNZ = np.sqrt( yVal[~ifZer])
-    y = csr_matrix((yValNZ,(yRowNZ, yColNZ )), shape=(nS, nS))
-    # clear yRowNZ yColNZ yValNZ
-    y2 = np.dot(y, y.T) # y2 contains the squares of the distances
-    y = y**2
-    y = y + y.T - y2
-    # clear y2 % preserve memory
-    return (y,nNZ,ifZero)
-'''
-
 def construct_matrix0(Row, Col, Val, nZ, nS):
     y = csr_matrix((Val, (Row, Col)), shape=(nS, nS)).toarray()
     y2 = y * y.T #y2 contains the squares of the distances

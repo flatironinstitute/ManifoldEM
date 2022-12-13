@@ -11,11 +11,7 @@ Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2021 (python version)
 '''
 
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
-
 def get_from_relion(align_star_file, flip):
-    
     # check which RELION version; added by E. Seitz -- 10/23/21:
     relion_old = True
     with open(align_star_file, 'r') as f:

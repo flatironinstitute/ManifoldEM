@@ -25,9 +25,6 @@ Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
-
 @contextmanager
 def poolcontext(*args, **kwargs):
     pool = multiprocessing.Pool(*args, **kwargs)
@@ -41,9 +38,6 @@ def divide(N):
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
-            #data = myio.fin1(image_file)
-            #if data is not None:
-            #    continue
         ll.append([prD])
     return ll
 
@@ -53,9 +47,7 @@ def count(N):
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
-            #data = myio.fin1(image_file)
-            #if data is not None:
-            #    continue
+
         c += 1
     return c
 
@@ -71,8 +63,6 @@ def movie(input_data,out_dir,dist_file,psi2_file,fps):
         IMG1All.append(data['IMG1'])
         Topo_mean.append(data['Topo_mean'])
         # make movie
-        #outFile = p.movie2d_file +'prD_{}_psi_{}.mp4'.format(p.movie2d_dir, prD, psinum)
-        #makeMovie.op(IMG1All[psinum], outFile, p.fps)
         makeMovie.op(IMG1All[psinum], prD, psinum, fps)
 
         ######################
@@ -92,7 +82,7 @@ def movie(input_data,out_dir,dist_file,psi2_file,fps):
         ax2.clear()
         fig2.clf()
         plt.close(fig2)
-        #gc.collect()
+
     # write class avg image
     data = myio.fin1(dist_file1)
     avg = data['imgAvg']
@@ -102,8 +92,6 @@ def movie(input_data,out_dir,dist_file,psi2_file,fps):
     ax3.set_title('')
     ax3.get_xaxis().set_visible(False)
     ax3.get_yaxis().set_visible(False)
-    #if p.relion_data == True:
-    #    avg = avg.T
     ax3.imshow(avg, cmap=plt.get_cmap('gray'))
     image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
     fig3.savefig(image_file, bbox_inches='tight', dpi=100, pad_inches=-0.1)

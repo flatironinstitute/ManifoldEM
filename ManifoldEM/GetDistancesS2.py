@@ -49,13 +49,12 @@ def count(N):
 def op(*argv):
     time.sleep(5)
     set_params.op(1)
-    #set_params.op(-1) #print out parameters file
     
     multiprocessing.set_start_method('fork', force=True)
 
     data = myio.fin1(p.tess_file)
     CG = data['CG']
-    #print 'ncpu in getdist=',p.ncpu
+
     if p.machinefile:
         print('using MPI with {} processes'.format(p.ncpu))
         Popen(["mpirun", "-n", str(p.ncpu), "--machinefile", str(p.machinefile),
@@ -73,7 +72,6 @@ def op(*argv):
         q = data['q']
         sh = data['sh']
         set_params.op(1)
-        #p.create_dir()
         size = len(df)
 
         filterPar = dict(type='Butter',Qc=0.5,N=8)
@@ -116,8 +114,6 @@ def op(*argv):
                 pool.join()
 
         set_params.op(0)
-
-    return
 
 
 if __name__ == '__main__':

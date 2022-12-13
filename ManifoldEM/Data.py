@@ -26,7 +26,6 @@ def genColorConnComp(G):
     nodesColor = np.zeros((G['nNodes'],1),dtype='int')
     for i in range(numConnComp):
         nodesCC = G['NodesConnComp'][i]
-        #print 'nodesCC',nodesCC
         nodesColor[nodesCC]=i
 
     return nodesColor
@@ -95,21 +94,16 @@ def op(align_param_file):
     # NC: list of occupancies of each PD
     
     # copy ref angles S20 to file
-    #print 'S20_shape=',S20_th.shape
-    #print 'CG_shape=', len(CG)
-
     nowTime = datetime.datetime.now()
     nowTime = nowTime.strftime("%d-%b-%Y %H:%M:%S")
     
     p.nowTime_file = os.path.join(p.user_dir,'outputs_{}/nowTime'.format(p.proj_name))
     myio.fout1(p.nowTime_file,['nowTime'],[nowTime])
-    #p.tess_file = 'selecGCs_{}'.format(nowTime)
     p.tess_file = os.path.join(p.user_dir,'outputs_{}/selecGCs'.format(p.proj_name))
     
     myio.fout1(p.tess_file,['CG1', 'CG', 'nG', 'q', 'df', 'S2', 'S20', 'sh', 'NC'],
                [CG1, CG, nG, q, df, S2, S20_th, sh, NC])
 
-    #print 'tessfile=',p.tess_file
     p.numberofJobs = len(CG)
     set_params.op(0)
 

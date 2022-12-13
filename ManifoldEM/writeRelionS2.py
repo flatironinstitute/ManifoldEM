@@ -26,7 +26,6 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
     # S.M. June 2020
     i = 0
     pathw = p.width_1D
-    #print('pathw',pathw)
     
     # TO DO: Have to find a way to control this from the GUI and also write extra steps to provide resume capability
     get_traj_bins=1 # if 1, then the trajectory data is extracted from selected PDs, 
@@ -37,12 +36,9 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
     
     # S.M. June 2020
     if get_traj_bins:
-
         print('Extracting and writing individual trajectory data from selected projection directions ...')
 
         for num in range(0,numberOfJobs,numberOfWorkers):
-            #print('\nnum',num)
-
             imgss = [[]]*p.nClass
             phis = [[]]*p.nClass
             thetas = [[]] * p.nClass
@@ -60,8 +56,6 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
             idx = np.arange(num,numNext)
             xSel = np.array(xSelect)[idx]
-            #print('xSel shape:', xSel.shape)
-            #print('xSel', xSel)
             
             for x in xSel:
                 i += 1
@@ -70,9 +64,6 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                 data = myio.fin1(File)
 
                 IMGT = data['IMGT']
-                #print('prd=',x)
-                #print('sum IMGT=',sum(sum(IMGT)))
-                #print('IMGT=',np.shape(IMGT))
 
                 posPath = posPathAll[x]
                 psi1Path = posPsi1All[x]
@@ -94,21 +85,13 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                 tau = trajTaus[x]
                 tauEq = util.hist_match(tau, tauAvg)
 
-                #import matplotlib.pyplot as plt
-                #plt.hist(tauEq,50)
-                #plt.show()
-                #del data # june 2020
-
                 IMG1 = np.zeros((p.nClass, IMGT.shape[1]))
 
                 for bin in range(p.nClass - pathw + 1):
-                    #print 'bin is', bin
                     if bin == p.nClass - pathw:
                         tauBin = ((tauEq >= ((bin + float(0.0)) / p.nClass)) & (tauEq <= (bin + float(pathw)) / p.nClass)).nonzero()[0]
                     else:
                         tauBin = ((tauEq >= ((bin + float(0.0)) / p.nClass)) & (tauEq < (bin + float(pathw)) / p.nClass)).nonzero()[0]
-
-                    #print 'lb',bin / float(p.nClass), 'ub',(bin + pathw) / float(p.nClass)
 
 
                     if len(tauBin) == 0:
@@ -116,7 +99,6 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                         continue
                     else:
                         imgs = IMGT[tauBin,:].astype(np.float32)
-                        #print('imgs',imgs.shape)
                         ar2 = tauEq[tauBin]
                         qs = q[:,tauBin]
                         nT = len(tauBin)
@@ -136,17 +118,8 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                         phis[bin].append(phi)
                         thetas[bin].append(theta)
                         psis[bin].append(psi)
-
-                        #print('nT',nT,'tauBin shape',np.shape(tauBin),tauBin)
                         # june 2020ss
-                        #del qs,PDs
-                        #del phi,theta,psi #,imgs
 
-                        #print 'imgs shape',np.shape(imgs),'imgss at bin=',bin,', x=',x,np.shape(imgss[bin][np.mod(x,numberOfWorkers)]) # in groups of numWorkers and then the array is reset and used for appending
-
-                #del q #,IMT# june 2020
-
-            #print 'imgss at bin',bin,np.shape(imgss[bin]),'\n'
 
             traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file,p.trajName,num,numNext-1)
             key_list=['imgss','phis','thetas','psis']
@@ -182,10 +155,8 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
             for x in range(num,numNext):
                 y = np.mod(x,numberOfWorkers)
-                #print 'x=',x,'y=',y,'imgss_bin_g shape',np.shape(imgss_bin_g[bin])[0]
                 if y >=np.shape(imgss_bin_g[bin])[0]:
                     continue
-                #print 'imgss_bin_g', np.shape(imgss_bin_g[bin][y])
 
                 if num==0 and x==0:
                     imgs = copy.deepcopy(imgss_bin_g[bin][y])
@@ -214,19 +185,8 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         del imgss_bin_g , phis_bin_g , thetas_bin_g , psis_bin_g
 
         print('Concatenated imgs, shape',np.shape(imgs))
-        #print imgs[0,0:5,0:5]
-        #print imgs[7,0:5,0:5]
-
-        #print 'phi',np.shape(phi)
-        #print 'phi', phi
-        #print 'theta',theta
-        #print 'psi',psi
-
-
         print('Start writing trajectory data to file...'.format(bin))
 
-
-        # print out
         traj_file_rel = 'imgsRELION_{}_{}_of_{}.mrcs'.format(p.trajName, bin + 1, p.nClass)
         traj_file = '{}{}'.format(p.relion_dir, traj_file_rel)
         ang_file = '{}EulerAngles_{}_{}_of_{}.star'.format(p.relion_dir, p.trajName, bin + 1, p.nClass)
@@ -235,9 +195,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
             mrc = mrcfile.open(traj_file, mode='r+')
         else:
             mrc = mrcfile.new(traj_file)
-            # mrc.set_data(data*-1) #*-1 inverts contrast
         mrc.set_data(imgs * -1)
-        #mrc.flush()
         time.sleep(5)
         mrc.close()
 

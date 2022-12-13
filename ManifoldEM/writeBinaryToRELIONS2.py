@@ -46,14 +46,12 @@ def op(nClass,nPix,trajName,relion_dir, bin_dir,*argv):    # Orientations
                 PD = PDs[:, i]
                 lPD = sum(PD**2)
                 Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
-                #print i, j, Qr,GCs
                 Qr = Qr / np.sqrt(np.sum(Qr**2))
-                #Qr = np.array([0.6807, -0.7263, .0951, 0])
                 phi[i],theta[i],psi[i] = q2Spider.op(Qr)
                 
             phi = np.mod(phi,2*np.pi)*(180/np.pi)
             theta = np.mod(theta,2*np.pi)*(180/np.pi)
-            psi = 0.0 #np.mod(psi,2*np.pi)*(180/np.pi) already done in getDistance
+            psi = 0.0
 
         f1 = '{}NLSAImageTraj{}_{}_of_{}.dat'.format(bin_dir, trajName,j+1, nClass)
         if os.path.exists(f1):
@@ -61,17 +59,14 @@ def op(nClass,nPix,trajName,relion_dir, bin_dir,*argv):    # Orientations
             data= data.astype(np.float32)
 
             n = data.shape[0] / nPix**2
-            #print 'data',np.shape(data),n,nPix
             data = data.reshape(n, nPix, nPix) # flip here
             data = flip1(data) # flip here
-            #print 'data-reshape',np.shape(data)
             traj_file = '{}imgsRELION_{}_{}_of_{}.mrcs'.format(relion_dir, trajName, j + 1, nClass)
             if os.path.exists(traj_file):
                 mrc = mrcfile.open(traj_file,'r+')
             else:
                 mrc = mrcfile.new(traj_file)
 
-            #mrc.set_data(data*-1) #*-1 inverts contrast
             mrc.set_data(data*-1)
 
             ang_file = '{}EulerAngles_{}_{}_of_{}.star'.format(relion_dir,trajName,j+1,nClass)

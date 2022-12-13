@@ -9,10 +9,6 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 '''
 
 def op(psi):
-    #psi = -psi
-    #global psi, x, a, b
-    #global maxIter,delta_a_max, delta_b_max,delta_tau_max,a_b_tau_result
-
     a.maxIter = 100       # % maximum number of iterations, each iteration determines
                         #%   optimum sets of {a,b} and {\tau} in turns
     a.delta_a_max = 1     # % maximum percentage change in amplitudes
@@ -47,7 +43,7 @@ def op(psi):
                   [sumX4, sumX3, sumX2, sumX],
                   [sumX3, sumX2, sumX,  nS   ]])
     b = np.array([sumX3Z, sumX2Z, sumXZ, sumZ])
-    #coeff = linalg.op(A, b)
+
     coeff = np.linalg.lstsq(A, b)[0]
     D = coeff[0]
     E = coeff[1]
@@ -55,7 +51,6 @@ def op(psi):
     G = coeff[3]
     disc = E*E - 3*D*F
     if disc < 0:
-        #print 'disc=',disc
         disc = 0.
     if np.absolute(D) < 1e-8:
         #print 'D=',D
@@ -76,7 +71,7 @@ def op(psi):
     A = np.array([[sumX2Xb2, sumXXb],[sumXXb, nS]])
     b = np.array([sumXXbY, sumY])
     coeff = np.linalg.lstsq(A, b)[0]
-    #coeff = linalg.op(A,b)
+
     A = coeff[0]
     C = coeff[1]
     a2 = 2.*A*disc/(9.*D*D)

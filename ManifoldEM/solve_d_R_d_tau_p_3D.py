@@ -34,7 +34,6 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 '''
 
 def op():   #added
-    #global p, a, b, x
     d_R_d_beta_3D = np.array([48*a.a[2]**2,
                               0,
                               8*a.a[1]**2-48*a.a[2]**2,
@@ -46,15 +45,11 @@ def op():   #added
     # remove elements for which tmp is true
     tmp = np.absolute(np.imag(beta))>0
     tmp = np.nonzero(tmp)[0]
-    #print 'beta is', beta
     beta1 = np.delete(beta, tmp, None)
     # remove elements for which tmp is true
     tmp = np.absolute(beta1)>1
     tmp = np.nonzero(tmp)[0]
     beta = np.real(np.delete(beta1, tmp, None))
-    #print 'beta after is', beta
-    #
-    #print 'beta shape is',beta.shape
     tau_candidate = np.vstack((np.arccos(beta.reshape(-1,1))/np.pi,0,1))
     id = np.argmin(R_p.op(tau_candidate))
     tau = tau_candidate[id]

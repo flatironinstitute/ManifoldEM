@@ -15,9 +15,6 @@ from ManifoldEM import p, set_params, myio
     Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
 
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
-
 def op(*argv):
     time.sleep(5)
     print("Computing the energy landscape...")
@@ -27,10 +24,6 @@ def op(*argv):
     psiNumsAll = data['psinums']
 
     range1 = np.arange(p.numberofJobs)
-    # read reaction coordinates
-
-    #psis, posPaths, imgLabelsAll, taus, listBads, ConOrders, inds = \
-    #   registerVarsS2.op(psiNumsAll, sensesAll, p.remote_file, range1, p.conOrderRange, p.tau_file, p.num_ang)
 
     a = np.nonzero(psiNumsAll[0,:] == -1)[0] #unassigned states, python
     #print psiNumsAll.shape,'a=',a
@@ -38,22 +31,17 @@ def op(*argv):
     a = np.nonzero(p.trash_list == 1)[0]  # unassigned states, python
     range = np.delete(range,a)
     xSelect = range
-    #print 'range1=',range1
-    #print 'a=',a
-    #print 'select=',xSelect
+
     # getFromFileS2
     xLost = []
     trajTaus = [None] * p.numberofJobs
     posPathAll= [None] * p.numberofJobs
     posPsi1All = [None] * p.numberofJobs
 
-    #print 'x loop 1'
     for x in xSelect:
-        #print('x1:',x)
         EL_file = '{}prD_{}'.format(p.EL_file, x)
         File = '{}_{}_{}'.format(EL_file,p.trajName,1)
 
-        #print File
         if os.path.exists(File):
             data = myio.fin1(File)
             trajTaus[x] = data['tau']
@@ -68,16 +56,11 @@ def op(*argv):
     hUn = np.zeros((1, p.nClass)).flatten()
     tauAvg = np.array([])
 
-    #print 'x loop 2'
     for x in xSelect:
-        #print('x2:',x)
         tau = trajTaus[x]
         tau = tau.flatten()
         #print 'tau1',tau
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
-        #xBins = np.arange(1./(2.*p.nClass), 1+1./p.nClass, 1./p.nClass)
-        #bins = np.linspace(0, 1, p.nClass+1)
-        #bins = np.arange(1./(p.nClass*2), 1., 1./p.nClass)
         h,ctrs = np.histogram(tau,p.nClass)
         hUn = hUn + h
         tauAvg = np.concatenate((tauAvg,tau.flatten()))

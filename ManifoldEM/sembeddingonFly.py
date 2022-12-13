@@ -24,7 +24,6 @@ def op( yVal,yCol,yRow, nS, options1):
     options.autotune = 0
 
     l,sigmaTune = slaplacianonFly.op(yVal,yCol,yRow,nS, options)
-    #print 'Embedding Eigs  = ' + str( options.nEigs ) + '\n'
     try:
         vals, vecs = eigsh(l, k=options.nEigs+1,maxiter=300)
     except ArpackNoConvergence as e:
@@ -35,8 +34,6 @@ def op( yVal,yCol,yRow, nS, options1):
     ix = np.argsort(vals)[::-1]
     vals = np.sort(vals)[::-1]
     vecs = vecs[:,ix]
-    #print 'sembed: vecs is', vecs[10:20,10:20]
-    #print 'sembed: vals is', vals[-1:-10:-1]
 
     return (vals, vecs)
 

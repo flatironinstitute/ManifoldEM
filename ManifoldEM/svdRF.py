@@ -17,7 +17,6 @@ def tidyUp(D,EV):
 
 def op(A):
     D1,D2 = A.shape
-    #print D1,D2
     if D1 > D2:
         tt = np.matmul(A.T,A)
         #print 'tt is', tt[0:4,0:4]
@@ -30,7 +29,5 @@ def op(A):
         D,U = np.linalg.eigh(np.matmul(A,A.T))
         D,U,S,invS = tidyUp(D,U)
         V = np.matmul(A.T,np.matmul(U,invS))
-
-    #% end function svdR
 
     return (U,S,V)

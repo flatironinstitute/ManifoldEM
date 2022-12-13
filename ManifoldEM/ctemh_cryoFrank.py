@@ -34,9 +34,7 @@ def op(k,params):
    w1 = np.pi*Cs*wav*wav*wav
    w2 = np.pi*wav*df
    k2 = k*k
-   #wi = exp(-2*B*k2); % B. Sander et al. / Journal of Structural Biology 142 (2003) 392?401, CHECKCHECK
    sigm = B/math.sqrt(2*math.log(2)) # B is Gaussian Env. Halfwidth
-   #sigm = B/2;
    wi = np.exp(-k2/(2*sigm**2))
    wr = (0.5*w1*k2-w2)*k2 # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2 
    

@@ -12,36 +12,6 @@ from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
     Created: Dec 2017. Modified:Aug 16,2019
 '''
 
-'''
-def psi_ang(PD):
-
-    lPD = sum(PD**2)
-    Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
-    Qr = Qr / np.sqrt(np.sum(Qr**2))
-    phi,theta,psi = q2Spider.op(Qr)
-
-    psi = np.mod(psi,2*np.pi)*(180/np.pi)
-    return psi
-
-def rotate_psi(PrDs,psinums):
-
-    for prD in PrDs:
-        dist_file = '{}prD_{}'.format(p.dist_file,prD)
-        data = myio.fin1(dist_file)
-        PD = data['PD']
-        psi = psi_ang(PD)
-        for psinum in psinums:
-            imgPsiFileName = '{}prD_{}_psi_{}'.format(p.psi2_file,prD,psinum)
-            data_IMG = myio.fin1(imgPsiFileName)
-            img = data_IMG["IMG1"].T #transpose or not
-            img = rotatefill.op(img, -psi, visual=False) # plus or minus
-
-'''
-
-
-
-
-
 def op(*argv):
     time.sleep(5)
     set_params.op(1)
@@ -70,7 +40,6 @@ def op(*argv):
     os.makedirs(p.CC_OF_dir, exist_ok=True)
 
     # if trash PDs were created manually
-    #print 'p.trash_list',trash_list
     trash_list_PDs = np.nonzero(p.trash_list==int(1))[0]
     numTrashPDs = len(trash_list_PDs)
 
@@ -101,14 +70,10 @@ def op(*argv):
 
             psinums = np.zeros((2,G['nNodes']),dtype='int')
             senses = np.zeros((2,G['nNodes']),dtype='int')
-            #CC1
-            #psinums[0,:]=[a[1]-1 for a in p.anch_list]
-            #senses[0,:]=[a[2] for a in p.anch_list]
 	    
             for a in p.anch_list: #for row in anch_list; e.g. [1, 1, -1, 0]
                 psinums[0,a[0]-1] = a[1]-1
                 senses[0,a[0]-1] = a[2]
-
 
             idx = 0
             for t in p.trash_list: #for row in trash_list; e.g. [36, True] means PD 36 is Trash		
@@ -118,14 +83,6 @@ def op(*argv):
                     senses[0,idx] = 0
 
                 idx+=1
-
-
-            #print 'psinums',psinums
-            #print 'senses',senses
-           		
-            #CC2
-            #psinums[1,:]=[a[4] for a in p.anch_list] # a[col], whatever column number is in the p.anch_list for CC2
-            #senses[2,:]=[a[5] for a in p.anch_list]
 
             print('\nFind CC: Writing the output to disk...\n')
             p.CC_file = '{}/CC_file'.format(p.CC_dir)
@@ -154,11 +111,6 @@ def op(*argv):
         nodesGsubi = Gsub[i]['originalNodes']
         edgelistGsubi = Gsub[i]['originalEdgeList']
         edgesGsubi = Gsub[i]['originalEdges']
-        #print 'Checking connected component ','i=',i,', Gsub[i]',', Original node list:',nodesGsubi,\
-        #  'Original edge list:',edgelistGsubi[0],'Original edges:', edgesGsubi, 'No. edges:',len(edgesGsubi)
-
-        #print 'Checking connected component ','i=',i,', Gsub[i]',', Original node list:',nodesGsubi,\
-        #    'Original edge list:',edgelistGsubi[0],'Size Edges:',len(edgesGsubi)
 
         if any(x in anchorlist for x in nodesGsubi):
             #print 'Atleast one anchor node in connected component',i,'is selected.\n'
@@ -173,32 +125,16 @@ def op(*argv):
             time.sleep(20)
 
     G.update(ConnCompNoAnchor=connCompNoAnchor)
-    #print connCompNoAnchor,G['ConnCompNoAnchor']
-
-    #nodeRange = nodelCsel
-    #edgeNumRange = edgelCsel
-    #print('nodelCsel', nodelCsel)
-    #print('edgelCsel', edgelCsel)
 
     nodeRange = np.sort([y for x in nodelCsel for y in x]) #flatten list another way?
     edgeNumRange = np.sort([y for x in edgelCsel for y in x]) #flatten list another way?
 
-    #nodeRange = range(G['nNodes'])
-    #edgeNumRange = range(G['nEdges'])
-    #nodeRange = [171,172,173,174,175,176]
-    #edgeNumRange = [1247,1248,1262,1267]
-    #nodeRange = range(5)
-    #edgeNumRange = [0]
-    #nodeRange = np.sort(nodeRange)
-    #edgeNumRange= np.sort(edgeNumRange)
     # adding these two params to the CC graph file *Hstau Aug 19
     data = myio.fin1(CC_graph_file)
     extra = dict(nodeRange=nodeRange,edgeNumRange=edgeNumRange,ConnCompNoAnchor=connCompNoAnchor)
     data.update(extra)
     myio.fout2(CC_graph_file,data)
-    #print 'Selected graph G nodes and edges in the connected components for which atleast one anchor node were selected:'
-    #print 'nodeRange',nodeRange
-    #print 'edgeNumRange',edgeNumRange
+
     # compute all pairwise edge measurements
     # Step 1: compute the optical flow vectors for all prds
     # Step 2: compute the pairwise edge measurements for all psi - psi movies
@@ -207,9 +143,8 @@ def op(*argv):
         edgeMeasures,edgeMeasures_tblock,badNodesPsisBlock = ComputePsiMovieEdgeMeasurements.op(G, nodeRange, edgeNumRange, argv[0])
     else:
         edgeMeasures,edgeMeasures_tblock,badNodesPsisBlock = ComputePsiMovieEdgeMeasurements.op(G, nodeRange, edgeNumRange)
-    #print '\nedgeMeasures:\n',edgeMeasures
 
-    #If graph G was updated by pruning or otherwise during OF or Edge measurement step, it writes pruned G, so read
+    # If graph G was updated by pruning or otherwise during OF or Edge measurement step, it writes pruned G, so read
     # it here and pass to BP step
 
     if os.path.exists(CC_graph_file_pruned):
@@ -223,7 +158,6 @@ def op(*argv):
     print('\n4.Running Global optimization to estimate state probability of all nodes ...')
 
     BPoptions = dict(maxProduct = 0, verbose = 0, tol = 1e-4, maxIter = 300,eqnStates = 1.0, alphaDamp = 1.0)
-
 
     #reaction coordinate number rc = 1,2
     psinums = np.zeros((2,G['nNodes']),dtype='int')
@@ -255,7 +189,7 @@ def op(*argv):
         node_list[:,3] = OptNodeBel_cc1
 
         # save the found psinum , senses also as text file
-        #node_list is variable name with columns: if dim =1 : (PrD, CC1, S1) + (CC2, S2) if dim =2
+        # node_list is variable name with columns: if dim =1 : (PrD, CC1, S1) + (CC2, S2) if dim =2
         np.savetxt(nodeOutputFile, node_list, fmt='%i\t%i\t%i\t%f', delimiter='\t')
 
         nodeBels1 = np.empty((nodeBelief_cc1.T.shape[0],nodeBelief_cc1.T.shape[1]+1))

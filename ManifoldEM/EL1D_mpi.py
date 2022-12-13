@@ -49,7 +49,6 @@ def op(proj_name):
         data = myio.fin1(p.CC_file)
         psiNumsAll = data['psinums']
         sensesAll = data['senses']
-        #rc = {'psiNumsAll': psiNumsAll, 'sensesAll': sensesAll}
         isFull = 1
         R = np.array(range(p.numberofJobs))
         R = np.delete(R, np.nonzero(p.trash_list == 1)[0])

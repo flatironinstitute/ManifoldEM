@@ -257,16 +257,7 @@ def op(input_data,filterPar, imgFileName, sh, nStot, options):
             tmp = tmp.data[indiS]
             shi = (sh[1][indiS]-0.5, sh[0][indiS]-0.5)
             tmp = shift(tmp, shi, order=3, mode='wrap')
-        #if iS == 0:
-        #    print 'shx=', sum(sh[0])
-        #    print 'tmp=',tmp[:10,:10]
-        #    plt.imshow(tmp)
-        #    plt.show()
-        #    exit(1)
         if ind[iS] >= nStot/2: # second half data set
-            #tmp = np.ones((N,N))*0.0
-            #continue
-            # matlab version: tmp = m.Data(ind(iS)-nStot/2).y
             tmp = np.flipud(tmp)
         # normalizing
         backg = tmp*(1-msk)
@@ -394,12 +385,6 @@ def op(input_data,filterPar, imgFileName, sh, nStot, options):
 
     imgAllIntensity = np.mean(imgAllFlip**2, axis=0)
 
-    '''
-    myio.fout1(outFile,['D','ind','q','df','CTF','imgAll','PD','PDs','Psis','imgAvg','imgAvgFlip',
-                'imgAllFlip','imgLabels','Dnom','Nom','imgAllIntensity','version','options'],
-               [D, ind, q, df, CTF, imgAll, PD, PDs, Psis, imgAvg, imgAvgFlip,
-                imgAllFlip, imgLabels, Dnom, Nom, imgAllIntensity, version, options]) # members of options
-    '''
     #April 2020, include  vol mask 2d, msk2
     myio.fout1(outFile,['D','ind','q','df','CTF','imgAll','msk2','PD','PDs','Psis','imgAvg','imgAvgFlip',
                 'imgAllFlip','imgLabels','Dnom','Nom','imgAllIntensity','version','options'],

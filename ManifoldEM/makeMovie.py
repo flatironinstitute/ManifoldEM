@@ -24,7 +24,6 @@ def op(IMG1,prD,psinum,fps):
     for i in range(IMG1.shape[1]):
         time.sleep(.01)
         IMG = -IMG1[:, i].reshape(dim, dim)  # an image
-        #IMG = IMG.T
         frame = p.out_dir + '/topos/PrD_{}/psi_{}/frame{:02d}'.format(prD + 1, psinum + 1, i)
 
         fig = plt.figure(frameon=False)
@@ -34,7 +33,6 @@ def op(IMG1,prD,psinum,fps):
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.imshow(IMG, cmap=plt.get_cmap('gray'))
-        #ax1.set_title('Frame %02d' % (i+1))
         
         fig.savefig(frame, bbox_inches='tight', pad_inches=.1)
         

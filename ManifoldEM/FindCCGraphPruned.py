@@ -36,17 +36,7 @@ G = CreateGraphStruct(Xp, AdjMat, nStates, pwDist, numNbr, epsilon)
 % Created: Feb 02, 2018. Modified:Jan 25, 2019
 Python version Hstau Liao copyright 2018
 '''
-
 def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
-
-    '''try:
-        assert (len(argv) > 0)
-    except AssertionError:
-        _logger.error('wrong nmber of arguments')
-        _logger.exception('wrong nmber of arguments')
-        raise
-        sys.exit(1)
-    '''
     if type(pwDist) is list:
         pwDist=np.array(pwDist)
 
@@ -63,15 +53,11 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     elif AdjMat.shape[0]> 0:
         nNodes = AdjMat.shape[0]
     else:
-        #print '\npwDist and AdjMat both cannot be empty.'
         return -1
-
-
-    #print pwDist[0:10][:,0:10]
 
     Nodes = range(nNodes)
     G = dict(nNodes=nNodes,Nodes=Nodes)
-    #print 'Number of Graph Nodes:', nNodes
+
     # create state for each node
     if np.isscalar(nStates):
         # isscalar(nStates) # if it is a scalar then it is equal to maxState
@@ -85,7 +71,6 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     G.update(maxState = maxState)
 
     nnMat = np.empty((G['nNodes'],),dtype=object)
-    #nnMat =[] # default if not doing the nn search
     if not argv: # adj matrix absent
         print('Using pwDist to create the graph (AdjMat).')
         # create the connections from neighbor search
@@ -102,7 +87,6 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
 
     else:
         for n in range(nNodes):
-            #print 'nnMat',type(nnMat)
             nnMat[n] = np.nonzero(AdjMat[n,:])[1]
 
     AdjMat = csr_matrix(AdjMat)
@@ -112,17 +96,11 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     ni, nj = np.nonzero(AdjMat)
 
     Edges = np.vstack((nj,ni)).T
-    #I = np.argsort(Edges[:,[0,1]])
-    #Edges=Edges[I,:]
 
     I = np.lexsort((Edges[:,1],Edges[:,0]))
-    Edges=Edges[I,:]
-    #print "Edges.shape", Edges.shape
+    Edges = Edges[I,:]
 
-    #print 'Remove the reverse links'
     Edges = Edges[np.nonzero(Edges[:, 0] < Edges[:, 1])]
-    #print 'Number of Graph Edges:', Edges.shape
-
 
     # 2.
     ni, nj = np.nonzero(tril(AdjMat))
@@ -184,9 +162,7 @@ def getSubGraph(G,*nodes):
     if not nodes:
         # get all subgraphs
         for i in range(numConnComp):
-            #print '\nConnected Component',i,':',G['NodesConnComp'][i], ', size:',len(G['NodesConnComp'][i])
             if len(G['NodesConnComp'][i]) == 1:
-                #print 'Singlet Node in connected component',i
                 sn=1 # do nothing
             nodes = G['NodesConnComp'][i]
             if hasattr(G,'AdjConn'):
@@ -259,7 +235,6 @@ def CalcPairwiseDistS2(X,*argv):
 
     # pairwise Euclidean distance
     Dsq = np.sum(U*U,axis=0).T + np.sum(V*V,axis=0) - 2*np.dot(U.T , V)
-    #Dsq[Dsq < 0.0] = 0.0
     Dsq[Dsq < 1e-6] = 0.0
     pwDist = np.sqrt(Dsq)
     return (pwDotProd, pwDist)
@@ -294,10 +269,9 @@ def op(CC_graph_file_pruned):
 
         newAdjMat = csr_matrix(newAdjMat)
         G.update(AdjMat=newAdjMat)
-         # Updated graph info
-        #G = CreateGraphStruct(G['maxState'],[],[], newAdjMat)
-        G = CreateGraphStruct(G['maxState'],[],[], newAdjMat) # june 2020
 
+        # Updated graph info
+        G = CreateGraphStruct(G['maxState'],[],[], newAdjMat) # june 2020
 
         # re-insert the epsilon
         G['epsilon'] = epsilon
@@ -306,11 +280,6 @@ def op(CC_graph_file_pruned):
         # If the min distance /epsilon values are different during initial and pruned graph creation
         # the actual number of edges may or may not decrease after pruning, the nodes that were pruned will become
         # isolated
-
-        #print 'bad_nodes',bad_nodes
-        #print 'Number of Nodes in the pruned graph',np.unique(G['Edges'])
-
-
     else:
         print('Single PrD. Empty graph structure created with one node.')
         G = CreateGraphStruct(maxState, [0], 0)
@@ -319,10 +288,7 @@ def op(CC_graph_file_pruned):
     # proceed to the pairwise measurements only after we are fine with the connected components
     Gsub, G = getSubGraph(G)
 
-    # if pruned
-    # replace
-    #CC_graph_file_pruned = '{}_pruned'. format(p.CC_graph_file)
-    myio.fout1(CC_graph_file_pruned,['G', 'Gsub'],[G, Gsub])
+    myio.fout1(CC_graph_file_pruned, ['G', 'Gsub'], [G, Gsub])
 
     return G,Gsub
 

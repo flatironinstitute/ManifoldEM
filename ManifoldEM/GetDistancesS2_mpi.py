@@ -65,36 +65,20 @@ def op(proj_name):
     jobs = COMM.scatter(jobs, root=0)
 
     res = []
-    #count = 0
     for job in jobs:
-        #print "rank={}".format(COMM.rank)
         filterPar = params1['filterPar']
         sh = params1['sh']
         options = params1['options']
         size = params1['size']
         getDistanceCTF_local_Conj9combinedS2.op(job, filterPar, p.img_stack_file, sh, size, options)
-        #count += 1
-        #print 'count=',count
-        #cc = np.array([count])
-        #COMM.Isend(cc, dest=0)
-        #if COMM.rank == 0:
-            #if argv:
-                #print 'offset=',offset
-                #for i  in range(COMM.size):
-                #   req = COMM.Irecv(cc,source = i)
-                #   if req.Test():
-                #       print 'type count=',type(cc)
-                #       offset += cc[0]
-                #print ' o                                                                                                                      ffset=',offset
-                ##offset = numberofJobs - count(numberofJobs)
-                ##progress1.emit(int((offset / float(numberofJobs)) * 100))
         res.append([])
+
     if COMM.rank == 0:
         set_params.op(0)
+
     MPI.COMM_WORLD.gather(res, root=0)
 
     return
 
 if __name__ == '__main__':
     op(sys.argv[1])
-    #op()

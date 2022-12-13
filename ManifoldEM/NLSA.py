@@ -67,13 +67,10 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
             if 'prD' in ExtPar:
                 img_f = fft2(img)#.reshape(dim, dim)) T only for matlab
                 CTF_i = CTF1[ind3, :, :]
-                #wiener_dom_i = wiener_dom[:, i].reshape(dim, dim)
                 img_f_wiener = img_f * (CTF_i / wiener_dom[i, :, :])
                 img = ifft2(img_f_wiener).real
-                #img = np.squeeze(ifft2(img_f_wiener).real.T.reshape(-1, 1))
                 img = img*msk2 # April 2020
             tmp[ind1:ind2, i] = np.squeeze(img.T.reshape(-1, 1))
-            #tmp[ind1:ind2, i] = np.squeeze(img.reshape(-1,1))
 
         mm = dim * dim #max(IMG1.shape)
         ind4 = ii * mm
@@ -90,7 +87,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
 
     sdiag = np.diag(S)
 
-    Npixel = dim * dim #max(IMG1.shape[0])
+    Npixel = dim * dim
     Topo_mean = np.zeros((Npixel, psiTrunc))
     for ii in range(psiTrunc):  # of topos considered
         #s = s + 1  needed?
@@ -134,7 +131,6 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
 
 
     nSrecon = min(IMGT.shape)
-    #dim = max(IMGT.shape)
     Drecon = L2_distance.op(IMGT, IMGT)
     k = nSrecon
 
@@ -148,7 +144,6 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
 
     if NLSAPar['save'] == True:
         myio.fout1(ExtPar['filename'], ['psirec', 'tau', 'a', 'b'], [psirec, tau, a, b])
-
 
     return (IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau)
 

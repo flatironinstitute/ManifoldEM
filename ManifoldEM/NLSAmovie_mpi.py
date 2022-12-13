@@ -16,7 +16,6 @@ Copyright (c) Columbia University Hstau Liao 2019 (python version)
 def split(container, count):
     return [container[j::count] for j in range(count)]
 
-
 def divide(N):
     ll=[]
     for prD in range(N):#prDs
@@ -63,6 +62,7 @@ def movie(input_data,out_dir,dist_file,psi2_file,fps):
         fig2.clf()
         plt.close(fig2)
         #gc.collect()
+
     # write class avg image
     data = myio.fin1(dist_file1)
     avg = data['imgAvg']
@@ -72,16 +72,12 @@ def movie(input_data,out_dir,dist_file,psi2_file,fps):
     ax3.set_title('')
     ax3.get_xaxis().set_visible(False)
     ax3.get_yaxis().set_visible(False)
-    #if p.relion_data == True:
-    #    avg = avg.T
     ax3.imshow(avg, cmap=plt.get_cmap('gray'))
     image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
     fig3.savefig(image_file, bbox_inches='tight', dpi=100, pad_inches=-0.1)
     ax3.clear()
     fig3.clf()
     plt.close(fig3)
-
-    return
 
 
 def op(proj_name):

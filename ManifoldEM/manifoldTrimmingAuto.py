@@ -17,7 +17,6 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
 def get_psiPath(psi,rad, plotNum):
-
     psinum1 = plotNum
     psinum2 = plotNum + 1
     psinum3 = plotNum + 2
@@ -60,7 +59,6 @@ def op(input_data,posPath,tune,rad,visual,doSave):
     posPath1 = get_psiPath(psi, rad, 0)
     cc=0
     while len(posPath1) < nS:
-        #print('len(posPath1) < nS')
         cc += 1
         nS = len(posPath1)
         D1 = D[posPath1][:, posPath1]

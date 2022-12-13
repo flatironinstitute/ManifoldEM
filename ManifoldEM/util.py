@@ -166,30 +166,11 @@ def filter_fourier(inp, sigma):
     nPix1 = inp.shape[1]
     nPix2 = inp.shape[0]
     X, Y = np.meshgrid(interv(nPix1), interv(nPix2))
-    '''
-    # nPix1 and nPix2 odd
-    if nPix1%2 == 0 and nPix2%2 == 0:
-        ab = np.arange(-(nPix2 - 1) / 2,(nPix2 - 1) / 2)
-        X, Y = np.meshgrid(interv(nPix1),interv(nPix2))
-    elif nPix1%2 == 1 && nPix2%2 == 1:
-        aa = np.aranage(-nPix1 / 2,nPix1 / 2 - 1)
-        ab = np.aranage(-nPix2 / 2,nPix2 / 2 - 1)
-        X, Y = np.meshgrid(aa, ab)
-        # nPix1 and nPix2 even
-    elif ~mod(nPix1, 2) && mod(nPix2, 2):
-        X, Y = meshgrid(-nPix1 / 2:nPix1 / 2 - 1, -(nPix2 - 1) / 2:(nPix2 - 1) / 2)
-        # nPix1 even and nPix2 odd
-    elif mod(nPix1, 2) && ~mod(nPix2, 2):
-        X, Y = meshgrid(-(nPix1 - 1) / 2:(nPix1 - 1) / 2, -nPix2 / 2:nPix2 / 2 - 1)
-        # nPix1 odd and nPix2 even
-    '''
     Rgrid = nPix2 / 2.
     Q = (1 / Rgrid) * np.sqrt(X ** 2 + Y ** 2)  # Q in units of Nyquist frequency
 
     N = 4
     G = np.sqrt(1. / (1 + (Q / sigma) ** (2 * N)))  # ButterWorth
-
-    # G = exp(-(log(2) / 2) * (Q / sigmaH). ^ 2);Gaussian
 
     # Filter images in Fourier space
     G = np.fft.ifftshift(G)

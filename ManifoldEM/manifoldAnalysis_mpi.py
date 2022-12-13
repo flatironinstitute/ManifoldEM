@@ -7,13 +7,9 @@ from ManifoldEM import manifoldTrimmingAuto, myio, set_params, p
 from mpi4py import MPI
 COMM = MPI.COMM_WORLD
 
-
 '''
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 '''
-
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
 
 def split(container, count):
     return [container[j::count] for j in range(count)]

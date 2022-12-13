@@ -31,31 +31,9 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
   global p nDim a b x x_fit
 
-  '''
 '''
-def plot_fitted_curve(hFig):
-    global x x_fit
-    h = plt.figure(hFig)
-    hsp = plt.subplot(2,2,1)
-    plot3(x(:,1),x(:,2),x(:,3),'b.','lineWidth',1);
-  hold on
-  plot3(x_fit(:,1),x_fit(:,2),x_fit(:,3),'g.','lineWidth',1);
-  hold off
-  set(hsp,'lineWidth',2,'fontSize',15);
-  hsp = subplot(2,2,2);
-  plotRF(hsp,x(:,1),x(:,2),'','','','b.');
-  addplotRF(hsp,x_fit(:,1),x_fit(:,2),'g.');
-  hsp = subplot(2,2,3);
-  plotRF(hsp,x(:,1),x(:,3),'','','','b.');
-  addplotRF(hsp,x_fit(:,1),x_fit(:,3),'g.');
-  hsp = subplot(2,2,4);
-  plotRF(hsp,x(:,2),x(:,3),'','','','b.');
-  addplotRF(hsp,x_fit(:,2),x_fit(:,3),'g.');
-  drawnow
-%end
-'''
-eps = 1e-4
 
+eps = 1e-4
 
 #global maxIter,delta_a_max, delta_b_max,delta_tau_max,a_b_tau_result
 
@@ -71,8 +49,6 @@ def op(psi):
     nS = a.x.shape[0]
   
     for iter in range(1,a.maxIter+1):
-        #string ='iteration ' + str(iter)
-        #print string
         '''
         #%%%%%%%%%%%%%%%%%%%%%
         #% solve for a and b %
@@ -93,7 +69,6 @@ def op(psi):
         for qq in range(3):
             A = np.array([[A11[qq],A12[qq]],[A21[qq], A22]])
             b = np.array([b1[qq], b2[qq]])
-            #coeff[:,qq] = linalg.op(A,b)
             coeff[:,qq] = np.linalg.lstsq(A, b)[0]
         
 
@@ -119,22 +94,6 @@ def op(psi):
           tau[a.p],beta = solve_d_R_d_tau_p_3D.op()   #added
           for kk in range(beta.shape[0]):
               aux[a.p,kk] = beta[kk]
-        '''
-        if iter == 0:
-            data = loadmat('aux0.mat')  # (this is for < v7.3
-        elif iter == 1:
-            data = loadmat('aux1.mat')  # (this is for < v7.3
-        else:
-            data = loadmat('aux2.mat')  # (this is for < v7.3
-        imaux = data['aux']
-        plt.subplot(2, 2, 1)
-        plt.imshow(aux, cmap=plt.get_cmap('gray'),aspect=0.1)
-        plt.title('aux')
-        plt.subplot(2, 2, 2)
-        plt.imshow(imaux, cmap=plt.get_cmap('gray'), aspect=0.1)
-        plt.title('imaux')
-        plt.show()
-        '''
 
         '''
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

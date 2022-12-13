@@ -36,23 +36,12 @@ Python version Hstau Liao copyright 2018
 '''
 
 def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
-
-    '''try:
-        assert (len(argv) > 0)
-    except AssertionError:
-        _logger.error('wrong nmber of arguments')
-        _logger.exception('wrong nmber of arguments')
-        raise
-        sys.exit(1)
-    '''
     if type(pwDist) is list:
         pwDist=np.array(pwDist)
 
     if argv:
-        #print '\nAdjMat is available to create the graph.'
         AdjMat = argv[0]
     else:
-        #print '\nAdjMat is not available.'
         AdjMat = np.empty(0)
 
     if pwDist.shape[0] > 0:
@@ -61,18 +50,14 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     elif AdjMat.shape[0]> 0:
         nNodes = AdjMat.shape[0]
     else:
-        #print '\npwDist and AdjMat both cannot be empty.'
         return -1
 
 
-    #print pwDist[0:10][:,0:10]
-
     Nodes = range(nNodes)
     G = dict(nNodes=nNodes,Nodes=Nodes)
-    #print 'Number of Graph Nodes:', nNodes
+
     # create state for each node
     if np.isscalar(nStates):
-        # isscalar(nStates) # if it is a scalar then it is equal to maxState
         nStates = nStates * np.ones(nNodes,dtype='int')
         G.update(eqnStates=1)
     else:
@@ -83,9 +68,7 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     G.update(maxState = maxState)
 
     nnMat = np.empty((G['nNodes'],),dtype=object)
-    #nnMat =[] # default if not doing the nn search
     if not argv: # adj matrix absent
-        #print 'Using pwDist to create the graph (AdjMat).'
         # create the connections from neighbor search
         Adj = (pwDist <= epsilon) * (pwDist!=0)
         Adj = csr_matrix(Adj)
@@ -99,7 +82,6 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
         AdjMat = (Adj > 0)
     else:
         for n in range(nNodes):
-            #print 'nnMat',type(nnMat)
             nnMat[n] = np.nonzero(AdjMat[n,:])[1]
 
     AdjMat = csr_matrix(AdjMat)
@@ -109,17 +91,12 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     ni, nj = np.nonzero(AdjMat)
 
     Edges = np.vstack((nj,ni)).T
-    #I = np.argsort(Edges[:,[0,1]])
-    #Edges=Edges[I,:]
 
     I = np.lexsort((Edges[:,1],Edges[:,0]))
     Edges=Edges[I,:]
-    #print "Edges.shape", Edges.shape
 
-    #print 'Remove the reverse links'
     Edges = Edges[np.nonzero(Edges[:, 0] < Edges[:, 1])]
     print('Number of Graph Edges:', Edges.shape)
-
 
     # 2.
     ni, nj = np.nonzero(tril(AdjMat))
@@ -288,16 +265,11 @@ def op():
         # Setting up the graph structure
         pwDotProd, pwDist = CalcPairwiseDistS2(S20_th[:,PrDs])
 
-        #dist0 = pwDist[0,:]
-        #mindist = min(dist0[np.nonzero(dist0)]) # 2*shAngWidth
         mindist = np.min(pwDist[np.nonzero(pwDist)]) # 2*shAngWidth
 
-        #print "Min. Distance between nodes:",mindist
-        #epsilonBall = mindist * nG / numPDs * 0.75
         epsilonBall = mindist * nG / numPDs
         epsilon = min(max(mindist + p.eps, epsilonBall),
                   mindist * 2 * np.sqrt(2) + p.eps) #mindist + eps <= epsilon <= mindist *2*sqrt(2) + eps
-        #epsilon=epsilon*1.2 #constant multiplier; use for decreasing number of connected components
         print("Neighborhood epsilon:",epsilon)
 
         # Updated graph info
@@ -305,7 +277,6 @@ def op():
         G.update(nPsiModes=p.num_psis)
 
     else:
-        #print 'Single PrD. Empty graph structure created with one node.'
         G = CreateGraphStruct(maxState, [0], 0)
 
     # Determine if there are multiple connected components / subgraph
@@ -313,7 +284,7 @@ def op():
     Gsub, G = getSubGraph(G)
 
     myio.fout1(p.CC_graph_file,['G', 'Gsub'],[G, Gsub])
-    return G,Gsub
+    return G, Gsub
 
 
 if __name__ == '__main__':

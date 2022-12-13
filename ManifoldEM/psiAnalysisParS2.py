@@ -91,7 +91,6 @@ def op(input_data,conOrderRange,traj_name,isFull,psiTrunc,*argv):
         k = num - ConOrder
 
         NLSAPar = dict(num=num,ConOrder=ConOrder,k=k,tune=p.tune,nS=nS,save=False,psiTrunc=psiTrunc)
-        #IMGT,Topo_mean,psirec,psiC1,sdiag,VX,mu,tau = NLSA.op(NLSAPar, DD, posPath,PosPsi1,imgAll,CTF, ExtPar)
         IMGT,Topo_mean,psirec,psiC1,sdiag,VX,mu,tau = NLSA.op(NLSAPar, DD, posPath,PosPsi1,imgAll,msk2,CTF, ExtPar) # April 2020, pass the msk2 var also
         kk = 10
         #if np.median(tau[:kk] > 0.8): this doesn't do it
@@ -123,7 +122,6 @@ def op(input_data,conOrderRange,traj_name,isFull,psiTrunc,*argv):
             tauinds.append(tauind[0])
 
         if isFull: # second pass for EL1D
-
             # adjust tau by comparing the IMG1s
             psi2_file = '{}_psi_{}'.format(psi2_file, psinum)
             data = myio.fin1(psi2_file)
@@ -169,5 +167,4 @@ def op(input_data,conOrderRange,traj_name,isFull,psiTrunc,*argv):
     return res
 
 if __name__ == '__main__':
-   #align_param_file = 'data/refine_005.tls'
    op()

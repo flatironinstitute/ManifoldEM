@@ -7,14 +7,12 @@ from sklearn.neighbors import NearestNeighbors
 
 from ManifoldEM import distribute3Sphere
 
-
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
-
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
@@ -84,12 +82,9 @@ def op(q,shAngWidth,PDsizeTh,visual,thres,*fig):
    for i in range(S20.shape[1]):
       a = (IND == i).nonzero()[0]
       # upper-thresholded
-      #if len(a) > thres:
-      #   a = a[:thres]
       CG1.append(a)
 
    CG1 = np.array(CG1, dtype=object) #added: , dtype=object)
-   #print('CG1', CG1)
 
    # lower-thresholded
    mid = np.floor(S20.shape[1]/2).astype(int)
@@ -120,10 +115,6 @@ def op(q,shAngWidth,PDsizeTh,visual,thres,*fig):
        '''
 
    # find the "conjugate" bins
-   #cbin = conjugate_bin(S20, S2, CG1, NIND)
-   #NIND1 = np.hstack((NIND,cbin[NIND]))
-   #NIND1 = np.unique(NIND1)
-   #print 'NINd1=',NIND1
    S20_th = S20[:,NIND]
 
    CG = []
@@ -134,18 +125,7 @@ def op(q,shAngWidth,PDsizeTh,visual,thres,*fig):
          a = a[:thres]
       CG.append(a)
 
-      #print 'ind=',i
-      #print 'list of particles=',a
-      #print 'shape =',a.shape
-      #print ''
-
-   '''
-   for i in NIND:
-      print(len(CG1[i])) #sanity-check
-      '''
-
    if visual:
-      # fig = plt.figure(figsize=(4,4))
       ax = Axes3D(fig)
       ax.set_xlim3d(-1, 1)
       ax.set_ylim3d(-1, 1)
@@ -163,8 +143,3 @@ def op(q,shAngWidth,PDsizeTh,visual,thres,*fig):
    #S20_th: thresholded version of S20
    #S20: cartesian coordinates of each bin-center on S2 sphere
    #NC: list of occupancies of each PD
-
-
-
-#if __name__ == '__main__':
-#   op(ang,df,Shan_width,visual,GCnum,fig,flip=True)
