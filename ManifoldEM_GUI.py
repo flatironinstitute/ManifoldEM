@@ -1,7 +1,5 @@
-from __future__ import print_function
-
-import sys, os, os.path, time, errno, psutil
-from PyQt5.QtWidgets import *
+import sys, os, os.path, time, psutil
+from PyQt5.QtWidgets import QApplication
 import csv
 from subprocess import call
 import multiprocessing
@@ -18,38 +16,31 @@ sys.path.append(CCDir) #link imports to 'modules -> CC' folder
 sys.path.append(BPDir) #link imports to 'modules -> CC -> BP' folder
 
 from pyface.qt import QtGui, QtCore
-os.environ['ETS_TOOLKIT'] = 'qt4'
-import sip
-sip.setapi('QString', 2)
 import threading
 import gc #garbage collection
 import shutil
 import re
 
 import matplotlib
-matplotlib.use('Agg') #Qt4Agg
+matplotlib.use('Agg')
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from matplotlib.widgets import Slider, Button
-import mpl_toolkits.axes_grid1
 import matplotlib.path as pltPath
 import matplotlib.image as mpimg
 from matplotlib.ticker import MaxNLocator
-from matplotlib import rc
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.cm as cm
 
 import numpy as np
-from pylab import imshow, show, loadtxt, axes
+from pylab import loadtxt
 from scipy import stats
 import itertools
 import Data
 import mrcfile
 from PIL import Image
 import imageio
-import cv2
 import pickle
 
 import p
@@ -62,7 +53,6 @@ import psiAnalysis
 import NLSAmovie
 import embedd
 import clusterAvg
-import projectMask
 import FindConformationalCoord
 import EL1D
 import backup
@@ -70,15 +60,10 @@ import PrepareOutputS2
 import set_params
 
 import logging
-from traits.api import HasTraits,Any,Instance,on_trait_change,List,Str,Int,Float,Range,Button,Callable,Enum
-from traitsui.api import View,Item,HSplit,Group,HGroup,VGroup,ListEditor,TextEditor,RangeEditor,Handler
+from traits.api import HasTraits,Instance,on_trait_change,List,Str,Int,Float,Range,Button,Enum
+from traitsui.api import View,Item,Group,HGroup,VGroup,TextEditor
 from mayavi import mlab
-from mayavi.core.api import PipelineBase, Engine
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
-from tvtk.api import tvtk
-from tvtk.pyface.api import Scene
-from tvtk.common import configure_input_data
-#from enthought.pyface.api import GUI #GUI.set_busy()
 
 import warnings
 warnings.filterwarnings('ignore', '.*GUI is implemented.*')
@@ -217,7 +202,6 @@ class Mayavi_S2(HasTraits): # S2 Orientation Sphere, Electrostatic Potential Map
             viewS2 = self.scene1.mlab.view(figure=Mayavi_S2.fig1)
             azimuth = viewS2[0] #phi: 0-360
             elevation = viewS2[1] #theta: 0-180
-            zoom = viewS2[2]
             print_anglesP2(azimuth, elevation)
     
         @on_trait_change('S2_scale, S2_density') #S2 Orientation Sphere
