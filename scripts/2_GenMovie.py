@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #run via: 'chimera 2_GenMovie.py'
 session = 'view1' #name of session saved in Chimera (e.g., 'view1' for view1.py)
 

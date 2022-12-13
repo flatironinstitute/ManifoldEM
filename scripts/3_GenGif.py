@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #first, source 'ManifoldEM' conda environment;
 #then run via: 'python 3_GenGif.py'
 session = 'view1' #name of session saved in Chimera (e.g., 'view1' for view1.py)

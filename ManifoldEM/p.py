@@ -175,22 +175,6 @@ def create_dir():
     call(["mkdir", "-p", anim_dir])
     pp_dir = os.path.join(os.path.sep, user_dir, 'modules', 'postProc')
 
-    post1 = os.path.join(pp_dir, 'mrcs2mrc.sh')
-    post2 = os.path.join(pp_dir, '1_CreateSession.py')
-    post3 = os.path.join(pp_dir, '2_GenMovie.py')
-    post4 = os.path.join(pp_dir, '3_GenGif.py')
-    post5 = os.path.join(pp_dir, 'mrc2svd.py')
-    post6 = os.path.join(pp_dir, 'mrc2svd.sh')
-    post7 = os.path.join(pp_dir, 'mrc2denoise.py')
-
-    copyfile(post1, os.path.join(vol_dir, 'mrcs2mrc.sh'))
-    copyfile(post2, os.path.join(anim_dir, '1_CreateSession.py'))
-    copyfile(post3, os.path.join(anim_dir, '2_GenMovie.py'))
-    copyfile(post4, os.path.join(anim_dir, '3_GenGif.py'))
-    copyfile(post5, os.path.join(svd_dir, 'mrc2svd.py'))
-    copyfile(post6, os.path.join(svd_dir, 'mrc2svd.sh'))
-    copyfile(post7, os.path.join(svd_dir, 'mrc2denoise.py'))
-
     #################
 
     out_dir = os.path.join(user_dir,'outputs_{}/'.format(proj_name))

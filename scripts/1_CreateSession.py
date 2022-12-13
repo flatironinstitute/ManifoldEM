@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #run via: chimera 1_CreateSession.py
 svd = False #user parameter; True if SVD was performed on volume files in '/post/1_vol'
 

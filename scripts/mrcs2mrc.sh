@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Copyright (c) Columbia University Evan Seitz 2019
 
 scriptDir="$( cd "$(dirname "$0")" ; pwd -P )"

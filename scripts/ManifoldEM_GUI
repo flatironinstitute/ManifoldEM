@@ -14,11 +14,7 @@ for k, v in os.environ.items():
         del os.environ[k]
 
 time_init = time.strftime("%Y%m%d_%H%M%S")
-pyDir = os.path.dirname(os.path.abspath(__file__)) #python file location
-# modDir = os.path.join(pyDir, 'ManifoldEM')
-# CCDir = os.path.join(modDir, 'CC')
-# sys.path.append(modDir) #link imports to 'modules' folder
-# sys.path.append(CCDir) #link imports to 'modules -> CC' folder
+pyDir = os.path.join(os.getcwd(), 'output')
 
 from pyface.qt import QtGui, QtCore
 import threading
@@ -9318,7 +9314,14 @@ class MainWindow(QtGui.QMainWindow):
                 p.S2iso = MainWindow.S2_iso
                 set_params.op(0) #send new GUI data to user parameters file
             if P3.user_dimensions == 1:
-                P4.anchorsAll[P4.user_PrD].setDisabled(False)
+                try:
+                    P4.anchorsAll[P4.user_PrD].setDisabled(False)
+                except KeyError:
+                    from inspect import currentframe, getframeinfo
+                    frameinfo = getframeinfo(currentframe())
+                    print(frameinfo.filename, frameinfo.lineno)
+                    print("{}:{} Warning: attempting to disable anchor before initialization".format(frameinfo.filename, frameinfo.lineno))
+
 
     def closeEvent(self, ce): #safety message if user clicks to exit via window button
         if P3.dictGen is False:

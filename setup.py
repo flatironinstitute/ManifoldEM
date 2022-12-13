@@ -45,7 +45,7 @@ setup(name='ManifoldEM',
           'h5py',
           'imageio',
       ],
-      # scripts=glob('scripts/*'),
+      scripts=glob('scripts/*'),
       classifiers=classifiers,
       # package_data={
       #     'deepblast': ['pretrained_models/lstm2x.pt'],
