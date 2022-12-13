@@ -89,7 +89,6 @@ def transformFunction_tblock(M,elist,label,printPotFig):
     import matplotlib.pyplot as plt
     e,n1,n2=elist[:]
 
-    import time
     sigma = 1.25
     #print('sigma',sigma)
     Mt = np.exp(-M/(2.0*sigma**2)) #modified kernel
@@ -150,21 +149,15 @@ def op(G,anchorNodes,anchorNodeMeasures,edgeMeasures,edgeMeasures_tblock):
     # For the empty edges (fow which we do not have any measures) , we cannot just leave it as zeros as it will cause
     # Nan error because of 'Normalize' function. Se we add 'eps' to zeros
 
-    nodesEmptyMeas =[]
     for e in range(nEdges): # change to edgeNumRange later
         n1 = Edges[e,0]
         n2 = Edges[e,1]
-        #print('edge',e,n1,n2)
+
         if n1 < n2:
-            #mOF = edgeMeasures[:,:,e] # for matlab input edgeMeasures{n1,n2}
             if edgeMeasures[e] is not None:
                 mOF = np.asarray(edgeMeasures[e])
             else:
                 mOF = np.asarray([])
-            if edgeMeasures_tblock[e] is not None:
-                mOF_tblock = np.asarray(edgeMeasures_tblock[e])
-            else:
-                mOF_tblock = np.asarray([])
 
         else:
             # Note: we do not need the if-else condition here like the Matlab code, since we are using a different data
@@ -175,24 +168,14 @@ def op(G,anchorNodes,anchorNodeMeasures,edgeMeasures,edgeMeasures_tblock):
                 mOF = np.asarray(edgeMeasures[e])
             else:
                 mOF = np.asarray([])
-            if edgeMeasures_tblock[e] is not None:
-                mOF_tblock = np.asarray(edgeMeasures_tblock[e])
-            else:
-                mOF_tblock = np.asarray([])
 
-
-        #print('edge num:',e,'nodes:',n1,n2)
         if (mOF is not None) and (mOF.size>0):
             mOFn = transformFunction(mOF,[e,n1,n2],p.opt_movie['printFig'])
-
-            if (mOF_tblock is not None) and (mOF_tblock.size>0):
-                mOFn_tblock = transformFunction_tblock(mOF_tblock,[e,n1,n2],'tblock',p.opt_movie['printFig'])
 
             w = [1.0, 0.0]
             measOF = w[0]*mOFn
             Medge = np.vstack((measOF,np.hstack((measOF[:,NumPsis:], measOF[:,:NumPsis]))))
             edgePot[e,:,:] = Medge
 
-    #print('edgePot',edgePot)
     return (nodePot,edgePot)
 

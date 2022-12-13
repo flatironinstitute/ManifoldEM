@@ -1,18 +1,11 @@
-import logging, sys
+import sys
 import numpy as np
 import myio
-import h5py,scipy
-from scipy.io import loadmat
-import writeBinaryImagesS2
-import writeBinaryToRELIONS2
 import p
 import os.path
-from subprocess import call
 import gc
 import set_params
-import time,os,glob
-from pyface.qt import QtGui, QtCore
-os.environ['ETS_TOOLKIT'] = 'qt4'
+import time,os
 
 
 ''' %Version V 1.2
@@ -73,8 +66,6 @@ def op(*argv):
 
     xSelect = list(set(xSelect)-set(xLost))
     # Section II
-    visual = 0
-    #trajTauOut_, sense_, start_ = trajTausAlign.op(trajTaus, xSelect, p.isTrajClosed, visual)
     hUn = np.zeros((1, p.nClass)).flatten()
     tauAvg = np.array([])
 
@@ -124,7 +115,6 @@ def op(*argv):
     return hUn
 
 if __name__ == '__main__':
-    import p, sys, os
     sys.path.append('../')
     p.user_dir = '../'
     p.out_dir = os.path.join(p.user_dir, 'data_output/')

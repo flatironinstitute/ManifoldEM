@@ -11,15 +11,10 @@ import time
 
 import set_params
 from subprocess import Popen, call
-import copy
 from OpticalFlowMovie import SelectFlowVec
 from numpy import linalg as LA
 import matplotlib.pyplot as plt
-from hogHistogram import histogram_from_gradients, magnitude_orientation,visualise_histogram
-
-#from pyface.qt import QtGui, QtCore
-#os.environ['ETS_TOOLKIT'] = 'qt4'
-
+from hogHistogram import histogram_from_gradients, visualise_histogram
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)

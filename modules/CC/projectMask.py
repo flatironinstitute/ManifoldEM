@@ -1,17 +1,11 @@
 import numpy as np
-from scipy.ndimage import affine_transform,map_coordinates,rotate
-#from skimage.transform import warp
-#from skimage.transform import ProjectiveTransform
-#from scipy.spatial.transform import Rotation
-from transformations import  euler_from_quaternion,quaternion_from_euler,quaternion_conjugate
+from scipy.ndimage import affine_transform
 import math
-from math import cos,sin
+from math import cos, sin
 import sys
 sys.path.append('../')
 import q2Spider
-import mrcfile
-import myio, p
-from transformations import  euler_from_quaternion,quaternion_from_euler,quaternion_matrix
+from transformations import quaternion_matrix
 
 '''
 % copyright (c) Columbia University Suvrajit Maji 2019

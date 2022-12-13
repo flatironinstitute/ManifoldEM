@@ -1,17 +1,18 @@
 import numpy as np
-import logging, sys
+import sys
 
 sys.path.append('../')
 
 import myio
 import p
-import datetime
 import ComputeOpticalFlowPrDAll
 import ComputeMeasureEdgeAll
 import FindCCGraphPruned
-from subprocess import call
 import os
-import time
+
+from scipy import signal
+from scipy.signal import find_peaks
+
 
 '''	
 Copyright (c) Columbia University Suvrajit Maji 2019	
@@ -73,7 +74,6 @@ def findThreshHist(X,nbins,method=1,vis=1):
     import p
 
     def relativeMaxMin(data, nPointsWindow, sigmaWindow):
-        from scipy import signal
         window = signal.general_gaussian(nPointsWindow, p=1, sig=sigmaWindow)
         dataFiltered = signal.fftconvolve(data, window, 'same')
         dataFiltered *= np.average(data) / np.average(dataFiltered)
@@ -108,17 +108,6 @@ def findThreshHist(X,nbins,method=1,vis=1):
     h, bedges = np.histogram(X, bins=nbins)
     bctrs = bedges[:-1] + np.diff(bedges) / 2.0
 
-    from sklearn.neighbors import KernelDensity
-    X_plot = np.linspace(0, 1, 101)[:, None]  # predefined grid
-    # estimate density on samples
-    kde = KernelDensity(kernel='gaussian', bandwidth=1.5).fit(X.ravel()[:, None])
-    log_dens = kde.score_samples(X_plot)  # evaluate the density model on the data.
-
-    from scipy import stats
-    #gkde = stats.gaussian_kde(X)
-    #xind = np.linspace(0, 1, 101)
-    #kdepdf = gkde.evaluate(xind)
-
     if method==0 or method==1 or method==4 or method=='all':
         # 1. kmeans
         from sklearn.cluster import KMeans
@@ -140,8 +129,6 @@ def findThreshHist(X,nbins,method=1,vis=1):
         # or other methods such as kmeans (method=1) ... just have to eliminate the valley (inverted peaks) indexes
         # outside the the two peak values...(assumption is there are only two high peaks...for multiple high peaks,
         # there will be different criteria)
-        from scipy import signal
-        from scipy.signal import find_peaks
         import scipy.ndimage.filters as ndifilt
         yfilt = ndifilt.uniform_filter1d(h, 4, mode='nearest')
         _, xbins = np.histogram(h, nbins-1)
@@ -184,8 +171,7 @@ def findThreshHist(X,nbins,method=1,vis=1):
         from sklearn.mixture import GaussianMixture
         gmm = GaussianMixture(n_components=2,covariance_type = "full")
         gmm.fit(X)
-        stdevs = np.sqrt(gmm.covariances_).T # if we have the cov matrix, then sdev=np.sqrt(np.diag(cov))
-        #print(stdevs)
+
         # TODO: if mixture does not seem to contain both gaussians
         # so, fit separate mixture of two different distributions (e.g. exponential + gaussian)
         mthresh=0.2 # check this based on stdevs ??

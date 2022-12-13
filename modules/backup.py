@@ -1,12 +1,4 @@
-import logging, sys
-import myio
-import DMembeddingII
-import numpy as np
 from subprocess import call
-
-
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
 
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
@@ -15,8 +7,6 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 
 def op(PrD,choice):
     import p
-    data = myio.fin1(p.tess_file)
-    CG = data['CG']
     for j in range(p.num_psis):
         # dirs with frames
         subdir = p.out_dir+'/topos/PrD_{}/psi_{}'.format(PrD,j+1)

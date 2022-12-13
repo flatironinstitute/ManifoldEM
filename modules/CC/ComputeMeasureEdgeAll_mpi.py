@@ -1,4 +1,4 @@
-import time,os,sys
+import os, sys
 sys.path.append('modules/')
 sys.path.append('modules/RC/')
 from ComputeMeasureEdgeAll import ComputeEdgeMeasurePairWisePsiAll

@@ -6,12 +6,9 @@ import projectMask
 
 import myio
 import p
-import h5py
 import mrcfile
 import annularMask
 import cv2
-import q2Spider
-import rotatefill
 
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		

@@ -1,7 +1,6 @@
 import numpy as np
 import logging, sys
 import myio
-import datetime
 import multiprocessing
 from functools import partial
 from contextlib import contextmanager
@@ -10,10 +9,8 @@ import operator
 import os
 import time
 import OpticalFlowMovie
-from OpticalFlowMovie import getOrientMag
 import LoadPrDPsiMoviesMasked
 sys.path.append('../')
-import mrcfile
 import set_params
 import p
 import copy

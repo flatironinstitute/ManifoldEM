@@ -1,10 +1,5 @@
-import logging, sys
 import myio
 import numpy as np
-from subprocess import call
-import gc
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
 
 '''
 Copyright (c) Columbia University Evan Seitz 2019

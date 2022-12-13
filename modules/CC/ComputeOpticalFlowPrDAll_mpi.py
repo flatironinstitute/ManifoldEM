@@ -1,4 +1,4 @@
-import time,os,sys
+import os, sys
 sys.path.append('modules/')
 sys.path.append('modules/CC/')
 from ComputeOpticalFlowPrDAll import ComputeOptFlowPrDPsiAll1

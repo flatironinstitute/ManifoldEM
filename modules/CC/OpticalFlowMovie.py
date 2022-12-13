@@ -1,17 +1,16 @@
 import numpy as np
 import os,sys
 import cv2
-from cv2 import calcOpticalFlowFarneback,calcOpticalFlowPyrLK
-from cv2.optflow import calcOpticalFlowDenseRLOF, createOptFlow_DeepFlow
+from cv2 import calcOpticalFlowFarneback
 
 from subprocess import call
 import copy
 sys.path.append('../')
-import myio
 import p
-from scipy.ndimage import median_filter
 import hornschunck_simple
 from hornschunck_simple import lowpassfilt
+import pylab as pl
+
 
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
@@ -282,9 +281,6 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1,
 
     # create the plot figure, if requested
     if ploton:
-        import pylab as pl
-        from time import sleep
-
         showplane = stack.shape[0]//2
 
         fig = pl.figure(figsize=(20, 5.5), num="Anisotropic diffusion")

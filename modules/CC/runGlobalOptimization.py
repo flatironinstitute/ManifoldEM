@@ -2,11 +2,8 @@ import numpy as np
 import MRFGeneratePotentials
 import MRFBeliefPropagation
 from MRFBeliefPropagation import createBPalg
-from scipy.sparse import csr_matrix
-from scipy.sparse import tril
-from scipy.io import loadmat
 import logging
-import os,sys
+import sys
 sys.path.append('../../')
 import myio
 
@@ -288,8 +285,6 @@ def op(G,BPoptions,edgeMeasures,edgeMeasures_tblock,badNodesPsis,cc,*argv):
     # so , printing it out as *_bp.txt , the *_of.txt files will have just the badNodesPsisTau
     nodesAllBadPsis = np.array(nodesAllBadPsis)
     print('nodesAllBadPsis',len(nodesAllBadPsis))
-    badfile = '{}badNodePsis_bp.txt'.format(p.CC_dir)
-    #print(badfile)
     np.savetxt('{}badNodePsis_bp.txt'.format(p.CC_dir), badNodesPsis2, fmt="%d", newline="\n")
     np.savetxt('{}nodesAllBadPsis_bp.txt'.format(p.CC_dir), nodesAllBadPsis+1, fmt="%d", newline="\n")
 
@@ -329,13 +324,6 @@ def op(G,BPoptions,edgeMeasures,edgeMeasures_tblock,badNodesPsis,cc,*argv):
 
     #;%.98;%0.99; %0.99 use damping factor (< 1) when message oscillates and do not converge
 
-    # %%%%% For debug with samll example
-    if options['maxProduct']:
-        bplbl = 'maxprod'
-    else:
-        bplbl = 'sumprod'
-
-    #BPalg['anchorNodes'] = anchorNodes
     G['anchorNodes'] = anchorNodes
 
     #nodeOrderType = 'default' # sequential order
