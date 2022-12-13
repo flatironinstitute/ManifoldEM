@@ -1,7 +1,5 @@
 import os
 import numpy as np
-from subprocess import call
-from shutil import copyfile
 
 '''
 Copyright (c) Columbia University Evan Seitz 2019
@@ -122,46 +120,39 @@ def create_dir():
         post_dir, vol_dir, svd_dir, anim_dir
 
     dist_dir = os.path.join(user_dir, 'outputs_{}/distances/'.format(proj_name))
-    call(["mkdir", "-p", dist_dir])
     dist_prog = os.path.join(dist_dir, 'progress/')
-    call(['mkdir', '-p', dist_prog])
+    os.makedirs(dist_prog, exist_ok=True)
 
     psi_dir = os.path.join(user_dir, 'outputs_{}/diff_maps/'.format(proj_name))
-    call(["mkdir", "-p", psi_dir])
     psi_prog = os.path.join(psi_dir, 'progress/')
-    call(['mkdir', '-p', psi_prog])
+
 
     psi2_dir = os.path.join(user_dir, 'outputs_{}/psi_analysis/'.format(proj_name))
-    call(["mkdir", "-p", psi2_dir])
     psi2_prog = os.path.join(psi2_dir, 'progress/')
-    call(['mkdir', '-p', psi2_prog])
+    os.makedirs(psi2_prog, exist_ok=True)
 
     EL_dir = os.path.join(user_dir, 'outputs_{}/ELConc{}/'.format(proj_name,conOrderRange))
-    call(["mkdir", "-p", EL_dir])
     EL_prog = os.path.join(EL_dir, 'progress/')
-    call(['mkdir', '-p', EL_prog])
+    os.makedirs(EL_prog, exist_ok=True)
 
     OM_dir = os.path.join(user_dir,'{}OM/'.format(EL_dir))
-    call(["mkdir", "-p", OM_dir])
+    os.makedirs(OM_dir, exist_ok=True)
 
     Var_dir = os.path.join(user_dir,'outputs_{}/Var/'.format(proj_name))
-    call(["mkdir", "-p", Var_dir])
+    os.makedirs(Var_dir, exist_ok=True)
     traj_dir = os.path.join(user_dir,'outputs_{}/traj/'.format(proj_name))
-    call(["mkdir", "-p", traj_dir])
+    os.makedirs(traj_dir, exist_ok=True)
 
-    bin_dir = os.path.join(user_dir,'outputs_{}/bin/'.format(proj_name))
-    call(["mkdir", "-p", bin_dir])
-    relion_dir = os.path.join(user_dir,'outputs_{}/bin/'.format(proj_name))
-    call(["mkdir", "-p", relion_dir])
+    relion_dir = bin_dir = os.path.join(user_dir,'outputs_{}/bin/'.format(proj_name))
+    os.makedirs(bin_dir, exist_ok=True)
 
-    CC_dir = os.path.join(user_dir,'outputs_{}/CC/'.format(proj_name))
-    call(["mkdir", "-p", CC_dir])
-    CC_OF_dir = os.path.join(user_dir,'outputs_{}/CC/CC_OF/'.format(proj_name))
-    call(["mkdir", "-p", CC_OF_dir])
-    CC_meas_dir = os.path.join(user_dir,'outputs_{}/CC/CC_meas/'.format(proj_name))
-    call(["mkdir", "-p", CC_meas_dir])
-    CC_meas_prog = os.path.join(CC_meas_dir, 'progress/')
-    call(['mkdir', '-p', CC_meas_prog])
+    CC_dir = os.path.join(user_dir,'outputs_{}/CC'.format(proj_name))
+    CC_OF_dir = os.path.join(CC_dir, 'CC_OF')
+    os.makedirs(CC_OF_dir, exist_ok=True)
+
+    CC_meas_dir = os.path.join(CC_dir, 'CC_meas')
+    CC_meas_prog = os.path.join(CC_meas_dir, 'progress')
+    os.makedirs(CC_meas_prog, exist_ok=True)
 
     #################
     # post-processing:
@@ -169,18 +160,14 @@ def create_dir():
     vol_dir = os.path.join(post_dir, '1_vol')
     svd_dir = os.path.join(post_dir, '2_svd')
     anim_dir = os.path.join(post_dir, '3_anim')
-    call(["mkdir", "-p", post_dir])
-    call(["mkdir", "-p", vol_dir])
-    call(["mkdir", "-p", svd_dir])
-    call(["mkdir", "-p", anim_dir])
-    pp_dir = os.path.join(os.path.sep, user_dir, 'modules', 'postProc')
+    os.makedirs(post_dir, exist_ok=True)
+    os.makedirs(vol_dir, exist_ok=True)
+    os.makedirs(svd_dir, exist_ok=True)
+    os.makedirs(anim_dir, exist_ok=True)
 
     #################
-
     out_dir = os.path.join(user_dir,'outputs_{}/'.format(proj_name))
-    call(["mkdir", "-p", out_dir])
-    call(["mkdir", "-p", out_dir+'/topos/'])
-    call(["mkdir", "-p", out_dir + '/topos/Euler_PrD/'])
+    os.makedirs(os.path.join(out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
 
     global dist_file,psi_file,psi2_file,\
         movie2d_file,EL_file,tau_file,OM_file,OM1_file,Var_file,rho_file,\
