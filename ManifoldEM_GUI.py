@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys, os, os.path, time, psutil
 from PyQt5.QtWidgets import QApplication
 import csv
@@ -23,7 +25,7 @@ sys.path.append(BPDir) #link imports to 'modules -> CC -> BP' folder
 
 from pyface.qt import QtGui, QtCore
 import threading
-import gc #garbage collection
+import gc
 import shutil
 import re
 
