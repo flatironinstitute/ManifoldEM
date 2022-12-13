@@ -15,13 +15,10 @@ for k, v in os.environ.items():
 
 time_init = time.strftime("%Y%m%d_%H%M%S")
 pyDir = os.path.dirname(os.path.abspath(__file__)) #python file location
-inputDir = os.path.join(pyDir, 'data_input')
-modDir = os.path.join(pyDir, 'modules')
-CCDir = os.path.join(modDir, 'CC')
-BPDir = os.path.join(CCDir, 'BP')
-sys.path.append(modDir) #link imports to 'modules' folder
-sys.path.append(CCDir) #link imports to 'modules -> CC' folder
-sys.path.append(BPDir) #link imports to 'modules -> CC -> BP' folder
+# modDir = os.path.join(pyDir, 'ManifoldEM')
+# CCDir = os.path.join(modDir, 'CC')
+# sys.path.append(modDir) #link imports to 'modules' folder
+# sys.path.append(CCDir) #link imports to 'modules -> CC' folder
 
 from pyface.qt import QtGui, QtCore
 import threading
@@ -45,27 +42,17 @@ import numpy as np
 from pylab import loadtxt
 from scipy import stats
 import itertools
-import Data
 import mrcfile
 from PIL import Image
 import imageio
 import pickle
 
-import p
+from ManifoldEM import p
 p.init() #only initiate once
 p.user_dir = pyDir #default
-import myio
-import GetDistancesS2
-import manifoldAnalysis
-import psiAnalysis
-import NLSAmovie
-import embedd
-import clusterAvg
-import FindConformationalCoord
-import EL1D
-import backup
-import PrepareOutputS2
-import set_params
+from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie,
+                        embedd, clusterAvg, FindConformationalCoord, EL1D, backup, PrepareOutputS2,
+                        set_params)
 
 import logging
 from traits.api import HasTraits,Instance,on_trait_change,List,Str,Int,Float,Range,Button,Enum
