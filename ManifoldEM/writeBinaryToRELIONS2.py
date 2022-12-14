@@ -30,11 +30,10 @@ def op(nClass,nPix,trajName,relion_dir, bin_dir,*argv):    # Orientations
 
             f4 = '{}quatsTraj{}_{}_of_{}.dat'.format(bin_dir, trajName, j+1, nClass)
             qs = np.array(np.fromfile(f4,dtype=float))
-            #qs = qs.reshape(4, len(GCs))
+
             qs = qs.reshape(len(GCs),4)
             qs = qs.T
 
-            #print 'qs=',np.shape(qs),len(GCs)
             PDs = 2 * np.vstack((qs[1,:]*qs[3,:] - qs[0,:]*qs[2,:],
                                 qs[0,:]*qs[1,:] + qs[2,:]*qs[3,:],
                                 qs[0,:]**2 + qs[3,:]**2 - np.ones((1, len(GCs))) / 2))
