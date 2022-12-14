@@ -1,8 +1,6 @@
 import numpy as np
 
 from ManifoldEM import myio, p
-
-
 '''
 Copyright (c) Columbia University Evan Seitz 2019
 '''
@@ -16,7 +14,7 @@ def op(clust, PrD):
     imgSize = np.shape(imgAll)[0]
     boxSize = np.shape(imgAll)[1]
 
-    imgAvg = np.zeros(shape=(boxSize,boxSize), dtype=float)
+    imgAvg = np.zeros(shape=(boxSize, boxSize), dtype=float)
 
     for i in clust:
         imgAvg += imgAll[i]

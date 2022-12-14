@@ -2,7 +2,6 @@ import numpy as np
 import time
 from scipy.sparse import csc_matrix
 from collections import namedtuple
-
 """
 function [ l, sigmaTune ] = slaplacianonFly( yVal,yCol,yRow, nS, varargin )
 %SLAPLACIAN  Sparse Laplacian matrix
@@ -39,14 +38,15 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 
 """
 
+
 def op(*arg):
     yVal = arg[0]
     yCol = arg[1]
     yRow = arg[2]
-    nS = arg[3] #dataset size
-    options = arg[4] #options.sigma: Gaussian width 
+    nS = arg[3]  #dataset size
+    options = arg[4]  #options.sigma: Gaussian width
     #print('sigma:', options.sigma)
-    nNZ = len(yVal) #number of nonzero elements
+    nNZ = len(yVal)  #number of nonzero elements
 
     # if required, compute autotuning distances:
     if options.autotune > 0:
@@ -57,16 +57,16 @@ def op(*arg):
     yVal = yVal / sigmaTune**2
 
     # compute the unnormalized weight matrix:
-    yVal = np.exp( -yVal ) #apply exponential weights (yVal is distance**2)
-    l = csc_matrix((yVal,(yRow, yCol)),shape = (nS, nS))
+    yVal = np.exp(-yVal)  #apply exponential weights (yVal is distance**2)
+    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
 
     d = sum(l)
     d = d.toarray()
-    if options.alpha != 1: #apply non-isotropic normalization
+    if options.alpha != 1:  #apply non-isotropic normalization
         d = d**options.alpha
     d = d.T
     yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
-    l = csc_matrix((yVal,(yRow, yCol)),shape = (nS, nS))
+    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
 
     # normalize by the degree matrix to form normalized graph Laplacian:
     d = sum(l)
@@ -74,8 +74,8 @@ def op(*arg):
     d = np.sqrt(d)
     d = d.T
     yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
-    l = csc_matrix((yVal,(yRow, yCol)),shape = (nS, nS))
-    l = np.abs( l + l.T ) / 2.0 #iron out numerical wrinkles
-    temp = l-l.T
+    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
+    l = np.abs(l + l.T) / 2.0  #iron out numerical wrinkles
+    temp = l - l.T
 
     return (l, sigmaTune)

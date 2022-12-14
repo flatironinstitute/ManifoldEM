@@ -35,22 +35,22 @@ projName = 'untitled'
 parDir = os.path.abspath('..')
 outDir = os.path.join(parDir, 'outputs_%s/distances' % projName)
 
-PD = 0 #PD index (from index 0 to N-1)
+PD = 0  #PD index (from index 0 to N-1)
 
-if 1: #imgAvg: Image Average
-    fname = open(os.path.join(outDir,'IMGs_prD_%s' % PD), 'rb')
+if 1:  #imgAvg: Image Average
+    fname = open(os.path.join(outDir, 'IMGs_prD_%s' % PD), 'rb')
     data = pickle.load(fname)
     img = data['imgAvg']
     imshow(img, cmap='gray')
-    plt.title('PD %s Image Average' % (PD+1))
+    plt.title('PD %s Image Average' % (PD + 1))
     plt.colorbar()
     plt.show()
 
-if 0: #D: Distance Matrix
+if 0:  #D: Distance Matrix
     fname = open(os.path.join(outDir, 'IMGs_prD_%s' % PD), 'rb')
     data = pickle.load(fname)
     img = data['D']
     imshow(img, cmap='jet')
-    plt.title('PD %s Distance Matrix' % (PD+1))
+    plt.title('PD %s Distance Matrix' % (PD + 1))
     plt.colorbar()
     plt.show()

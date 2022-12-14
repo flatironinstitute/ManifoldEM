@@ -1,7 +1,6 @@
 import numpy as np
 
 from ManifoldEM import R_p, a
-
 '''
 function tau=solve_d_R_d_tau_p_3D()
 % 
@@ -33,24 +32,24 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 '''
 
-def op():   #added
-    d_R_d_beta_3D = np.array([48*a.a[2]**2,
-                              0,
-                              8*a.a[1]**2-48*a.a[2]**2,
-                              -12*a.a[2]*(a.x[a.p,2]-a.b[2]),
-                               a.a[0]**2-4*a.a[1]**2+9*a.a[2]**2-4*a.a[1]*(a.x[a.p,1]-a.b[1]),
-                               -a.a[0]*(a.x[a.p,0]-a.b[0])+3*a.a[2]*(a.x[a.p,2]-a.b[2])]).T
+
+def op():  #added
+    d_R_d_beta_3D = np.array([
+        48 * a.a[2]**2, 0, 8 * a.a[1]**2 - 48 * a.a[2]**2, -12 * a.a[2] * (a.x[a.p, 2] - a.b[2]),
+        a.a[0]**2 - 4 * a.a[1]**2 + 9 * a.a[2]**2 - 4 * a.a[1] * (a.x[a.p, 1] - a.b[1]),
+        -a.a[0] * (a.x[a.p, 0] - a.b[0]) + 3 * a.a[2] * (a.x[a.p, 2] - a.b[2])
+    ]).T
     beta = np.roots(d_R_d_beta_3D)
     #print 'd_R is', d_R_d_beta_3D
     # remove elements for which tmp is true
-    tmp = np.absolute(np.imag(beta))>0
+    tmp = np.absolute(np.imag(beta)) > 0
     tmp = np.nonzero(tmp)[0]
     beta1 = np.delete(beta, tmp, None)
     # remove elements for which tmp is true
-    tmp = np.absolute(beta1)>1
+    tmp = np.absolute(beta1) > 1
     tmp = np.nonzero(tmp)[0]
     beta = np.real(np.delete(beta1, tmp, None))
-    tau_candidate = np.vstack((np.arccos(beta.reshape(-1,1))/np.pi,0,1))
+    tau_candidate = np.vstack((np.arccos(beta.reshape(-1, 1)) / np.pi, 0, 1))
     id = np.argmin(R_p.op(tau_candidate))
     tau = tau_candidate[id]
-    return tau,beta
+    return tau, beta

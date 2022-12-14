@@ -5,8 +5,6 @@ import sys
 import numpy as np
 
 from ManifoldEM import writeRelionS2, p, myio, set_params
-
-
 ''' %Version V 1.2
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,34 +13,35 @@ from ManifoldEM import writeRelionS2, p, myio, set_params
     Copyright (c) Columbia University Suvrajit Maji 2020 (python version)    
 '''
 
+
 def op(*argv):
     time.sleep(5)
 
     set_params.op(1)
     #ComputeEnergy1D.op() # this is s a repeat , commented out
     print("Writing output files...")
-    
+
     data = myio.fin1(p.CC_file)
     psiNumsAll = data['psinums']
 
     range1 = np.arange(p.numberofJobs)
     # read reaction coordinates
 
-    a = np.nonzero(psiNumsAll[0,:] == -1)[0] #unassigned states, python
+    a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
     range = np.delete(range1, a)
     a = np.nonzero(p.trash_list == 1)[0]  # unassigned states, python
-    range = np.delete(range,a)
+    range = np.delete(range, a)
     xSelect = range
 
     # getFromFileS2
     xLost = []
     trajTaus = [None] * p.numberofJobs
-    posPathAll= [None] * p.numberofJobs
+    posPathAll = [None] * p.numberofJobs
     posPsi1All = [None] * p.numberofJobs
 
     for x in xSelect:
         EL_file = '{}prD_{}'.format(p.EL_file, x)
-        File = '{}_{}_{}'.format(EL_file,p.trajName,1)
+        File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
         if os.path.exists(File):
             data = myio.fin1(File)
             trajTaus[x] = data['tau']
@@ -52,7 +51,7 @@ def op(*argv):
             xLost.append(x)
             continue
 
-    xSelect = list(set(xSelect)-set(xLost))
+    xSelect = list(set(xSelect) - set(xLost))
 
     # Section II
     visual = 0
@@ -61,11 +60,12 @@ def op(*argv):
         tau = trajTaus[x]
         tau = tau.flatten()
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
-        tauAvg = np.concatenate((tauAvg,tau.flatten()))
+        tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     ## added June 2020, S.M.
-    traj_file2 = "{}name{}_vars".format(p.traj_file,p.trajName)
-    myio.fout1(traj_file2, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'], [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
+    traj_file2 = "{}name{}_vars".format(p.traj_file, p.trajName)
+    myio.fout1(traj_file2, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'],
+               [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
     gc.collect()
 
     # Section III
@@ -81,6 +81,7 @@ def op(*argv):
         progress7.emit(100)
 
     print('finished manifold embedding!')
+
 
 if __name__ == '__main__':
     p.user_dir = '../'

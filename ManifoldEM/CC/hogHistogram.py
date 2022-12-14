@@ -36,19 +36,19 @@ def gradient(image, same_size=False):
         gx[:, 1:-1] = -image[:, :-2] + image[:, 2:]
         gx[:, 0] = -image[:, 0] + image[:, 1]
         gx[:, -1] = -image[:, -2] + image[:, -1]
-    
+
         gy = np.zeros(image.shape)
         gy[1:-1, :] = image[:-2, :] - image[2:, :]
         gy[0, :] = image[0, :] - image[1, :]
         gy[-1, :] = image[-2, :] - image[-1, :]
-    
+
     else:
-        gx = np.zeros((sy-2, sx-2))
+        gx = np.zeros((sy - 2, sx - 2))
         gx[:, :] = -image[1:-1, :-2] + image[1:-1, 2:]
 
-        gy = np.zeros((sy-2, sx-2))
+        gy = np.zeros((sy - 2, sx - 2))
         gy[:, :] = image[:-2, 1:-1] - image[2:, 1:-1]
-    
+
     return gx, gy
 
 
@@ -68,10 +68,10 @@ def magnitude_orientation(gx, gy):
     -------
     The orientation is in degree, NOT radian!!
     """
-        
+
     magnitude = np.sqrt(gx**2 + gy**2)
     orientation = (np.arctan2(gy, gx) * 180 / np.pi) % 360
-            
+
     return magnitude, orientation
 
 
@@ -114,38 +114,38 @@ def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
     """
     if csx != csy:
         raise NotImplementedError("For now compute_coefs is only implemented for squared cells (csx == csy)")
-        
+
         ################################
         #####     /!\ TODO  /!|    #####
         ################################
 
-    else: # Squared cells
+    else:  # Squared cells
         # Note: in this case, dx = dy, we differentiate them only to make the code clearer
-        
+
         # We want a squared coefficients matrix so that it can be rotated to interpolate in every direction
         n_cells = max(n_cells_x, n_cells_y)
-        
-        # Every cell of this matrix corresponds to (x - x_1)/dx 
-        x = (np.arange(dx)+0.5)/csx
-        
+
+        # Every cell of this matrix corresponds to (x - x_1)/dx
+        x = (np.arange(dx) + 0.5) / csx
+
         # Every cell of this matrix corresponds to (y - y_1)/dy
-        y = (np.arange(dy)+0.5)/csy
-        
+        y = (np.arange(dy) + 0.5) / csy
+
         y = y[np.newaxis, :]
         x = x[:, np.newaxis]
 
         # CENTRAL COEFFICIENT
         ccoefs = np.zeros((csy, csx))
 
-        ccoefs[:dy, :dx] = (1 - x)*(1 - y)
-        ccoefs[:dy, -dx:] = fliplr(y)*(1 - x)
-        ccoefs[-dy:, :dx] = (1 - y)*flipud(x)
-        ccoefs[-dy:, -dx:] = fliplr(y)*flipud(x)
+        ccoefs[:dy, :dx] = (1 - x) * (1 - y)
+        ccoefs[:dy, -dx:] = fliplr(y) * (1 - x)
+        ccoefs[-dy:, :dx] = (1 - y) * flipud(x)
+        ccoefs[-dy:, -dx:] = fliplr(y) * flipud(x)
 
         #print csx,n_cells, dx, csy,n_cells, dy
         #print (csx*n_cells - dx, csy*n_cells - dy)
 
-        coefs = np.zeros((csx*n_cells - dx, csy*n_cells - dy))
+        coefs = np.zeros((csx * n_cells - dx, csy * n_cells - dy))
         coefs[:-dy, :-dx] = np.tile(ccoefs, (n_cells - 1, n_cells - 1))
 
         # REST OF THE BORDER
@@ -178,27 +178,27 @@ def interpolate_orientation(orientation, sx, sy, nbins, signed_orientation):
             contains the pre histogram of orientation built using linear interpolation
             to interpolate the orientations to their bins
     """
-    
+
     if signed_orientation:
         max_angle = 360
     else:
         max_angle = 180
-    
-    b_step = max_angle/nbins
+
+    b_step = max_angle / nbins
     b0 = (orientation % max_angle) // b_step
-    b0[np.where(b0>=nbins)]=0
+    b0[np.where(b0 >= nbins)] = 0
     b1 = b0 + 1
-    b1[np.where(b1>=nbins)]=0
+    b1[np.where(b1 >= nbins)] = 0
     b = np.abs(orientation % b_step) / b_step
-    
+
     #linear interpolation between the bins
     # Coefficients corresponding to the bin interpolation
     # We go from an image to a higher dimension representation of size (sizex, sizey, nbins)
     temp_coefs = np.zeros((sy, sx, nbins))
     for i in range(nbins):
-        temp_coefs[:, :, i] += np.where(b0==i, (1 - b), 0)
-        temp_coefs[:, :, i] += np.where(b1==i, b, 0)
-    
+        temp_coefs[:, :, i] += np.where(b0 == i, (1 - b), 0)
+        temp_coefs[:, :, i] += np.where(b1 == i, b, 0)
+
     return temp_coefs
 
 
@@ -231,12 +231,12 @@ def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=
     for j in range(1, dy):
         for i in range(1, dx):
             orientations_image[:-j, :-i, :] += orientations_image[j:, i:, :]
-    
+
     if normalise:
         normalised_blocks = normalise_histogram(orientations_image, 1, 1, 1, 1, nbins)
     else:
         normalised_blocks = orientations_image
-    
+
     if flatten:
         normalised_blocks = normalised_blocks.flatten()
 
@@ -273,39 +273,38 @@ def interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y, 
     orientation_histogram: array of shape (n_cells_x, n_cells_y, nbins)
             contains the histogram of orientation built using tri-linear interpolation
     """
-    
-    dx = csx//2
-    dy = csy//2
-    
-    temp_coefs = interpolate_orientation(orientation, sx, sy, nbins, signed_orientation)
 
+    dx = csx // 2
+    dy = csy // 2
+
+    temp_coefs = interpolate_orientation(orientation, sx, sy, nbins, signed_orientation)
 
     # Coefficients of the spatial interpolation in every direction
     coefs = compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y)
-    
+
     temp = np.zeros((sy, sx, nbins))
     # hist(y0, x0)
     temp[:-dy, :-dx, :] += temp_coefs[dy:, dx:, :]*\
         (magnitude[dy:, dx:]*coefs[-(n_cells_y*csy - dy):, -(n_cells_x*csx - dx):])[:, :, np.newaxis]
-    
+
     # hist(y1, x0)
     coefs = np.rot90(coefs)
     temp[dy:, :-dx, :] += temp_coefs[:-dy, dx:, :]*\
         (magnitude[:-dy, dx:]*coefs[:(n_cells_y*csy - dy), -(n_cells_x*csx - dx):])[:, :, np.newaxis]
-    
+
     # hist(y1, x1)
     coefs = np.rot90(coefs)
     temp[dy:, dx:, :] += temp_coefs[:-dy, :-dx, :]*\
         (magnitude[:-dy, :-dx]*coefs[:(n_cells_y*csy - dy), :(n_cells_x*csx - dx)])[:, :, np.newaxis]
-    
+
     # hist(y0, x1)
     coefs = np.rot90(coefs)
     temp[:-dy, dx:, :] += temp_coefs[dy:, :-dx, :]*\
         (magnitude[dy:, :-dx]*coefs[-(n_cells_y*csy - dy):, :(n_cells_x*csx - dx)])[:, :, np.newaxis]
-    
+
     # Compute the histogram: sum over the cells
     orientation_histogram = temp.reshape((n_cells_y, csy, n_cells_x, csx, nbins)).sum(axis=3).sum(axis=1)
-    
+
     return orientation_histogram
 
 
@@ -313,33 +312,37 @@ def draw_histogram(hist, csx, csy, signed_orientation=False):
     """ simple function to draw an orientation histogram
         with arrows
     """
-    
+
     if signed_orientation:
-        max_angle = 2*np.pi
+        max_angle = 2 * np.pi
     else:
         max_angle = np.pi
-    
+
     n_cells_y, n_cells_x, nbins = hist.shape
-    sx, sy = n_cells_x*csx, n_cells_y*csy
+    sx, sy = n_cells_x * csx, n_cells_y * csy
     plt.close()
-    plt.figure()#figsize=(sx/2, sy/2))#, dpi=1)
+    plt.figure()  #figsize=(sx/2, sy/2))#, dpi=1)
     plt.xlim(0, sx)
     plt.ylim(sy, 0)
-    center = csx//2, csy//2
+    center = csx // 2, csy // 2
     b_step = max_angle / nbins
-        
+
     for i in range(n_cells_y):
         for j in range(n_cells_x):
             for k in range(nbins):
                 if hist[i, j, k] != 0:
-                    width = 1*hist[i, j, k]
-                    plt.arrow((center[0] + j*csx) - np.cos(b_step*k)*(center[0] - 1),
-                              (center[1] + i*csy) + np.sin(b_step*k)*(center[1] - 1), 
-                          2*np.cos(b_step*k)*(center[0] - 1), -2*np.sin(b_step*k)*(center[1] - 1),
-                          width=width, color=str(width), #'black',
-                          head_width=2.2*width, head_length=2.2*width,
-                          length_includes_head=True)
-                    
+                    width = 1 * hist[i, j, k]
+                    plt.arrow(
+                        (center[0] + j * csx) - np.cos(b_step * k) * (center[0] - 1),
+                        (center[1] + i * csy) + np.sin(b_step * k) * (center[1] - 1),
+                        2 * np.cos(b_step * k) * (center[0] - 1),
+                        -2 * np.sin(b_step * k) * (center[1] - 1),
+                        width=width,
+                        color=str(width),  #'black',
+                        head_width=2.2 * width,
+                        head_length=2.2 * width,
+                        length_includes_head=True)
+
     plt.show()
 
 
@@ -363,15 +366,15 @@ def visualise_histogram(hist, csx, csy, signed_orientation=False):
     ------
     Image of shape (hist.shape[0]*csy, hist.shape[1]*csx)
     """
-    
+
     if signed_orientation:
-        max_angle = 2*np.pi
+        max_angle = 2 * np.pi
     else:
         max_angle = np.pi
-    
+
     n_cells_y, n_cells_x, nbins = hist.shape
-    sx, sy = n_cells_x*csx, n_cells_y*csy
-    center = csx//2, csy//2
+    sx, sy = n_cells_x * csx, n_cells_y * csy
+    center = csx // 2, csy // 2
     b_step = max_angle / nbins
 
     radius = min(csx, csy) // 2 - 1
@@ -380,12 +383,9 @@ def visualise_histogram(hist, csx, csy, signed_orientation=False):
         for y in range(n_cells_y):
             for o in range(nbins):
                 centre = tuple([y * csy + csy // 2, x * csx + csx // 2])
-                dx = radius * np.cos(o*nbins)
-                dy = radius * np.sin(o*nbins)
-                rr, cc = draw.line(int(centre[0] - dy),
-                                   int(centre[1] - dx),
-                                   int(centre[0] + dy),
-                                   int(centre[1] + dx))
+                dx = radius * np.cos(o * nbins)
+                dy = radius * np.sin(o * nbins)
+                rr, cc = draw.line(int(centre[0] - dy), int(centre[1] - dx), int(centre[0] + dy), int(centre[1] + dx))
                 hog_image[rr, cc] += hist[y, x, o]
     return hog_image
 
@@ -410,13 +410,13 @@ def normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbi
     In other words the histogram is first normalised block-wise using l2 norm, before clipping it by
         limiting the values between 0 and 0.02 and finally normalising again with l2 norm
     """
-    eps = 1e-7 #1e-16?
-    
-    if bx==1 and by==1: #faster version
+    eps = 1e-7  #1e-16?
+
+    if bx == 1 and by == 1:  #faster version
         normalised_blocks = np.clip(
-          orientation_histogram / np.sqrt(orientation_histogram.sum(axis=-1)**2 + eps)[:, :, np.newaxis], 0, 0.2)
+            orientation_histogram / np.sqrt(orientation_histogram.sum(axis=-1)**2 + eps)[:, :, np.newaxis], 0, 0.2)
         normalised_blocks /= np.sqrt(normalised_blocks.sum(axis=-1)**2 + eps)[:, :, np.newaxis]
-        
+
     else:
         n_blocksx = (n_cells_x - bx) + 1
         n_blocksy = (n_cells_y - by) + 1
@@ -431,8 +431,15 @@ def normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbi
     return normalised_blocks
 
 
-def build_histogram(magnitude, orientation, cell_size=(8, 8), signed_orientation=False,
-         nbins=9, cells_per_block=(1, 1), visualise=False, flatten=False, normalise=True):
+def build_histogram(magnitude,
+                    orientation,
+                    cell_size=(8, 8),
+                    signed_orientation=False,
+                    nbins=9,
+                    cells_per_block=(1, 1),
+                    visualise=False,
+                    flatten=False,
+                    normalise=True):
     """ builds a histogram of orientation using the provided magnitude and orientation matrices
     
     Parameters
@@ -473,7 +480,7 @@ def build_histogram(magnitude, orientation, cell_size=(8, 8), signed_orientation
     """
     sy, sx = magnitude.shape
     csy, csx = cell_size
-    
+
     # checking that the cell size are even
     if csx % 2 != 0:
         csx += 1
@@ -481,24 +488,25 @@ def build_histogram(magnitude, orientation, cell_size=(8, 8), signed_orientation
     if csy % 2 != 0:
         csy += 1
         print("WARNING: the cell_size must be even, incrementing cell_size_y of 1")
-    
+
     # Consider only the right part of the image
     # (if the rest doesn't fill a whole cell, just drop it)
     sx -= sx % csx
     sy -= sy % csy
-    n_cells_x = sx//csx
-    n_cells_y = sy//csy
+    n_cells_x = sx // csx
+    n_cells_y = sy // csy
     magnitude = magnitude[:sy, :sx]
     orientation = orientation[:sy, :sx]
     by, bx = cells_per_block
-    
-    orientation_histogram = interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y, signed_orientation, nbins)
-    
+
+    orientation_histogram = interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y,
+                                        signed_orientation, nbins)
+
     if normalise:
         normalised_blocks = normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbins)
     else:
         normalised_blocks = orientation_histogram
-    
+
     if flatten:
         normalised_blocks = normalised_blocks.flatten()
 
@@ -509,8 +517,16 @@ def build_histogram(magnitude, orientation, cell_size=(8, 8), signed_orientation
         return normalised_blocks
 
 
-def histogram_from_gradients(gradientx, gradienty, cell_size=(8, 8), cells_per_block=(1, 1), signed_orientation=False,
-        nbins=9, visualise=False, normalise=True, flatten=False, same_size=False):
+def histogram_from_gradients(gradientx,
+                             gradienty,
+                             cell_size=(8, 8),
+                             cells_per_block=(1, 1),
+                             signed_orientation=False,
+                             nbins=9,
+                             visualise=False,
+                             normalise=True,
+                             flatten=False,
+                             same_size=False):
     """ builds a histogram of oriented gradient from the provided gradients
 
     Parameters
@@ -556,13 +572,26 @@ def histogram_from_gradients(gradientx, gradienty, cell_size=(8, 8), cells_per_b
     Vision and Pattern Recognition 2005 San Diego, CA, USA
     """
     magnitude, orientation = magnitude_orientation(gradientx, gradienty)
-    return build_histogram(magnitude, orientation, cell_size=cell_size,
-         signed_orientation=signed_orientation, cells_per_block=cells_per_block,
-         nbins=nbins, visualise=visualise, normalise=normalise, flatten=flatten)
+    return build_histogram(magnitude,
+                           orientation,
+                           cell_size=cell_size,
+                           signed_orientation=signed_orientation,
+                           cells_per_block=cells_per_block,
+                           nbins=nbins,
+                           visualise=visualise,
+                           normalise=normalise,
+                           flatten=flatten)
 
 
-def hog(image, cell_size=(4, 4), cells_per_block=(1, 1), signed_orientation=False,
-        nbins=9, visualise=False, normalise=True, flatten=False, same_size=True):
+def hog(image,
+        cell_size=(4, 4),
+        cells_per_block=(1, 1),
+        signed_orientation=False,
+        nbins=9,
+        visualise=False,
+        normalise=True,
+        flatten=False,
+        same_size=True):
     """ builds a histogram of oriented gradient (HoG) from the provided image
 
     Compute a Histogram of Oriented Gradients (HOG) by
@@ -614,10 +643,15 @@ def hog(image, cell_size=(4, 4), cells_per_block=(1, 1), signed_orientation=Fals
     Vision and Pattern Recognition 2005 San Diego, CA, USA
     """
     gx, gy = gradient(image, same_size=same_size)
-    return histogram_from_gradients(gx, gy, cell_size=cell_size,
-         signed_orientation=signed_orientation, cells_per_block=cells_per_block,
-         nbins=nbins, visualise=visualise, normalise=normalise, flatten=flatten)
-
+    return histogram_from_gradients(gx,
+                                    gy,
+                                    cell_size=cell_size,
+                                    signed_orientation=signed_orientation,
+                                    cells_per_block=cells_per_block,
+                                    nbins=nbins,
+                                    visualise=visualise,
+                                    normalise=normalise,
+                                    flatten=flatten)
 
 
 '''

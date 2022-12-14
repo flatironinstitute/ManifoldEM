@@ -1,7 +1,6 @@
 '''
 Copyright (c) Columbia University Hstau Liao 2019    
 '''
-
 """function mask = annularMask(a,b,N,M)
 % mask = annularMask(a,b,N,M)
 % 
@@ -16,17 +15,18 @@ Copyright (c) Columbia University Hstau Liao 2019
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """
 
+
 def op(a, b, N, M):
-    aSq = a*a
-    bSq = b*b
-    mask = np.zeros((N,M))
+    aSq = a * a
+    bSq = b * b
+    mask = np.zeros((N, M))
     for xx in range(N):
-        xDist = xx-N/2+1
-        xDistSq = xDist*xDist
+        xDist = xx - N / 2 + 1
+        xDistSq = xDist * xDist
         for yy in range(M):
-            yDist = yy-M/2
-            yDistSq = yDist*yDist
-            rSq = xDistSq+yDistSq
-            mask[xx,yy] = (rSq>=aSq)&(rSq<bSq)
-    
+            yDist = yy - M / 2
+            yDistSq = yDist * yDist
+            rSq = xDistSq + yDistSq
+            mask[xx, yy] = (rSq >= aSq) & (rSq < bSq)
+
     return mask

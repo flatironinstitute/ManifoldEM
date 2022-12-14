@@ -5,8 +5,6 @@ import time
 import numpy as np
 
 from ManifoldEM import p, set_params, myio
-
-
 ''' %Version V 1.2
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,6 +12,7 @@ from ManifoldEM import p, set_params, myio
     Copyright (c) Columbia Univ Hstau Liao 2018 (python version)    
     Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
+
 
 def op(*argv):
     time.sleep(5)
@@ -25,22 +24,22 @@ def op(*argv):
 
     range1 = np.arange(p.numberofJobs)
 
-    a = np.nonzero(psiNumsAll[0,:] == -1)[0] #unassigned states, python
+    a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
     #print psiNumsAll.shape,'a=',a
     range = np.delete(range1, a)
     a = np.nonzero(p.trash_list == 1)[0]  # unassigned states, python
-    range = np.delete(range,a)
+    range = np.delete(range, a)
     xSelect = range
 
     # getFromFileS2
     xLost = []
     trajTaus = [None] * p.numberofJobs
-    posPathAll= [None] * p.numberofJobs
+    posPathAll = [None] * p.numberofJobs
     posPsi1All = [None] * p.numberofJobs
 
     for x in xSelect:
         EL_file = '{}prD_{}'.format(p.EL_file, x)
-        File = '{}_{}_{}'.format(EL_file,p.trajName,1)
+        File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
 
         if os.path.exists(File):
             data = myio.fin1(File)
@@ -51,7 +50,7 @@ def op(*argv):
             xLost.append(x)
             continue
 
-    xSelect = list(set(xSelect)-set(xLost))
+    xSelect = list(set(xSelect) - set(xLost))
     # Section II
     hUn = np.zeros((1, p.nClass)).flatten()
     tauAvg = np.array([])
@@ -61,17 +60,18 @@ def op(*argv):
         tau = tau.flatten()
         #print 'tau1',tau
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
-        h,ctrs = np.histogram(tau,p.nClass)
+        h, ctrs = np.histogram(tau, p.nClass)
         hUn = hUn + h
-        tauAvg = np.concatenate((tauAvg,tau.flatten()))
+        tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # Section III
-    traj_file = "{}name{}".format(p.traj_file,p.trajName)
+    traj_file = "{}name{}".format(p.traj_file, p.trajName)
     myio.fout1(traj_file, ['hUn'], [hUn])
 
     #added June 2020, S.M.
-    p.traj_file_vars = "{}name{}_vars".format(p.traj_file,p.trajName)
-    myio.fout1(p.traj_file_vars, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'], [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
+    p.traj_file_vars = "{}name{}_vars".format(p.traj_file, p.trajName)
+    myio.fout1(p.traj_file_vars, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'],
+               [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
     gc.collect()
 
     if argv:
@@ -95,6 +95,7 @@ def op(*argv):
 
     set_params.op(0)
     return hUn
+
 
 if __name__ == '__main__':
     p.user_dir = '../'

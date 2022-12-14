@@ -3,7 +3,6 @@ import numpy as np
 from scipy import optimize
 
 from ManifoldEM import qMult_bsx
-
 '''Converts a quaternion to corresponding rotation sequence in Spider 3D convention
 Due to the 3D convention for all angles there is no need to negate psi
 q: 4x1
@@ -14,6 +13,7 @@ version = 'q2Spider, V1.1'
 Copyright (c) Columbia University Hstau Liao 2018 (python version)    
 '''
 
+
 def op(q):
 
     # assert unit quaternion
@@ -23,7 +23,7 @@ def op(q):
         q1 = np.array([np.cos(a[0] / 2.), 0., 0., -np.sin(a[0] / 2.)])  # see write-up
         q2 = np.array([np.cos(a[1] / 2.), 0, -np.sin(a[1] / 2.), 0.])
         q3 = np.array([np.cos(a[2] / 2.), 0., 0., -np.sin(a[2] / 2)])
-        F = q - qMult_bsx.op(q3, qMult_bsx.op(q2,q1)).flatten()
+        F = q - qMult_bsx.op(q3, qMult_bsx.op(q2, q1)).flatten()
         #print a,F
         return F
 
@@ -34,19 +34,19 @@ def op(q):
     exitflag = np.nan
     resnorm = np.inf
 
-    a0 = np.array([0,0,0])
+    a0 = np.array([0, 0, 0])
     nTry = 0
     # tic
     res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol)
     a = res.x
 
     phi = a[0]  #% (2*np.pi) * 180 / np.pi
-    theta = a[1]#% (2*np.pi) * 180 / np.pi
+    theta = a[1]  #% (2*np.pi) * 180 / np.pi
     psi = a[2]  #% (2*np.pi) * 180 / np.pi
 
     #% nTry
     return (phi, theta, psi)
 
-if __name__ == '__main__':
-   op()
 
+if __name__ == '__main__':
+    op()

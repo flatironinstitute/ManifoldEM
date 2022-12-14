@@ -7,18 +7,20 @@ import numpy as np
 from ManifoldEM import makeMovie, myio, p, set_params
 
 from mpi4py import MPI
-COMM = MPI.COMM_WORLD
 
+COMM = MPI.COMM_WORLD
 '''
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 '''
 
+
 def split(container, count):
     return [container[j::count] for j in range(count)]
 
+
 def divide(N):
-    ll=[]
-    for prD in range(N):#prDs
+    ll = []
+    for prD in range(N):  #prDs
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
@@ -28,7 +30,8 @@ def divide(N):
         ll.append([prD])
     return ll
 
-def movie(input_data,out_dir,dist_file,psi2_file,fps):
+
+def movie(input_data, out_dir, dist_file, psi2_file, fps):
     prD = input_data[0]
     dist_file1 = '{}prD_{}'.format(dist_file, prD)
     # Fetching NLSA outputs and making movies
@@ -102,6 +105,7 @@ def op(proj_name):
         set_params.op(0)
     MPI.COMM_WORLD.gather(res, root=0)
     return
+
 
 if __name__ == '__main__':
     op(sys.argv[1])

@@ -9,14 +9,12 @@ from scipy.sparse import tril
 from scipy.sparse.csgraph import connected_components
 
 from ManifoldEM import myio, p
-
 '''	
 Copyright (c) Columbia University Suvrajit Maji 2019    	
 '''
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-
 '''
 function
 G = CreateGraphStruct(Xp, AdjMat, nStates, pwDist, numNbr, epsilon)
@@ -36,9 +34,11 @@ G = CreateGraphStruct(Xp, AdjMat, nStates, pwDist, numNbr, epsilon)
 % Created: Feb 02, 2018. Modified:Jan 25, 2019
 Python version Hstau Liao copyright 2018
 '''
-def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
+
+
+def CreateGraphStruct(nStates, pwDist, epsilon, *argv):
     if type(pwDist) is list:
-        pwDist=np.array(pwDist)
+        pwDist = np.array(pwDist)
 
     if argv:
         #print '\nAdjMat is available to create the graph.'
@@ -50,36 +50,36 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     if pwDist.shape[0] > 0:
         nNodes = pwDist.shape[0]
 
-    elif AdjMat.shape[0]> 0:
+    elif AdjMat.shape[0] > 0:
         nNodes = AdjMat.shape[0]
     else:
         return -1
 
     Nodes = range(nNodes)
-    G = dict(nNodes=nNodes,Nodes=Nodes)
+    G = dict(nNodes=nNodes, Nodes=Nodes)
 
     # create state for each node
     if np.isscalar(nStates):
         # isscalar(nStates) # if it is a scalar then it is equal to maxState
-        nStates = nStates * np.ones(nNodes,dtype='int')
+        nStates = nStates * np.ones(nNodes, dtype='int')
         G.update(eqnStates=1)
     else:
         G.update(eqnStates=0)
 
-    G.update(nStates = nStates)
+    G.update(nStates=nStates)
     maxState = np.max(nStates)
-    G.update(maxState = maxState)
+    G.update(maxState=maxState)
 
-    nnMat = np.empty((G['nNodes'],),dtype=object)
-    if not argv: # adj matrix absent
+    nnMat = np.empty((G['nNodes'], ), dtype=object)
+    if not argv:  # adj matrix absent
         print('Using pwDist to create the graph (AdjMat).')
         # create the connections from neighbor search
-        Adj = (pwDist <= epsilon) * (pwDist!=0)
+        Adj = (pwDist <= epsilon) * (pwDist != 0)
         Adj = csr_matrix(Adj)
         # form the graph model
         for n in range(nNodes):
             #print 'nnMat',type(nnMat)
-            nnMat[n] = np.nonzero(Adj[n,:])[1]
+            nnMat[n] = np.nonzero(Adj[n, :])[1]
 
         # if it is not symmetric
         Adj = Adj + Adj.T
@@ -87,7 +87,7 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
 
     else:
         for n in range(nNodes):
-            nnMat[n] = np.nonzero(AdjMat[n,:])[1]
+            nnMat[n] = np.nonzero(AdjMat[n, :])[1]
 
     AdjMat = csr_matrix(AdjMat)
 
@@ -95,10 +95,10 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     # create edge indices
     ni, nj = np.nonzero(AdjMat)
 
-    Edges = np.vstack((nj,ni)).T
+    Edges = np.vstack((nj, ni)).T
 
-    I = np.lexsort((Edges[:,1],Edges[:,0]))
-    Edges = Edges[I,:]
+    I = np.lexsort((Edges[:, 1], Edges[:, 0]))
+    Edges = Edges[I, :]
 
     Edges = Edges[np.nonzero(Edges[:, 0] < Edges[:, 1])]
 
@@ -106,23 +106,30 @@ def CreateGraphStruct(nStates, pwDist, epsilon,*argv):
     ni, nj = np.nonzero(tril(AdjMat))
 
     ### to make the output same as matlab implementation
-    nij = np.c_[ni,nj]
-    nids = np.lexsort((nij[:,0],nij[:,1]))
-    nij_s = nij[nids,:]
-    ni = nij_s[:,0]
-    nj = nij_s[:,1]
+    nij = np.c_[ni, nj]
+    nids = np.lexsort((nij[:, 0], nij[:, 1]))
+    nij_s = nij[nids, :]
+    ni = nij_s[:, 0]
+    nj = nij_s[:, 1]
 
     nEdges = len(ni)
-    val_e = np.arange(nEdges)+1 # for now, to compare with matlab we need EdgeIdx to contain 1 to nEdges even for python
+    val_e = np.arange(
+        nEdges) + 1  # for now, to compare with matlab we need EdgeIdx to contain 1 to nEdges even for python
 
-    Ni = np.hstack((ni,nj)).T
+    Ni = np.hstack((ni, nj)).T
     Nj = np.hstack((nj, ni)).T
-    Val = np.hstack((val_e,val_e+nEdges)).T
+    Val = np.hstack((val_e, val_e + nEdges)).T
     EdgeIdx = csr_matrix((Val, (Ni, Nj)), shape=AdjMat.shape)
 
-    G.update(Nodes=Nodes, nNodes=nNodes,epsilon=epsilon,
-             nnMat=nnMat, AdjMat=AdjMat, Edges=Edges,
-             nEdges=nEdges, EdgeIdx=EdgeIdx, nStates=nStates)
+    G.update(Nodes=Nodes,
+             nNodes=nNodes,
+             epsilon=epsilon,
+             nnMat=nnMat,
+             AdjMat=AdjMat,
+             Edges=Edges,
+             nEdges=nEdges,
+             EdgeIdx=EdgeIdx,
+             nStates=nStates)
     return G
 
 
@@ -144,56 +151,55 @@ function [Gsub,G] = getSubGraph(G,nodes)
 %
 %
 '''
-def getSubGraph(G,*nodes):
+
+
+def getSubGraph(G, *nodes):
     print("\nPerforming connected component analysis.")
     A = G['AdjMat']
-    S,C = connected_components(A)
-    G.update(NodesConnComp=[],AdjConnComp=[])
+    S, C = connected_components(A)
+    G.update(NodesConnComp=[], AdjConnComp=[])
     for i in np.arange(S):
-        idxc = np.nonzero(C==i)[0]
+        idxc = np.nonzero(C == i)[0]
         G['NodesConnComp'].append(idxc)
         G['AdjConnComp'].append(A[idxc][:, idxc])
 
-
     numConnComp = len(G['NodesConnComp'])
-    print("Number of connected components (with isolated node(s)):",numConnComp)
+    print("Number of connected components (with isolated node(s)):", numConnComp)
 
     Gsub = []
     if not nodes:
         # get all subgraphs
         for i in range(numConnComp):
             if len(G['NodesConnComp'][i]) == 1:
-                sn=1 # do nothing
+                sn = 1  # do nothing
             nodes = G['NodesConnComp'][i]
-            if hasattr(G,'AdjConn'):
+            if hasattr(G, 'AdjConn'):
                 Asub = G['AdjConnComp'][i]
             else:
-                Asub = G['AdjMat'][nodes][:,nodes]
+                Asub = G['AdjMat'][nodes][:, nodes]
 
-            Gsub.append(CreateGraphStruct(G['maxState'],[],G['epsilon'], Asub))
+            Gsub.append(CreateGraphStruct(G['maxState'], [], G['epsilon'], Asub))
 
             # nnMat with the nodes in the subgraph only
             Gsub[i]['nnMat'] = np.array(G['nnMat'])
             Gsub[i]['originalNodes'] = nodes
-            einds = np.in1d(G['Edges'][:,0],nodes) | np.in1d(G['Edges'][:,1],nodes)
+            einds = np.in1d(G['Edges'][:, 0], nodes) | np.in1d(G['Edges'][:, 1], nodes)
             Gsub[i]['originalEdgeList'] = np.nonzero(einds)
-            Gsub[i]['originalEdges'] = G['Edges'][einds,:]
+            Gsub[i]['originalEdges'] = G['Edges'][einds, :]
 
     else:
         # get the subgraph with the specified nodes only
-        Asub = G['AdjMat'][nodes][:,nodes]
-        Gsub = CreateGraphStruct(G['MaxState'],[],[],Asub)
+        Asub = G['AdjMat'][nodes][:, nodes]
+        Gsub = CreateGraphStruct(G['MaxState'], [], [], Asub)
         Gsub['originalNodes'] = nodes
-        einds = np.in1d(nodes, G['Edges'][:,0]) or np.in1d(nodes, G['Edges'][:,1])
+        einds = np.in1d(nodes, G['Edges'][:, 0]) or np.in1d(nodes, G['Edges'][:, 1])
         Gsub['originalEdgeList'] = np.nonzero(einds)
-        Gsub['originalEdges'] = G['Edges'][einds,:]
-
+        Gsub['originalEdges'] = G['Edges'][einds, :]
 
     return (Gsub, G)
 
 
-
-def CalcPairwiseDistS2(X,*argv):
+def CalcPairwiseDistS2(X, *argv):
     '''
     [pwDotProd, pwDist] = CalcPairwiseDistS2(X, prD1, prD2)
     pairwise projection angular - distance and Euclidean distance calculations
@@ -231,47 +237,46 @@ def CalcPairwiseDistS2(X,*argv):
     V = X[:, VIdxs]
 
     # pairwise dot product
-    pwDotProd = np.dot(U.T,V)
+    pwDotProd = np.dot(U.T, V)
 
     # pairwise Euclidean distance
-    Dsq = np.sum(U*U,axis=0).T + np.sum(V*V,axis=0) - 2*np.dot(U.T , V)
+    Dsq = np.sum(U * U, axis=0).T + np.sum(V * V, axis=0) - 2 * np.dot(U.T, V)
     Dsq[Dsq < 1e-6] = 0.0
     pwDist = np.sqrt(Dsq)
     return (pwDotProd, pwDist)
 
 
 def op(CC_graph_file_pruned):
-    trash_list=np.array(p.trash_list)
-    good_nodes = np.nonzero(trash_list==0)[0]
-    bad_nodes = np.nonzero(trash_list==1)[0]
+    trash_list = np.array(p.trash_list)
+    good_nodes = np.nonzero(trash_list == 0)[0]
+    bad_nodes = np.nonzero(trash_list == 1)[0]
     numNodes = len(good_nodes)
     num_pruned_nodes = len(bad_nodes)
 
-    print("Number of isolated nodes in the graph after pruning:",num_pruned_nodes)
+    print("Number of isolated nodes in the graph after pruning:", num_pruned_nodes)
 
-    maxState = 2 * p.num_psis # Up and Down
+    maxState = 2 * p.num_psis  # Up and Down
 
-    if numNodes> 1:
+    if numNodes > 1:
 
         # Modifying the graph structure
         data = myio.fin1(p.CC_graph_file)
-        G=data['G']
-        epsilon = G['epsilon'] # save it later after update
+        G = data['G']
+        epsilon = G['epsilon']  # save it later after update
         G.update(nPsiModes=p.num_psis)
 
         print('Number of Graph Edges before prunning:', G['nEdges'])
         # prune edges corresponding to the bad nodes with actually removing those bad nodes by disconnecting the edges
         # in and out of those specified nodes
-        newAdjMat=lil_matrix(G['AdjMat'])
-        newAdjMat[bad_nodes,:]=0
-        newAdjMat[:,bad_nodes]=0
-
+        newAdjMat = lil_matrix(G['AdjMat'])
+        newAdjMat[bad_nodes, :] = 0
+        newAdjMat[:, bad_nodes] = 0
 
         newAdjMat = csr_matrix(newAdjMat)
         G.update(AdjMat=newAdjMat)
 
         # Updated graph info
-        G = CreateGraphStruct(G['maxState'],[],[], newAdjMat) # june 2020
+        G = CreateGraphStruct(G['maxState'], [], [], newAdjMat)  # june 2020
 
         # re-insert the epsilon
         G['epsilon'] = epsilon
@@ -290,7 +295,7 @@ def op(CC_graph_file_pruned):
 
     myio.fout1(CC_graph_file_pruned, ['G', 'Gsub'], [G, Gsub])
 
-    return G,Gsub
+    return G, Gsub
 
 
 if __name__ == '__main__':

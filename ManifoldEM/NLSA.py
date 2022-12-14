@@ -6,7 +6,6 @@ from scipy.fftpack import fft2
 from scipy.fftpack import ifft2
 
 from ManifoldEM import DMembeddingII, myio, get_wiener, L2_distance, fit_1D_open_manifold_3D, svdRF
-
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,8 +13,10 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
+
+
 #def op(NLSAPar, DD, posPath, posPsi1, imgAll, CTF, ExtPar):
-def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2 var also
+def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk2 var also
     num = NLSAPar['num']
     ConOrder = NLSAPar['ConOrder']
     k = NLSAPar['k']
@@ -25,7 +26,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
 
     ConD = np.zeros((num - ConOrder, num - ConOrder))
     for i in range(ConOrder):
-        Ind = range(i,num - ConOrder + i)
+        Ind = range(i, num - ConOrder + i)
         ConD += DD[Ind][:, Ind]
     '''
     for iii in range(num - ConOrder):
@@ -37,7 +38,8 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
     '''
 
     # find the manifold mapping:
-    lambdaC, psiC, sigmaC, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(ConD, k, tune, 600000)  ### USE THE MU FROM SUPERVECTORS' DISTANCES
+    lambdaC, psiC, sigmaC, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(
+        ConD, k, tune, 600000)  ### USE THE MU FROM SUPERVECTORS' DISTANCES
 
     lambdaC = lambdaC[lambdaC > 0]  ## lambdaC not used? REVIEW
     psiC1 = np.copy(psiC)
@@ -61,18 +63,18 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
     for ii in range(ConOrder):
         for i in range(num - ConOrder):
             ind1 = 0
-            ind2 = dim * dim #max(IMG1.shape)
+            ind2 = dim * dim  #max(IMG1.shape)
             ind3 = ConOrder - ii + i - 1
             img = IMG1[ind3, :, :]
             if 'prD' in ExtPar:
-                img_f = fft2(img)#.reshape(dim, dim)) T only for matlab
+                img_f = fft2(img)  #.reshape(dim, dim)) T only for matlab
                 CTF_i = CTF1[ind3, :, :]
                 img_f_wiener = img_f * (CTF_i / wiener_dom[i, :, :])
                 img = ifft2(img_f_wiener).real
-                img = img*msk2 # April 2020
+                img = img * msk2  # April 2020
             tmp[ind1:ind2, i] = np.squeeze(img.T.reshape(-1, 1))
 
-        mm = dim * dim #max(IMG1.shape)
+        mm = dim * dim  #max(IMG1.shape)
         ind4 = ii * mm
         ind5 = ind4 + mm
         A[ind4:ind5, :] = np.matmul(tmp, mu_psi)
@@ -94,7 +96,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
         Topo = np.ones((Npixel, ConOrder)) * np.Inf
 
         for k in range(ConOrder):
-            Topo[:, k] = U[k * Npixel : (k + 1) * Npixel, ii]
+            Topo[:, k] = U[k * Npixel:(k + 1) * Npixel, ii]
         Topo_mean[:, ii] = np.mean(Topo, axis=1)
 
     # unwrapping... REVIEW; allow user option to select from a list of chronos ([0,1,3]) to retain (i.e., not just i1, i2)
@@ -104,7 +106,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
     ConImgT = np.zeros((max(U.shape), ell + 1), dtype='float64')
     for i in range(i1, i2 + 1):
         # %ConImgT = U(:,i) *(sdiag(i)* V(:,i)')*psiC';
-        ConImgT = ConImgT + np.matmul(U[:,i].reshape(-1, 1), sdiag[i] * (V[:,i].reshape(1, -1)))
+        ConImgT = ConImgT + np.matmul(U[:, i].reshape(-1, 1), sdiag[i] * (V[:, i].reshape(1, -1)))
 
     recNum = ConOrder
     #tmp = np.zeros((Npixel,num-ConOrder),dtype='float64')
@@ -116,7 +118,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
         for ii in range(num - 2 * ConOrder):
             ind3 = i + ii
             ttmp = IMGT[:, ii]
-            ttmp = ttmp+tmp[:, ind3]
+            ttmp = ttmp + tmp[:, ind3]
             IMGT[:, ii] = ttmp
 
     # normalize per frame so that mean=0 std=1, whole frame (this needs justif)
@@ -128,7 +130,6 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
             print("flat image")
             exit(0)
         IMGT[:, i] = ttmp
-
 
     nSrecon = min(IMGT.shape)
     Drecon = L2_distance.op(IMGT, IMGT)
@@ -146,4 +147,3 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar): #pass the msk2
         myio.fout1(ExtPar['filename'], ['psirec', 'tau', 'a', 'b'], [psirec, tau, a, b])
 
     return (IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau)
-

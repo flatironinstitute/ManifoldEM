@@ -19,27 +19,25 @@ import pickle
 projName = 'untitled'
 parDir = os.path.abspath('..')
 outDir = os.path.join(parDir, 'outputs_%s' % projName)
-PDs = 400 #total number of PDs; if unknown, make arbitrarily large
+PDs = 400  #total number of PDs; if unknown, make arbitrarily large
 
-if 1: #number of particles per PD
-    for i in range(0,PDs):
-        fname = open(os.path.join(outDir,'selecGCs'), 'rb')
+if 1:  #number of particles per PD
+    for i in range(0, PDs):
+        fname = open(os.path.join(outDir, 'selecGCs'), 'rb')
         data = pickle.load(fname)
 
         try:
-            fname = open(os.path.join(outDir,'selecGCs'), 'rb')
+            fname = open(os.path.join(outDir, 'selecGCs'), 'rb')
             data = pickle.load(fname)
-            print('%s: %s' % (i,len((data['CG'][i]))))
+            print('%s: %s' % (i, len((data['CG'][i]))))
         except Exception as e:
             pass
-    
-if 0: #x,y,z coordinates
-    for i in range(0,PDs):
+
+if 0:  #x,y,z coordinates
+    for i in range(0, PDs):
         try:
-            fname = open(os.path.join(outDir,'selecGCs'), 'rb')
+            fname = open(os.path.join(outDir, 'selecGCs'), 'rb')
             data = pickle.load(fname)
             print((data['S20'][i]))
         except Exception as e:
             pass
-
-

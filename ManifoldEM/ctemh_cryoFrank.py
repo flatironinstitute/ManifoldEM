@@ -21,32 +21,30 @@ import sys
 import numpy as np
 import math
 
-def op(k,params):
-   Cs = params[0]*1.0e7
-   df = params[1]
-   kev = params[2]
-   B = params[3]
-   ampc = params[4]
-   mo = 511.0
-   hc = 12.3986
-   wav = (2*mo)+kev
-   wav = hc/np.sqrt(wav*kev)
-   w1 = np.pi*Cs*wav*wav*wav
-   w2 = np.pi*wav*df
-   k2 = k*k
-   sigm = B/math.sqrt(2*math.log(2)) # B is Gaussian Env. Halfwidth
-   wi = np.exp(-k2/(2*sigm**2))
-   wr = (0.5*w1*k2-w2)*k2 # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2 
-   
-   y = (np.sin(wr)-ampc*np.cos(wr))*wi
-   return y
+
+def op(k, params):
+    Cs = params[0] * 1.0e7
+    df = params[1]
+    kev = params[2]
+    B = params[3]
+    ampc = params[4]
+    mo = 511.0
+    hc = 12.3986
+    wav = (2 * mo) + kev
+    wav = hc / np.sqrt(wav * kev)
+    w1 = np.pi * Cs * wav * wav * wav
+    w2 = np.pi * wav * df
+    k2 = k * k
+    sigm = B / math.sqrt(2 * math.log(2))  # B is Gaussian Env. Halfwidth
+    wi = np.exp(-k2 / (2 * sigm**2))
+    wr = (0.5 * w1 * k2 - w2) * k2  # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2
+
+    y = (np.sin(wr) - ampc * np.cos(wr)) * wi
+    return y
+
 
 if __name__ == '__main__':
 
     k = sys.argv[1]
     params = sys.argv[2]
-    result = op(k,params)
-    
-      
-
-
+    result = op(k, params)

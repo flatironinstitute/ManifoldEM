@@ -1,6 +1,5 @@
 import os
 import numpy as np
-
 '''
 Copyright (c) Columbia University Evan Seitz 2019
 Copyright (c) Columbia University Hstau Liao 2019
@@ -10,8 +9,8 @@ Copyright (c) Columbia University Suvrajit Maji 2019
 
 def init():
     # resume project:
-    global proj_name #user-defined project name
-    global resProj #GUI gatekeeping for resuming previous project
+    global proj_name  #user-defined project name
+    global resProj  #GUI gatekeeping for resuming previous project
     '''
     resProj structure:
         0: default; new project
@@ -27,89 +26,91 @@ def init():
         '''
 
     # project format:
-    global relion_data #False for not-relion (Spider) input-data format
-    global phiCol, thetaCol, psiCol, dfCol, shx_col, shy_col #for reading Spider align file
+    global relion_data  #False for not-relion (Spider) input-data format
+    global phiCol, thetaCol, psiCol, dfCol, shx_col, shy_col  #for reading Spider align file
 
     # computational resources:
-    global ncpu #number of CPUs
-    global machinefile #via arg: '--mpi path/to/machinefile' (default False for non-MPI run)
+    global ncpu  #number of CPUs
+    global machinefile  #via arg: '--mpi path/to/machinefile' (default False for non-MPI run)
     global eps
-    eps = 1e-10 #small fraction to be added if divide-by-zero errors occur
+    eps = 1e-10  #small fraction to be added if divide-by-zero errors occur
 
     # microscopy parameters:
-    global avg_vol_file #average volume file (e.g., .mrc)
-    global img_stack_file #image stack file (e.g., .mrcs)
-    global align_param_file #alignment file (e.g., .star)
-    global mask_vol_file #mask volume file (e.g., .mrc)
-    global num_part #total number of particles in stack
-    global Cs #Spherical Aberration [mm] (from alignment file)
-    global EkV #Voltage [kV] (from alignment file)
-    global AmpContrast #Amplitude Contrast [ratio](from alignment file);
+    global avg_vol_file  #average volume file (e.g., .mrc)
+    global img_stack_file  #image stack file (e.g., .mrcs)
+    global align_param_file  #alignment file (e.g., .star)
+    global mask_vol_file  #mask volume file (e.g., .mrc)
+    global num_part  #total number of particles in stack
+    global Cs  #Spherical Aberration [mm] (from alignment file)
+    global EkV  #Voltage [kV] (from alignment file)
+    global AmpContrast  #Amplitude Contrast [ratio](from alignment file);
     global gaussEnv
-    gaussEnv = np.inf #envelope of CTF
-    global nPix #window size of image (e.g., for 100x100 image, nPix=100)
-    global pix_size #pixel size of image [Angstroms] (known via rln_DetectorPixelSize*10e6 / rln_Magnification)
-    global obj_diam #diameter of macromolecule [Angstroms]
-    global resol_est #estimated resolution [Angstroms]
-    global ap_index #aperture index {1,2,3...}; increases tessellated bin size
-    global ang_width #angle width (via: ap_index * resol_est / obj_diam)
-    global sh #Shannon angle (pix_size / obj_diam)
+    gaussEnv = np.inf  #envelope of CTF
+    global nPix  #window size of image (e.g., for 100x100 image, nPix=100)
+    global pix_size  #pixel size of image [Angstroms] (known via rln_DetectorPixelSize*10e6 / rln_Magnification)
+    global obj_diam  #diameter of macromolecule [Angstroms]
+    global resol_est  #estimated resolution [Angstroms]
+    global ap_index  #aperture index {1,2,3...}; increases tessellated bin size
+    global ang_width  #angle width (via: ap_index * resol_est / obj_diam)
+    global sh  #Shannon angle (pix_size / obj_diam)
 
     # tessellation binning:
     #PDsizeThL and PDsizeThH defined by default in Manifold_GUI.py
-    global PDsizeThL #minimum required snapshots in a tessellation for it be admitted
-    global PDsizeThH #maximum number of snapshots that will be considered within each tessellation
-    global S2rescale #proper scale ratio between S2 sphere and .mrc volume for visualizations
-    global S2iso #proper isosurface level of .mrv volume for vizualiaztion (as chosen by user)
-    global numberofJobs #total number of bins to consider for manifold embedding
+    global PDsizeThL  #minimum required snapshots in a tessellation for it be admitted
+    global PDsizeThH  #maximum number of snapshots that will be considered within each tessellation
+    global S2rescale  #proper scale ratio between S2 sphere and .mrc volume for visualizations
+    global S2iso  #proper isosurface level of .mrv volume for vizualiaztion (as chosen by user)
+    global numberofJobs  #total number of bins to consider for manifold embedding
 
     # eigenfunction parameters:
     global num_eigs, num_psiTrunc, num_psis, tune, rad, conOrderRange, sizeToConOrderRatio
-    num_eigs = 15 #number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)
-    num_psiTrunc = 8 #number of eigenfunctions for truncated views
-    tune = 3 #diffusion map tuning; this needs to be automated
-        #tune automation suggestion (Ali): larger tune = smaller gaussian width; turns data into
-        #islands/chunks (can't see long-range patterns); a good tune should form a 'good' psirec parabola.
-        #as well, you can keep using tune to get rid of outliers in data; you want the number of outliers
-        #to be around 10%; if higher than this, tune needs to be changed.
-    rad = 5 #manifold pruning
-    conOrderRange = 50 #coarse-graining factor of energy landscape
+    num_eigs = 15  #number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)
+    num_psiTrunc = 8  #number of eigenfunctions for truncated views
+    tune = 3  #diffusion map tuning; this needs to be automated
+    #tune automation suggestion (Ali): larger tune = smaller gaussian width; turns data into
+    #islands/chunks (can't see long-range patterns); a good tune should form a 'good' psirec parabola.
+    #as well, you can keep using tune to get rid of outliers in data; you want the number of outliers
+    #to be around 10%; if higher than this, tune needs to be changed.
+    rad = 5  #manifold pruning
+    conOrderRange = 50  #coarse-graining factor of energy landscape
 
     # NLSA movie parameters:
     global fps, nC
-    fps = 5 #frames per second of NLSA movie (currently inactive)
+    fps = 5  #frames per second of NLSA movie (currently inactive)
 
     # energy landscape parameters:
-    global dim #user-defined number of dimensions (reaction coordinates); {1,2}
-    global temperature #user-defined pre-quenching temperature of experiments
+    global dim  #user-defined number of dimensions (reaction coordinates); {1,2}
+    global temperature  #user-defined pre-quenching temperature of experiments
     global num_ang, isEq, trajName, isTrajClosed, boundCond, nClass, nClass2D, xchosed
-    num_ang = 180 #number of tomographic projections in 2D
-    isEq = 0 #equalization, used during tau (T/F)
-    trajName = '1' #filename for exported (2D) trajectories
-    isTrajClosed = 1 #2D ELS parameter
-    boundCond = 0 #2D ELS parameter
-    nClass = 50 #number of states partitioned within each 1D reaction coordinate; results in a 50x1 1D ELS
-    nClass2D = 250 #number of states partitioned within 2D tau(theta) cuts; results in a 176x176 2D ELS
-        #nClass2D (above) still needs to replace 'nC' in Matlab's ELshow.m and OMprofiles.m
-    global EL1D #array for 1D Energy Landscape
+    num_ang = 180  #number of tomographic projections in 2D
+    isEq = 0  #equalization, used during tau (T/F)
+    trajName = '1'  #filename for exported (2D) trajectories
+    isTrajClosed = 1  #2D ELS parameter
+    boundCond = 0  #2D ELS parameter
+    nClass = 50  #number of states partitioned within each 1D reaction coordinate; results in a 50x1 1D ELS
+    nClass2D = 250  #number of states partitioned within 2D tau(theta) cuts; results in a 176x176 2D ELS
+    #nClass2D (above) still needs to replace 'nC' in Matlab's ELshow.m and OMprofiles.m
+    global EL1D  #array for 1D Energy Landscape
     global selPts_1D, selPts_2D, width_1D, width_2D, leastPts
-    width_1D = 1 #user-defined width of trajectory in 1D energy path
-    width_2D = 1 #user-defined width of trajectory in 2D energy path
+    width_1D = 1  #user-defined width of trajectory in 1D energy path
+    width_2D = 1  #user-defined width of trajectory in 2D energy path
     selPts_2D = []  #all 2D energy landscape points between user 'Resets' (from current pixel width)
     leastPts = []  #all points from least-action computation
-    global hUn #occupancy map
+    global hUn  #occupancy map
 
     # reaction coordinates parameters:
     global getOpticalFlow, getAllEdgeMeasures, anch_list, trash_list, opt_movie, opt_mask_type, opt_mask_param
-    getOpticalFlow = 1 #default True to compute optical flow vectors
-    getAllEdgeMeasures = 1 #default True to compute edge measures
-    anch_list = [] #user-defined PD anchors for Belief Propagation
-    trash_list = [] #user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
-    opt_movie = dict(printFig=0, OFvisual=0, visual_CC=0, flowVecPctThresh=95) #default False: won't save movies to file
-    opt_mask_type = int(0) #0:None, 1:Annular, 2:Volumetric
-    opt_mask_param = int(0) #for either none, radius (Int), or iso(Int)
+    getOpticalFlow = 1  #default True to compute optical flow vectors
+    getAllEdgeMeasures = 1  #default True to compute edge measures
+    anch_list = []  #user-defined PD anchors for Belief Propagation
+    trash_list = []  #user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
+    opt_movie = dict(printFig=0, OFvisual=0, visual_CC=0,
+                     flowVecPctThresh=95)  #default False: won't save movies to file
+    opt_mask_type = int(0)  #0:None, 1:Annular, 2:Volumetric
+    opt_mask_param = int(0)  #for either none, radius (Int), or iso(Int)
 
     return None
+
 
 def create_dir():
     # input and output directories and files
@@ -126,27 +127,26 @@ def create_dir():
     psi_dir = os.path.join(user_dir, 'outputs_{}/diff_maps/'.format(proj_name))
     psi_prog = os.path.join(psi_dir, 'progress/')
 
-
     psi2_dir = os.path.join(user_dir, 'outputs_{}/psi_analysis/'.format(proj_name))
     psi2_prog = os.path.join(psi2_dir, 'progress/')
     os.makedirs(psi2_prog, exist_ok=True)
 
-    EL_dir = os.path.join(user_dir, 'outputs_{}/ELConc{}/'.format(proj_name,conOrderRange))
+    EL_dir = os.path.join(user_dir, 'outputs_{}/ELConc{}/'.format(proj_name, conOrderRange))
     EL_prog = os.path.join(EL_dir, 'progress/')
     os.makedirs(EL_prog, exist_ok=True)
 
-    OM_dir = os.path.join(user_dir,'{}OM/'.format(EL_dir))
+    OM_dir = os.path.join(user_dir, '{}OM/'.format(EL_dir))
     os.makedirs(OM_dir, exist_ok=True)
 
-    Var_dir = os.path.join(user_dir,'outputs_{}/Var/'.format(proj_name))
+    Var_dir = os.path.join(user_dir, 'outputs_{}/Var/'.format(proj_name))
     os.makedirs(Var_dir, exist_ok=True)
-    traj_dir = os.path.join(user_dir,'outputs_{}/traj/'.format(proj_name))
+    traj_dir = os.path.join(user_dir, 'outputs_{}/traj/'.format(proj_name))
     os.makedirs(traj_dir, exist_ok=True)
 
-    relion_dir = bin_dir = os.path.join(user_dir,'outputs_{}/bin/'.format(proj_name))
+    relion_dir = bin_dir = os.path.join(user_dir, 'outputs_{}/bin/'.format(proj_name))
     os.makedirs(bin_dir, exist_ok=True)
 
-    CC_dir = os.path.join(user_dir,'outputs_{}/CC'.format(proj_name))
+    CC_dir = os.path.join(user_dir, 'outputs_{}/CC'.format(proj_name))
     CC_OF_dir = os.path.join(CC_dir, 'CC_OF')
     os.makedirs(CC_OF_dir, exist_ok=True)
 
@@ -166,7 +166,7 @@ def create_dir():
     os.makedirs(anim_dir, exist_ok=True)
 
     #################
-    out_dir = os.path.join(user_dir,'outputs_{}/'.format(proj_name))
+    out_dir = os.path.join(user_dir, 'outputs_{}/'.format(proj_name))
     os.makedirs(os.path.join(out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
 
     global dist_file,psi_file,psi2_file,\

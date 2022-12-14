@@ -15,33 +15,32 @@ from scipy.ndimage import uniform_filter
 from ManifoldEM import p
 from ManifoldEM.CC import hornschunck_simple
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt
-
-
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
     Created: May 2018. Modified:Sept 21,2021
 '''
 
-def getOrientMag(X,Y):
-    orient = np.arctan2(Y, X) % 2*np.pi
+
+def getOrientMag(X, Y):
+    orient = np.arctan2(Y, X) % 2 * np.pi
     mag = np.sqrt(X**2 + Y**2)
     return orient, mag
 
-def normalizeRescaleVector(f,normalizeVec,rescaleRange):
+
+def normalizeRescaleVector(f, normalizeVec, rescaleRange):
 
     dims = np.shape(f)
     F = np.empty(dims)
-    if rescaleRange: # rescaleRange= 0 if no scaling range [min,max] provided
+    if rescaleRange:  # rescaleRange= 0 if no scaling range [min,max] provided
         rescaleVec = 1
     else:
         rescaleVec = 0
-        
 
-    if  len(dims) > 2:
+    if len(dims) > 2:
         #print('Normalizing MxMx2 vector')
         fx = f[:, :, 0]
         fy = f[:, :, 1]
-        l = np.sqrt(fx**2 + fy**2)+1e-10
+        l = np.sqrt(fx**2 + fy**2) + 1e-10
 
         if normalizeVec:
             if rescaleVec:
@@ -58,6 +57,7 @@ def normalizeRescaleVector(f,normalizeVec,rescaleRange):
 
     return F
 
+
 def saveImage(Img, prD, psinum, frame_no):
     frame_file = p.out_dir + 'CC/tmp_figs/PrD_{}_psi_{}_frame{:02d}'.format(prD + 1, psinum + 1, frame_no)
 
@@ -73,7 +73,7 @@ def saveImage(Img, prD, psinum, frame_no):
     plt.close()
 
 
-def  writeOpticalFlowImage(outfile, label, img, flow, OFvisualPrint, bound, gap, step=4):
+def writeOpticalFlowImage(outfile, label, img, flow, OFvisualPrint, bound, gap, step=4):
     displayFlow = OFvisualPrint[0]
     printFlowFig = OFvisualPrint[1]
 
@@ -130,25 +130,40 @@ def  writeOpticalFlowImage(outfile, label, img, flow, OFvisualPrint, bound, gap,
         quiverPlot = 1
         streamPlot = 0
         if quiverPlot:
-            kwargs = {**dict(angles="xy", scale_units="xy", units='width', pivot='tail', scale=0.1, headwidth=7.0, headlength=5.0, headaxislength=3.0, width=0.0025, linewidth=0.01)}
+            kwargs = {
+                **dict(angles="xy",
+                       scale_units="xy",
+                       units='width',
+                       pivot='tail',
+                       scale=0.1,
+                       headwidth=7.0,
+                       headlength=5.0,
+                       headaxislength=3.0,
+                       width=0.0025,
+                       linewidth=0.01)
+            }
             ax.quiver(x, y, fx, fy, color=qColor, **kwargs)
             ax.set_ylim(sorted(ax.get_ylim(), reverse=True))
             ax.set_aspect("equal")
 
         if streamPlot:
-            ax.streamplot(x.reshape((dim, dim)), y.reshape((dim, dim)), fx.reshape((dim, dim)), fy.reshape((dim, dim)), arrowsize=2, color=mC.reshape((dim, dim)), density=10)
+            ax.streamplot(x.reshape((dim, dim)),
+                          y.reshape((dim, dim)),
+                          fx.reshape((dim, dim)),
+                          fy.reshape((dim, dim)),
+                          arrowsize=2,
+                          color=mC.reshape((dim, dim)),
+                          density=10)
         cax, _ = mcolorbar.make_axes(plt.gca())
-        cb = mcolorbar.ColorbarBase(cax, cmap=cm.jet, norm=nz) #extend='max'
-        cb.set_label('Relative magnitude',fontsize=label_size)
+        cb = mcolorbar.ColorbarBase(cax, cmap=cm.jet, norm=nz)  #extend='max'
+        cb.set_label('Relative magnitude', fontsize=label_size)
         cb.ax.tick_params(labelsize=label_size)
         ax.tick_params(axis='both', labelsize=label_size)
-        ax.set_title('Sense:'+label, fontsize=label_size)
+        ax.set_title('Sense:' + label, fontsize=label_size)
         if displayFlow:
             plt.show()
         if printFlowFig:
             fig.savefig(outfile + '.png')
-
-
 
 
 def figurePlot(mat):
@@ -157,8 +172,7 @@ def figurePlot(mat):
     plt.show()
 
 
-
-def SelectFlowVec(FlowVec,flowVecPctThresh):
+def SelectFlowVec(FlowVec, flowVecPctThresh):
     # this will work for all elements for any ndarray [m x m x d],
     # Here for half-split movies we have d = 2, i.e. stack of two m x m matrix
 
@@ -190,11 +204,11 @@ def SelectFlowVec(FlowVec,flowVecPctThresh):
 def movingAverage(X, window_size):
     #window_mask = np.ones(int(window_size))/float(window_size) # 1D only
     #X_ma = np.convolve(X, window_mask, 'same',axis=2)
-    X_ma  = uniform_filter(X, size=window_size, origin=-1, mode='wrap')
+    X_ma = uniform_filter(X, size=window_size, origin=-1, mode='wrap')
     return X_ma
 
-def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1, ploton=False):
 
+def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1, ploton=False):
     '''
     3D Anisotropic diffusion.
 
@@ -274,14 +288,14 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1,
 
     # create the plot figure, if requested
     if ploton:
-        showplane = stack.shape[0]//2
+        showplane = stack.shape[0] // 2
 
         fig = pl.figure(figsize=(20, 5.5), num="Anisotropic diffusion")
         ax1, ax2 = fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)
 
         ax1.imshow(stack[showplane, ...].squeeze(), interpolation='nearest')
         ih = ax2.imshow(stackout[showplane, ...].squeeze(), interpolation='nearest', animated=True)
-        ax1.set_title("Original stack (Z = %i)" %showplane)
+        ax1.set_title("Original stack (Z = %i)" % showplane)
         ax2.set_title("Iteration 0")
 
         fig.canvas.draw()
@@ -295,18 +309,18 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1,
 
         # conduction gradients (only need to compute one per dim!)
         if option == 1:
-            gD = np.exp(-(deltaD/kappa)**2.)/step[0]
-            gS = np.exp(-(deltaS/kappa)**2.)/step[1]
-            gE = np.exp(-(deltaE/kappa)**2.)/step[2]
+            gD = np.exp(-(deltaD / kappa)**2.) / step[0]
+            gS = np.exp(-(deltaS / kappa)**2.) / step[1]
+            gE = np.exp(-(deltaE / kappa)**2.) / step[2]
         elif option == 2:
-            gD = 1./(1.+(deltaD/kappa)**2.)/step[0]
-            gS = 1./(1.+(deltaS/kappa)**2.)/step[1]
-            gE = 1./(1.+(deltaE/kappa)**2.)/step[2]
+            gD = 1. / (1. + (deltaD / kappa)**2.) / step[0]
+            gS = 1. / (1. + (deltaS / kappa)**2.) / step[1]
+            gE = 1. / (1. + (deltaE / kappa)**2.) / step[2]
 
         # update matrices
-        D = gD*deltaD
-        E = gE*deltaE
-        S = gS*deltaS
+        D = gD * deltaD
+        E = gE * deltaE
+        S = gS * deltaS
 
         # subtract a copy that has been shifted 'Up/North/West' by one
         # pixel. don't as questions. just do it. trust me.
@@ -318,10 +332,10 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1,
         EW[:, :, 1:] -= E[:, :, :-1]
 
         # update the image
-        stackout += gamma*(UD+NS+EW)
+        stackout += gamma * (UD + NS + EW)
 
         if ploton:
-            iterstring = "Iteration %i" %(ii+1)
+            iterstring = "Iteration %i" % (ii + 1)
             ih.set_data(stackout[showplane, ...].squeeze())
             ax2.set_title(iterstring)
             fig.canvas.draw()
@@ -333,6 +347,7 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1., 1., 1.), option=1,
 def convertu8(img):
     u8img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
     return u8img
+
 
 def deepflow(im0, im1):
     im0 = convertu8(im0)
@@ -369,7 +384,6 @@ def rlof(im0, im1):
     return flow
 
 
-
 # Optical Flow computation
 def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
     # for display
@@ -398,7 +412,7 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
     elif label[0:3] == 'REV':
         #print('Optflow label',label[0:3])
-        displayImg = Mov[numFrames-1, :, :]
+        displayImg = Mov[numFrames - 1, :, :]
 
     VxM = np.zeros((dim, dim))
     VyM = np.zeros((dim, dim))
@@ -410,22 +424,22 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
         inputFWD = 1
 
     if not inputFWD:
-        do_simpleAvg = 1 #1 ... 0 is TEMP
+        do_simpleAvg = 1  #1 ... 0 is TEMP
         do_movingAvg = 0
         do_filterImage = 0
-        do_aniso_filt = 1 #1 ... 0 is TEMP
-        sig = 2.0 #sigma for lowpass gauss filter
+        do_aniso_filt = 1  #1 ... 0 is TEMP
+        sig = 2.0  #sigma for lowpass gauss filter
         #OF_Type = 'GF' # Gunnar-Farneback
         #OF_Type = 'HS' # Horn-Schunck
-        OF_Type = 'GF-HS' #GF for initial estimates and then HS
+        OF_Type = 'GF-HS'  #GF for initial estimates and then HS
         #OF_Type = 'rlof' # does not work yet
         #OF_Type = 'deep' # does not work yet
 
-        if (prD == 0) and (psinum_prD == 0) and (label[0:3] == 'FWD'):    # only print for the first movie
+        if (prD == 0) and (psinum_prD == 0) and (label[0:3] == 'FWD'):  # only print for the first movie
             print('Optical flow method:', OF_Type)
 
         if OF_Type == 'GF' or OF_Type == 'GF-HS':
-            do_filterImage = 1 #1 ... 0 is TEMP
+            do_filterImage = 1  #1 ... 0 is TEMP
             if OF_Type == 'GF-HS':
                 sig = 1.5
 
@@ -435,26 +449,24 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
             #print('Apply diffusion filter to the movie')
             Mov = anisodiff3(Mov, niter=5, kappa=50, gamma=0.1, step=(5., 3., 3.), option=1, ploton=False)
 
-
         #print('numFrames',numFrames,'blockSize_avg',blockSize_avg)
-        if do_simpleAvg: # perform averaging over blockSize frames
+        if do_simpleAvg:  # perform averaging over blockSize frames
             #print('Perform averaging of movie frames')
-            numAvgFrames = np.ceil(np.float(numFrames)/blockSize_avg).astype(int)
+            numAvgFrames = np.ceil(np.float(numFrames) / blockSize_avg).astype(int)
             AvgMov = np.zeros((numAvgFrames, dim, dim))
             for b in range(0, numAvgFrames):
-                frameStart = b*blockSize_avg
-                frameEnd = min((b+1)*blockSize_avg, numFrames)
+                frameStart = b * blockSize_avg
+                frameEnd = min((b + 1) * blockSize_avg, numFrames)
                 #print('frameStart',frameStart,'frameEnd',frameEnd)
                 blockMovie = Mov[frameStart:frameEnd, :, :]
                 AvgMov[b, :, :] = np.mean(blockMovie, axis=0, dtype=np.float64)
 
         elif do_movingAvg:
-            ma_window_size = [blockSize_avg, 0, 0] #use the same averaging window size
+            ma_window_size = [blockSize_avg, 0, 0]  #use the same averaging window size
             AvgMov = movingAverage(Mov, ma_window_size)
             numAvgFrames = AvgMov.shape[0]
 
-
-        else:# keep original movie
+        else:  # keep original movie
             #print('No averaging of movies done')
             numAvgFrames = numFrames
             AvgMov = Mov
@@ -470,10 +482,9 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
             sc = 25
             sp = 25
             #ImgFrame_prev = cv2.bilateralFilter(np.float32(ImgFrame_prev),d,sc,sp)
-            ImgFrame_prev  = lowpassfilt(ImgFrame_prev, sig)
+            ImgFrame_prev = lowpassfilt(ImgFrame_prev, sig)
 
-
-        for frameno in range(0,numAvgFrames):
+        for frameno in range(0, numAvgFrames):
             ImgFrame_curr = AvgMov[frameno, :, :]
 
             #print(ImgFrame_curr[120:125,120:125].T)
@@ -481,32 +492,39 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
                 #ImgFrame_curr = cv2.bilateralFilter(np.float32(ImgFrame_curr),d,sc,sp)
                 ImgFrame_curr = lowpassfilt(ImgFrame_curr, sig)
 
-
             if OF_Type == 'GF' or OF_Type == 'GF-HS':
                 #flow = calcOpticalFlowFarneback(ImgFrame_prev, ImgFrame_curr, flow=None, pyr_scale=0.4, levels=1, winsize=15,iterations=10,poly_n=5, poly_sigma=1.2, flags=0)
                 #flow = calcOpticalFlowFarneback(ImgFrame_prev, ImgFrame_curr, flow=None, pyr_scale=0.5, levels=5, winsize=25,iterations=10,poly_n=7, poly_sigma=1.5, flags=0)
 
-                flow = calcOpticalFlowFarneback(ImgFrame_prev, ImgFrame_curr, flow=None, pyr_scale=0.4, levels=5, winsize=21, iterations=10, poly_n=7, poly_sigma=1.5, flags=0)
+                flow = calcOpticalFlowFarneback(ImgFrame_prev,
+                                                ImgFrame_curr,
+                                                flow=None,
+                                                pyr_scale=0.4,
+                                                levels=5,
+                                                winsize=21,
+                                                iterations=10,
+                                                poly_n=7,
+                                                poly_sigma=1.5,
+                                                flags=0)
                 Vx = flow[:, :, 0]
                 Vy = flow[:, :, 1]
 
-
             if OF_Type == 'HS' or OF_Type == 'GF-HS':
                 if OF_Type == 'GF-HS':
-                    uInit = Vx # if both methods are used , GF will provide intial estimates
-                    vInit = Vy # if both methods are used , GF will provide intial estimates
+                    uInit = Vx  # if both methods are used , GF will provide intial estimates
+                    vInit = Vy  # if both methods are used , GF will provide intial estimates
                 else:
                     uInit = np.zeros(ImgFrame_prev.shape)
                     vInit = np.zeros(ImgFrame_prev.shape)
 
                 Vx, Vy = hornschunck_simple.op(ImgFrame_prev, ImgFrame_curr, uInit, vInit, sig, 2.0, 200)
 
-            if OF_Type == 'rlof': # added sept 2021, does not work
+            if OF_Type == 'rlof':  # added sept 2021, does not work
                 flow = rlof(ImgFrame_prev, ImgFrame_curr)
                 Vx = flow[:, :, 0]
                 Vy = flow[:, :, 1]
 
-            if OF_Type == 'deep': # added sept 2021, does not work properly
+            if OF_Type == 'deep':  # added sept 2021, does not work properly
                 flow = deepflow(ImgFrame_prev, ImgFrame_curr)
                 Vx = flow[:, :, 0]
                 Vy = flow[:, :, 1]
@@ -533,23 +551,23 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
     #print('VxM',VxM[160:165,160:165])
     #print('VyM',VyM[160:165,160:165])
 
-    if label[0:3]=='REV':
+    if label[0:3] == 'REV':
         #print('Optflow label if rev',label[0:3])
-        VxM = copy.deepcopy(-1.0*VxM)
-        VyM = copy.deepcopy(-1.0*VyM)
+        VxM = copy.deepcopy(-1.0 * VxM)
+        VyM = copy.deepcopy(-1.0 * VyM)
         FlowVec['Vx'] = VxM
         FlowVec['Vy'] = VyM
 
     # get orientation and magnitude of the flow vectors
-    FOrientMat, FMagMat = getOrientMag(VxM,VyM)
+    FOrientMat, FMagMat = getOrientMag(VxM, VyM)
 
     FlowVec['Orient'] = FOrientMat
     FlowVec['Mag'] = FMagMat
 
     if OFvisualPrint[0] or OFvisualPrint[1]:
         # uses indexing 1 for user output
-        filename = "flow_prd_" + str(prD+1) + '_psi_' + str(psinum_prD+1) + '_' + str(label)
-        CC_OF_fig_dir = os.path.join(p.CC_dir,'CC_OF_fig/PrD_'+str(prD+1)+'/')
+        filename = "flow_prd_" + str(prD + 1) + '_psi_' + str(psinum_prD + 1) + '_' + str(label)
+        CC_OF_fig_dir = os.path.join(p.CC_dir, 'CC_OF_fig/PrD_' + str(prD + 1) + '/')
         os.makedirs(CC_OF_fig_dir, exist_ok=True)
 
         figOutfile = os.path.join(CC_OF_fig_dir, filename)

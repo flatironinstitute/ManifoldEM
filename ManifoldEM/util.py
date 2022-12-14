@@ -4,7 +4,6 @@ import sys
 import pickle
 
 from ManifoldEM import myio
-
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,6 +12,7 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 #_logger = logging.getLogger(__name__)
 #_logger.setLevel(logging.DEBUG)
+
 
 def hist_match(source, template):  # by ali_m
     """
@@ -38,8 +38,7 @@ def hist_match(source, template):  # by ali_m
 
     # get the set of unique pixel values and their corresponding indices and
     # counts
-    s_values, bin_idx, s_counts = np.unique(source, return_inverse=True,
-                                            return_counts=True)
+    s_values, bin_idx, s_counts = np.unique(source, return_inverse=True, return_counts=True)
     t_values, t_counts = np.unique(template, return_counts=True)
 
     # take the cumsum of the counts and normalize by the number of pixels to
@@ -57,7 +56,7 @@ def hist_match(source, template):  # by ali_m
     return interp_t_values[bin_idx].reshape(oldshape)
 
 
-def histeq(src,thist): # by Zagurskin; does not work well,
+def histeq(src, thist):  # by Zagurskin; does not work well,
     nbr_bins = len(thist)
     bins = np.linspace(0, 1, nbr_bins + 1)
     # hist, bins = np.histogram(src.flatten(), nbr_bins, normed=True)
@@ -73,6 +72,7 @@ def histeq(src,thist): # by Zagurskin; does not work well,
     h3 = np.interp(h2, cdftint, bins[:-1])
 
     return h3
+
 
 def eul_to_quat(phi, theta, psi, flip=True):
     try:
@@ -92,6 +92,7 @@ def eul_to_quat(phi, theta, psi, flip=True):
     qzs = np.vstack((np.cos(psi / 2), zros, zros, sp))
     return (qz, qy, qzs)
 
+
 def augment(q):
     try:
         assert (q.shape[0] > 3)
@@ -107,7 +108,7 @@ def augment(q):
     return q
 
 
-def useless_loop(sizeToConOrderRatio,tauInDir,xAll,xSelect,psinums,posPaths):
+def useless_loop(sizeToConOrderRatio, tauInDir, xAll, xSelect, psinums, posPaths):
     ang_res = 3
     for x in xSelect:
         gC = xAll[1, x]
@@ -115,11 +116,11 @@ def useless_loop(sizeToConOrderRatio,tauInDir,xAll,xSelect,psinums,posPaths):
         psinum2 = psinums[1, x]
         psinum1 = psinums[0, x]
 
-        string = '{}gC{}_prD{}_tautotEL'.format(tauInDir,gC,prD)
-        data = myio.fin(string,['tautotAll','listBad'])
+        string = '{}gC{}_prD{}_tautotEL'.format(tauInDir, gC, prD)
+        data = myio.fin(string, ['tautotAll', 'listBad'])
         tautotAll = data[0]
         listBad = data[1]
-        tau = np.zeros((len(tautotAll[0]),ang_res))
+        tau = np.zeros((len(tautotAll[0]), ang_res))
         for i in range(ang_res):
             tau[:, i] = tautotAll[i].flatten()
         posPath = posPaths[x]
@@ -148,18 +149,20 @@ def make_indeces(inputGCs):
     xAll = np.vstack((x1, x2)).astype(int)
     xSelect = range(xAll.shape[1])
 
-    return xAll,xSelect
+    return xAll, xSelect
+
 
 def interv(s):
     #return np.arange(-s/2,s/2)
-    if s%2 == 0:
-        a = -s/2
-        b = s/2-1
+    if s % 2 == 0:
+        a = -s / 2
+        b = s / 2 - 1
     else:
-        a = -(s-1)/2
-        b = (s-1)/2
+        a = -(s - 1) / 2
+        b = (s - 1) / 2
 
-    return np.linspace(a,b,s)
+    return np.linspace(a, b, s)
+
 
 def filter_fourier(inp, sigma):
     # filter Gauss
@@ -167,14 +170,13 @@ def filter_fourier(inp, sigma):
     nPix2 = inp.shape[0]
     X, Y = np.meshgrid(interv(nPix1), interv(nPix2))
     Rgrid = nPix2 / 2.
-    Q = (1 / Rgrid) * np.sqrt(X ** 2 + Y ** 2)  # Q in units of Nyquist frequency
+    Q = (1 / Rgrid) * np.sqrt(X**2 + Y**2)  # Q in units of Nyquist frequency
 
     N = 4
-    G = np.sqrt(1. / (1 + (Q / sigma) ** (2 * N)))  # ButterWorth
+    G = np.sqrt(1. / (1 + (Q / sigma)**(2 * N)))  # ButterWorth
 
     # Filter images in Fourier space
     G = np.fft.ifftshift(G)
     inp = np.real(np.fft.ifft2(G * np.fft.fft2(inp)))
 
     return inp
-

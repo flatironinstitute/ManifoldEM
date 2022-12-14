@@ -8,8 +8,9 @@ import pickle
 
 from ManifoldEM import myio, p
 
-def op(do): # p.tess_file is known
-    if do == 1: #via 'set_params.op(1)': to retrieve data stored in parameters file
+
+def op(do):  # p.tess_file is known
+    if do == 1:  #via 'set_params.op(1)': to retrieve data stored in parameters file
         data = myio.fin1('params_{}.pkl'.format(p.proj_name))
         params = data['params']
 
@@ -72,7 +73,7 @@ def op(do): # p.tess_file is known
         if 'temperature' in params.keys():
             p.temperature = params['temperature']
 
-    elif do == 0: #via 'set_params.op(0)': to update values within parameters file
+    elif do == 0:  #via 'set_params.op(0)': to update values within parameters file
         params = dict()
         if hasattr(p, 'proj_name'):
             extra = dict(proj_name=p.proj_name)
@@ -164,7 +165,7 @@ def op(do): # p.tess_file is known
 
         myio.fout1('params_{}.pkl'.format(p.proj_name), ['params'], [params])
 
-    elif do == -1: #via 'set_params.op(-1)': to print all values in parameters file
+    elif do == -1:  #via 'set_params.op(-1)': to print all values in parameters file
         fname = os.path.join(p.user_dir, 'params_{}.pkl'.format(p.proj_name))
         pickle_off = open(fname, 'rb')
         emp = pickle.load(pickle_off)

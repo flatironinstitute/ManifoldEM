@@ -5,11 +5,12 @@ import numpy as np
 from ManifoldEM import manifoldTrimmingAuto, myio, set_params, p
 
 from mpi4py import MPI
-COMM = MPI.COMM_WORLD
 
+COMM = MPI.COMM_WORLD
 '''
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 '''
+
 
 def split(container, count):
     return [container[j::count] for j in range(count)]
@@ -23,8 +24,9 @@ def fileCheck():
                 fin_PDs.append(int(file))
     return fin_PDs
 
+
 def divide(N):
-    ll=[]
+    ll = []
     fin_PDs = fileCheck()
     for prD in range(N):
         dist_file = '{}prD_{}'.format(p.dist_file, prD)
@@ -33,6 +35,7 @@ def divide(N):
         if prD not in fin_PDs:
             ll.append([dist_file, psi_file, eig_file, prD])
     return ll
+
 
 def op(proj_name):
     p.init()
@@ -72,6 +75,7 @@ def op(proj_name):
     MPI.COMM_WORLD.gather(res, root=0)
 
     return
+
 
 if __name__ == '__main__':
     op(sys.argv[1])

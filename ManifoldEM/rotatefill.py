@@ -13,10 +13,11 @@ Ported to python. Hstau Liao Oct. 2016
 '''
 
 import numpy as np
-import logging,sys
+import logging, sys
 import math
 from scipy.ndimage.interpolation import rotate
 import matplotlib.pyplot as plt
+
 
 def op(input, angle, visual=False):
     nPix = input.shape[0]
@@ -26,7 +27,7 @@ def op(input, angle, visual=False):
 
     if visual:
         plt.subplot(2, 2, 1)
-        plt.imshow(input,cmap = plt.get_cmap('gray'))
+        plt.imshow(input, cmap=plt.get_cmap('gray'))
         plt.title('Input')
         plt.subplot(2, 2, 2)
         plt.imshow(out, cmap=plt.get_cmap('gray'))
@@ -40,12 +41,11 @@ def op(input, angle, visual=False):
         plt.show()
     return out
 
+
 if __name__ == '__main__':
 
     # tested using a 6x6 image
     img = np.loadtxt(sys.argv[1])
-    ang = float(sys.argv[2]) # in degrees
+    ang = float(sys.argv[2])  # in degrees
     visual = bool(sys.argv[3])
-    result = op(img,ang,visual)
-
-
+    result = op(img, ang, visual)

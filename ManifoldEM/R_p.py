@@ -1,11 +1,9 @@
 import numpy as np
 
 from ManifoldEM import a
-
 '''
 Copyright (c) Columbia University Hstau Liao 2019    
 '''
-
 '''
 function fval=R_p(tau_p)
 % 
@@ -39,12 +37,13 @@ function fval=R_p(tau_p)
 Copyright (c) Columbia University Hstau Liao 2018 (python version)    
 '''
 
+
 def op(tau_p):
     #global p, nDim, a, b, x
-    jj = np.array(range(1,a.nDim+1))
-    j_pi_tau_p = tau_p*jj*np.pi
-    a_cos_j_pi_tau_p = a.a*np.cos(j_pi_tau_p)
-    err = a.x[a.p,:]-a.b - a_cos_j_pi_tau_p
-    fval = np.sum(err**2,axis=1)
+    jj = np.array(range(1, a.nDim + 1))
+    j_pi_tau_p = tau_p * jj * np.pi
+    a_cos_j_pi_tau_p = a.a * np.cos(j_pi_tau_p)
+    err = a.x[a.p, :] - a.b - a_cos_j_pi_tau_p
+    fval = np.sum(err**2, axis=1)
 
     return fval

@@ -6,8 +6,6 @@ import numpy as np
 
 from ManifoldEM import annularMask, myio, p
 from ManifoldEM.CC import projectMask
-
-
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		
 Modified:Sept 17,2021
@@ -15,7 +13,6 @@ Modified:Sept 17,2021
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-
 '''
 def psi_ang(PD):
     lPD = sum(PD**2)
@@ -52,23 +49,24 @@ def rotate_psi(prD,img):
     return img
 '''
 
-def getMask2D(prD,maskType,radius):
+
+def getMask2D(prD, maskType, radius):
     #print 'Reading PD from dist_file and tesselation info from tess_file.'
-    
-    if maskType == 'annular': #annular mask
+
+    if maskType == 'annular':  #annular mask
         N = p.nPix
         diam_angst = p.obj_diam
         diam_pix = diam_angst / p.pix_size
-        if radius==None: # if no input is provided
-            N2 = N/2. - .25*(N - diam_pix)*0.30
+        if radius == None:  # if no input is provided
+            N2 = N / 2. - .25 * (N - diam_pix) * 0.30
         else:
-            N2 = radius # also includes radius = 0
+            N2 = radius  # also includes radius = 0
         if prD == 0:
             print('Annular mask radius: {} pixels'.format(N2))
-        mask = annularMask.op(0,N2,N,N)
+        mask = annularMask.op(0, N2, N, N)
 
-    elif maskType == 'volumetric': #3d volume mask from user-input
-        dist_file = '{}prD_{}'.format(p.dist_file,prD)
+    elif maskType == 'volumetric':  #3d volume mask from user-input
+        dist_file = '{}prD_{}'.format(p.dist_file, prD)
         data = myio.fin1(dist_file)
         PD = data['PD']
         maskFile = p.mask_vol_file
@@ -76,11 +74,10 @@ def getMask2D(prD,maskType,radius):
         with mrcfile.open(maskFile) as mrc:
             mask3D = mrc.data
 
-        mask = projectMask.op(mask3D,PD)
+        mask = projectMask.op(mask3D, PD)
 
     else:
         mask = 1
-
     '''
     elif maskType=='average2Dmovie':
         mask=2 # do it after reading the movie
@@ -95,11 +92,12 @@ def maskAvgMovie(M):
     # masked being applied to each frame of the movie M
     numFrames = M.shape[0]
     dim = int(np.sqrt(M.shape[1]))
-    print('\nnumFrames',numFrames, 'dim',dim)
+    print('\nnumFrames', numFrames, 'dim', dim)
     M2 = np.resize(M, (numFrames, dim, dim))
     Mavg = np.sum(M2, axis=0)
-    mask2D = cv2.adaptiveThreshold(Mavg, np.max(Mavg.flatten()), cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
-    maskedM = M*mask2D.flatten('F') # broadcast to all frames
+    mask2D = cv2.adaptiveThreshold(Mavg, np.max(Mavg.flatten()), cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11,
+                                   2)
+    maskedM = M * mask2D.flatten('F')  # broadcast to all frames
     # test for first frame
     #plt.imshow(maskedM[1,:].reshape((dim,dim)),cmap='gray')
     #plt.show()
@@ -116,10 +114,10 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
     # this will artifically make the IQR value high giving the illusion of a wide tau
     # distribution. This cases need to be checked and set the IQR to a low value=0.01
     taubins = 50
-    tau_h, bin_edges = np.histogram(tau, bins=taubins) # there are 50 states
+    tau_h, bin_edges = np.histogram(tau, bins=taubins)  # there are 50 states
     tau_h = np.array(tau_h)
     tau_nz = np.where(tau_h > 0.0)[0].size
-    tau_occ = tau_nz/float(taubins)
+    tau_occ = tau_nz / float(taubins)
     #print('\ntau h:', tau_h)
     #print('\ntau bin_edges:', bin_edges)
     #print('\ntau occ:', tau_nz, tau_occ)
@@ -135,10 +133,11 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
 
     return badPsi, iqr, tau_occ
 
+
 def op(prD):
     #print ('\nprD',prD)
-    p.findBadPsiTau = 1 # interface with GUI, p.py
-    p.tau_occ_thresh = 0.35 # interface with GUI, p.py
+    p.findBadPsiTau = 1  # interface with GUI, p.py
+    p.tau_occ_thresh = 0.35  # interface with GUI, p.py
     '''
     useMask = 1 # default
     p.mask_vol_file = ''
@@ -150,25 +149,25 @@ def op(prD):
         useMask = 1
         maskType ='mask3Dprojection'
     '''
-    useMask = 0 # default
-    if p.opt_mask_type==0:
-       useMask = 0
-       maskType = 'None'
-       radius = p.opt_mask_param
-    elif p.opt_mask_type==1:
-       useMask = 1
-       maskType = 'annular'
-       radius = p.opt_mask_param
-    elif p.opt_mask_type==2:
-       useMask = 1
-       maskType = 'volumetric'
-       radius=None # for volumetric we don't need any radius
+    useMask = 0  # default
+    if p.opt_mask_type == 0:
+        useMask = 0
+        maskType = 'None'
+        radius = p.opt_mask_param
+    elif p.opt_mask_type == 1:
+        useMask = 1
+        maskType = 'annular'
+        radius = p.opt_mask_param
+    elif p.opt_mask_type == 2:
+        useMask = 1
+        maskType = 'volumetric'
+        radius = None  # for volumetric we don't need any radius
 
     psi2_file = p.psi2_file
     NumPsis = p.num_psis
     #print 'NumPsis',NumPsis
-    moviePrDPsis = [None]*NumPsis
-    tauPrDPsis = [None]*NumPsis
+    moviePrDPsis = [None] * NumPsis
+    tauPrDPsis = [None] * NumPsis
     badPsis = []
     tauPsisIQR = []
     tauPsisOcc = []
@@ -196,7 +195,7 @@ def op(prD):
             if maskType == 'average2Dmovie':
                 Mpsi_masked = maskAvgMovie(Mpsi)
             else:
-                Mpsi_masked = Mpsi*(mask2D.flatten('F')) # broadcast to all frames
+                Mpsi_masked = Mpsi * (mask2D.flatten('F'))  # broadcast to all frames
         else:
             Mpsi_masked = Mpsi
 
@@ -218,4 +217,3 @@ def op(prD):
 
     #print('prD',prD, 'badPsis', badPsis,tauvalPsis)
     return moviePrDPsis, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc
-

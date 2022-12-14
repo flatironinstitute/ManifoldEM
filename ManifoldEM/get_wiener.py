@@ -6,6 +6,7 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 import numpy as np
 
+
 def op(CTF, posPath, posPsi1, ConOrder, num):
     dim = CTF.shape[1]
     SNR = 5
@@ -14,9 +15,8 @@ def op(CTF, posPath, posPsi1, ConOrder, num):
     for i in range(num - ConOrder):
         for ii in range(ConOrder):
             ind_CTF = ConOrder - ii + i
-            wiener_dom[i, :, :] = wiener_dom[i, :, :] + CTF1[ind_CTF, :, :] ** 2
+            wiener_dom[i, :, :] = wiener_dom[i, :, :] + CTF1[ind_CTF, :, :]**2
 
     wiener_dom = wiener_dom + 1. / SNR
 
-    return (wiener_dom,CTF1)
-
+    return (wiener_dom, CTF1)

@@ -7,23 +7,25 @@ from mpi4py import MPI
 
 COMM = MPI.COMM_WORLD
 import sys
-
 '''
 Copyright (c) Columbia University Hstau Liao 2019 (python version)    
 '''
 
+
 def split(container, count):
     return [container[j::count] for j in range(count)]
 
+
 def fileCheck():
-    fin_PDs = [] #collect list of previously finished PDs from distances/progress/
+    fin_PDs = []  #collect list of previously finished PDs from distances/progress/
     for root, dirs, files in os.walk(p.dist_prog):
         for file in sorted(files):
-            if not file.startswith('.'): #ignore hidden files
+            if not file.startswith('.'):  #ignore hidden files
                 fin_PDs.append(int(file))
     return fin_PDs
 
-def divide(CG,q,df,N):
+
+def divide(CG, q, df, N):
     ll = []
     fin_PDs = fileCheck()
     for prD in range(N):
@@ -34,6 +36,7 @@ def divide(CG,q,df,N):
         if prD not in fin_PDs:
             ll.append([ind, q1, df1, dist_file, prD])
     return ll
+
 
 def op(proj_name):
     p.init()
@@ -48,9 +51,14 @@ def op(proj_name):
         q = data1['q']
         sh = data1['sh']
         size = len(df)
-        filterPar = dict(type='Butter',Qc=0.5,N=8)
-        options = dict(verbose=False,avgOnly=False,visual=False,parallel=False,relion_data=p.relion_data,thres=p.PDsizeThH)
-        params1 = dict(filterPar=filterPar,options=options,sh=sh,size=size)
+        filterPar = dict(type='Butter', Qc=0.5, N=8)
+        options = dict(verbose=False,
+                       avgOnly=False,
+                       visual=False,
+                       parallel=False,
+                       relion_data=p.relion_data,
+                       thres=p.PDsizeThH)
+        params1 = dict(filterPar=filterPar, options=options, sh=sh, size=size)
         jobs = divide(CG, q, df, p.numberofJobs)
     else:
         params1 = None
@@ -79,6 +87,7 @@ def op(proj_name):
     MPI.COMM_WORLD.gather(res, root=0)
 
     return
+
 
 if __name__ == '__main__':
     op(sys.argv[1])

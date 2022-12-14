@@ -2,20 +2,20 @@ from os import remove
 from shutil import rmtree, copytree, copy
 
 from ManifoldEM import p
-
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
-def op(PrD,choice):
+
+def op(PrD, choice):
     for j in range(p.num_psis):
         # dirs with frames
-        subdir = p.out_dir+'/topos/PrD_{}/psi_{}'.format(PrD,j+1)
-        subdir1 = p.out_dir + '/topos/PrD_{}/psi_orig{}'.format(PrD,j+1)
+        subdir = p.out_dir + '/topos/PrD_{}/psi_{}'.format(PrD, j + 1)
+        subdir1 = p.out_dir + '/topos/PrD_{}/psi_orig{}'.format(PrD, j + 1)
         # movies
         mov_file = p.out_dir + '/topos/PrD_{}/psi_{}.gif'.format(PrD, j + 1)
-        mov_orig_file = p.out_dir+'/topos/PrD_{}/psi_{}_orig.gif'.format(PrD,j+1)
+        mov_orig_file = p.out_dir + '/topos/PrD_{}/psi_{}_orig.gif'.format(PrD, j + 1)
         # topos
         tm_file = '{}/topos/PrD_{}/topos_{}.png'.format(p.out_dir, PrD, j + 1)
         tm_orig_file = '{}/topos/PrD_{}/topos_orig_{}.png'.format(p.out_dir, PrD, j + 1)
@@ -40,8 +40,8 @@ def op(PrD,choice):
             remove(tm_orig_file)
 
     # diff maps
-    psi_file = '{}prD_{}'.format(p.psi_file, PrD-1)
-    psi_orig_file = '{}orig_prD_{}'.format(p.psi_file, PrD- 1)
+    psi_file = '{}prD_{}'.format(p.psi_file, PrD - 1)
+    psi_orig_file = '{}orig_prD_{}'.format(p.psi_file, PrD - 1)
     # psianalysis
     psi2_file = '{}prD_{}'.format(p.psi2_file, PrD - 1)
     psi2_orig_file = '{}orig_prD_{}'.format(p.psi2_file, PrD - 1)
@@ -51,7 +51,6 @@ def op(PrD,choice):
     # eig spectrum
     eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, PrD)
     eig_orig_file = '{}/topos/PrD_{}/eig_spec_orig.txt'.format(p.out_dir, PrD)
-
 
     if choice == 1:
         copy(psi_file, psi_orig_file)
@@ -76,4 +75,3 @@ def op(PrD,choice):
             psi2_orig = '{}_psi_{}'.format(psi2_orig_file, i)
             copy(psi2_orig, psi2)
             remove(psi2_orig)
-

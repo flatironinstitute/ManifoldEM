@@ -1,8 +1,6 @@
 import numpy as np
 
 from ManifoldEM import get_fit_1D_open_manifold_3D_param, solve_d_R_d_tau_p_3D, a, linalg
-
-
 '''
 function [a,b,tau] = fit_1D_open_manifold_3D(psi)
 % 
@@ -37,6 +35,7 @@ eps = 1e-4
 
 #global maxIter,delta_a_max, delta_b_max,delta_tau_max,a_b_tau_result
 
+
 def op(psi):
     a.init()
     #global p, nDim, a, b, x, x_fit
@@ -45,10 +44,10 @@ def op(psi):
 
     tau = get_fit_1D_open_manifold_3D_param.op(psi)
 
-    aux = np.zeros((tau.shape[0],5))   #added
+    aux = np.zeros((tau.shape[0], 5))  #added
     nS = a.x.shape[0]
-  
-    for iter in range(1,a.maxIter+1):
+
+    for iter in range(1, a.maxIter + 1):
         '''
         #%%%%%%%%%%%%%%%%%%%%%
         #% solve for a and b %
@@ -56,32 +55,31 @@ def op(psi):
         '''
         a_old = a.a
         b_old = a.b
-        j_pi_tau = np.dot(tau,np.pi*np.array([[1,2,3]]))
+        j_pi_tau = np.dot(tau, np.pi * np.array([[1, 2, 3]]))
         cos_j_pi_tau = np.cos(j_pi_tau)
         A11 = np.sum(cos_j_pi_tau**2, axis=0)
         A12 = np.sum(cos_j_pi_tau, axis=0)
         A21 = A12
         A22 = nS
-        x_cos_j_pi_tau = a.x*cos_j_pi_tau
+        x_cos_j_pi_tau = a.x * cos_j_pi_tau
         b1 = np.sum(x_cos_j_pi_tau, axis=0)
         b2 = np.sum(a.x, axis=0)
-        coeff = np.zeros((2,3))
+        coeff = np.zeros((2, 3))
         for qq in range(3):
-            A = np.array([[A11[qq],A12[qq]],[A21[qq], A22]])
+            A = np.array([[A11[qq], A12[qq]], [A21[qq], A22]])
             b = np.array([b1[qq], b2[qq]])
-            coeff[:,qq] = np.linalg.lstsq(A, b)[0]
-        
+            coeff[:, qq] = np.linalg.lstsq(A, b)[0]
 
-        a.a = coeff[0,:]
-        a.b = coeff[1,:]
+        a.a = coeff[0, :]
+        a.b = coeff[1, :]
         '''
         %%%%%%%%%%%%%%%%%%%%%%%%%
         #% plot the fitted curve %
         %%%%%%%%%%%%%%%%%%%%%%%%%
         '''
-        j_pi_tau = np.dot(np.linspace(0,1,1000).reshape(-1,1),np.array([[1,2,3]]))*np.pi
+        j_pi_tau = np.dot(np.linspace(0, 1, 1000).reshape(-1, 1), np.array([[1, 2, 3]])) * np.pi
         cos_j_pi_tau = np.cos(j_pi_tau)
-        tmp = a.a*cos_j_pi_tau
+        tmp = a.a * cos_j_pi_tau
         a.x_fit = tmp + a.b
         #%plot_fitted_curve(iter)
         '''
@@ -91,27 +89,26 @@ def op(psi):
         '''
         tau_old = tau
         for a.p in range(nS):
-          tau[a.p],beta = solve_d_R_d_tau_p_3D.op()   #added
-          for kk in range(beta.shape[0]):
-              aux[a.p,kk] = beta[kk]
-
+            tau[a.p], beta = solve_d_R_d_tau_p_3D.op()  #added
+            for kk in range(beta.shape[0]):
+                aux[a.p, kk] = beta[kk]
         '''
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #% calculate the changes in fitting parameters %
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         '''
-        delta_a = np.fabs(a.a-a_old)/(np.fabs(a.a)+eps)
-        delta_b = np.fabs(a.b-b_old)/(np.fabs(a.b)+eps)
-        delta_tau = np.fabs(tau-tau_old)
-        delta_a = max(delta_a)*100
-        delta_b = max(delta_b)*100
+        delta_a = np.fabs(a.a - a_old) / (np.fabs(a.a) + eps)
+        delta_b = np.fabs(a.b - b_old) / (np.fabs(a.b) + eps)
+        delta_tau = np.fabs(tau - tau_old)
+        delta_a = max(delta_a) * 100
+        delta_b = max(delta_b) * 100
         delta_tau = max(delta_tau)
         #print '  changes in fitting parameters: \n'
         #string = '  amplitudes: '+ str(delta_a) + '\n' + \
         #         '  offsets: ' + str(delta_b) + ' \n' +\
         #         '  values of tau: ' + str(delta_tau) + ' \n'
         #print string
-        if (delta_a<a.delta_a_max) and (delta_b < a.delta_b_max) and (delta_tau < a.delta_tau_max):
+        if (delta_a < a.delta_a_max) and (delta_b < a.delta_b_max) and (delta_tau < a.delta_tau_max):
             break
 
-    return (a.a,a.b,tau)
+    return (a.a, a.b, tau)

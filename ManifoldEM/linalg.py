@@ -1,10 +1,10 @@
 import numpy as np
-
 '''
 Copyright (c) Columbia University Hstau Liao 2019    
 '''
 
-def op(A,b):
+
+def op(A, b):
     try:
         coeff = np.linalg.lstsq(A, b)[0]
     except:

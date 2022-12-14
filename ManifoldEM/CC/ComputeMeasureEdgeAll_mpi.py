@@ -4,14 +4,16 @@ from ManifoldEM import p, myio, set_params
 from ManifoldEM.CC.ComputeMeasureEdgeAll import ComputeEdgeMeasurePairWisePsiAll
 
 from mpi4py import MPI
-COMM = MPI.COMM_WORLD
 
+COMM = MPI.COMM_WORLD
 '''
 Copyright (c) Columbia University Hstau Liao 2019 (python version)    
 '''
 
+
 def split(container, count):
     return [container[j::count] for j in range(count)]
+
 
 def divide1(R, G):
     ll = []
@@ -23,7 +25,7 @@ def divide1(R, G):
             data = myio.fin1(CC_meas_file)
             if data is not None:
                 continue
-        ll.append([currPrD,nbrPrD,CC_meas_file,e])
+        ll.append([currPrD, nbrPrD, CC_meas_file, e])
     return ll
 
 
@@ -38,7 +40,7 @@ def op(proj_name):
         G = data1['G']
         edgeNumRange = data1['edgeNumRange']
         flowVecPctThresh = p.opt_movie['flowVecPctThresh']
-        input_data = divide1(edgeNumRange,G)
+        input_data = divide1(edgeNumRange, G)
         params1 = dict(G=G, flowVecPctThresh=flowVecPctThresh)
     else:
         params1 = None
@@ -54,12 +56,13 @@ def op(proj_name):
     for job in jobs:
         G = params1['G']
         flowVecPctThresh = params1['flowVecPctThresh']
-        ComputeEdgeMeasurePairWisePsiAll(job,G,flowVecPctThresh)
+        ComputeEdgeMeasurePairWisePsiAll(job, G, flowVecPctThresh)
         res.append([])
     if COMM.rank == 0:
         set_params.op(0)
     MPI.COMM_WORLD.gather(res, root=0)
     return
+
 
 if __name__ == '__main__':
     op(sys.argv[1])

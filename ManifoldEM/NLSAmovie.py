@@ -11,8 +11,6 @@ from contextlib import contextmanager
 from subprocess import Popen
 
 from ManifoldEM import myio, p, set_params, myio, makeMovie
-
-
 '''
 % scriptPsiNLSAmovie
 % Matlab Version V1.2
@@ -25,6 +23,7 @@ Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
+
 @contextmanager
 def poolcontext(*args, **kwargs):
     pool = multiprocessing.Pool(*args, **kwargs)
@@ -32,14 +31,16 @@ def poolcontext(*args, **kwargs):
     pool.terminate()
     pool.close()
 
+
 def divide(N):
-    ll=[]
-    for prD in range(N):#prDs
+    ll = []
+    for prD in range(N):  #prDs
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
         ll.append([prD])
     return ll
+
 
 def count(N):
     c = 0
@@ -51,7 +52,8 @@ def count(N):
         c += 1
     return c
 
-def movie(input_data,out_dir,dist_file,psi2_file,fps):
+
+def movie(input_data, out_dir, dist_file, psi2_file, fps):
     prD = input_data[0]
     dist_file1 = '{}prD_{}'.format(dist_file, prD)
     # Fetching NLSA outputs and making movies
@@ -101,10 +103,11 @@ def movie(input_data,out_dir,dist_file,psi2_file,fps):
 
     return
 
+
 def op(*argv):
     time.sleep(5)
     set_params.op(1)
-    
+
     multiprocessing.set_start_method('fork', force=True)
 
     for i in range(p.numberofJobs):
@@ -114,8 +117,13 @@ def op(*argv):
 
     if p.machinefile:
         print('using MPI')
-        Popen(["mpirun", "-n", str(p.ncpu), "-machinefile", str(p.machinefile),
-            "python", "modules/NLSAmovie_mpi.py",str(p.proj_name)],close_fds=True)
+        Popen([
+            "mpirun", "-n",
+            str(p.ncpu), "-machinefile",
+            str(p.machinefile), "python", "modules/NLSAmovie_mpi.py",
+            str(p.proj_name)
+        ],
+              close_fds=True)
         if argv:
             progress4 = argv[0]
             offset = 0
@@ -132,14 +140,16 @@ def op(*argv):
             progress4.emit(int((offset / float(p.numberofJobs)) * 100))
         if p.ncpu == 1:  # avoids the multiprocessing package
             for i in range(len(input_data)):
-                movie(input_data[i],p.out_dir, p.dist_file, p.psi2_file, p.fps)
+                movie(input_data[i], p.out_dir, p.dist_file, p.psi2_file, p.fps)
                 if argv:
                     offset += 1
                     progress4.emit(int((offset / float(p.numberofJobs)) * 100))
         else:
             with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(pool.imap_unordered(partial(movie,out_dir=p.out_dir,dist_file=p.dist_file,
-                                       psi2_file=p.psi2_file,fps=p.fps), input_data), 1):
+                for i, _ in enumerate(
+                        pool.imap_unordered(
+                            partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
+                            input_data), 1):
                     if argv:
                         offset += 1
                         progress4.emit(int((offset / float(p.numberofJobs)) * 100))
@@ -149,6 +159,7 @@ def op(*argv):
 
     set_params.op(0)
     return
+
 
 if __name__ == '__main__':
     p.init()
