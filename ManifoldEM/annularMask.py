@@ -14,7 +14,7 @@ Copyright (c) Columbia University Hstau Liao 2019
 % Copyright (c) Russell Fung 2007 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """
-
+import numpy as np
 
 def op(a, b, N, M):
     aSq = a * a
