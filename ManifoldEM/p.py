@@ -126,6 +126,7 @@ def create_dir():
 
     psi_dir = os.path.join(user_dir, 'outputs_{}/diff_maps/'.format(proj_name))
     psi_prog = os.path.join(psi_dir, 'progress/')
+    os.makedirs(psi_prog, exist_ok=True)
 
     psi2_dir = os.path.join(user_dir, 'outputs_{}/psi_analysis/'.format(proj_name))
     psi2_prog = os.path.join(psi2_dir, 'progress/')
