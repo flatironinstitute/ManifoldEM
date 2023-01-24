@@ -8269,7 +8269,7 @@ class ThreshAllCanvas(QtGui.QDialog):
 
         ThreshAllCanvas.entry_low = QtGui.QDoubleSpinBox(self)
         ThreshAllCanvas.entry_low.setDecimals(0)
-        ThreshAllCanvas.entry_low.setMinimum(90)
+        ThreshAllCanvas.entry_low.setMinimum(5)
         ThreshAllCanvas.entry_low.setMaximum(np.amax(P1.all_occ))
         ThreshAllCanvas.entry_low.setValue(int(p.PDsizeThL))
 
