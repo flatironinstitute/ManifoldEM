@@ -25,45 +25,32 @@ Modified:Sept 21,2021
 # do it for all values across all edges, to check for outliers and relative edge values after scaling
 # are comparable in this way
 def reScaleLinear(M, edgeNumRange, mvalrange):
-    numE = np.max(edgeNumRange)  #M.shape[0]
-    nm = np.zeros(numE + 1).astype(int)
+    numE = max(edgeNumRange)
+    nm = np.zeros(numE + 1, dtype=int)
     all_m = []
 
     for e in edgeNumRange:
-        #print('scale e', e, 'M[e]:', M[e])
-        meas = M[e].flatten()
-        #print(meas.shape)
-        nm[e] = meas.shape[0]
-        all_m.append(meas)
+        nm[e] = M[e].size
+        all_m.append(M[e].ravel())
 
     all_m = np.squeeze(all_m).flatten()
-
-    #print('min', np.min(all_m), 'max', np.max(all_m))
 
     # determine if there are outliers in the all_m array
     q1, q3 = np.percentile(all_m, [25, 75])
     iqr = q3 - q1
     upper_thresh = q3 + (1.5 * iqr)
 
-    #print 'upper_thresh',upper_thresh
-    #print 'max-without outliers',np.max(all_m[all_m<=upper_thresh])
     all_m[all_m > upper_thresh] = upper_thresh
-    #print all_m
+
     ## linear scaling of values within the range 'mvalr', min and max to mapped to min(mvalr) and max(mvalr)
     scaled_all_m = np.interp(all_m, (np.min(all_m), np.max(all_m)), mvalrange)
-
     M_scaled = np.empty(M.shape, dtype=object)
-    #print('M_scaled_shape', M_scaled.shape)
+    nm_start = 0
     for e in edgeNumRange:
-        if e == 0:
-            nm_ind = range(0, nm[e])
-        else:
-            nm_ind = range(e * nm[e - 1], e * nm[e - 1] + nm[e])
+        nm_ind = np.arange(nm_start, nm_start + nm[e])
+        nm_start += nm[e]
+        M_scaled[e] = np.reshape(scaled_all_m[nm_ind], M[e].shape)
 
-        M_scaled[e] = np.reshape(scaled_all_m[nm_ind], np.shape(M[0]))
-
-        #print('e',e)
-        #print('meas:',M_scaled[e])
     return M_scaled
 
 

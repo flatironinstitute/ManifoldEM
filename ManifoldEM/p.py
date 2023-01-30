@@ -147,7 +147,7 @@ def create_dir():
     relion_dir = bin_dir = os.path.join(user_dir, 'outputs_{}/bin/'.format(proj_name))
     os.makedirs(bin_dir, exist_ok=True)
 
-    CC_dir = os.path.join(user_dir, 'outputs_{}/CC'.format(proj_name))
+    CC_dir = os.path.join(user_dir, 'outputs_{}/CC/'.format(proj_name))
     CC_OF_dir = os.path.join(CC_dir, 'CC_OF')
     os.makedirs(CC_OF_dir, exist_ok=True)
 
