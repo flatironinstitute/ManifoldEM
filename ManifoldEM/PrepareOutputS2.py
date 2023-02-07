@@ -9,14 +9,12 @@ from ManifoldEM import writeRelionS2, p, myio, set_params
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %This script prepares the image stacks and orientations for 3D reconstruction.
-    Copyright (c) Columbia Univ Hstau Liao 2018 (python version)   
-    Copyright (c) Columbia University Suvrajit Maji 2020 (python version)    
+    Copyright (c) Columbia Univ Hstau Liao 2018 (python version)
+    Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
 
 
 def op(*argv):
-    time.sleep(5)
-
     set_params.op(1)
     #ComputeEnergy1D.op() # this is s a repeat , commented out
     print("Writing output files...")
