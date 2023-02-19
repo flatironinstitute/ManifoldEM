@@ -9,6 +9,21 @@ This software was developed in the Frank research group at Columbia University (
 3. Mashayekhi, G. ManifoldEM Matlab repository. https://github.com/GMashayekhi/ManifoldEM_Matlab
 4. Seitz, E. et al. Geometric machine learning informed by ground truth: Recovery of conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
+## Installation
+Should be installable in any modern python/conda environment (python 3.7+).
+
+```bash
+# create virtual environment
+python3 -m venv ~/path/to/venv
+source ~/path/to/venv/bin/activate
+# or...
+# conda create -n myenvironmentname
+# conda activate myenvironmentname
+pip install git+https://github.com/flatironinstitute/ManifoldEM.git
+
+ManifoldEM_GUI
+```
+
 ### Contributions
 ManifoldEM Python team (alphabetically ordered):
 
