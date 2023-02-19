@@ -10,7 +10,15 @@ This software was developed in the Frank research group at Columbia University (
 4. Seitz, E. et al. Geometric machine learning informed by ground truth: Recovery of conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+).
+Should be installable in any modern python/conda environment (python 3.7+). Needs a working
+`mpi` install as well (a default conda one should be fine). On cluster environments this might
+require something like
+
+```bash
+module load python openmpi python-mpi
+```
+
+Then to install...
 
 ```bash
 # create virtual environment
