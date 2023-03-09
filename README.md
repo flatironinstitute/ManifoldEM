@@ -1,4 +1,8 @@
 # README
+
+Note this is the Flatiron Institute hosted version of this code.
+Further development is currently being conducted by Robert Blackwell and Sonya Hanson -- feel free to reach out directly with any questions or concerns, or file an Issue.
+
 ## ManifoldEM Python Suite
 
 This repository contains the Python software implementation of ManifoldEM for determination of conformational continua of macromolecules from single-particle cryo-EM data, as was first introduced by Dashti, et al. (2014). A detailed user manual is provided on the main branch of this repository. Carefully going through this manual will prepare you for running ManifoldEM on your own data sets. If you have any questions about ManifoldEM after reading this entire document, carefully check the ManifoldEM GitHub forum for similar inquiries or, if no similar posts exist, create a new thread detailing your inquiry. 
