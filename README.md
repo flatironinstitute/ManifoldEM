@@ -25,12 +25,10 @@ module load python openmpi python-mpi
 Then to install...
 
 ```bash
-# create virtual environment
+# create virtual environment. For the moment we recomend against installing via conda due to version conflicts with numpy and the current version of the code. 
 python3 -m venv ~/path/to/venv
 source ~/path/to/venv/bin/activate
-# or...
-# conda create -n myenvironmentname
-# conda activate myenvironmentname
+
 pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
 
 ManifoldEM_GUI
