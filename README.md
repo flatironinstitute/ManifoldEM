@@ -27,7 +27,7 @@ source ~/path/to/venv/bin/activate
 # or...
 # conda create -n myenvironmentname
 # conda activate myenvironmentname
-pip install git+https://github.com/flatironinstitute/ManifoldEM.git
+pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
 
 ManifoldEM_GUI
 ```
