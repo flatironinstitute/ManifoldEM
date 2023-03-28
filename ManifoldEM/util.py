@@ -2,6 +2,7 @@ import numpy as np
 import logging
 import sys
 import pickle
+import traceback
 
 from ManifoldEM import myio
 '''
@@ -14,10 +15,18 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 #_logger.setLevel(logging.DEBUG)
 
 def debug_trace():
-  from PyQt5.QtCore import pyqtRemoveInputHook
-  from pdb import set_trace
-  pyqtRemoveInputHook()
-  set_trace()
+    from PyQt5.QtCore import pyqtRemoveInputHook
+    from pdb import set_trace
+    pyqtRemoveInputHook()
+    set_trace()
+
+
+def debug_print(msg: str=""):
+    if msg:
+        print(msg)
+    stack = traceback.format_stack()
+    # print file, line number, and calling function
+    print(stack[-2].split('\n')[0])
 
 
 def hist_match(source, template):  # by ali_m
