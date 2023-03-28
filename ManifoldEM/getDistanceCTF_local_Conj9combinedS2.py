@@ -57,7 +57,8 @@ from scipy.ndimage.interpolation import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
-from ManifoldEM import rotatefill, ctemh_cryoFrank, myio, p, annularMask, q2Spider, projectMask
+from ManifoldEM import ctemh_cryoFrank, myio, p, annularMask, q2Spider, projectMask
+from ManifoldEM.util import rotate_fill
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 '''
@@ -316,9 +317,9 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
         # inplane align the images
         img = y[:, iS].reshape(-1, N).transpose() * msk  # convert to matlab convention prior to rotation
 
-        img = rotatefill.op(img, -(180 / math.pi) * Psi, visual=False)
+        img = rotate_fill(img, -(180 / math.pi) * Psi)
 
-        img = rotatefill.op(img, -psi_p, visual=False)
+        img = rotate_fill(img, -psi_p)
         """img = imrotate(img,-(180/pi)*Psi,'bilinear','crop'); # the negative sign is due to Spider convention"""
         imgAvg = imgAvg + img  # plain 2d average
         ## where is this imgAvg used ?? there is a imgAvg in the next loop below

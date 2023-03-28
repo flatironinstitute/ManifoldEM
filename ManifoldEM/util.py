@@ -4,6 +4,8 @@ import sys
 import pickle
 import traceback
 
+from PIL import Image
+
 from ManifoldEM import myio
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -27,6 +29,13 @@ def debug_print(msg: str=""):
     stack = traceback.format_stack()
     # print file, line number, and calling function
     print(stack[-2].split('\n')[0])
+
+
+def rotate_fill(img, angle):
+    nPix = img.shape[0]
+    inRep = Image.fromarray(np.tile(img, (3, 3)).astype('float32'), mode='F')
+    outRep = np.array(inRep.rotate(angle, expand=False), dtype=img.dtype)
+    return outRep[nPix:2 * nPix, nPix:2 * nPix]
 
 
 def hist_match(source, template):  # by ali_m

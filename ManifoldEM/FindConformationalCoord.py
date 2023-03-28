@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 
-from ManifoldEM import myio, FindCCGraphPruned, set_params, q2Spider, rotatefill, p
+from ManifoldEM import myio, FindCCGraphPruned, set_params, q2Spider, p
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
