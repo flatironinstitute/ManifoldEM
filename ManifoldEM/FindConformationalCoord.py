@@ -39,14 +39,13 @@ def op(*argv):
     os.makedirs(p.CC_OF_dir, exist_ok=True)
 
     # if trash PDs were created manually
-    trash_list_PDs = np.nonzero(p.trash_list == int(1))[0]
+    trash_list_PDs = np.nonzero(p.trash_list)[0]
     numTrashPDs = len(trash_list_PDs)
 
     if numTrashPDs > 0:
         print('Number of trash PDs', numTrashPDs)
         CC_graph_file = CC_graph_file_pruned
         G, Gsub = FindCCGraphPruned.op(CC_graph_file)
-
     else:
         CC_graph_file = p.CC_graph_file
         data = myio.fin1(CC_graph_file)
