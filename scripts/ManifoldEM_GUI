@@ -8812,8 +8812,9 @@ class MainWindow(QtGui.QMainWindow):
                                 p.img_stack_file = fileName
 
                     if p.img_stack_file.endswith('.mrcs'):
-                        mrc = mrcfile.mmap(p.img_stack_file, mode='r+')
-                        mrc.set_image_stack()
+                        if not mrcfile.mmap(p.img_stack_file, mode='r').is_image_stack():
+                            mrcfile.mmap(p.img_stack_file, mode='r+').set_image_stack()
+
                     P1.user_stack = p.img_stack_file
                     P1.entry_imgStack.setText(p.img_stack_file)
                     print('\timage stack: %s' % (p.img_stack_file))
