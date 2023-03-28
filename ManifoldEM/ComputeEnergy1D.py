@@ -5,11 +5,12 @@ import time
 import numpy as np
 
 from ManifoldEM import p, set_params, myio
+from ManifoldEM.util import debug_print
 ''' %Version V 1.2
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %This script prepares the image stacks and orientations for 3D reconstruction.
-    Copyright (c) Columbia Univ Hstau Liao 2018 (python version)    
+    Copyright (c) Columbia Univ Hstau Liao 2018 (python version)
     Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
 
@@ -22,14 +23,17 @@ def op(*argv):
     data = myio.fin1(p.CC_file)
     psiNumsAll = data['psinums']
 
-    range1 = np.arange(p.numberofJobs)
-
+    xSelect = np.arange(p.numberofJobs)
     a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
     #print psiNumsAll.shape,'a=',a
-    range = np.delete(range1, a)
+    xSelect = np.delete(xSelect, a)
     a = np.nonzero(p.trash_list == 1)[0]  # unassigned states, python
-    range = np.delete(range, a)
-    xSelect = range
+    if xSelect:
+        xSelect = np.delete(xSelect, a)
+
+    if not xSelect:
+        debug_print("No assigned states: Unable to compute energy profile")
+
 
     # getFromFileS2
     xLost = []
