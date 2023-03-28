@@ -3934,9 +3934,9 @@ class Erg1dUpdate(Erg1dCanvas):
 
         self.axes.clear()
         for tick in self.axes.xaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         for tick in self.axes.yaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         Erg1dCanvas.fig.set_tight_layout(True)
         if Erg1dMain.react1 is True:
             self.axes.set_xlabel('Conformational Coordinate 1', fontsize=6)
@@ -4508,9 +4508,9 @@ class Erg2dUpdate(Erg2dCanvas):
             Erg2dUpdate.LS2d_erg = LS2d  #ZULU change
 
         for tick in self.axes.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.axes.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
 
         if Erg2dMain.occ is True:
             im = self.axes.imshow(LS2d, origin='lower', interpolation='nearest', cmap='jet', aspect='equal')
@@ -4749,9 +4749,9 @@ class PDSeleMain(QtGui.QMainWindow):
             PDSeleCanvas2.axes.set_yticks(np.arange(0, 180, 20))
             PDSeleCanvas2.axes.set_xticklabels(theta_labels)
             for tick in PDSeleCanvas2.axes.xaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in PDSeleCanvas2.axes.yaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             PDSeleCanvas2.axes.grid(alpha=.2)
             PDSeleCanvas2.axes.tick_params(pad=.3)  #distance of theta ticks from circle's edge
 
@@ -5554,9 +5554,9 @@ class PDSeleCanvas2(QtGui.QDialog):
         PDSeleCanvas2.axes.set_yticks(np.arange(0, 180, 20))
         PDSeleCanvas2.axes.set_xticklabels(theta_labels)
         for tick in PDSeleCanvas2.axes.xaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         for tick in PDSeleCanvas2.axes.yaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         PDSeleCanvas2.axes.grid(alpha=0.2)
 
         layout = QtGui.QGridLayout()
@@ -6453,9 +6453,9 @@ class Manifold2dCanvas(QtGui.QDialog):
                         c='#1f77b4')  #plot initial data, C0
 
         for tick in self.ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         self.ax.get_xaxis().set_ticks([])
         self.ax.get_yaxis().set_ticks([])
         self.ax.set_title('Place points on the plot to encircle deviant cluster(s)', fontsize=3.5)
@@ -6550,9 +6550,9 @@ class Manifold2dCanvas(QtGui.QDialog):
         self.ax.scatter(Manifold2dCanvas.pts_origX, Manifold2dCanvas.pts_origY, s=1, c='#1f77b4')
 
         for tick in self.ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         self.ax.get_xaxis().set_ticks([])
         self.ax.get_yaxis().set_ticks([])
         self.ax.set_title('Place points on the plot to encircle deviant cluster(s)', fontsize=3.5)
@@ -6612,9 +6612,9 @@ class Manifold2dCanvas(QtGui.QDialog):
         self.ax.clear()
         self.ax.scatter(Manifold2dCanvas.pts_newX, Manifold2dCanvas.pts_newY, s=1, c='#1f77b4')
         for tick in self.ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         self.ax.get_xaxis().set_ticks([])
         self.ax.get_yaxis().set_ticks([])
         self.ax.set_title('Place points on the plot to encircle deviant cluster(s)', fontsize=3.5)
@@ -6729,9 +6729,9 @@ class Manifold2dCanvas(QtGui.QDialog):
                 x, y = i
                 self.ax.scatter(x, y, s=1, c='#1f77b4')  #plot initial data, C0
             for tick in self.ax.xaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in self.ax.yaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             self.ax.get_xaxis().set_ticks([])
             self.ax.get_yaxis().set_ticks([])
             self.ax.set_title('Place points on the plot to encircle deviant cluster(s)', fontsize=3.5)
@@ -7068,9 +7068,9 @@ class BandwidthCanvas(FigureCanvas):
         ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=6, verticalalignment='top', bbox=props)
 
         for tick in ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         for tick in ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         ax.set_title('Gaussian Kernel Bandwidth', fontsize=8)
         ax.set_xlabel(r'$\mathrm{ln \ \epsilon}$', fontsize=8)
         ax.set_ylabel(r'$\mathrm{ln \ \sum_{i,j} \ A_{i,j}}$', fontsize=8, rotation=90)
@@ -7162,9 +7162,9 @@ class EigValCanvas(FigureCanvas):
         ax.bar(EigValCanvas.eig_n2, EigValCanvas.eig_v2, edgecolor='none', color='#7f7f7f', align='center')  #C7: gray
 
         for tick in ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         for tick in ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         ax.set_title('Eigenvalue Spectrum', fontsize=8)
         ax.set_xlabel(r'$\mathrm{\Psi}$', fontsize=8)
         ax.set_ylabel(r'$\mathrm{\lambda}$', fontsize=8, rotation=0)
@@ -7221,11 +7221,11 @@ class Manifold3dCanvas(QtGui.QDialog):
         self.ax.scatter(self.psi1, self.psi2, self.psi3, linewidths=.5, edgecolors='k', c='#d62728')  #C3
 
         for tick in self.ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.zaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
 
         self.ax.tick_params(axis='x', which='major', pad=-3)
         self.ax.tick_params(axis='y', which='major', pad=-3)
@@ -7315,11 +7315,11 @@ class Manifold3dCanvas(QtGui.QDialog):
                             c='#d62728')  #C3
 
             for tick in self.ax.xaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in self.ax.yaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in self.ax.zaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
 
             self.ax.tick_params(axis='x', which='major', pad=-3)
             self.ax.tick_params(axis='y', which='major', pad=-3)
@@ -7461,11 +7461,11 @@ class PsiCanvas(QtGui.QDialog):
         self.ax.legend(loc='best', prop={'size': 6})
 
         for tick in self.ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax.zaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
 
         self.ax.tick_params(axis='x', which='major', pad=-3)
         self.ax.tick_params(axis='y', which='major', pad=-3)
@@ -7579,11 +7579,11 @@ class PsiCanvas(QtGui.QDialog):
                 self.ax.legend(loc='best', prop={'size': 6})
 
             for tick in self.ax.xaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in self.ax.yaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in self.ax.zaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
 
             self.ax.tick_params(axis='x', which='major', pad=-3)
             self.ax.tick_params(axis='y', which='major', pad=-3)
@@ -7760,37 +7760,37 @@ class ChronosCanvas(QtGui.QDialog):
 
         fsa = 4  #axis font size
         for tick in self.ax1.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax2.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax3.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax4.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax5.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax6.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax7.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax8.xaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax1.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax2.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax3.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax4.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax5.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax6.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax7.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
         for tick in self.ax8.yaxis.get_major_ticks():
-            tick.label.set_fontsize(fsa)
+            tick.label1.set_fontsize(fsa)
 
         self.ax1.tick_params(direction='in', length=2, width=.25)
         self.ax2.tick_params(direction='in', length=2, width=.25)
@@ -7858,13 +7858,13 @@ class TauCanvas(QtGui.QDialog):
         self.ax2.hist(tau, bins=p.nClass, color='#1f77b4')  #C0
 
         for tick in self.ax1.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax1.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax2.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in self.ax2.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
 
         #self.ax1.set_title('Parameterization', fontsize=6)
         self.ax1.set_xlabel('NLSA States', fontsize=5)
@@ -7994,9 +7994,9 @@ class Thresh_Viz(QtGui.QMainWindow):
             ThreshFinalCanvas.axes.set_yticks(np.arange(0, 180, 20))
             ThreshFinalCanvas.axes.set_xticklabels(theta_labels)
             for tick in ThreshFinalCanvas.axes.xaxis.get_major_ticks():
-                tick.label.set_fontsize(6)
+                tick.label1.set_fontsize(6)
             for tick in ThreshFinalCanvas.axes.yaxis.get_major_ticks():
-                tick.label.set_fontsize(6)
+                tick.label1.set_fontsize(6)
             ThreshFinalCanvas.axes.grid(alpha=0.2)
             thresh = ThreshFinalCanvas.axes.scatter(temp_phi,
                                                     temp_theta,
@@ -8044,9 +8044,9 @@ class Thresh_Viz(QtGui.QMainWindow):
             OccHistCanvas.axes.ticklabel_format(useOffset=False, style='plain')
 
             for tick in OccHistCanvas.axes.xaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
             for tick in OccHistCanvas.axes.yaxis.get_major_ticks():
-                tick.label.set_fontsize(4)
+                tick.label1.set_fontsize(4)
 
             OccHistCanvas.axes.autoscale()
             OccHistCanvas.figure.canvas.draw()
@@ -8145,9 +8145,9 @@ class ThreshAllCanvas(QtGui.QDialog):
 
         #ThreshAllCanvas.axes.legend(prop={'size': 6})#, loc='best')
         for tick in ThreshAllCanvas.axes.xaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         for tick in ThreshAllCanvas.axes.yaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         ThreshAllCanvas.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         ThreshAllCanvas.axes.set_xlim(xmin=1, xmax=len(P1.all_PrDs))
         ThreshAllCanvas.axes.set_ylim(ymin=0, ymax=ThreshAllCanvas.thresh_high + 20)
@@ -8378,9 +8378,9 @@ class ThreshFinalCanvas(QtGui.QDialog):
         ThreshFinalCanvas.axes.set_yticks(np.arange(0, 180, 20))
         ThreshFinalCanvas.axes.set_xticklabels(theta_labels)
         for tick in ThreshFinalCanvas.axes.xaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         for tick in ThreshFinalCanvas.axes.yaxis.get_major_ticks():
-            tick.label.set_fontsize(6)
+            tick.label1.set_fontsize(6)
         ThreshFinalCanvas.axes.grid(alpha=0.2)
 
         ThreshFinalCanvas.layout = QtGui.QGridLayout()
@@ -8454,9 +8454,9 @@ class OccHistCanvas(QtGui.QDialog):
         OccHistCanvas.axes.ticklabel_format(useOffset=False, style='plain')
 
         for tick in OccHistCanvas.axes.xaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
         for tick in OccHistCanvas.axes.yaxis.get_major_ticks():
-            tick.label.set_fontsize(4)
+            tick.label1.set_fontsize(4)
 
         OccHistCanvas.axes.autoscale()
         OccHistCanvas.figure.canvas.draw()
