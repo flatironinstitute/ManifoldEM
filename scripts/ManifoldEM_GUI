@@ -84,9 +84,6 @@ progversion = '0.2.0-beta'
 Beta = True  #set to 'True' to disable 2D options; if disabled ('False') within this Beta, demo Ribosome energy landscape can be examined (only) using GUI
 #0.1.0: alpha (2019)
 #0.2.0: beta (2021)
-Graphics = True  #set to 'False' to disable 3D graphics, which may be helpful for ssh GUI use on remote workstations
-if Graphics is False:
-    print('Mode set: 3D graphics disabled.')
 font_header = QtGui.QFont('Arial', 13)
 font_standard = QtGui.QFont('Arial', 12)
 anchorsMin = 1  #set minimum number of anchors needed for Belief Propagation
@@ -125,6 +122,9 @@ parser.add_option('--mpi',
                   dest='mpiFile')
 parser.set_defaults(mpiFile='')  #ZULU add to user manual; check is working
 
+parser.add_option('--nograph', action="store_true", help='Disable 3D graphics', dest='disable_graphics')
+parser.set_defaults(disable_graphics=False)
+
 # gather command line arguments:
 options, args = parser.parse_args()
 
@@ -136,6 +136,10 @@ if options.mpiFile:
     print('')
     print('MPI initiated...')
     print('')
+
+Graphics = not options.disable_graphics
+if Graphics is False:
+    print('Mode set: 3D graphics disabled.')
 
 # =============================================================================
 # OS identification (if needed):
@@ -153,16 +157,16 @@ class Mayavi_S2(HasTraits):  # S2 Orientation Sphere, Electrostatic Potential Ma
     if Graphics is False:
 
         def update_S2_density_all(self):
-            print('')
+            pass
 
         def update_S2_params(self):
-            print('')
+            pass
 
         def update_scene1(self):
-            print('')
+            pass
 
         def update_scene2(self):
-            print('')
+            pass
 
     else:  #typical mode
         scene1 = Instance(MlabSceneModel, ())
@@ -473,19 +477,19 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
     if Graphics is False:
 
         def update_scene3(self):
-            print('')
+            pass
 
         def update_viewP4(self, azimuth, elevation, distance):
-            print('')
+            pass
 
         def view_anglesP4(self, dialog):
-            print('')
+            pass
 
         def update_S2(self):
-            print('')
+            pass
 
         def update_euler(self):
-            print('')
+            pass
 
     else:  #standard mode
         scene3 = Instance(MlabSceneModel, ())
