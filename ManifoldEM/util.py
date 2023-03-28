@@ -13,6 +13,12 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 #_logger = logging.getLogger(__name__)
 #_logger.setLevel(logging.DEBUG)
 
+def debug_trace():
+  from PyQt5.QtCore import pyqtRemoveInputHook
+  from pdb import set_trace
+  pyqtRemoveInputHook()
+  set_trace()
+
 
 def hist_match(source, template):  # by ali_m
     """
