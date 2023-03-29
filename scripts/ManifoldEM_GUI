@@ -1522,7 +1522,6 @@ class P3(QtGui.QWidget):
                     shutil.rmtree(prepOutDir)
                     shutil.rmtree(p.traj_dir)
 
-                    time.sleep(1)
                     os.makedirs(p.CC_meas_dir)
                     os.makedirs(p.CC_OF_dir)
                     os.makedirs(p.EL_dir)
@@ -2349,7 +2348,6 @@ class P3(QtGui.QWidget):
             gc.collect()
             p.resProj = 2
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(20)  #when distance matrices very large, can take time to store before next module!
             self.start_task2()
 
     ##########
@@ -2379,7 +2377,6 @@ class P3(QtGui.QWidget):
             gc.collect()
             p.resProj = 3
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(5)
             self.start_task3()
 
     ##########
@@ -2408,7 +2405,6 @@ class P3(QtGui.QWidget):
             gc.collect()
             p.resProj = 4
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(5)
             self.start_task4()
 
     ##########
@@ -3051,7 +3047,6 @@ class P4(QtGui.QWidget):
             shutil.rmtree(prepOutDir)
             shutil.rmtree(p.traj_dir)
 
-            time.sleep(1)
             os.makedirs(p.CC_meas_dir)
             os.makedirs(p.CC_OF_dir)
             os.makedirs(p.EL_dir)
@@ -3557,7 +3552,6 @@ class P5(QtGui.QWidget):
         if val == 100:
             p.resProj = 7
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(5)
             gc.collect()
             P5.button_CC.setText('Conformational Coordinates Complete')
             self.start_task6()
@@ -3594,21 +3588,16 @@ class P5(QtGui.QWidget):
         if val == 100:
             p.resProj = 8
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(5)
             gc.collect()
             P5.button_erg.setText('Energy Landscape Complete')
 
             fnameOM = os.path.join(P1.user_directory, 'outputs_{}/ELConc50/OM/S2_OM'.format(p.proj_name))  #occupancy
             fnameEL = os.path.join(P1.user_directory, 'outputs_{}/ELConc50/OM/S2_EL'.format(p.proj_name))  #energy
-            while not os.path.exists(fnameOM):  #wait for file generation
-                time.sleep(1)
             P4.Occ1d = np.fromfile(fnameOM, dtype=int)
             P4.Erg1d = np.fromfile(fnameEL)
 
             Erg1dMain.entry_width.model().item(0).setEnabled(False)
             Erg1dMain.button_traj.setDisabled(False)
-            while not os.path.exists(fnameEL):  #wait for file generation
-                time.sleep(1)
             P4.Erg1d = np.fromfile(fnameEL)
 
             Erg1dMain.plot_erg1d.update_figure()  #updates 1d landscape plot
@@ -3852,7 +3841,6 @@ class Erg1dMain(QtGui.QDialog):
                 tabs.setTabEnabled(4, False)
 
                 set_params.op(0)  #send new GUI data to parameters file
-                time.sleep(5)
 
                 task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
                 task7.daemon = True
@@ -3875,7 +3863,6 @@ class Erg1dMain(QtGui.QDialog):
             tabs.setTabEnabled(4, False)
 
             set_params.op(0)  #send new GUI data to parameters file
-            time.sleep(5)
 
             task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
             task7.daemon = True
@@ -3887,7 +3874,6 @@ class Erg1dMain(QtGui.QDialog):
         if val == 100:
             p.resProj = 9
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(5)
 
             Erg1dMain.reprepare = 1
             Erg1dMain.button_traj.setText('Recompute 3D Trajectories')
@@ -4406,7 +4392,6 @@ class Erg2dMain(QtGui.QDialog):
                 tabs.setTabEnabled(4, False)
 
                 set_params.op(0)  #send new GUI data to parameters file
-                time.sleep(5)
 
                 task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
                 task7.daemon = True
@@ -4429,7 +4414,6 @@ class Erg2dMain(QtGui.QDialog):
             tabs.setTabEnabled(4, False)
 
             set_params.op(0)  #send new GUI data to parameters file
-            time.sleep(5)
 
             task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
             task7.daemon = True
@@ -4441,7 +4425,6 @@ class Erg2dMain(QtGui.QDialog):
         if val == 100:
             p.resProj = 9
             set_params.op(0)  #send new GUI data to user parameters file
-            time.sleep(5)
 
             Erg2dMain.reprepare = 1
             Erg2dMain.button_traj.setText('Recompute 3D Trajectories')  #ZULU update for 2 choices
@@ -8297,7 +8280,6 @@ class ThreshAllCanvas(QtGui.QDialog):
         self.DataTask.start()
 
     def DataFinished(self):
-        time.sleep(1)  #wait time to ensure files are completely written
         fname = open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb')
         data = pickle.load(fname)
         P1.S2 = data['S2']
@@ -9420,7 +9402,6 @@ class MainWindow(QtGui.QMainWindow):
                 set_params.op(0)  #send new GUI data to user parameters file
                 # =============================================================
                 Data.op(P1.user_alignment)
-                time.sleep(1)  #wait time to ensure files are completely written
                 fname = open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb')
                 data = pickle.load(fname)
                 P1.S2 = data['S2']
