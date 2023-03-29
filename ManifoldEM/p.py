@@ -193,5 +193,3 @@ def create_dir():
     CC_file = '{}CC_file'.format(CC_dir)
     ref_ang_file = '{}/topos/Euler_PrD/PrD_map.txt'.format(out_dir)
     ref_ang_file1 = '{}/topos/Euler_PrD/PrD_map1.txt'.format(out_dir)
-
-    return None

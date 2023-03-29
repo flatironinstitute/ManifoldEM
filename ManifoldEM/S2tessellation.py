@@ -50,7 +50,7 @@ def get_S2(q):
                       q[0,:]*q[1,:]+q[2,:]*q[3,:], \
                       q[0,:]**2 + q[3,:]**2-0.5))
     """
-   From the original matlab code: 
+   From the original matlab code:
    S2 = 2*[q(2,:).*q(4,:)-q(1,:).*q(3,:);
            q(1,:).*q(2,:)+q(3,:).*q(4,:);
            q(1,:).^2+q(4,:).^2-0.5];
@@ -66,7 +66,6 @@ def classS2(X, Q):
 
 
 def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
-
     nG = np.floor(4 * np.pi / (shAngWidth**2)).astype(int)
     # reference angles
     S20, it = distribute3Sphere.op(nG)
@@ -80,13 +79,11 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
 
     # non-thresholded
     #NIND = (NC >= 0).nonzero()[0] # NIND is just [0:S20.shape[1]]
-    CG1 = []
-    for i in range(S20.shape[1]):
-        a = (IND == i).nonzero()[0]
-        # upper-thresholded
-        CG1.append(a)
+    CG1 = [[] for i in range(S20.shape[1])]
+    for i,index in enumerate(IND.ravel()):
+        CG1[index].append(i)
 
-    CG1 = np.array(CG1, dtype=object)  #added: , dtype=object)
+    CG1 = np.array([np.array(a) for a in CG1], dtype=object)
 
     # lower-thresholded
     mid = np.floor(S20.shape[1] / 2).astype(int)
@@ -124,6 +121,8 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
         if len(a) > thres:
             a = a[:thres]
         CG.append(a)
+
+    CG = np.array(CG, dtype=object)
 
     if visual:
         ax = Axes3D(fig)
