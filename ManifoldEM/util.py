@@ -132,31 +132,6 @@ def augment(q):
     return q
 
 
-def useless_loop(sizeToConOrderRatio, tauInDir, xAll, xSelect, psinums, posPaths):
-    ang_res = 3
-    for x in xSelect:
-        gC = xAll[1, x]
-        prD = xAll[0, x]
-        psinum2 = psinums[1, x]
-        psinum1 = psinums[0, x]
-
-        string = '{}gC{}_prD{}_tautotEL'.format(tauInDir, gC, prD)
-        data = myio.fin(string, ['tautotAll', 'listBad'])
-        tautotAll = data[0]
-        listBad = data[1]
-        tau = np.zeros((len(tautotAll[0]), ang_res))
-        for i in range(ang_res):
-            tau[:, i] = tautotAll[i].flatten()
-        posPath = posPaths[x]
-        nS = len(posPath)
-        #ConOrders[x] = max(5, np.floor(nS / sizeToConOrderRatio))
-
-        #taus[x] = tau
-        #listBads[x] = listBad
-
-    return
-
-
 def make_indeces(inputGCs):
 
     with open(inputGCs, 'rb') as f:
