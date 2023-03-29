@@ -54,7 +54,6 @@ def divid(N, rc, fin_PDs):
 
 
 def op(*argv):
-    time.sleep(5)
     set_params.op(1)
 
     multiprocessing.set_start_method('fork', force=True)
@@ -123,7 +122,6 @@ def op(*argv):
                 pool.join()
 
     set_params.op(0)
-    return
 
 
 if __name__ == '__main__':

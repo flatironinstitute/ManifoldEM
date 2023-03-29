@@ -101,11 +101,8 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
     fig3.clf()
     plt.close(fig3)
 
-    return
-
 
 def op(*argv):
-    time.sleep(5)
     set_params.op(1)
 
     multiprocessing.set_start_method('fork', force=True)
@@ -158,7 +155,6 @@ def op(*argv):
                 pool.join()
 
     set_params.op(0)
-    return
 
 
 if __name__ == '__main__':

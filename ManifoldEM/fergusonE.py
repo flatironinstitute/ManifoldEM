@@ -44,7 +44,7 @@ def op(D, logEps, a0):
         d = 1. / (2. * eps) * D2
         d = -d[d < thr]
         Wij = np.exp(d)  #see Coifman 2008
-        logSumWij[k] = np.log(sum(Wij))
+        logSumWij[k] = np.log(np.sum(Wij))
 
     # curve fitting of a tanh():
     resnorm = np.inf
@@ -52,7 +52,7 @@ def op(D, logEps, a0):
     while (resnorm > 100):
         cc += 1
         popt, pcov = curve_fit(fun, logEps, logSumWij, p0=a0)
-        resnorm = sum(np.sqrt(np.fabs(np.diag(pcov))))
+        resnorm = np.sum(np.sqrt(np.fabs(np.diag(pcov))))
         a0 = 1 * (np.random.rand(4, 1) - .5)
 
         residuals = logSumWij - fun(logEps, popt[0], popt[1], popt[2], popt[3])

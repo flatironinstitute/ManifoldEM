@@ -38,7 +38,6 @@ def show_plot(lamb, psi, string):
 
 
 def op(input_data, posPath, tune, rad, visual, doSave):
-
     dist_file = input_data[0]
     psi_file = input_data[1]
     eig_file = input_data[2]
@@ -96,7 +95,6 @@ def op(input_data, posPath, tune, rad, visual, doSave):
     for i in range(len(lamb) - 1):
         with open(eig_file, "a") as file:
             file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
-
 
 if __name__ == '__main__':
     op()

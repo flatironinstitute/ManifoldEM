@@ -54,25 +54,24 @@ def op(*arg):
     else:
         sigmaTune = options.sigma
 
+
     yVal = yVal / sigmaTune**2
 
     # compute the unnormalized weight matrix:
     yVal = np.exp(-yVal)  #apply exponential weights (yVal is distance**2)
     l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
+    d = np.array(l.sum(axis=0)).T
 
-    d = sum(l)
-    d = d.toarray()
     if options.alpha != 1:  #apply non-isotropic normalization
         d = d**options.alpha
-    d = d.T
+
     yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
     l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
 
     # normalize by the degree matrix to form normalized graph Laplacian:
-    d = sum(l)
-    d = d.toarray()
-    d = np.sqrt(d)
-    d = d.T
+    d = np.array(l.sum(axis=0))
+    d = np.sqrt(d).T
+
     yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
     l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
     l = np.abs(l + l.T) / 2.0  #iron out numerical wrinkles

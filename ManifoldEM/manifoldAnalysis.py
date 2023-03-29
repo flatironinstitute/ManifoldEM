@@ -52,7 +52,6 @@ def divide(N):
 
 
 def op(*argv):
-    time.sleep(5)
     set_params.op(1)
     #set_params.op(-1)
 

@@ -51,7 +51,6 @@ def count(N):
 
 
 def op(*argv):
-    time.sleep(5)
     set_params.op(1)
 
     multiprocessing.set_start_method('fork', force=True)
