@@ -9,8 +9,8 @@ from scipy.sparse import tril
 from scipy.sparse.csgraph import connected_components
 
 from ManifoldEM import myio, p
-'''	
-Copyright (c) Columbia University Suvrajit Maji 2019    	
+'''
+Copyright (c) Columbia University Suvrajit Maji 2019
 '''
 
 _logger = logging.getLogger(__name__)
@@ -299,7 +299,7 @@ def op(CC_graph_file_pruned):
 
 
 if __name__ == '__main__':
-    p.init()
+
     p.user_dir = '../'
     p.out_dir = os.path.join(p.user_dir, 'data_output/')
     p.tess_file = '{}/selecGCs'.format(p.out_dir)

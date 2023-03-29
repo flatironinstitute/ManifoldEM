@@ -7,7 +7,7 @@ from mpi4py import MPI
 
 COMM = MPI.COMM_WORLD
 '''
-Copyright (c) Hstau Liao 2019 (python version)    
+Copyright (c) Hstau Liao 2019 (python version)
 '''
 
 
@@ -45,7 +45,6 @@ def divid(N, rc, fin_PDs):
 
 
 def op(proj_name):
-    p.init()
     p.proj_name = proj_name
     set_params.op(1)
     p.create_dir()

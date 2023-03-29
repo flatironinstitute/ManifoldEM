@@ -8,7 +8,7 @@ from mpi4py import MPI
 COMM = MPI.COMM_WORLD
 import sys
 '''
-Copyright (c) Columbia University Hstau Liao 2019 (python version)    
+Copyright (c) Columbia University Hstau Liao 2019 (python version)
 '''
 
 
@@ -39,7 +39,6 @@ def divide(CG, q, df, N):
 
 
 def op(proj_name):
-    p.init()
     p.proj_name = proj_name
     set_params.op(1)
     p.create_dir()

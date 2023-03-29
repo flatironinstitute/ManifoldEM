@@ -10,8 +10,8 @@ from scipy.sparse.csgraph import connected_components
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-'''	
-Copyright (c) Columbia University Suvrajit Maji 2019    	
+'''
+Copyright (c) Columbia University Suvrajit Maji 2019
 '''
 '''
 function
@@ -292,7 +292,7 @@ def op():
 
 
 if __name__ == '__main__':
-    p.init()
+
     p.user_dir = '../'
     p.out_dir = os.path.join(p.user_dir, 'data_output/')
     p.tess_file = '{}/selecGCs'.format(p.out_dir)

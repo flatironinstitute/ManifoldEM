@@ -220,7 +220,6 @@ def op(*argv):
 
 
 if __name__ == '__main__':
-    p.init()
     sys.path.append('../')
     p.tess_file = '{}/selecGCs'.format(p.out_dir)
     p.nowTime_file = os.path.join(p.out_dir, '/nowTime')

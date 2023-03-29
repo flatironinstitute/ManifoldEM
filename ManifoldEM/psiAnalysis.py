@@ -13,7 +13,7 @@ from ManifoldEM import p, psiAnalysisParS2, myio, set_params
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Hstau Liao 2018 (python version)
-Copyright (c) Evan Seitz 2019 (python version) 
+Copyright (c) Evan Seitz 2019 (python version)
 '''
 
 
@@ -125,7 +125,6 @@ def op(*argv):
 
 
 if __name__ == '__main__':
-    p.init()
     p.user_dir = '../'
     p.out_dir = os.path.join(p.user_dir, 'data_output/')
     p.tess_file = '{}/selecGCs'.format(p.out_dir)

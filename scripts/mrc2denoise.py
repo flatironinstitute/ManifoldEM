@@ -12,7 +12,7 @@ first, source 'ManifoldEM' conda environment;
 then run bash script (which will access this one) via: 'sh mrc2denoise.sh'
 denoising type: "Gaussian" or "median"
 kernel/window size: k=5
-beginnig and ending frames affected: f=5 
+beginnig and ending frames affected: f=5
 
 '''
 ################################################################################
@@ -22,7 +22,6 @@ beginnig and ending frames affected: f=5
 
 
 def op(proj_name, user_dir, type, f, k):
-    p.init()
     p.proj_name = proj_name
     p.user_dir = user_dir
     set_params.op(1)

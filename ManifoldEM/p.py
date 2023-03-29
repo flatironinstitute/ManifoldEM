@@ -1,116 +1,103 @@
 import os
-import numpy as np
+import sys
+
 '''
 Copyright (c) Columbia University Evan Seitz 2019
 Copyright (c) Columbia University Hstau Liao 2019
-Copyright (c) Columbia University Suvrajit Maji 2019   
+Copyright (c) Columbia University Suvrajit Maji 2019
 '''
+"""
+resProj structure:
+    0: default; new project
+    1: user has confirmed Data.py entries, but not yet started (or partially started) GetDistancesS2.py
+    2: GetDistances.py complete, possible partial-progress on manifoldAnalysis.py
+    3: manifoldAnalysis.py complete, possible partial-progress on psiAnalysis.py
+    4: psiAnalysis.py complete, possible partial-progress on NLSAmovie.py
+    5: NLSAmovie.py complete
+    6: PD anchors chosen/saved, "Compile" button clicked, possible partial-progress on FindReactionCoord.py
+    7: FindReactionCoord.py complete, possible partial-progress on EL1D.py
+    8: EL1D.py complete, possible partial-progress on PrepareOutputS2.py
+    9: PrepareOutputS2.py complete
+"""
+
+proj_name: str = ''            # name of the project :D
+resProj: int = 0               # see above
+relion_data: bool = False      # working with relion data?
+ncpu: int = 1                  # number of CPUs for multiprocessing
+machinefile: str = ''          # machinefile for MPI
+avg_vol_file: str = ''         # average volume file (e.g., .mrc)
+img_stack_file: str = ''       # image stack file (e.g., .mrcs)
+align_param_file: str = ''     # alignment file (e.g., .star)
+mask_vol_file: str = ''        # mask volume file (e.g., .mrc)
+num_part: int = 0              # total number of particles in stack
+Cs: float = 0.0                # Spherical Aberration [mm] (from alignment file)
+EkV: float = 0.0               # Voltage [kV] (from alignment file)
+AmpContrast: float = 0.0       # Amplitude Contrast [ratio](from alignment file);
+eps: float = 1E-10             # small fraction to be added if divide-by-zero errors occur
+gaussEnv: float = float("inf") # envelope of CTF
+
+# microscopy parameters:
+nPix: int = 0          # window size of image (e.g., for 100x100 image, nPix=100)
+pix_size: float = 0.0  # pixel size of image [Angstroms] (known via rln_DetectorPixelSize*10e6 / rln_Magnification)
+obj_diam: float = 0.0  # diameter of macromolecule [Angstroms]
+resol_est: float = 0.0 # estimated resolution [Angstroms]
+ap_index: int = 1      # aperture index {1,2,3...}; increases tessellated bin size
+ang_width: float = 0.0 # angle width (via: ap_index * resol_est / obj_diam)
+sh: float = 0.0        # Shannon angle (pix_size / obj_diam)
+
+# tessellation binning:
+PDsizeThL: int = 100   # minimum required snapshots in a tessellation for it be admitted
+PDsizeThH: int = 2000  # maximum number of snapshots that will be considered within each tessellation
+S2rescale: float = 1.0 # proper scale ratio between S2 sphere and .mrc volume for visualizations
+S2iso: int = 3         # proper isosurface level of .mrv volume for vizualiaztion (as chosen by user)
+numberofJobs: int = 0  # total number of bins to consider for manifold embedding
 
 
-def init():
-    # resume project:
-    global proj_name  #user-defined project name
-    global resProj  #GUI gatekeeping for resuming previous project
-    '''
-    resProj structure:
-        0: default; new project
-        1: user has confirmed Data.py entries, but not yet started (or partially started) GetDistancesS2.py
-        2: GetDistances.py complete, possible partial-progress on manifoldAnalysis.py
-        3: manifoldAnalysis.py complete, possible partial-progress on psiAnalysis.py
-        4: psiAnalysis.py complete, possible partial-progress on NLSAmovie.py
-        5: NLSAmovie.py complete
-        6: PD anchors chosen/saved, "Compile" button clicked, possible partial-progress on FindReactionCoord.py
-        7: FindReactionCoord.py complete, possible partial-progress on EL1D.py
-        8: EL1D.py complete, possible partial-progress on PrepareOutputS2.py
-        9: PrepareOutputS2.py complete
-        '''
+# eigenfunction parameters:
+num_eigs: int = 15      # number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)
+num_psiTrunc:int = 8    # number of eigenfunctions for truncated views
+num_psis: int = 8
+# tune automation suggestion (Ali): larger tune = smaller gaussian width; turns data into
+# islands/chunks (can't see long-range patterns); a good tune should form a 'good' psirec parabola.
+# as well, you can keep using tune to get rid of outliers in data; you want the number of outliers
+# to be around 10%; if higher than this, tune needs to be changed.
+tune: int = 3           # diffusion map tuning; this needs to be automated
+rad: int = 5            # manifold pruning
+conOrderRange: int = 50 # coarse-graining factor of energy landscape
 
-    # project format:
-    global relion_data  #False for not-relion (Spider) input-data format
-    global phiCol, thetaCol, psiCol, dfCol, shx_col, shy_col  #for reading Spider align file
+# NLSA movie parameters:
+fps: float = 5.0
 
-    # computational resources:
-    global ncpu  #number of CPUs
-    global machinefile  #via arg: '--mpi path/to/machinefile' (default False for non-MPI run)
-    global eps
-    eps = 1e-10  #small fraction to be added if divide-by-zero errors occur
+# energy landscape parameters:
+dim: int = 1              # user-defined number of dimensions (reaction coordinates); {1,2}
+temperature: float = 25.0 # user-defined pre-quenching temperature of experiments
+trajName: str = '1'       # filename for exported (2D) trajectories
+nClass: int = 50          # number of states partitioned within each 1D reaction coordinate; results in a 50x1 1D ELS
+width_1D: int = 1         # user-defined width of trajectory in 1D energy path
+width_2D: int = 1         # user-defined width of trajectory in 2D energy path
+hUh = None                # occupancy map
 
-    # microscopy parameters:
-    global avg_vol_file  #average volume file (e.g., .mrc)
-    global img_stack_file  #image stack file (e.g., .mrcs)
-    global align_param_file  #alignment file (e.g., .star)
-    global mask_vol_file  #mask volume file (e.g., .mrc)
-    global num_part  #total number of particles in stack
-    global Cs  #Spherical Aberration [mm] (from alignment file)
-    global EkV  #Voltage [kV] (from alignment file)
-    global AmpContrast  #Amplitude Contrast [ratio](from alignment file);
-    global gaussEnv
-    gaussEnv = np.inf  #envelope of CTF
-    global nPix  #window size of image (e.g., for 100x100 image, nPix=100)
-    global pix_size  #pixel size of image [Angstroms] (known via rln_DetectorPixelSize*10e6 / rln_Magnification)
-    global obj_diam  #diameter of macromolecule [Angstroms]
-    global resol_est  #estimated resolution [Angstroms]
-    global ap_index  #aperture index {1,2,3...}; increases tessellated bin size
-    global ang_width  #angle width (via: ap_index * resol_est / obj_diam)
-    global sh  #Shannon angle (pix_size / obj_diam)
 
-    # tessellation binning:
-    #PDsizeThL and PDsizeThH defined by default in Manifold_GUI.py
-    global PDsizeThL  #minimum required snapshots in a tessellation for it be admitted
-    global PDsizeThH  #maximum number of snapshots that will be considered within each tessellation
-    global S2rescale  #proper scale ratio between S2 sphere and .mrc volume for visualizations
-    global S2iso  #proper isosurface level of .mrv volume for vizualiaztion (as chosen by user)
-    global numberofJobs  #total number of bins to consider for manifold embedding
+#  reaction coordinates parameters:
+getOpticalFlow: bool = True                # default True to compute optical flow vectors
+getAllEdgeMeasures: bool = True            # default True to compute edge measures
+anch_list: list[int] = []                  # user-defined PD anchors for Belief Propagation
+trash_list: list[int] = []                 # user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
+opt_movie: dict = {'printFig': 0,
+                   'OFvisual': 0,
+                   'visual_CC': 0,
+                   'flowVecPctThresh': 95}
+opt_mask_type: int = 0                     # 0:None, 1:Annular, 2:Volumetric
+opt_mask_param: int = 0                    # for either none, radius (Int), or iso(Int)
 
-    # eigenfunction parameters:
-    global num_eigs, num_psiTrunc, num_psis, tune, rad, conOrderRange, sizeToConOrderRatio
-    num_eigs = 15  #number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)
-    num_psiTrunc = 8  #number of eigenfunctions for truncated views
-    tune = 3  #diffusion map tuning; this needs to be automated
-    #tune automation suggestion (Ali): larger tune = smaller gaussian width; turns data into
-    #islands/chunks (can't see long-range patterns); a good tune should form a 'good' psirec parabola.
-    #as well, you can keep using tune to get rid of outliers in data; you want the number of outliers
-    #to be around 10%; if higher than this, tune needs to be changed.
-    rad = 5  #manifold pruning
-    conOrderRange = 50  #coarse-graining factor of energy landscape
+def todict():
+    res = {}
+    module = sys.modules[__name__]
+    for var in dir(module):
+        if not var.startswith('_') and isinstance(getattr(module, var), (int, list, dict, float)):
+            res[var] = getattr(module, var)
 
-    # NLSA movie parameters:
-    global fps, nC
-    fps = 5  #frames per second of NLSA movie (currently inactive)
-
-    # energy landscape parameters:
-    global dim  #user-defined number of dimensions (reaction coordinates); {1,2}
-    global temperature  #user-defined pre-quenching temperature of experiments
-    global num_ang, isEq, trajName, isTrajClosed, boundCond, nClass, nClass2D, xchosed
-    num_ang = 180  #number of tomographic projections in 2D
-    isEq = 0  #equalization, used during tau (T/F)
-    trajName = '1'  #filename for exported (2D) trajectories
-    isTrajClosed = 1  #2D ELS parameter
-    boundCond = 0  #2D ELS parameter
-    nClass = 50  #number of states partitioned within each 1D reaction coordinate; results in a 50x1 1D ELS
-    nClass2D = 250  #number of states partitioned within 2D tau(theta) cuts; results in a 176x176 2D ELS
-    #nClass2D (above) still needs to replace 'nC' in Matlab's ELshow.m and OMprofiles.m
-    global EL1D  #array for 1D Energy Landscape
-    global selPts_1D, selPts_2D, width_1D, width_2D, leastPts
-    width_1D = 1  #user-defined width of trajectory in 1D energy path
-    width_2D = 1  #user-defined width of trajectory in 2D energy path
-    selPts_2D = []  #all 2D energy landscape points between user 'Resets' (from current pixel width)
-    leastPts = []  #all points from least-action computation
-    global hUn  #occupancy map
-
-    # reaction coordinates parameters:
-    global getOpticalFlow, getAllEdgeMeasures, anch_list, trash_list, opt_movie, opt_mask_type, opt_mask_param
-    getOpticalFlow = 1  #default True to compute optical flow vectors
-    getAllEdgeMeasures = 1  #default True to compute edge measures
-    anch_list = []  #user-defined PD anchors for Belief Propagation
-    trash_list = []  #user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
-    opt_movie = dict(printFig=0, OFvisual=0, visual_CC=0,
-                     flowVecPctThresh=95)  #default False: won't save movies to file
-    opt_mask_type = int(0)  #0:None, 1:Annular, 2:Volumetric
-    opt_mask_param = int(0)  #for either none, radius (Int), or iso(Int)
-
-    return None
-
+    return res
 
 def create_dir():
     # input and output directories and files

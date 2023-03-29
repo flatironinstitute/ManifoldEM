@@ -8,7 +8,7 @@ from ManifoldEM import S2tessellation, read_alignfile, myio, FindCCGraph, set_pa
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Columbia University Hstau Liao 2018 (python version)   
+Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 Copyright (c) Columbia University Suvrajit Maji 2019 (python version)
 '''
@@ -120,7 +120,7 @@ def op(align_param_file):
 
 
 if __name__ == '__main__':
-    p.init()
+
     p.user_dir = '../'
     p.out_dir = os.path.join(p.user_dir, 'outputs_{}/'.format(p.proj_name))
     p.tess_file = '{}/selecGCs'.format(p.out_dir)

@@ -20,7 +20,6 @@ Topo_list = [0, 1]  #list of eigenvectors to retain; [0,1] for first 2... [0,1,2
 
 
 def op(svd_dir, proj_name, user_dir):
-    p.init()
     p.proj_name = proj_name
     p.user_dir = user_dir
     set_params.op(1)

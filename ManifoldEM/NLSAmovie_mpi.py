@@ -84,7 +84,6 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
 
 
 def op(proj_name):
-    p.init()
     p.proj_name = proj_name
     set_params.op(1)
     p.create_dir()

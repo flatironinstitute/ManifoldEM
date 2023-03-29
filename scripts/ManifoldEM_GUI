@@ -50,7 +50,6 @@ import pickle
 
 from ManifoldEM import p
 
-p.init()  #only initiate once
 p.user_dir = output_dir  #default
 from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, embedd, clusterAvg,
                         FindConformationalCoord, EL1D, backup, PrepareOutputS2, set_params)
