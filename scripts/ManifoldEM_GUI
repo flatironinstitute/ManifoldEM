@@ -1137,7 +1137,7 @@ class P1(QtGui.QWidget):
         def calc_shannon():
             P1.user_shannon = np.divide(P1.user_resolution, P1.user_diameter)
             P1.entry_shannon.setValue(P1.user_shannon)
-            p.sh = P1.user_shannon
+            p.sh = float(P1.user_shannon)
 
         def calc_angWidth():
             P1.user_width = ((P1.user_aperture) * (P1.user_resolution)) / P1.user_diameter

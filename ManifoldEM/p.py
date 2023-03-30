@@ -1,5 +1,7 @@
 import os
 import sys
+import toml
+from ManifoldEM.util import debug_print
 
 '''
 Copyright (c) Columbia University Evan Seitz 2019
@@ -90,93 +92,151 @@ opt_movie: dict = {'printFig': 0,
 opt_mask_type: int = 0                     # 0:None, 1:Annular, 2:Volumetric
 opt_mask_param: int = 0                    # for either none, radius (Int), or iso(Int)
 
+# FIXME: These really shouldn't be cached, or at the very least should be put in their own subdict...
+user_dir: str = ''
+dist_dir: str = ''
+dist_prog: str = ''
+psi_dir: str = ''
+psi_prog: str = ''
+psi2_dir: str = ''
+psi2_prog: str = ''
+movie2d_dir: str = ''
+EL_dir: str = ''
+EL_prog: str = ''
+tau_dir: str = ''
+OM_dir: str = ''
+Var_dir: str = ''
+NLSA_dir: str = ''
+traj_dir: str = ''
+bin_dir: str = ''
+relion_dir: str = ''
+CC_dir: str = ''
+CC_OF_dir: str = ''
+CC_meas_dir: str = ''
+CC_meas_prog: str = ''
+out_dir: str = ''
+post_dir: str = ''
+vol_dir: str = ''
+svd_dir: str = ''
+anim_dir: str = ''
+dist_file: str = ''
+psi_file: str = ''
+psi2_file: str = ''
+movie2d_file: str = ''
+EL_file: str = ''
+tau_file: str = ''
+OM_file: str = ''
+OM1_file: str = ''
+Var_file: str = ''
+rho_file: str = ''
+remote_file: str = ''
+NLSA_file: str = ''
+traj_file: str = ''
+CC_file: str = ''
+CC_OF_file: str = ''
+CC_meas_file: str = ''
+CC_graph_file: str = ''
+ref_ang_file: str = ''
+ref_ang_file1: str = ''
+tess_file: str = ''
+nowTime_file: str = ''
+
+
 def todict():
     res = {}
     module = sys.modules[__name__]
     for var in dir(module):
-        if not var.startswith('_') and isinstance(getattr(module, var), (int, list, dict, float)):
+        if not var.startswith('_') and isinstance(getattr(module, var), (int, list, dict, float, str)):
             res[var] = getattr(module, var)
 
     return res
 
+def save(outfile: str):
+    res = {'params': todict()}
+    with open(outfile, 'w') as f:
+        toml.dump(res, f)
+
+def load(infile: str):
+    with open(infile, 'r') as f:
+        indict = toml.load(f)
+
+    module = sys.modules[__name__]
+    valid_params = dir(module)
+    for param,val in indict['params'].items():
+        if param not in valid_params:
+            debug_print(f"Warning: param '{param}' not found in parameters module")
+        else:
+            setattr(module, param, val)
+
+
 def create_dir():
     # input and output directories and files
-    global user_dir,dist_dir,dist_prog,psi_dir,psi_prog,psi2_dir,psi2_prog,\
-        movie2d_dir,EL_dir,EL_prog,\
-        tau_dir,OM_dir,Var_dir,NLSA_dir,traj_dir,bin_dir,relion_dir,\
-        CC_dir,CC_OF_dir, CC_meas_dir, CC_meas_prog, out_dir, \
-        post_dir, vol_dir, svd_dir, anim_dir
-
-    dist_dir = os.path.join(user_dir, 'outputs_{}/distances/'.format(proj_name))
-    dist_prog = os.path.join(dist_dir, 'progress/')
+    p = sys.modules[__name__]
+    p.dist_dir = os.path.join(user_dir, 'outputs_{}/distances/'.format(proj_name))
+    p.dist_prog = os.path.join(dist_dir, 'progress/')
     os.makedirs(dist_prog, exist_ok=True)
 
-    psi_dir = os.path.join(user_dir, 'outputs_{}/diff_maps/'.format(proj_name))
-    psi_prog = os.path.join(psi_dir, 'progress/')
+    p.psi_dir = os.path.join(user_dir, 'outputs_{}/diff_maps/'.format(proj_name))
+    p.psi_prog = os.path.join(psi_dir, 'progress/')
     os.makedirs(psi_prog, exist_ok=True)
 
-    psi2_dir = os.path.join(user_dir, 'outputs_{}/psi_analysis/'.format(proj_name))
-    psi2_prog = os.path.join(psi2_dir, 'progress/')
+    p.psi2_dir = os.path.join(user_dir, 'outputs_{}/psi_analysis/'.format(proj_name))
+    p.psi2_prog = os.path.join(psi2_dir, 'progress/')
     os.makedirs(psi2_prog, exist_ok=True)
 
-    EL_dir = os.path.join(user_dir, 'outputs_{}/ELConc{}/'.format(proj_name, conOrderRange))
-    EL_prog = os.path.join(EL_dir, 'progress/')
+    p.EL_dir = os.path.join(user_dir, 'outputs_{}/ELConc{}/'.format(proj_name, conOrderRange))
+    p.EL_prog = os.path.join(EL_dir, 'progress/')
     os.makedirs(EL_prog, exist_ok=True)
 
-    OM_dir = os.path.join(user_dir, '{}OM/'.format(EL_dir))
+    p.OM_dir = os.path.join(user_dir, '{}OM/'.format(EL_dir))
     os.makedirs(OM_dir, exist_ok=True)
 
-    Var_dir = os.path.join(user_dir, 'outputs_{}/Var/'.format(proj_name))
+    p.Var_dir = os.path.join(user_dir, 'outputs_{}/Var/'.format(proj_name))
     os.makedirs(Var_dir, exist_ok=True)
-    traj_dir = os.path.join(user_dir, 'outputs_{}/traj/'.format(proj_name))
+    p.traj_dir = os.path.join(user_dir, 'outputs_{}/traj/'.format(proj_name))
     os.makedirs(traj_dir, exist_ok=True)
 
-    relion_dir = bin_dir = os.path.join(user_dir, 'outputs_{}/bin/'.format(proj_name))
+    p.relion_dir = bin_dir = os.path.join(user_dir, 'outputs_{}/bin/'.format(proj_name))
     os.makedirs(bin_dir, exist_ok=True)
 
-    CC_dir = os.path.join(user_dir, 'outputs_{}/CC/'.format(proj_name))
-    CC_OF_dir = os.path.join(CC_dir, 'CC_OF')
+    p.CC_dir = os.path.join(user_dir, 'outputs_{}/CC/'.format(proj_name))
+    p.CC_OF_dir = os.path.join(CC_dir, 'CC_OF')
     os.makedirs(CC_OF_dir, exist_ok=True)
 
-    CC_meas_dir = os.path.join(CC_dir, 'CC_meas')
-    CC_meas_prog = os.path.join(CC_meas_dir, 'progress')
+    p.CC_meas_dir = os.path.join(CC_dir, 'CC_meas')
+    p.CC_meas_prog = os.path.join(CC_meas_dir, 'progress')
     os.makedirs(CC_meas_prog, exist_ok=True)
 
     #################
     # post-processing:
-    post_dir = os.path.join(user_dir, 'outputs_{}/post/'.format(proj_name))
-    vol_dir = os.path.join(post_dir, '1_vol')
-    svd_dir = os.path.join(post_dir, '2_svd')
-    anim_dir = os.path.join(post_dir, '3_anim')
+    p.post_dir = os.path.join(user_dir, 'outputs_{}/post/'.format(proj_name))
+    p.vol_dir = os.path.join(post_dir, '1_vol')
+    p.svd_dir = os.path.join(post_dir, '2_svd')
+    p.anim_dir = os.path.join(post_dir, '3_anim')
     os.makedirs(post_dir, exist_ok=True)
     os.makedirs(vol_dir, exist_ok=True)
     os.makedirs(svd_dir, exist_ok=True)
     os.makedirs(anim_dir, exist_ok=True)
 
     #################
-    out_dir = os.path.join(user_dir, 'outputs_{}/'.format(proj_name))
+    p.out_dir = os.path.join(user_dir, 'outputs_{}/'.format(proj_name))
     os.makedirs(os.path.join(out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
 
-    global dist_file,psi_file,psi2_file,\
-        movie2d_file,EL_file,tau_file,OM_file,OM1_file,Var_file,rho_file,\
-        remote_file,NLSA_file,traj_file,CC_file,CC_OF_file,CC_meas_file,\
-        CC_graph_file,ref_ang_file,ref_ang_file1,tess_file,nowTime_file
-
-    tess_file = os.path.join(user_dir, 'outputs_{}/selecGCs'.format(proj_name))
+    p.tess_file = os.path.join(user_dir, 'outputs_{}/selecGCs'.format(proj_name))
     nowTime_file = os.path.join(user_dir, 'outputs_{}/nowTime'.format(proj_name))
-    dist_file = '{}/IMGs_'.format(dist_dir)
-    psi_file = '{}/gC_trimmed_psi_'.format(psi_dir)
-    psi2_file = '{}/S2_'.format(psi2_dir)
-    EL_file = '{}/S2_'.format(EL_dir)
-    OM_file = '{}/S2_'.format(OM_dir)
-    OM1_file = '{}/S2_'.format(OM_dir)
-    Var_file = '{}/S2_'.format(Var_dir)
-    rho_file = '{}/rho'.format(OM_dir)
-    remote_file = '{}/rem_'.format(Var_dir)
-    traj_file = '{}/traj_'.format(traj_dir)
-    CC_graph_file = '{}graphCC'.format(CC_dir)
-    CC_OF_file = '{}OF_prD_'.format(CC_OF_dir)
-    CC_meas_file = '{}meas_edge_prDs_'.format(CC_meas_dir)
-    CC_file = '{}CC_file'.format(CC_dir)
-    ref_ang_file = '{}/topos/Euler_PrD/PrD_map.txt'.format(out_dir)
-    ref_ang_file1 = '{}/topos/Euler_PrD/PrD_map1.txt'.format(out_dir)
+    p.dist_file = '{}/IMGs_'.format(dist_dir)
+    p.psi_file = '{}/gC_trimmed_psi_'.format(psi_dir)
+    p.psi2_file = '{}/S2_'.format(psi2_dir)
+    p.EL_file = '{}/S2_'.format(EL_dir)
+    p.OM_file = '{}/S2_'.format(OM_dir)
+    p.OM1_file = '{}/S2_'.format(OM_dir)
+    p.Var_file = '{}/S2_'.format(Var_dir)
+    p.rho_file = '{}/rho'.format(OM_dir)
+    p.remote_file = '{}/rem_'.format(Var_dir)
+    p.traj_file = '{}/traj_'.format(traj_dir)
+    p.CC_graph_file = '{}graphCC'.format(CC_dir)
+    p.CC_OF_file = '{}OF_prD_'.format(CC_OF_dir)
+    p.CC_meas_file = '{}meas_edge_prDs_'.format(CC_meas_dir)
+    p.CC_file = '{}CC_file'.format(CC_dir)
+    p.ref_ang_file = '{}/topos/Euler_PrD/PrD_map.txt'.format(out_dir)
+    p.ref_ang_file1 = '{}/topos/Euler_PrD/PrD_map1.txt'.format(out_dir)

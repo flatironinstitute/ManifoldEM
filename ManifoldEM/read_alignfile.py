@@ -43,9 +43,9 @@ def get_from_relion(align_star_file, flip):
             print("missing Euler angles")
             exit(1)
         try:
-            p.EkV = df['rlnVoltage'].values[0]
-            p.Cs = df['rlnSphericalAberration'].values[0]
-            p.AmpContrast = df['rlnAmplitudeContrast'].values[0]
+            p.EkV = float(df['rlnVoltage'].values[0])
+            p.Cs = float(df['rlnSphericalAberration'].values[0])
+            p.AmpContrast = float(df['rlnAmplitudeContrast'].values[0])
         except:
             print('missing microscope parameters')
             exit(1)
@@ -54,9 +54,9 @@ def get_from_relion(align_star_file, flip):
         print('RELION Optics Group found.')
         df0, skip = star.parse_star_optics(align_star_file, keep_index=False)
         try:
-            p.EkV = df0['rlnVoltage'].values[0]
-            p.Cs = df0['rlnSphericalAberration'].values[0]
-            p.AmpContrast = df0['rlnAmplitudeContrast'].values[0]
+            p.EkV = float(df0['rlnVoltage'].values[0])
+            p.Cs = float(df0['rlnSphericalAberration'].values[0])
+            p.AmpContrast = float(df0['rlnAmplitudeContrast'].values[0])
         except:
             print('missing microscope parameters')
             exit(1)
