@@ -273,44 +273,27 @@ def op(nodeEdgeNumRange, *argv):
             #print('badNodesPsisTaufile initialized...')
 
 
-    if p.machinefile:
-        print('using MPI with {} processes'.format(p.ncpu))
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "-machinefile",
-            str(p.machinefile), "python", "modules/CC/ComputeOpticalFlowPrDAll_mpi.py"
-        ],
-              close_fds=True)
-        if argv:
-            progress5 = argv[0]
-            offset = 0
-            while offset < len(nodeRange):
-                offset = len(nodeRange) - count1(nodeRange)
+    input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
+    if argv:
+        offset = len(nodeRange) - len(input_data)
+        #print('optical offset',offset)
+        progress5.emit(int((offset / float(numberofJobs)) * 100))
+
+    if p.ncpu == 1:  # avoids the multiprocessing package
+        for i in range(len(input_data)):
+            ComputeOptFlowPrDPsiAll1(input_data[i])
+            if argv:
+                offset += 1
                 progress5.emit(int((offset / float(numberofJobs)) * 100))
-
     else:
-
-        input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
-        if argv:
-            offset = len(nodeRange) - len(input_data)
-            #print('optical offset',offset)
-            progress5.emit(int((offset / float(numberofJobs)) * 100))
-
-        if p.ncpu == 1:  # avoids the multiprocessing package
-            for i in range(len(input_data)):
-                ComputeOptFlowPrDPsiAll1(input_data[i])
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(pool.imap_unordered(partial(ComputeOptFlowPrDPsiAll1), input_data), 1):
                 if argv:
                     offset += 1
                     progress5.emit(int((offset / float(numberofJobs)) * 100))
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(pool.imap_unordered(partial(ComputeOptFlowPrDPsiAll1), input_data), 1):
-                    if argv:
-                        offset += 1
-                        progress5.emit(int((offset / float(numberofJobs)) * 100))
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
     # multiprocessing is having difficulty in writing to the same file,
 

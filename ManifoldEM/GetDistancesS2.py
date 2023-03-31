@@ -7,7 +7,7 @@ from functools import partial
 from contextlib import contextmanager
 from subprocess import Popen
 
-from ManifoldEM import myio, set_params, GetDistancesS2_mpi, p, getDistanceCTF_local_Conj9combinedS2, Data
+from ManifoldEM import myio, set_params, p, getDistanceCTF_local_Conj9combinedS2, Data
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,78 +58,61 @@ def op(*argv):
     data = myio.fin1(p.tess_file)
     CG = data['CG']
 
-    if p.machinefile:
-        print('using MPI with {} processes'.format(p.ncpu))
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "--machinefile",
-            str(p.machinefile), "python", "modules/GetDistancesS2_mpi.py",
-            str(p.proj_name)
-        ],
-              close_fds=True)
-        if argv:
-            progress1 = argv[0]
-            offset = 0
-            while offset < p.numberofJobs:
-                offset = p.numberofJobs - count(p.numberofJobs)
+    print("Computing the distances...")
+    df = data['df']
+    q = data['q']
+    sh = data['sh']
+    set_params.op(1)
+    size = len(df)
+
+    filterPar = dict(type='Butter', Qc=0.5, N=8)
+    options = dict(verbose=False,
+                   avgOnly=False,
+                   visual=False,
+                   parallel=False,
+                   relion_data=p.relion_data,
+                   thres=p.PDsizeThH)
+
+    sigmaH = 0
+
+    # SPIDER only: compute the nPix = sqrt(len(bin file)/(4*num_part))
+    if p.relion_data is False:
+        p.nPix = int(np.sqrt(os.path.getsize(p.img_stack_file) / (4 * p.num_part)))
+        set_params.op(0)  #send new GUI data to user parameters file
+
+    input_data = divide(CG, q, df, p.numberofJobs)
+    if argv:
+        progress1 = argv[0]
+        offset = p.numberofJobs - len(input_data)
+        progress1.emit(int((offset / float(p.numberofJobs)) * 100))
+
+    print("Processing {} projection directions.".format(len(input_data)))
+
+    if p.ncpu == 1 or options['parallel'] == True:  # avoids the multiprocessing package
+        for i in range(len(input_data)):
+            getDistanceCTF_local_Conj9combinedS2.op(input_data[i], filterPar, p.img_stack_file, sh, size, options)
+            if argv:
+                offset += 1
                 progress1.emit(int((offset / float(p.numberofJobs)) * 100))
-
     else:
-        print("Computing the distances...")
-        df = data['df']
-        q = data['q']
-        sh = data['sh']
-        set_params.op(1)
-        size = len(df)
-
-        filterPar = dict(type='Butter', Qc=0.5, N=8)
-        options = dict(verbose=False,
-                       avgOnly=False,
-                       visual=False,
-                       parallel=False,
-                       relion_data=p.relion_data,
-                       thres=p.PDsizeThH)
-
-        sigmaH = 0
-
-        # SPIDER only: compute the nPix = sqrt(len(bin file)/(4*num_part))
-        if p.relion_data is False:
-            p.nPix = int(np.sqrt(os.path.getsize(p.img_stack_file) / (4 * p.num_part)))
-            set_params.op(0)  #send new GUI data to user parameters file
-
-        input_data = divide(CG, q, df, p.numberofJobs)
-        if argv:
-            progress1 = argv[0]
-            offset = p.numberofJobs - len(input_data)
-            progress1.emit(int((offset / float(p.numberofJobs)) * 100))
-
-        print("Processing {} projection directions.".format(len(input_data)))
-
-        if p.ncpu == 1 or options['parallel'] == True:  # avoids the multiprocessing package
-            for i in range(len(input_data)):
-                getDistanceCTF_local_Conj9combinedS2.op(input_data[i], filterPar, p.img_stack_file, sh, size, options)
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(getDistanceCTF_local_Conj9combinedS2.op,
+                                filterPar=filterPar,
+                                imgFileName=p.img_stack_file,
+                                sh=sh,
+                                nStot=size,
+                                options=options), input_data), 1):
                 if argv:
                     offset += 1
                     progress1.emit(int((offset / float(p.numberofJobs)) * 100))
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(
-                        pool.imap_unordered(
-                            partial(getDistanceCTF_local_Conj9combinedS2.op,
-                                    filterPar=filterPar,
-                                    imgFileName=p.img_stack_file,
-                                    sh=sh,
-                                    nStot=size,
-                                    options=options), input_data), 1):
-                    if argv:
-                        offset += 1
-                        progress1.emit(int((offset / float(p.numberofJobs)) * 100))
 
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
-        set_params.op(0)
+    set_params.op(0)
 
 
 if __name__ == '__main__':

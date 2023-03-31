@@ -420,12 +420,8 @@ def count1(R, G):
 
 
 def op(G, nodeEdgeNumRange, *argv):
-
-
     multiprocessing.set_start_method('fork', force=True)
 
-    set_params.op(1)
-    #set_params.op(-1)
     set_params.op(1)
 
     nodeRange = nodeEdgeNumRange[0]
@@ -433,55 +429,36 @@ def op(G, nodeEdgeNumRange, *argv):
     if len(edgeNumRange) == 0:
         edgeNumRange = range(G['nEdges'])
     numberofJobs = len(nodeRange) + len(edgeNumRange)
+    flowVecPctThresh = p.opt_movie['flowVecPctThresh']
 
-    if p.machinefile:
-        print('using MPI')
-        # FIXME: BROKEN (modules doesn't even exist anymore)
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "-machinefile",
-            str(p.machinefile), "python", "modules/CC/ComputeMeasureEdgeAll_mpi.py"
-        ],
-              close_fds=True)
-        if argv:
-            progress5 = argv[0]
-            offset = 0
-            while offset < numberofJobs:
-                offset = numberofJobs - count1(edgeNumRange, G)
+    if argv:
+        progress5 = argv[0]
+
+    #extract info for psi selection/sense of ref and psi candidates for nbr
+    input_data = divide1(edgeNumRange, G)  # changed Nov 30, 2018, S.M.
+
+    if argv:
+        offset = numberofJobs - len(input_data)
+        #print 'edge meas offset',offset
+        progress5.emit(int((offset / float(numberofJobs)) * 99))
+
+    if p.ncpu == 1:  # avoids the multiprocessing package
+        for i in range(len(input_data)):
+            ComputeEdgeMeasurePairWisePsiAll(input_data[i], G, flowVecPctThresh)
+            if argv:
+                offset += 1
                 progress5.emit(int((offset / float(numberofJobs)) * 99))
-
     else:
-
-        flowVecPctThresh = p.opt_movie['flowVecPctThresh']
-
-        if argv:
-            progress5 = argv[0]
-
-        #extract info for psi selection/sense of ref and psi candidates for nbr
-        input_data = divide1(edgeNumRange, G)  # changed Nov 30, 2018, S.M.
-
-        if argv:
-            offset = numberofJobs - len(input_data)
-            #print 'edge meas offset',offset
-            progress5.emit(int((offset / float(numberofJobs)) * 99))
-
-        if p.ncpu == 1:  # avoids the multiprocessing package
-            for i in range(len(input_data)):
-                ComputeEdgeMeasurePairWisePsiAll(input_data[i], G, flowVecPctThresh)
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
+                        input_data), 1):
                 if argv:
                     offset += 1
                     progress5.emit(int((offset / float(numberofJobs)) * 99))
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(
-                        pool.imap_unordered(
-                            partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
-                            input_data), 1):
-                    if argv:
-                        offset += 1
-                        progress5.emit(int((offset / float(numberofJobs)) * 99))
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
     set_params.op(0)

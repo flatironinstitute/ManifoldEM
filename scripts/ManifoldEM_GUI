@@ -113,14 +113,6 @@ parser.add_option('--input',
                   dest='userInput')
 parser.set_defaults(userInput='empty')
 
-# --turn on Message Passing Interface (MPI) via text file location (string):
-parser.add_option('--mpi',
-                  help='Path (str) to the machinefile for initiating MPI',
-                  type='str',
-                  action='store',
-                  dest='mpiFile')
-parser.set_defaults(mpiFile='')  #ZULU add to user manual; check is working
-
 parser.add_option('--nograph', action="store_true", help='Disable 3D graphics', dest='disable_graphics')
 parser.set_defaults(disable_graphics=False)
 
@@ -130,7 +122,6 @@ options, args = parser.parse_args()
 global userInput
 userInput = options.userInput
 
-p.machinefile = options.mpiFile
 if options.mpiFile:
     print('')
     print('MPI initiated...')
@@ -1743,10 +1734,7 @@ class P3(QtGui.QWidget):
 
         P3.entry_proc = QtGui.QSpinBox(self)
         P3.entry_proc.setMinimum(1)
-        if p.machinefile:
-            P3.entry_proc.setMaximum(1000)
-        else:
-            P3.entry_proc.setMaximum(multiprocessing.cpu_count())
+        P3.entry_proc.setMaximum(multiprocessing.cpu_count())
         P3.entry_proc.valueChanged.connect(choose_processors)
         P3.entry_proc.setStyleSheet("QSpinBox { width : 100px }")
         P3.entry_proc.setToolTip('The number of processors to use in parallel.')
@@ -3389,10 +3377,7 @@ class P5(QtGui.QWidget):
 
         P5.entry_proc = QtGui.QSpinBox(self)
         P5.entry_proc.setMinimum(1)
-        if p.machinefile:
-            P5.entry_proc.setMaximum(1000)
-        else:
-            P5.entry_proc.setMaximum(multiprocessing.cpu_count())
+        P5.entry_proc.setMaximum(multiprocessing.cpu_count())
         P5.entry_proc.valueChanged.connect(choose_processors)
         P5.entry_proc.setStyleSheet("QSpinBox { width : 100px }")
         layout.addWidget(P5.entry_proc, 1, 2, 1, 1, QtCore.Qt.AlignLeft)

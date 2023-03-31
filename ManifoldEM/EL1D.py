@@ -62,57 +62,41 @@ def op(*argv):
 
     R = np.array(range(p.numberofJobs))
     R = np.delete(R, np.nonzero(p.trash_list == 1)[0])
-    if p.machinefile:
-        print('using MPI with {} processes'.format(p.ncpu))
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "-machinefile",
-            str(p.machinefile), "python", "modules/EL1D_mpi.py",
-            str(p.proj_name)
-        ],
-              close_fds=True)
-        if argv:
-            progress6 = argv[0]
-            offset = 0
-            while offset < len(R):
-                offset = len(R) - count1(R)
+
+    print("Recomputing the NLSA snapshots using the found reaction coordinates...")
+    data = myio.fin1(p.CC_file)
+    psiNumsAll = data['psinums']
+    sensesAll = data['senses']
+    isFull = 1
+    input_data = divide1(R, psiNumsAll, sensesAll)
+    if argv:
+        progress6 = argv[0]
+        offset = len(R) - len(input_data)
+        progress6.emit(int((offset / float(len(R))) * 100))
+
+    print("Processing {} projection directions.".format(len(input_data)))
+
+    if p.ncpu == 1:  # avoids the multiprocessing package
+        for i in range(len(input_data)):
+            psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
+            if argv:
+                offset += 1
                 progress6.emit(int((offset / float(len(R))) * 100))
-
     else:
-        print("Recomputing the NLSA snapshots using the found reaction coordinates...")
-        data = myio.fin1(p.CC_file)
-        psiNumsAll = data['psinums']
-        sensesAll = data['senses']
-        isFull = 1
-        input_data = divide1(R, psiNumsAll, sensesAll)
-        if argv:
-            progress6 = argv[0]
-            offset = len(R) - len(input_data)
-            progress6.emit(int((offset / float(len(R))) * 100))
-
-        print("Processing {} projection directions.".format(len(input_data)))
-
-        if p.ncpu == 1:  # avoids the multiprocessing package
-            for i in range(len(input_data)):
-                psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(psiAnalysisParS2.op,
+                                conOrderRange=p.conOrderRange,
+                                traj_name=p.trajName,
+                                isFull=isFull,
+                                psiTrunc=p.num_psiTrunc), input_data), 1):
                 if argv:
                     offset += 1
                     progress6.emit(int((offset / float(len(R))) * 100))
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(
-                        pool.imap_unordered(
-                            partial(psiAnalysisParS2.op,
-                                    conOrderRange=p.conOrderRange,
-                                    traj_name=p.trajName,
-                                    isFull=isFull,
-                                    psiTrunc=p.num_psiTrunc), input_data), 1):
-                    if argv:
-                        offset += 1
-                        progress6.emit(int((offset / float(len(R))) * 100))
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
     ComputeEnergy1D.op()
     set_params.op(0)

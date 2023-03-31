@@ -62,64 +62,46 @@ def op(*argv):
     sensesAll = np.tile(np.ones(p.num_psis), (p.numberofJobs, 1))  # numberofJobs x num_psis
     rc = {'psiNumsAll': psiNumsAll, 'sensesAll': sensesAll}
 
-    if p.machinefile:
-        print('using MPI with {} processes'.format(p.ncpu))
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "-machinefile",
-            str(p.machinefile), "python", "modules/psiAnalysis_mpi.py",
-            str(p.proj_name)
-        ],
-              close_fds=True)
-        if argv:
-            progress3 = argv[0]
-            offset = 0
-            while offset < p.num_psis * p.numberofJobs:
-                fin_PDs = fileCheck(p.numberofJobs)  # array of finished PDs (0's are unfinished, 1's are finished)
-                offset = np.count_nonzero(fin_PDs == 1)
-                progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
+    print("Computing the NLSA snapshots...")
+    isFull = 0
+    fin_PDs = fileCheck(p.numberofJobs)  # array of finished PDs (0's are unfinished, 1's are finished)
+    input_data = divid(p.numberofJobs, rc, fin_PDs)
+
+    if argv:
+        progress3 = argv[0]
+        offset = np.count_nonzero(fin_PDs == 1)
+        progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
+
+    print("Processing {} projection directions.".format(len(input_data)))
+
+    if p.ncpu == 1:  # avoids the multiprocessing package
+        for i in range(len(input_data)):
+            if argv:  #for p.ncpu=1, progress3 update happens inside psiAnalysisParS2;
+                # however, same signal can't be sent if multiprocessing
+                psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc, argv[0])
+            else:  #for non-GUI
+                psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
 
     else:
-        print("Computing the NLSA snapshots...")
-        isFull = 0
-        fin_PDs = fileCheck(p.numberofJobs)  # array of finished PDs (0's are unfinished, 1's are finished)
-        input_data = divid(p.numberofJobs, rc, fin_PDs)
-
-        if argv:
-            progress3 = argv[0]
-            offset = np.count_nonzero(fin_PDs == 1)
-            progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
-
-        print("Processing {} projection directions.".format(len(input_data)))
-
-        if p.ncpu == 1:  # avoids the multiprocessing package
-            for i in range(len(input_data)):
-                if argv:  #for p.ncpu=1, progress3 update happens inside psiAnalysisParS2;
-                    # however, same signal can't be sent if multiprocessing
-                    psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc, argv[0])
-                else:  #for non-GUI
-                    psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
-
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(
-                        pool.imap_unordered(
-                            partial(psiAnalysisParS2.op,
-                                    conOrderRange=p.conOrderRange,
-                                    traj_name=p.trajName,
-                                    isFull=isFull,
-                                    psiTrunc=p.num_psiTrunc), input_data), 1):
-                    if argv:
-                        progress3 = argv[0]
-                        fin_PDs = fileCheck(
-                            p.numberofJobs)  #array of finished PDs (0's are unfinished, 1's are finished)
-                        offset = np.count_nonzero(fin_PDs == 1)
-                        progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(psiAnalysisParS2.op,
+                                conOrderRange=p.conOrderRange,
+                                traj_name=p.trajName,
+                                isFull=isFull,
+                                psiTrunc=p.num_psiTrunc), input_data), 1):
+                if argv:
+                    progress3 = argv[0]
+                    fin_PDs = fileCheck(
+                        p.numberofJobs)  #array of finished PDs (0's are unfinished, 1's are finished)
+                    offset = np.count_nonzero(fin_PDs == 1)
+                    progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
 
 
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
     set_params.op(0)
 

@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from functools import partial
 from subprocess import Popen
 
-from ManifoldEM import manifoldAnalysis_mpi, manifoldTrimmingAuto, myio, p, set_params
+from ManifoldEM import manifoldTrimmingAuto, myio, p, set_params
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,70 +53,48 @@ def divide(N):
 
 def op(*argv):
     set_params.op(1)
-    #set_params.op(-1)
 
     multiprocessing.set_start_method('fork', force=True)
 
-    if p.machinefile:
-        print('using MPI with {} processes'.format(p.ncpu))
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "-machinefile",
-            str(p.machinefile), "python", "modules/manifoldAnalysis_mpi.py",
-            str(p.proj_name)
-        ],
-              close_fds=True)
-        for i in range(p.numberofJobs):
-            subdir = p.out_dir + '/topos/PrD_{}'.format(i + 1)
-            os.makedirs(subdir, exist_ok=True)
-        if argv:
-            progress2 = argv[0]
-            offset = 0
-            while offset < p.numberofJobs:
-                offset = p.numberofJobs - count(p.numberofJobs)
+    print("Computing the eigenfunctions...")
+    doSave = dict(outputFile='', Is=True)
+    # INPUT Parameters
+    visual = False
+    posPath = 0
+    # Finding and trimming manifold from particles
+    input_data = divide(p.numberofJobs)
+    if argv:
+        progress2 = argv[0]
+        offset = p.numberofJobs - len(input_data)
+        progress2.emit(int((offset / float(p.numberofJobs)) * 100))
+
+    print("Processing {} projection directions.".format(len(input_data)))
+    for i in range(p.numberofJobs):
+        subdir = p.out_dir + '/topos/PrD_{}'.format(i + 1)
+        os.makedirs(subdir, exist_ok=True)
+
+    if p.ncpu == 1:  #avoids the multiprocessing package
+        for i in range(len(input_data)):
+            manifoldTrimmingAuto.op(input_data[i], posPath, p.tune, p.rad, visual, doSave)
+            if argv:
+                offset += 1
                 progress2.emit(int((offset / float(p.numberofJobs)) * 100))
-
-
     else:
-        print("Computing the eigenfunctions...")
-        doSave = dict(outputFile='', Is=True)
-        # INPUT Parameters
-        visual = False
-        posPath = 0
-        # Finding and trimming manifold from particles
-        input_data = divide(p.numberofJobs)
-        if argv:
-            progress2 = argv[0]
-            offset = p.numberofJobs - len(input_data)
-            progress2.emit(int((offset / float(p.numberofJobs)) * 100))
-
-        print("Processing {} projection directions.".format(len(input_data)))
-        for i in range(p.numberofJobs):
-            subdir = p.out_dir + '/topos/PrD_{}'.format(i + 1)
-            os.makedirs(subdir, exist_ok=True)
-
-        if p.ncpu == 1:  #avoids the multiprocessing package
-            for i in range(len(input_data)):
-                manifoldTrimmingAuto.op(input_data[i], posPath, p.tune, p.rad, visual, doSave)
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(manifoldTrimmingAuto.op,
+                                posPath=posPath,
+                                tune=p.tune,
+                                rad=p.rad,
+                                visual=visual,
+                                doSave=doSave), input_data), 1):
                 if argv:
                     offset += 1
                     progress2.emit(int((offset / float(p.numberofJobs)) * 100))
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(
-                        pool.imap_unordered(
-                            partial(manifoldTrimmingAuto.op,
-                                    posPath=posPath,
-                                    tune=p.tune,
-                                    rad=p.rad,
-                                    visual=visual,
-                                    doSave=doSave), input_data), 1):
-                    if argv:
-                        offset += 1
-                        progress2.emit(int((offset / float(p.numberofJobs)) * 100))
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
     set_params.op(0)
 

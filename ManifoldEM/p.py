@@ -26,7 +26,6 @@ proj_name: str = ''            # name of the project :D
 resProj: int = 0               # see above
 relion_data: bool = False      # working with relion data?
 ncpu: int = 1                  # number of CPUs for multiprocessing
-machinefile: str = ''          # machinefile for MPI
 avg_vol_file: str = ''         # average volume file (e.g., .mrc)
 img_stack_file: str = ''       # image stack file (e.g., .mrcs)
 align_param_file: str = ''     # alignment file (e.g., .star)

@@ -112,47 +112,30 @@ def op(*argv):
             subdir = p.out_dir + '/topos/PrD_{}/psi_{}'.format(i + 1, j + 1)
             os.makedirs(subdir, exist_ok=True)
 
-    if p.machinefile:
-        print('using MPI')
-        Popen([
-            "mpirun", "-n",
-            str(p.ncpu), "-machinefile",
-            str(p.machinefile), "python", "modules/NLSAmovie_mpi.py",
-            str(p.proj_name)
-        ],
-              close_fds=True)
-        if argv:
-            progress4 = argv[0]
-            offset = 0
-            while offset < p.numberofJobs:
-                offset = p.numberofJobs - count(p.numberofJobs)
+    print("Making the 2D movies...")
+    input_data = divide(p.numberofJobs)
+    if argv:
+        progress4 = argv[0]
+        offset = p.numberofJobs - len(input_data)
+        progress4.emit(int((offset / float(p.numberofJobs)) * 100))
+    if p.ncpu == 1:  # avoids the multiprocessing package
+        for i in range(len(input_data)):
+            movie(input_data[i], p.out_dir, p.dist_file, p.psi2_file, p.fps)
+            if argv:
+                offset += 1
                 progress4.emit(int((offset / float(p.numberofJobs)) * 100))
-
     else:
-        print("Making the 2D movies...")
-        input_data = divide(p.numberofJobs)
-        if argv:
-            progress4 = argv[0]
-            offset = p.numberofJobs - len(input_data)
-            progress4.emit(int((offset / float(p.numberofJobs)) * 100))
-        if p.ncpu == 1:  # avoids the multiprocessing package
-            for i in range(len(input_data)):
-                movie(input_data[i], p.out_dir, p.dist_file, p.psi2_file, p.fps)
+        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
+                        input_data), 1):
                 if argv:
                     offset += 1
                     progress4.emit(int((offset / float(p.numberofJobs)) * 100))
-        else:
-            with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-                for i, _ in enumerate(
-                        pool.imap_unordered(
-                            partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
-                            input_data), 1):
-                    if argv:
-                        offset += 1
-                        progress4.emit(int((offset / float(p.numberofJobs)) * 100))
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
     set_params.op(0)
 
