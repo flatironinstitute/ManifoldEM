@@ -155,6 +155,7 @@ def save(outfile: str):
     res = {'params': todict()}
     with open(outfile, 'w') as f:
         toml.dump(res, f)
+        f.flush()
 
 def load(infile: str):
     with open(infile, 'r') as f:
