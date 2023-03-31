@@ -73,7 +73,7 @@ def op(*argv):
             while offset < p.numberofJobs:
                 offset = p.numberofJobs - count(p.numberofJobs)
                 progress1.emit(int((offset / float(p.numberofJobs)) * 100))
-                time.sleep(5)
+
     else:
         print("Computing the distances...")
         df = data['df']
@@ -125,7 +125,7 @@ def op(*argv):
                         offset += 1
                         progress1.emit(int((offset / float(p.numberofJobs)) * 100))
 
-                    time.sleep(0.05)
+
                 pool.close()
                 pool.join()
 

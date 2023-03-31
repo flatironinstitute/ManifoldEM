@@ -10,8 +10,8 @@ from ManifoldEM import myio, util, quaternion, star, p
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Hstau Liao 2018 (python version)   
-Copyright (c) Columbia University Suvrajit Maji 2020 (python version) 
+Copyright (c) Hstau Liao 2018 (python version)
+Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
 
 
@@ -127,7 +127,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
             key_list = ['imgss', 'phis', 'thetas', 'psis']
             v_list = [imgss, phis, thetas, psis]
             myio.fout1(traj_bin_file, key_list, v_list)
-            time.sleep(10)
+
             print('Done saving group.')
 
     else:
@@ -196,7 +196,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         else:
             mrc = mrcfile.new(traj_file)
         mrc.set_data(imgs * -1)
-        time.sleep(5)
+
         mrc.close()
 
         d = dict(phi=phi, theta=theta, psi=psi)

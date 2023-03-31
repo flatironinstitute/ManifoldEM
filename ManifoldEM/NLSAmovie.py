@@ -127,7 +127,7 @@ def op(*argv):
             while offset < p.numberofJobs:
                 offset = p.numberofJobs - count(p.numberofJobs)
                 progress4.emit(int((offset / float(p.numberofJobs)) * 100))
-                time.sleep(5)
+
     else:
         print("Making the 2D movies...")
         input_data = divide(p.numberofJobs)
@@ -150,7 +150,7 @@ def op(*argv):
                     if argv:
                         offset += 1
                         progress4.emit(int((offset / float(p.numberofJobs)) * 100))
-                    time.sleep(0.05)
+
                 pool.close()
                 pool.join()
 

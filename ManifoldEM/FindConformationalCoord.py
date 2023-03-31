@@ -13,7 +13,6 @@ from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 
 
 def op(*argv):
-    time.sleep(5)
     set_params.op(1)
 
     # file i/o
@@ -91,7 +90,7 @@ def op(*argv):
                 progress5 = argv[0]
                 # We introduce some time delay for proper communication between the execution of this code and the GUI
                 for i in range(101):
-                    time.sleep(0.01)
+
                     progress5.emit(int(i))
 
             return
@@ -118,7 +117,7 @@ def op(*argv):
             print('\nIf you proceed without atleast one anchor node for the connected component',i,\
                 ', all the corresponding nodes will not be assigned with reaction coordinate labels.' \
                 'cancel this program now or after 20 sec it will continue without the required anchors.\n')
-            time.sleep(20)
+
 
     G.update(ConnCompNoAnchor=connCompNoAnchor)
 
@@ -216,7 +215,7 @@ def op(*argv):
     if argv:
         progress5 = argv[0]
         progress5.emit(int(100))
-    time.sleep(0.05)
+
 
 
 if __name__ == '__main__':

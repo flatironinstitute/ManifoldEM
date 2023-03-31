@@ -180,7 +180,7 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
 
 
 def ComputeOptFlowPrDPsiAll1(input_data):
-    time.sleep(5)
+
     CC_OF_file = input_data[0]
     currPrD = input_data[1]
     FlowVecPrD = np.empty(p.num_psis, dtype=object)
@@ -201,10 +201,10 @@ def ComputeOptFlowPrDPsiAll1(input_data):
     NodesPsisTauOcc = tauPsisOcc
     NodesPsisTauVals = tauPrDPsis
 
-    time.sleep(2)
+
     myio.fout1(badNodesPsisTaufile_pd, ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
                [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
-    time.sleep(2)
+
 
     computeOF = 1
     if computeOF:
@@ -223,7 +223,7 @@ def ComputeOptFlowPrDPsiAll1(input_data):
 
 # If computing for a specified set of nodes, then call the function with nodeRange
 def op(nodeEdgeNumRange, *argv):
-    time.sleep(5)
+
     set_params.op(1)
 
     multiprocessing.set_start_method('fork', force=True)
@@ -271,7 +271,7 @@ def op(nodeEdgeNumRange, *argv):
                        ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
                        [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
             #print('badNodesPsisTaufile initialized...')
-            time.sleep(5)
+
 
     if p.machinefile:
         print('using MPI with {} processes'.format(p.ncpu))
@@ -287,7 +287,7 @@ def op(nodeEdgeNumRange, *argv):
             while offset < len(nodeRange):
                 offset = len(nodeRange) - count1(nodeRange)
                 progress5.emit(int((offset / float(numberofJobs)) * 100))
-                time.sleep(15)
+
     else:
 
         input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
@@ -308,7 +308,7 @@ def op(nodeEdgeNumRange, *argv):
                     if argv:
                         offset += 1
                         progress5.emit(int((offset / float(numberofJobs)) * 100))
-                    time.sleep(0.05)
+
                 pool.close()
                 pool.join()
 
@@ -323,7 +323,7 @@ def op(nodeEdgeNumRange, *argv):
             for currPrD in nodeRange:
                 badNodesPsisTaufile_pd = '{}badNodesPsisTauFile_PD_{}'.format(CC_dir_temp, currPrD)
                 dataR = myio.fin1(badNodesPsisTaufile_pd)
-                time.sleep(1)
+
                 #print( currPrD , dataR)
                 badPsis = dataR['badNodesPsisTau']  # based on a specific tau-iqr cutoff in LoadPrDPsiMoviesMasked
                 # but we actually use the raw iqr values to get a histogram of all iqr across all PDs to get the better cutoff later.

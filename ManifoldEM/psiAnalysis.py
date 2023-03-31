@@ -78,7 +78,7 @@ def op(*argv):
                 fin_PDs = fileCheck(p.numberofJobs)  # array of finished PDs (0's are unfinished, 1's are finished)
                 offset = np.count_nonzero(fin_PDs == 1)
                 progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
-                time.sleep(5)
+
     else:
         print("Computing the NLSA snapshots...")
         isFull = 0
@@ -116,7 +116,7 @@ def op(*argv):
                         offset = np.count_nonzero(fin_PDs == 1)
                         progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
 
-                    time.sleep(0.05)
+
 
                 pool.close()
                 pool.join()

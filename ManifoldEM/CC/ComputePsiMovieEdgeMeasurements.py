@@ -13,8 +13,8 @@ from sklearn.mixture import GaussianMixture
 
 from ManifoldEM import myio, p, FindCCGraphPruned
 from ManifoldEM.CC import ComputeOpticalFlowPrDAll, ComputeMeasureEdgeAll
-'''	
-Copyright (c) Columbia University Suvrajit Maji 2019	
+'''
+Copyright (c) Columbia University Suvrajit Maji 2019
 Modified:Sept 21,2021
 '''
 
@@ -443,7 +443,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
                     #print '\nIf you proceed without atleast one anchor node for the connected component',i,\
                     #    ', all the corresponding nodes will not be assigned with conformational coordinate labels.' \
                     #    'Cancel this program now or it will continue without the required anchors.\n'
-                    #time.sleep(20)
+                    #
 
             if len(connCompNoAnchor) > 0:
                 print('There are {} connected components with no anchors assigned. You can choose anchors for them ' \

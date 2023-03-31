@@ -420,7 +420,7 @@ def count1(R, G):
 
 
 def op(G, nodeEdgeNumRange, *argv):
-    time.sleep(1)
+
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -449,7 +449,7 @@ def op(G, nodeEdgeNumRange, *argv):
             while offset < numberofJobs:
                 offset = numberofJobs - count1(edgeNumRange, G)
                 progress5.emit(int((offset / float(numberofJobs)) * 99))
-                time.sleep(15)
+
     else:
 
         flowVecPctThresh = p.opt_movie['flowVecPctThresh']
@@ -480,7 +480,7 @@ def op(G, nodeEdgeNumRange, *argv):
                     if argv:
                         offset += 1
                         progress5.emit(int((offset / float(numberofJobs)) * 99))
-                    time.sleep(0.05)
+
                 pool.close()
                 pool.join()
 

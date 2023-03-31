@@ -55,7 +55,6 @@ def count1(R):
 
 
 def op(*argv):
-    time.sleep(5)
     set_params.op(1)
     #set_params.op(-1)
 
@@ -78,7 +77,7 @@ def op(*argv):
             while offset < len(R):
                 offset = len(R) - count1(R)
                 progress6.emit(int((offset / float(len(R))) * 100))
-                time.sleep(5)
+
     else:
         print("Recomputing the NLSA snapshots using the found reaction coordinates...")
         data = myio.fin1(p.CC_file)
@@ -111,7 +110,7 @@ def op(*argv):
                     if argv:
                         offset += 1
                         progress6.emit(int((offset / float(len(R))) * 100))
-                    time.sleep(0.05)
+
                 pool.close()
                 pool.join()
 

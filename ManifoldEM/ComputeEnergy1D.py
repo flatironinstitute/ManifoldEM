@@ -16,7 +16,6 @@ from ManifoldEM.util import debug_print
 
 
 def op(*argv):
-    time.sleep(5)
     print("Computing the energy landscape...")
     set_params.op(1)
 

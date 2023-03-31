@@ -75,7 +75,7 @@ def op(*argv):
             while offset < p.numberofJobs:
                 offset = p.numberofJobs - count(p.numberofJobs)
                 progress2.emit(int((offset / float(p.numberofJobs)) * 100))
-                time.sleep(5)
+
 
     else:
         print("Computing the eigenfunctions...")
@@ -114,7 +114,7 @@ def op(*argv):
                     if argv:
                         offset += 1
                         progress2.emit(int((offset / float(p.numberofJobs)) * 100))
-                    time.sleep(0.05)
+
                 pool.close()
                 pool.join()
 
