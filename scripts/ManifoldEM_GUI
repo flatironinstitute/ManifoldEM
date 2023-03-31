@@ -4929,7 +4929,7 @@ class PDSeleCanvas1(QtGui.QDialog):
 
             self.table = anchTable(data=P4.anch_list)
             sizeObject = QtGui.QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.table.move((sizeObject.width() / 2) - 100, (sizeObject.height() / 2) - 300)
+            self.table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
             self.table.show()
 
     # reset assignments of all PD anchors:
