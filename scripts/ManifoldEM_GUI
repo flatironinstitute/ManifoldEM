@@ -8120,8 +8120,8 @@ class ThreshAllCanvas(QtGui.QDialog):
                                                 linewidth=.5,
                                                 label='High Threshold')  #green
         x = np.arange(ThreshAllCanvas.xlimLo, ThreshAllCanvas.xlimHi + 1)
-        ThreshAllCanvas.lineL.set_data(x, p.PDsizeThL)
-        ThreshAllCanvas.lineH.set_data(x, p.PDsizeThH)
+        ThreshAllCanvas.lineL.set_data(x, [p.PDsizeThL])
+        ThreshAllCanvas.lineH.set_data(x, [p.PDsizeThH])
 
         ThreshAllCanvas.axes.axvline(len(P1.all_PrDs) + 1, color='#7f7f7f', linestyle='-', linewidth=.5)
 
@@ -8214,8 +8214,8 @@ class ThreshAllCanvas(QtGui.QDialog):
 
     def replot(self):
         x = np.arange(ThreshAllCanvas.xlimLo, ThreshAllCanvas.xlimHi + 1)
-        ThreshAllCanvas.lineL.set_data(x, ThreshAllCanvas.thresh_low)
-        ThreshAllCanvas.lineH.set_data(x, ThreshAllCanvas.thresh_high)
+        ThreshAllCanvas.lineL.set_data(x, [ThreshAllCanvas.thresh_low])
+        ThreshAllCanvas.lineH.set_data(x, [ThreshAllCanvas.thresh_high])
         ThreshAllCanvas.axes.set_ylim(ymin=0, ymax=ThreshAllCanvas.thresh_high + 20)
 
         ThreshAllCanvas.canvas.draw()
