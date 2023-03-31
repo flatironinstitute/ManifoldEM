@@ -54,7 +54,7 @@ def reScaleLinear(M, edgeNumRange, mvalrange):
     return M_scaled
 
 
-def findThreshHist(X, nbins, method=1, vis=1):
+def findThreshHist(X, nbins, method=1, vis=False):
     # this is still experimental
     # would work if the data values are sort of bi-modal distribution
 
@@ -96,7 +96,7 @@ def findThreshHist(X, nbins, method=1, vis=1):
         # 1. kmeans
         kmeans = KMeans(n_clusters=2).fit(X)
         if method == 1:
-            vis = 0
+            vis = False
         t_thresh_k = separateHist(X, kmeans.labels_, kmeans.cluster_centers_.T, bedges, 'kmeans', vis)
         if method == 0 or method == 'all':
             print('0. Kmeans.threshold:', t_thresh_k, ', centers:', kmeans.cluster_centers_.T)
@@ -252,7 +252,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
 
     nbins = 50  # we could use optimal bin finding methods such as 'fd','scott' etc,
     #plt.savefig('tau_iqrhist_cutoff.png')
-    visual = 1
+    visual = False
 
     Allmethods = ['K-means', 'find_peaks', 'Otsu', 'GMM', 'Curve-fit Intersection']
     # choose cutoff method type
