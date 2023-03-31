@@ -64,12 +64,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Columbia University Hstau Liao 2018 (python version)    
+Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Sonya Hanson 2018 (python version)
-Copyright (c) UWM, Peter Schwander 2019 (python version)  
+Copyright (c) UWM, Peter Schwander 2019 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
-  
+
 '''
 
 _logger = logging.getLogger(__name__)
@@ -389,10 +389,10 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
 
     #April 2020, include  vol mask 2d, msk2
     myio.fout1(outFile, [
-        'D', 'ind', 'q', 'df', 'CTF', 'imgAll', 'msk2', 'PD', 'PDs', 'Psis', 'imgAvg', 'imgAvgFlip', 'imgAllFlip',
+        'D', 'ind', 'q', 'df', 'CTF', 'imgAll', 'msk2', 'PD', 'PDs', 'Psis', 'imgAvg', 'imgAvgFlip',
         'imgLabels', 'Dnom', 'Nom', 'imgAllIntensity', 'version', 'options'
     ], [
-        D, ind, q, df, CTF, imgAll, msk2, PD, PDs, Psis, imgAvg, imgAvgFlip, imgAllFlip, imgLabels, Dnom, Nom,
+        D, ind, q, df, CTF, imgAll, msk2, PD, PDs, Psis, imgAvg, imgAvgFlip, imgLabels, Dnom, Nom,
         imgAllIntensity, version, options
     ])  # members of options
 
