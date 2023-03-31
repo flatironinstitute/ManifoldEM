@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from numpy import fliplr, flipud
 from skimage import draw
 
+from numba import jit
 
+@jit()
 def gradient(image, same_size=False):
     """ Computes the Gradients of the image separated pixel difference
     
@@ -74,7 +76,7 @@ def magnitude_orientation(gx, gy):
 
     return magnitude, orientation
 
-
+@jit(forceobj=True)
 def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
     """
     Computes the coefficients for the bilinear (spatial) interpolation
@@ -131,8 +133,8 @@ def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
         # Every cell of this matrix corresponds to (y - y_1)/dy
         y = (np.arange(dy) + 0.5) / csy
 
-        y = y[np.newaxis, :]
-        x = x[:, np.newaxis]
+        y = y.reshape(1, y.size)
+        x = x.reshape(x.size, 1)
 
         # CENTRAL COEFFICIENT
         ccoefs = np.zeros((csy, csx))
@@ -156,6 +158,7 @@ def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
         return coefs
 
 
+@jit(nopython=True)
 def interpolate_orientation(orientation, sx, sy, nbins, signed_orientation):
     """ interpolates linearly the orientations to their corresponding bins
 
@@ -184,24 +187,23 @@ def interpolate_orientation(orientation, sx, sy, nbins, signed_orientation):
     else:
         max_angle = 180
 
-    b_step = max_angle / nbins
-    b0 = (orientation % max_angle) // b_step
-    b0[np.where(b0 >= nbins)] = 0
-    b1 = b0 + 1
-    b1[np.where(b1 >= nbins)] = 0
-    b = np.abs(orientation % b_step) / b_step
-
-    #linear interpolation between the bins
-    # Coefficients corresponding to the bin interpolation
-    # We go from an image to a higher dimension representation of size (sizex, sizey, nbins)
     temp_coefs = np.zeros((sy, sx, nbins))
-    for i in range(nbins):
-        temp_coefs[:, :, i] += np.where(b0 == i, (1 - b), 0)
-        temp_coefs[:, :, i] += np.where(b1 == i, b, 0)
+    b_step = max_angle / nbins
+    for i in range(sy):
+        for j in range(sx):
+            bij = abs(orientation[i, j] % b_step) / b_step
+            b0 = int((orientation[i, j] % max_angle) // b_step)
+            if b0 >= nbins:
+                b0 = 0
+            b1 = b0 + 1
+            if b1 >= nbins:
+                b1 = 0
+            temp_coefs[i, j, b0] += 1 - bij
+            temp_coefs[i, j, b1] += bij
 
     return temp_coefs
 
-
+@jit()
 def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=False, normalise=True):
     """ builds a histogram of orientation for a cell centered around each pixel of the image
     
@@ -242,7 +244,7 @@ def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=
 
     return normalised_blocks
 
-
+@jit(forceobj=True)
 def interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y, signed_orientation=False, nbins=9):
     """ Returns a matrix of size (cell_size_x, cell_size_y, nbins) corresponding
          to the trilinear interpolation of the pixels magnitude and orientation

@@ -29,6 +29,7 @@ setup(name='ManifoldEM',
       packages=['ManifoldEM', 'ManifoldEM/CC'],
       install_requires=[
           'numpy<=1.22',
+          'numba',
           'mayavi',
           'PyQt5',
           'psutil',
