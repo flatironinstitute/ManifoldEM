@@ -5265,7 +5265,7 @@ class PDSeleCanvas1(QtGui.QDialog):
             sorted_trash = sorted(zip(PrDs, trashed), key=lambda x: x[1], reverse=True)
             self.table = trashTable(data=sorted_trash)
             sizeObject = QtGui.QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.table.move((sizeObject.width() / 2) - 100, (sizeObject.height() / 2) - 300)
+            self.table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
             self.table.show()
 
     # reset assignments of all PD removals:
@@ -5461,7 +5461,7 @@ class PDSeleCanvas1(QtGui.QDialog):
         sorted_PrDs = sorted(zip(P1.thresh_PrDs, P1.thresh_occ), key=lambda x: x[1], reverse=True)
         self.PrD_table = occTable(data=sorted_PrDs)
         sizeObject = QtGui.QDesktopWidget().screenGeometry(-1)  #user screen size
-        self.PrD_table.move((sizeObject.width() / 2) - 100, (sizeObject.height() / 2) - 300)
+        self.PrD_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
         self.PrD_table.show()
 
     def rebedListGen(self):
@@ -5488,7 +5488,7 @@ class PDSeleCanvas1(QtGui.QDialog):
             sorted_rebeds = sorted(zip(total, rebeds), key=lambda x: x[1], reverse=True)
             self.rebed_table = rebedTable(data=sorted_rebeds)
             sizeObject = QtGui.QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.rebed_table.move((sizeObject.width() / 2) - 100, (sizeObject.height() / 2) - 300)
+            self.rebed_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
             self.rebed_table.show()
         else:
             box = QtGui.QMessageBox(self)
