@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 from scipy import optimize
 
@@ -24,27 +23,20 @@ def op(q):
         q2 = np.array([np.cos(a[1] / 2.), 0, -np.sin(a[1] / 2.), 0.])
         q3 = np.array([np.cos(a[2] / 2.), 0., 0., -np.sin(a[2] / 2)])
         F = q - qMult_bsx.op(q3, qMult_bsx.op(q2, q1)).flatten()
-        #print a,F
         return F
 
     lb = -np.inf
     ub = np.inf
-    # options = optimset('Display', 'iter', 'TolFun', 1e-16);
     tol = 1e-12
-    exitflag = np.nan
-    resnorm = np.inf
 
     a0 = np.array([0, 0, 0])
-    nTry = 0
-    # tic
     res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol)
     a = res.x
 
-    phi = a[0]  #% (2*np.pi) * 180 / np.pi
-    theta = a[1]  #% (2*np.pi) * 180 / np.pi
-    psi = a[2]  #% (2*np.pi) * 180 / np.pi
+    phi = a[0]
+    theta = a[1]
+    psi = a[2]
 
-    #% nTry
     return (phi, theta, psi)
 
 

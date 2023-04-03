@@ -19,11 +19,7 @@ def tidyUp(D, EV):
 def op(A):
     D1, D2 = A.shape
     if D1 > D2:
-        tt = np.matmul(A.T, A)
-        #print 'tt is', tt[0:4,0:4]
         D, V = np.linalg.eigh(np.matmul(A.T, A))
-        #print 'D is', D[0:8]
-        #print 'Vis is', V[0:8, 0:8]
         D, V, S, invS = tidyUp(D, V)
         U = np.matmul(A, np.matmul(V, invS))
     else:

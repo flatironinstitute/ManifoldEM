@@ -2,7 +2,7 @@ import numpy as np
 
 eps = 1e-8
 '''
-Copyright (c) Columbia University Hstau Liao 2019    
+Copyright (c) Columbia University Hstau Liao 2019
 '''
 
 
@@ -38,5 +38,5 @@ def op(a, b):
     bb = np.sum(b**2, axis=0)
     ab = np.matmul(a.T, b)
     tmp = aa[:, np.newaxis] + bb[np.newaxis, :] - 2 * ab
-    tmp[np.nonzero(tmp < eps)] = 0
+    tmp[tmp < eps] = 0
     return np.sqrt(tmp)
