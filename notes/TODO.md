@@ -20,3 +20,4 @@
   * remove duplicate code in ManifoldEM_GUI
 * TODO parallelize the final step (3d trajectories)
 * TODO fix oversubscription in 'finding conformational coordinates'
+* TODO fix the whole "a.py" nonsense
