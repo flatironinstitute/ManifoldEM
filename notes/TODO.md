@@ -14,8 +14,6 @@
   * Given that images are signed float64s, first step might be to make float32 rather than scaled int
 * TODO compress pngs
   * Probably just hold them in a zip archive to reduce filecount
-* TODO fix threshold PDs crash
-  * Second tab when in the thresholding dialog
 * TODO Switch out progress tracking technique
 * TODO Low priority things
   * start adding types to all the things

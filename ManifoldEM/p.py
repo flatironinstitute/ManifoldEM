@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import sys
 import toml
@@ -139,6 +140,16 @@ ref_ang_file: str = ''
 ref_ang_file1: str = ''
 tess_file: str = ''
 nowTime_file: str = ''
+
+
+def set_trash_list(trash_list):
+    module = sys.modules[__name__]
+    setattr(module, 'trash_list', [bool(a) for a in trash_list])
+
+
+def get_trash_list():
+    module = sys.modules[__name__]
+    return np.array(getattr(module, 'trash_list'), dtype=bool)
 
 
 def todict():

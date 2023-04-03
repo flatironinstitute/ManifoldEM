@@ -61,7 +61,7 @@ def op(*argv):
     multiprocessing.set_start_method('fork', force=True)
 
     R = np.array(range(p.numberofJobs))
-    R = np.delete(R, np.nonzero(p.trash_list == 1)[0])
+    R = np.delete(R, np.nonzero(p.get_trash_list())[0])
 
     print("Recomputing the NLSA snapshots using the found reaction coordinates...")
     data = myio.fin1(p.CC_file)

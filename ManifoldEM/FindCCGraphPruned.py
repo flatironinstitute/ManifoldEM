@@ -247,7 +247,7 @@ def CalcPairwiseDistS2(X, *argv):
 
 
 def op(CC_graph_file_pruned):
-    trash_list = np.array(p.trash_list, dtype=bool)
+    trash_list = p.get_trash_list()
     good_nodes = np.nonzero(~trash_list)[0]
     bad_nodes = np.nonzero(trash_list)[0]
     numNodes = len(good_nodes)

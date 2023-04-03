@@ -2884,7 +2884,7 @@ class P4(QtGui.QWidget):
 
             trashDir = os.path.join(P1.user_directory, 'outputs_{}/CC/user_removals.txt'.format(p.proj_name))
             np.savetxt(trashDir, P4.trash_list, fmt='%i', delimiter='\t')
-            p.trash_list = P4.trash_list
+            p.set_trash_list(P4.trash_list)
 
             # save anchors to file:
             anch_sum = sum(map(lambda anchor: int(anchor.isChecked()), P4.anchorsAll.values()))
@@ -2936,7 +2936,7 @@ class P4(QtGui.QWidget):
             elif P3.user_dimensions == 2:
                 P4.anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
 
-            keepers = np.array(P3.col)[~p.trash_list]
+            keepers = np.array(P3.col)[~p.get_trash_list()]
             box = QtGui.QMessageBox(self)
             # check if at least one anchor is selected for each color:
             if set(keepers) == set(colors):
@@ -5364,7 +5364,7 @@ class PDSeleCanvas1(QtGui.QDialog):
                         for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
                             data.append(column)
                     P4.trash_list = data[0]
-                    p.trash_list = P4.trash_list
+                    p.set_trash_list(P4.trash_list)
 
                     trashLen = 0
                     for i in P4.trash_list:
@@ -9099,7 +9099,7 @@ class MainWindow(QtGui.QMainWindow):
                             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
                                 data.append(column)
                         P4.trash_list = data[0]
-                        p.trash_list = P4.trash_list
+                        p.set_trash_list(P4.trash_list)
 
                         idx = 1  #PD index
                         for i in P4.trash_list:

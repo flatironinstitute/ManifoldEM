@@ -375,7 +375,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
             ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange)
 
     ## check for bad PDs found based on bad tau values
-    trash_list = np.array(p.trash_list, dtype=bool)
+    trash_list = p.get_trash_list()
     p.tau_occ_thresh = 0.35  # interface with GUI, p.py
     tau_occ_thresh = p.tau_occ_thresh
     # take the already existing trash_list and update it
@@ -401,8 +401,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
         print('Pruning the graph G if there are more than {} bad nodes'.format(num_bad_nodes_prune_cutoff))
 
         # update the p.trash_list
-        p.trash_list = trash_list_chk
-
+        p.set_trash_list(trash_list_chk)
         if num_nodesAllBadPsis > num_bad_nodes_prune_cutoff:
 
             if not os.path.exists(CC_graph_file_pruned):

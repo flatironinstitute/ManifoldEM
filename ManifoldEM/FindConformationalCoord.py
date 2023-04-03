@@ -38,7 +38,7 @@ def op(*argv):
     os.makedirs(p.CC_OF_dir, exist_ok=True)
 
     # if trash PDs were created manually
-    trash_list_PDs = np.nonzero(p.trash_list)[0]
+    trash_list_PDs = np.nonzero(p.get_trash_list())[0]
     numTrashPDs = len(trash_list_PDs)
 
     if numTrashPDs > 0:
@@ -72,7 +72,7 @@ def op(*argv):
                 senses[0, a[0] - 1] = a[2]
 
             idx = 0
-            for t in p.trash_list:  #for row in trash_list; e.g. [36, True] means PD 36 is Trash
+            for t in p.get_trash_list():  #for row in trash_list; e.g. [36, True] means PD 36 is Trash
 
                 if t == 1:
                     psinums[0, idx] = -1
