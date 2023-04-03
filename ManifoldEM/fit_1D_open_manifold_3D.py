@@ -33,14 +33,11 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 eps = 1e-4
 
-#global maxIter,delta_a_max, delta_b_max,delta_tau_max,a_b_tau_result
-
 
 def op(psi):
-    a.init()
     #global p, nDim, a, b, x, x_fit
+    a.init()
     a.nDim = 3
-    #tau = get_fit_1D_open_manifold_3D_param
 
     tau = get_fit_1D_open_manifold_3D_param.op(psi)
 
