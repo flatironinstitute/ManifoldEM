@@ -4,7 +4,8 @@ import pandas
 
 import numpy as np
 
-from ManifoldEM import q2Spider, star
+from ManifoldEM import star
+from ManifoldEM.quaterion import q2Spider
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +46,7 @@ def op(nClass, nPix, trajName, relion_dir, bin_dir, *argv):  # Orientations
                 lPD = sum(PD**2)
                 Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
                 Qr = Qr / np.sqrt(np.sum(Qr**2))
-                phi[i], theta[i], psi[i] = q2Spider.op(Qr)
+                phi[i], theta[i], psi[i] = q2Spider(Qr)
 
             phi = np.mod(phi, 2 * np.pi) * (180 / np.pi)
             theta = np.mod(theta, 2 * np.pi) * (180 / np.pi)

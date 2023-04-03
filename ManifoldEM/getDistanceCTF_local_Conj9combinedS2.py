@@ -57,7 +57,8 @@ from scipy.ndimage.interpolation import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
-from ManifoldEM import ctemh_cryoFrank, myio, p, annularMask, q2Spider, projectMask
+from ManifoldEM import ctemh_cryoFrank, myio, p, annularMask, projectMask
+from ManifoldEM.quaterion import q2Spider
 from ManifoldEM.util import rotate_fill
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -208,7 +209,7 @@ def psi_ang(PD):
     lPD = sum(PD**2)
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
     Qr = Qr / np.sqrt(np.sum(Qr**2))
-    phi, theta, psi = q2Spider.op(Qr)
+    phi, theta, psi = q2Spider(Qr)
 
     psi = np.mod(psi, 2 * np.pi) * (180 / np.pi)
     return psi

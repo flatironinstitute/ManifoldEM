@@ -7,7 +7,8 @@ from numpy import cos, sin
 
 from scipy.ndimage import affine_transform, map_coordinates, rotate
 
-from ManifoldEM import q2Spider, myio, p
+from ManifoldEM import myio, p
+from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.CC.transformations import euler_from_quaternion, quaternion_from_euler, quaternion_matrix
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -95,16 +96,13 @@ def getEuler_from_PD(PD, deg):
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
     q1 = Qr / np.sqrt(sum(Qr**2))
 
-    if not deg:
-        phi, theta, psi = q2Spider.op(q1)
-    elif deg == 1:
-        #phi, theta, psi = q2Spider_mod.op(q1,deg)
-        phi, theta, psi = q2Spider.op(q1)
+    phi, theta, psi = q2Spider(q1)
+
+    if deg == 1:
         phi = phi * 180 / np.pi
         theta = theta * 180 / np.pi
         psi = psi * 180 / np.pi
     elif deg == 2:
-        phi, theta, psi = q2Spider.op(q1)
         phi = (phi % (2 * np.pi)) * 180 / np.pi
         theta = (theta % (2 * np.pi)) * 180 / np.pi
         psi = (psi % (2 * np.pi)) * 180 / np.pi
