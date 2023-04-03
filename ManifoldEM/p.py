@@ -4,6 +4,9 @@ import sys
 import toml
 from ManifoldEM.util import debug_print
 
+_module = sys.modules[__name__]
+
+
 '''
 Copyright (c) Columbia University Evan Seitz 2019
 Copyright (c) Columbia University Hstau Liao 2019
@@ -143,21 +146,18 @@ nowTime_file: str = ''
 
 
 def set_trash_list(trash_list):
-    module = sys.modules[__name__]
-    setattr(module, 'trash_list', [bool(a) for a in trash_list])
+    setattr(_module, 'trash_list', [bool(a) for a in trash_list])
 
 
 def get_trash_list():
-    module = sys.modules[__name__]
-    return np.array(getattr(module, 'trash_list'), dtype=bool)
+    return np.array(getattr(_module, 'trash_list'), dtype=bool)
 
 
 def todict():
     res = {}
-    module = sys.modules[__name__]
-    for var in dir(module):
-        if not var.startswith('_') and isinstance(getattr(module, var), (int, list, dict, float, str)):
-            res[var] = getattr(module, var)
+    for var in dir(_module):
+        if not var.startswith('_') and isinstance(getattr(_module, var), (int, list, dict, float, str)):
+            res[var] = getattr(_module, var)
 
     return res
 
@@ -167,22 +167,22 @@ def save(outfile: str):
         toml.dump(res, f)
         f.flush()
 
+
 def load(infile: str):
     with open(infile, 'r') as f:
         indict = toml.load(f)
 
-    module = sys.modules[__name__]
-    valid_params = dir(module)
-    for param,val in indict['params'].items():
+    valid_params = dir(_module)
+    for param, val in indict['params'].items():
         if param not in valid_params:
             debug_print(f"Warning: param '{param}' not found in parameters module")
         else:
-            setattr(module, param, val)
+            setattr(_module, param, val)
 
 
 def create_dir():
     # input and output directories and files
-    p = sys.modules[__name__]
+    p = _module
     p.dist_dir = os.path.join(user_dir, 'outputs_{}/distances/'.format(proj_name))
     p.dist_prog = os.path.join(dist_dir, 'progress/')
     os.makedirs(dist_prog, exist_ok=True)
@@ -234,7 +234,7 @@ def create_dir():
     os.makedirs(os.path.join(out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
 
     p.tess_file = os.path.join(user_dir, 'outputs_{}/selecGCs'.format(proj_name))
-    nowTime_file = os.path.join(user_dir, 'outputs_{}/nowTime'.format(proj_name))
+    p.nowTime_file = os.path.join(user_dir, 'outputs_{}/nowTime'.format(proj_name))
     p.dist_file = '{}/IMGs_'.format(dist_dir)
     p.psi_file = '{}/gC_trimmed_psi_'.format(psi_dir)
     p.psi2_file = '{}/S2_'.format(psi2_dir)
