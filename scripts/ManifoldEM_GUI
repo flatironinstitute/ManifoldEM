@@ -107,7 +107,7 @@ parser = optparse.OptionParser()
 
 # --resume user progress via data_inputs.txt location (string):
 parser.add_option('--input',
-                  help='Name of previous project to resume (i.e., params_<name>.pkl)',
+                  help='Name of previous project to resume (i.e., params_<name>.toml)',
                   type='str',
                   action='store',
                   dest='userInput')
@@ -8575,7 +8575,7 @@ class MainWindow(QtGui.QMainWindow):
 
         MainWindow.inputsFile = ''
         if userInput != 'empty':
-            MainWindow.inputsFile = os.path.join(output_dir, 'params_' + userInput + '.pkl')
+            MainWindow.inputsFile = os.path.join(output_dir, 'params_' + userInput + '.toml')
 
         elif userInput == 'empty':
             msg = 'Would you like to initiate a new project or return to progress already made on a previous one?'
@@ -8598,7 +8598,7 @@ class MainWindow(QtGui.QMainWindow):
                 box.setFont(font_standard)
                 box.setIcon(QtGui.QMessageBox.Information)
                 box.setInformativeText('On the following screen, select the\
-                                        <i>params.pkl</i> file for the previously\
+                                        <i>params.toml</i> file for the previously\
                                         initiated project.\
                                         <br /><br />\
                                         This file is uniquely created within the main directory\
@@ -8608,12 +8608,12 @@ class MainWindow(QtGui.QMainWindow):
                 ret = box.exec_()
 
                 MainWindow.inputsFile = QtGui.QFileDialog.getOpenFileName(self,
-                                                                          'Choose previous <i>params.pkl</i> file', '',
-                                                                          ('Data Files (*.pkl)'))[0]
+                                                                          'Choose previous <i>params.toml</i> file', '',
+                                                                          ('Data Files (*.toml)'))[0]
 
         if MainWindow.inputsFile:
 
-            if MainWindow.inputsFile.endswith('.pkl'):
+            if MainWindow.inputsFile.endswith('.toml'):
                 print('Loading user data...')
                 try:
                     fname_front = MainWindow.inputsFile.split('params_', 1)[1]
@@ -9539,7 +9539,7 @@ class MainWindow(QtGui.QMainWindow):
         if P3.dictGen is False:
             msg = 'Performing this action will restart the program.\
                    Upon reloading, current progress can be resumed\
-                   via the <i>params.pkl</i> folder.\
+                   via the <i>params.toml</i> folder.\
                    <br /><br />\
                    Do you want to proceed?'
 
@@ -9552,7 +9552,7 @@ class MainWindow(QtGui.QMainWindow):
                    <i>Eigenvectors</i> tab.\
                    <br /><br />\
                    All other progress can be resumed upon reloading\
-                   via the <i>params.pkl</i> folder.\
+                   via the <i>params.toml</i> folder.\
                    <br /><br />\
                    Do you want to proceed?'
 
@@ -9954,8 +9954,8 @@ class MainWindow(QtGui.QMainWindow):
                     call(["rm", "-r",
                           os.path.join(P1.user_directory,
                                        'outputs_{}'.format(p.proj_name))])  #delete output directory if it exists
-                    if os.path.exists(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name))):
-                        os.remove(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name)))
+                    if os.path.exists(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name))):
+                        os.remove(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name)))
                     set_params.op(0)  #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
@@ -9965,7 +9965,7 @@ class MainWindow(QtGui.QMainWindow):
                 elif reply == QtGui.QMessageBox.No:
                     pass
 
-            elif os.path.exists(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name))):
+            elif os.path.exists(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name))):
                 box = QtGui.QMessageBox(self)
 
                 box.setWindowTitle('%s Conflict' % progname)
@@ -9973,14 +9973,14 @@ class MainWindow(QtGui.QMainWindow):
                 box.setFont(font_standard)
                 box.setIcon(QtGui.QMessageBox.Warning)
                 box.setInformativeText(
-                    'A previous <i>params_{}.pkl</i> file already exists within the initial project directory.\
+                    'A previous <i>params_{}.toml</i> file already exists within the initial project directory.\
                                         <br /><br />\
                                         Do you want to overwrite this data and proceed?'.format(p.proj_name))
                 box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
                 reply = box.exec_()
 
                 if reply == QtGui.QMessageBox.Yes:  #overwrite directory and continue to page 2
-                    os.remove(os.path.join(output_dir, 'params_{}.pkl'.format(p.proj_name)))
+                    os.remove(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name)))
                     set_params.op(0)  #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
