@@ -17,27 +17,7 @@ _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
 
 
-def conjugate_bin(S20, S2, CG1, NIND):
-    # compute affinities among the bins
-    nbins = S20.shape[1]
-    npart = int(S2.shape[1] / 2)
-    mat = np.zeros((nbins, npart), dtype=int)
-    for i in NIND:
-        # filling in the occupied indices modulo npart
-        # i.e., only the original part indices
-        mat[i, CG1[i] % npart] = 1
-    # affinity calculation
-    aff = np.matmul(mat, mat.T)
-    arank = np.argsort(aff)
-    cbin = arank[:, nbins - 2:]
-    for i in NIND:
-        if cbin[i, 0] == i:
-            cbin[i, 0] = cbin[i, 1]
-    cbin = cbin[:, 0]
-    return cbin
-
-
-def get_S2(q):
+def _get_S2(q):
     try:
         assert (q.shape[0] > 3)
     except AssertionError:
@@ -46,19 +26,13 @@ def get_S2(q):
         sys.exit(1)
         raise
         # projection angles
-    S2 = 2*np.vstack((q[1,:]*q[3,:]-q[0,:]*q[2,:],\
-                      q[0,:]*q[1,:]+q[2,:]*q[3,:], \
-                      q[0,:]**2 + q[3,:]**2-0.5))
-    """
-   From the original matlab code:
-   S2 = 2*[q(2,:).*q(4,:)-q(1,:).*q(3,:);
-           q(1,:).*q(2,:)+q(3,:).*q(4,:);
-           q(1,:).^2+q(4,:).^2-0.5];
-   """
+    S2 = 2*np.vstack((q[1, :]*q[3, :] - q[0, :]*q[2, :],
+                      q[0, :]*q[1, :] + q[2, :]*q[3, :],
+                      q[0, :]**2 + q[3, :]**2 - 0.5))
     return S2
 
 
-def classS2(X, Q):
+def _classS2(X, Q):
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(X)
     distances, IND = nbrs.kneighbors(Q)
     NC = np.bincount(IND[:, 0].squeeze())
@@ -71,16 +45,14 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
     S20, it = distribute3Sphere.op(nG)
 
     S20 = S20.T
-    #nS = q.shape[1]
     # projection angles
-    S2 = get_S2(q)
+    S2 = _get_S2(q)
 
-    IND, NC = classS2(S20.T, S2.T)
+    IND, NC = _classS2(S20.T, S2.T)
 
     # non-thresholded
-    #NIND = (NC >= 0).nonzero()[0] # NIND is just [0:S20.shape[1]]
     CG1 = [[] for i in range(S20.shape[1])]
-    for i,index in enumerate(IND.ravel()):
+    for i, index in enumerate(IND.ravel()):
         CG1[index].append(i)
 
     CG1 = np.array([np.array(a) for a in CG1], dtype=object)
@@ -90,26 +62,20 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
     # halving first
     NC1 = NC[:mid]
     NC2 = NC[mid:]
-    '''
-   NIND = (NC1 >= PDsizeTh).nonzero()[0]
-   '''
+
     NIND = []
     if len(NC1) >= len(NC2):
-        pd = 0  #PD index
-        for i in NC1:  #NC1 is the occupancy of PrD=pd
+        pd = 0  # PD index
+        for i in NC1:  # NC1 is the occupancy of PrD=pd
             if i >= PDsizeTh:
                 NIND.append(pd)
             pd += 1
     else:
-        pd = mid  #PD index
-        for i in NC2:  #NC2 is the occupancy of PrD=pd
+        pd = mid  # PD index
+        for i in NC2:  # NC2 is the occupancy of PrD=pd
             if i >= PDsizeTh:
                 NIND.append(pd)
             pd += 1
-    '''
-   if len(NC1) < len(NC2):
-       NIND = (NC2 >= PDsizeTh).nonzero()[0]
-       '''
 
     # find the "conjugate" bins
     S20_th = S20[:, NIND]

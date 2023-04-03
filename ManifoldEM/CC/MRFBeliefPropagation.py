@@ -1,9 +1,6 @@
 import numpy as np
 import copy
-import logging
 
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
 '''
 function BPalg = createBPalg(G,options)
 % create BPalg struct
@@ -90,15 +87,13 @@ def max_product(A, x):
 
     if len(x.shape) == 1:
         x = np.reshape(x, (len(x), 1))  # convert a(r,) to a(r,1)
-        # #print 'A',A.shape,'x.shape:',x.shape
 
     if x.shape[1] == 1:
         X = np.matmul(x, np.ones((1, A.shape[0])))  #% X(i,j) = x(i)
-        # #print 'X',X.shape
         y = np.max(A.T * X, axis=0).T  #element wise multiplication At*X
 
     else:  # this should be checked
-        #%this works for arbitrarily sized A and x (but is ugly, and slower than above)
+        # this works for arbitrarily sized A and x (but is ugly, and slower than above)
         X = np.matlib.repmat(x, (1, 1, A.shape[0]))
         B = np.matlib.repmat(A, (1, 1, x.shape[1]))
         C = np.transpose(B, [1, 2, 0])
