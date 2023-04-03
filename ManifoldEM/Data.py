@@ -4,7 +4,8 @@ import datetime
 import math
 import numpy as np
 
-from ManifoldEM import S2tessellation, myio, FindCCGraph, set_params, util, p, spider, star, util, p, qMult_bsx
+from ManifoldEM import S2tessellation, myio, FindCCGraph, set_params, util, p, spider, star, util, p
+from ManifoldEM.quaternion import qMult_bsx
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,7 +87,7 @@ def get_from_relion(align_star_file, flip):
             exit(1)
 
     qz, qy, qzs = util.eul_to_quat(phi, theta, psi, flip)
-    q = qMult_bsx.op(qzs, qMult_bsx.op(qy, qz))
+    q = qMult_bsx(qzs, qMult_bsx(qy, qz))
 
     return (sh, q, U, V)
 
@@ -99,7 +100,7 @@ def get_q(align_param_file, phiCol, thetaCol, psiCol, flip):
     theta = np.deg2rad(align[:, thetaCol])
     psi = np.deg2rad(align[:, psiCol])
     qz, qy, qzs = util.eul_to_quat(phi, theta, psi, flip)
-    q = qMult_bsx.op(qzs, qMult_bsx.op(qy, qz))
+    q = qMult_bsx(qzs, qMult_bsx(qy, qz))
     return q
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import optimize
 
-from ManifoldEM import qMult_bsx
+from ManifoldEM.quaternion import qMult_bsx
 '''Converts a quaternion to corresponding rotation sequence in Spider 3D convention
 Due to the 3D convention for all angles there is no need to negate psi
 q: 4x1
@@ -22,7 +22,7 @@ def op(q):
         q1 = np.array([np.cos(a[0] / 2.), 0., 0., -np.sin(a[0] / 2.)])  # see write-up
         q2 = np.array([np.cos(a[1] / 2.), 0, -np.sin(a[1] / 2.), 0.])
         q3 = np.array([np.cos(a[2] / 2.), 0., 0., -np.sin(a[2] / 2)])
-        F = q - qMult_bsx.op(q3, qMult_bsx.op(q2, q1)).flatten()
+        F = q - qMult_bsx(q3, qMult_bsx(q2, q1)).flatten()
         return F
 
     lb = -np.inf
