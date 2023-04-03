@@ -27,8 +27,6 @@ def op(*argv):
     #print psiNumsAll.shape,'a=',a
     xSelect = np.delete(xSelect, a)
     a = np.nonzero(p.get_trash_list())[0]  # unassigned states, python
-    import pdb
-    pdb.set_trace()
     if len(xSelect):
         xSelect = np.delete(xSelect, a)
 
