@@ -28,7 +28,7 @@ setup(name='ManifoldEM',
       maintainer_email="rblackwell@flatironinstitute.org",
       packages=['ManifoldEM', 'ManifoldEM/CC'],
       install_requires=[
-          'numpy<=1.22',
+          'numpy',
           'numba',
           'mayavi',
           'PyQt5',
