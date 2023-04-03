@@ -41,10 +41,10 @@ def CreateGraphStruct(nStates, pwDist, epsilon, *argv):
         pwDist = np.array(pwDist)
 
     if argv:
-        #print '\nAdjMat is available to create the graph.'
+
         AdjMat = argv[0]
     else:
-        #print '\nAdjMat is not available.'
+
         AdjMat = np.empty(0)
 
     if pwDist.shape[0] > 0:
@@ -78,7 +78,7 @@ def CreateGraphStruct(nStates, pwDist, epsilon, *argv):
         Adj = csr_matrix(Adj)
         # form the graph model
         for n in range(nNodes):
-            #print 'nnMat',type(nnMat)
+
             nnMat[n] = np.nonzero(Adj[n, :])[1]
 
         # if it is not symmetric

@@ -1,9 +1,6 @@
-import logging
 import multiprocessing
 import os
-import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from numpy import linalg as LA
@@ -12,7 +9,7 @@ from contextlib import contextmanager
 
 from ManifoldEM import p, myio, set_params
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
-from ManifoldEM.CC.hogHistogram import histogram_from_gradients, visualise_histogram
+from ManifoldEM.CC.hogHistogram import histogram_from_gradients
 
 
 @contextmanager
@@ -165,8 +162,6 @@ def CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums, labels):
                     HOGFA[:, :, :, j] = np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
                     isBadPsiA_block[j] = 1
 
-                #if  np.count_nonzero(HOGFB[:,:,:,j])==0:
-                #print 'nonZero_hogB_elements:',np.count_nonzero(HOGFB[:,:,:,j])
                 if np.count_nonzero(HOGFB[:, :, :, j]) <= num_hogel_th:
                     HOGFB[:, :, :, j] = np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
                     isBadPsiB_block[j] = 1
@@ -345,7 +340,6 @@ def op(G, nodeEdgeNumRange, *argv):
 
     if argv:
         offset = numberofJobs - len(input_data)
-        #print 'edge meas offset',offset
         progress5.emit(int((offset / float(numberofJobs)) * 99))
 
     if p.ncpu == 1:  # avoids the multiprocessing package

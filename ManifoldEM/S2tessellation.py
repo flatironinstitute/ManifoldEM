@@ -69,7 +69,7 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
     nG = np.floor(4 * np.pi / (shAngWidth**2)).astype(int)
     # reference angles
     S20, it = distribute3Sphere.op(nG)
-    #print S20.shape
+
     S20 = S20.T
     #nS = q.shape[1]
     # projection angles

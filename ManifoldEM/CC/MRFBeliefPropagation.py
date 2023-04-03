@@ -87,7 +87,7 @@ def max_product(A, x):
     #% function y=max_mult(A,x) y(i) = max_j A(i,j) x(j)
 
     #% This is faster
-    #print 'len(x.shape)',len(x.shape)
+
     if len(x.shape) == 1:
         x = np.reshape(x, (len(x), 1))  # convert a(r,) to a(r,1)
         # #print 'A',A.shape,'x.shape:',x.shape

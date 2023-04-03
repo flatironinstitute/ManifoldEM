@@ -144,8 +144,8 @@ def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
         ccoefs[-dy:, :dx] = (1 - y) * flipud(x)
         ccoefs[-dy:, -dx:] = fliplr(y) * flipud(x)
 
-        #print csx,n_cells, dx, csy,n_cells, dy
-        #print (csx*n_cells - dx, csy*n_cells - dy)
+
+
 
         coefs = np.zeros((csx * n_cells - dx, csy * n_cells - dy))
         coefs[:-dy, :-dx] = np.tile(ccoefs, (n_cells - 1, n_cells - 1))

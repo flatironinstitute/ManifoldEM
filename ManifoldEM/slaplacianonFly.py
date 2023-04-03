@@ -45,7 +45,7 @@ def op(*arg):
     yRow = arg[2]
     nS = arg[3]  #dataset size
     options = arg[4]  #options.sigma: Gaussian width
-    #print('sigma:', options.sigma)
+
     nNZ = len(yVal)  #number of nonzero elements
 
     # if required, compute autotuning distances:

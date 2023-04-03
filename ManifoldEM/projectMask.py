@@ -81,7 +81,7 @@ def rotateVolumeQuat(vol, q):
     # if input euler angles are not already negative for inverse transform
     rotmat = np.linalg.inv(rotmat)
     T_inv = rotmat[0:3, 0:3]
-    #print 'Quat-rotmat',rotmat
+
 
     c_in = 0.5 * np.array(dims)
     c_out = 0.5 * np.array(dims)
@@ -94,7 +94,7 @@ def rotateVolumeQuat(vol, q):
 def getEuler_from_PD(PD, deg):
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
     q1 = Qr / np.sqrt(sum(Qr**2))
-    #print 'q1',q1
+
     if not deg:
         phi, theta, psi = q2Spider.op(q1)
     elif deg == 1:

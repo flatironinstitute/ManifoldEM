@@ -16,7 +16,7 @@ _logger.setLevel(logging.DEBUG)
 
 
 def getMask2D(prD, maskType, radius):
-    #print 'Reading PD from dist_file and tesselation info from tess_file.'
+
 
     if maskType == 'annular':  #annular mask
         N = p.nPix
@@ -72,7 +72,7 @@ def maskAvgMovie(M):
 def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
     quartile_1, quartile_3 = np.percentile(tau, [25, 75])
     iqr = quartile_3 - quartile_1
-    #print 'iqr',iqr
+
 
     ## Sept 2021
     # check if the tau value distribution have more than one narrow ranges far apart
@@ -83,15 +83,15 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
     tau_h = np.array(tau_h)
     tau_nz = np.where(tau_h > 0.0)[0].size
     tau_occ = tau_nz / float(taubins)
-    #print('\ntau h:', tau_h)
-    #print('\ntau bin_edges:', bin_edges)
-    #print('\ntau occ:', tau_nz, tau_occ)
+
+
+
     # if number of states present in tau values is less than occ_thresh=30%?then there are lot of
     # missing states,
     #tau_occ_thresh = 0.35 # 35% conservative here? # could input through p.py / gui ?
 
     if (iqr < 0.02) or (tau_occ <= tau_occ_thresh):
-        #print("Narrow tau distribution")
+
         badPsi = 1
     else:
         badPsi = 0
@@ -100,7 +100,7 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
 
 
 def op(prD):
-    #print ('\nprD',prD)
+
     p.findBadPsiTau = 1  # interface with GUI, p.py
     p.tau_occ_thresh = 0.35  # interface with GUI, p.py
     '''
@@ -130,7 +130,7 @@ def op(prD):
 
     psi2_file = p.psi2_file
     NumPsis = p.num_psis
-    #print 'NumPsis',NumPsis
+
     moviePrDPsis = [None] * NumPsis
     tauPrDPsis = [None] * NumPsis
     badPsis = []
@@ -150,8 +150,8 @@ def op(prD):
         tau = data_IMG["tau"]
         #psirec = data_IMG['psirec']
         #psiC1 = data_IMG['psiC1']
-        #print 'PrD:',prD,', Psi',psinum
-        #print('load IMG1.shape',IMG1.shape)
+
+
         Mpsi = -IMG1
 
         # checkflip
@@ -174,11 +174,11 @@ def op(prD):
             tauPsisIQR.append(tauIQR)
             tauPsisOcc.append(tauOcc)
             if b:
-                #print('bad psinum',psinum)
+
                 badPsis.append(psinum)
                 k = k + 1
         else:
             badPsis = []
 
-    #print('prD',prD, 'badPsis', badPsis,tauvalPsis)
+
     return moviePrDPsis, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc

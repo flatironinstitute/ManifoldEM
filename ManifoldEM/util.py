@@ -26,7 +26,7 @@ def debug_print(msg: str=""):
     if msg:
         print(msg)
     stack = traceback.format_stack()
-    # print file, line number, and calling function
+
     print(stack[-2].split('\n')[0])
 
 
@@ -127,7 +127,7 @@ def augment(q):
 
     qc = np.vstack((-q[1, :], q[0, :], -q[3, :], q[2, :]))
     q = np.hstack((q, qc))
-    # print q.shape
+
     return q
 
 

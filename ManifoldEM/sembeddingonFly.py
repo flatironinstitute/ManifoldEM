@@ -26,7 +26,7 @@ def op(yVal, yCol, yRow, nS, options1):
     try:
         vals, vecs = eigsh(l, k=options.nEigs + 1, maxiter=300)
     except ArpackNoConvergence as e:
-        #print(e)
+
         vals = e.eigenvalues
         vecs = e.eigenvectors
         print("eigsh not converging in 300 iterations...")

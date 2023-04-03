@@ -52,7 +52,7 @@ def q2Spider(q):
         q2 = np.array([np.cos(a[1] / 2.), 0, -np.sin(a[1] / 2.), 0.])
         q3 = np.array([np.cos(a[2] / 2.), 0., 0., -np.sin(a[2] / 2)])
         F = q - qMult_bsx(q3, qMult_bsx(q2, q1)).flatten()
-        #print a,F
+
         return F
 
     lb = -np.inf

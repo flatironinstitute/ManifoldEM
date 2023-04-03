@@ -44,14 +44,14 @@ def rotateVolumeEuler(vol, sym, deg):
     # if input euler angles are not already negative, then we have to take the inverse.
     #T_inv = np.linalg.inv(rotmat)
     T_inv = rotmat
-    #print 'Euler-rotmat',rotmat
+
 
     c_in = 0.5 * np.array(dims)
     c_out = 0.5 * np.array(dims)
     cen_offset = c_in - np.dot(T_inv, c_out)
-    #print 'cen_offset', cen_offset
+
     rho = affine_transform(input=vol, matrix=T_inv, offset=cen_offset, output_shape=dims, mode='nearest')
-    #print 'rho',rho
+
     return rho
 
 
@@ -63,7 +63,7 @@ def rotateVolumeQuat(vol, q):
     # if input euler angles are not already negative for inverse transform
     rotmat = np.linalg.inv(rotmat)
     T_inv = rotmat[0:3, 0:3]
-    #print 'Quat-rotmat',rotmat
+
 
     c_in = 0.5 * np.array(dims)
     c_out = 0.5 * np.array(dims)
@@ -76,7 +76,7 @@ def rotateVolumeQuat(vol, q):
 def getEuler_from_PD(PD, deg):
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
     q1 = Qr / np.sqrt(sum(Qr**2))
-    #print 'q1',q1
+
     if not deg:
         phi, theta, psi = q2Spider.op(q1)
     elif deg == 1:
@@ -106,12 +106,12 @@ def op(vol, PD):
     sym[2] = 0  # as psi=0 , the input images have already been inplane rotated
     sym = sym * (-1.)  # for inverse transformation
 
-    #print 'sym-angles-euler-PD',sym*180.0/np.pi
+
     rho = rotateVolumeEuler(vol, sym, deg)
 
     msk = np.sum(rho, axis=2)  # axis= 2 is z slice after swapping axes(0,2)
     msk = msk.reshape(nPix, nPix).T
-    #print 'mask pix',np.sum(msk>0)
+
     msk = msk > 1
     return msk
 

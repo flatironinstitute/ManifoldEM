@@ -66,11 +66,11 @@ def rearrange(seeds, nn):
 
     #% add the remaining nodes which were not visited, to the final list
     remnodes = set(range(nn.shape[0])) - set(nodelist)
-    #print 'Nodes not visited:',list(remnodes) # isolated nodes not visited
+
     if len(remnodes) > 0:
         nodelist = nodelist + list(remnodes)
 
-    #print 'nodelist:',nodelist
+
     nodelist = np.array(nodelist)
 
     return nodelist
@@ -120,16 +120,16 @@ def createNodeOrder(G, anchorNodes, nodeOrderType):
     elif nodeOrderType == 'multiAnchor':
         nnMatCell = G['nnMat']
         nnMatCell = np.reshape(nnMatCell, (G['nNodes'], -1))
-        #print 'nnMatCell',nnMatCell
+
 
         #Sz = cell2mat(cellfun(@(x) size(x,2),nnMatCell,'UniformOutput',False))
         Sz = np.apply_along_axis(lambda x: len(x[0]), 1, nnMatCell)
         maxSz = max(Sz)
-        #print 'Sz',Sz,maxSz
+
         #nnMat = cell2mat(cellfun(@(x) [x zeros(1,maxSz - size(x,2))],nnMatCell,'UniformOutput',false));
         nnMat = np.apply_along_axis(lambda x: np.append(x[0], -100 * (np.ones((1, maxSz - len(x[0]))))).tolist(), 1,
                                     nnMatCell).astype(int)  # put -100 as filler since indexing starts with 0
-        #print nnMat
+
         nodeOrder = rearrange(anchorNodes, nnMat)
 
     return nodeOrder
@@ -201,12 +201,12 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     G.update(maxState=maxState)
 
     if cc == 1:
-        #print p.anch_list
+
         # format: PrD,CC1,S1 for 1D
         # p.anch_list = np.array([[1,1,1],[2,1,-1]])  #TEMP should PrD and CC1 start from 1 or 0?
         p.anch_list = np.array(p.anch_list)
-        #print "type of anchor list", type(p.anch_list)
-        #print "anchors= ", p.anch_list
+
+
 
         IndStatePlusOne = p.anch_list[:, 2] == 1
         IndStateMinusOne = p.anch_list[:, 2] == -1
@@ -244,11 +244,11 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     anchorNodeMeasures = np.hstack((anchorNodeMeasuresPlusOne, anchorNodeMeasuresMinusOne))
     nodePot, edgePot = MRFGeneratePotentials.op(G, anchorNodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock)
 
-    #print('nodePot',nodePot[:,1])
+
     # Set potential value to small number <= 1e-16 for bad psi-movies
     badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
     badNodesPsisTau = readBadNodesPsisTau(badNodesPsisTaufile)
-    #print 'bp-badNodesPsisTau',badNodesPsisTau[0:10,:]
+
 
     # from bad taus (badNodesPsisTau) and split block movies (badNodesPsis)
     if (badNodesPsis.shape[0] == badNodesPsisTau.shape[0]) and (badNodesPsis.shape[1] == badNodesPsisTau.shape[1]):
@@ -256,16 +256,16 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     else:
         badNodesPsis2 = badNodesPsis
 
-    #print 'bp-badNodesPsis2',badNodesPsis2[0:40,:]
+
     # if badNodesPsis exists
 
     nodesAllBadPsis = []
     if badNodesPsis2.shape[0] > 0:
-        #print 'bp-badNodesPsis2',badNodesPsis2[0:10,:]
+
         for n in range(badNodesPsis2.shape[0]):  # row has prd numbers, column has psi number so shape is (num_prds,2)
             #remember that badNodePsis has index starting with 1 ??
             badPsis = np.nonzero(badNodesPsis2[n, :] <= -100)[0]
-            #print 'n',n,'badPsis',badPsis
+
             for k in badPsis:
                 if k < NumPsis:
                     nodePot[k, n] = badNodePotVal
@@ -277,7 +277,7 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
             if len(badPsis) == badNodesPsis2.shape[1]:  # all columns should be bad
                 #if len(badPsis)>=badNodesPsis2.shape[1]-1: # all columns, or less one bad ?
                 nodesAllBadPsis.append(n)
-            #print 'nodePot',nodePot[:,n]
+
 
     #badNodesPsis2 includes  badNodesPsis (split-block movies) + badNodesPsisTau (tau values during optical flow step),
     # so , printing it out as *_bp.txt , the *_of.txt files will have just the badNodesPsisTau
@@ -328,13 +328,13 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
 
     graphNodeOrder = createNodeOrder(G, anchorNodes, nodeOrderType)
     G['graphNodeOrder'] = graphNodeOrder
-    #print('graphNodeOrder:',graphNodeOrder)
+
 
     BPalg = createBPalg(G, options)
     BPalg['anchorNodes'] = anchorNodes
 
     nodeBelief, edgeBelief, BPalg = MRFBeliefPropagation.op(BPalg, nodePot, edgePot)
-    #print('nodeBelief:\n',nodeBelief.shape)
+
 
     nodeBeliefR = nodeBelief
 
@@ -343,33 +343,33 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
         badS = badNodesPsis2 == -100
         print(badS[0, :], np.shape(badS))
         badStates = np.hstack((badS, badS)).T  # FWD + REV states
-        #print(badStates [0:16,0], np.shape(badStates))
+
         nodeBeliefR[badStates] = 0.0
-        #print('nodeBelief:\n',nodeBeliefR[0:16,0:2])
-        #print('Total bad psinum PDs marked:',np.sum(np.sum(badStates==True)))
+
+
 
     OptNodeLabels = np.argsort(-nodeBeliefR, axis=0)
     nodeStateBP = OptNodeLabels[0, :]  # %max-marginal
     OptNodeBel = nodeBeliefR[nodeStateBP, range(0, len(nodeStateBP))]
 
-    #print('nodeBelief',nodeBelief)
-    #print('OptNodeLabels',OptNodeLabels)
-    #print ('OptNodeBel',OptNodeBel)
+
+
+
     #%%%%% Determine the Psi's and Senses %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     print('\nDetermining the psinum and senses from node labels ...')
     nodeStateBP = nodeStateBP + 1  # indexing from 1 as matlab
-    #print('nodeStateBP:',nodeStateBP)
+
     psinumsBP, sensesBP = getPsiSensesfromNodeLabels(nodeStateBP, NumPsis)
 
     psinums_cc = np.zeros((1, G['nNodes']), dtype='int')
     senses_cc = np.zeros((1, G['nNodes']), dtype='int')
 
     noAnchorCC = G['ConnCompNoAnchor']
-    #print('noAnchoccc',noAnchorCC)
+
     nodesEmptyMeas = []
     for c in noAnchorCC:
-        #print('c',c,'Gcc[c]',G['NodesConnComp'][c])
+
         nodesEmptyMeas.append(G['NodesConnComp'][c])
 
     nodesEmptyMeas = [y for x in nodesEmptyMeas for y in x]

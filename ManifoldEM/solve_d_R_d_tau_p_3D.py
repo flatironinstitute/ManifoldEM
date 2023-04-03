@@ -40,7 +40,7 @@ def op():  #added
         -a.a[0] * (a.x[a.p, 0] - a.b[0]) + 3 * a.a[2] * (a.x[a.p, 2] - a.b[2])
     ]).T
     beta = np.roots(d_R_d_beta_3D)
-    #print 'd_R is', d_R_d_beta_3D
+
     # remove elements for which tmp is true
     tmp = np.absolute(np.imag(beta)) > 0
     tmp = np.nonzero(tmp)[0]

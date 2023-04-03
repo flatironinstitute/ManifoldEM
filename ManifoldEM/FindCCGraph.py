@@ -72,7 +72,7 @@ def CreateGraphStruct(nStates, pwDist, epsilon, *argv):
         Adj = csr_matrix(Adj)
         # form the graph model
         for n in range(nNodes):
-            #print 'nnMat',type(nnMat)
+
             nnMat[n] = np.nonzero(Adj[n, :])[1]
 
         # if it is not symmetric
@@ -167,7 +167,7 @@ def getSubGraph(G, *nodes):
     if not nodes:
         # get all subgraphs
         for i in range(numConnComp):
-            #print '\nConnected Component',i,':',G['NodesConnComp'][i], ', size:',len(G['NodesConnComp'][i])
+
             if len(G['NodesConnComp'][i]) == 1:
                 if numConnComp <= 5:  #only provide this print statement if number of components are 5 or less
                     print('Singlet Node in connected component', i)
@@ -257,9 +257,9 @@ def op():
 
     numPDs = len(CG)
 
-    #print "nG=",nG
+
     print("Number of PDs:", numPDs)
-    #print 'shape of S20',S20_th.shape
+
     #Number of Projection directions
     PrDs = range(numPDs)
 

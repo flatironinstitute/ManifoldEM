@@ -51,7 +51,7 @@ def op(psi):
     if disc < 0:
         disc = 0.
     if np.absolute(D) < 1e-8:
-        #print 'D=',D
+
         D = 1e-8
     a1 = (2. * np.sqrt(disc)) / (3. * D)
     a3 = (2. * disc**(3 / 2.)) / (27. * D * D)

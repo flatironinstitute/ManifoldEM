@@ -52,7 +52,7 @@ def op(*argv):
         Gsub = data['Gsub']
 
     numConnComp = len(G['NodesConnComp'])
-    #print "Number of connected component:",numConnComp
+
 
     anchorlist = [a[0] for a in p.anch_list]
     anchorlist = [a - 1 for a in anchorlist]  # we need labels with 0 index to compare with the node labels in G, Gsub
@@ -108,7 +108,7 @@ def op(*argv):
         edgesGsubi = Gsub[i]['originalEdges']
 
         if any(x in anchorlist for x in nodesGsubi):
-            #print 'Atleast one anchor node in connected component',i,'is selected.\n'
+
             nodelCsel.append(nodesGsubi.tolist())
             edgelCsel.append(edgelistGsubi[0])
         else:

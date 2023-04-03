@@ -24,7 +24,7 @@ def op(*argv):
 
     xSelect = np.arange(p.numberofJobs)
     a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
-    #print psiNumsAll.shape,'a=',a
+
     xSelect = np.delete(xSelect, a)
     a = np.nonzero(p.get_trash_list())[0]  # unassigned states, python
     if len(xSelect):
@@ -61,7 +61,7 @@ def op(*argv):
     for x in xSelect:
         tau = trajTaus[x]
         tau = tau.flatten()
-        #print 'tau1',tau
+
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
         h, ctrs = np.histogram(tau, p.nClass)
         hUn = hUn + h

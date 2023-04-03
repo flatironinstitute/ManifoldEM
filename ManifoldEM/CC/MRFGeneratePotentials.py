@@ -53,18 +53,18 @@ def transformFunction_simple(M):
 
 
 def transformFunction(M, elist, printPotFig):
-    #print('Plotting the transform function of edge measurements')
+
     e, n1, n2 = elist[:]
 
     sigma = 1.2
-    #print('sigma',sigma)
+
     Mt = np.exp(-M / (2.0 * sigma**2))  #modified kernel
-    #print('med-Mt',np.median(Mt))
+
     nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psis)).astype(int)
 
     showPlot = 0  #printPotFig
     if showPlot or printPotFig:
-        #print('Now printing Edge Potential figures...')
+
         fig = plt.figure('EdgePot', figsize=(10, 10))
         fig.clf()
         plt.imshow(Mt, cmap='jet', interpolation='nearest')
@@ -94,20 +94,20 @@ def transformFunction(M, elist, printPotFig):
 
 
 def transformFunction_tblock(M, elist, label, printPotFig):
-    #print('Plotting the transform function of edge measurements')
+
     e, n1, n2 = elist[:]
 
     sigma = 1.25
-    #print('sigma',sigma)
+
     Mt = np.exp(-M / (2.0 * sigma**2))  #modified kernel
 
     nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psis)).astype(int)
 
-    #print('med-Mt',np.median(Mt))
+
     showPlot = 0  #only show for checking
     printPotFig = 0  # only print for checking
     if showPlot or printPotFig:
-        #print('Now printing Edge Potential figures...')
+
         fig = plt.figure('EdgePot_' + label, figsize=(20, 10))
         fig.clf()
         plt.imshow(Mt, cmap='jet', interpolation='nearest')

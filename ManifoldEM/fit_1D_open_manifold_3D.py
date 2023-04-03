@@ -103,11 +103,11 @@ def op(psi):
         delta_a = max(delta_a) * 100
         delta_b = max(delta_b) * 100
         delta_tau = max(delta_tau)
-        #print '  changes in fitting parameters: \n'
+
         #string = '  amplitudes: '+ str(delta_a) + '\n' + \
         #         '  offsets: ' + str(delta_b) + ' \n' +\
         #         '  values of tau: ' + str(delta_tau) + ' \n'
-        #print string
+
         if (delta_a < a.delta_a_max) and (delta_b < a.delta_b_max) and (delta_tau < a.delta_tau_max):
             break
 

@@ -243,7 +243,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     TausMat_IQR = dataR['NodesPsisTauIQR']
     TausMat_Occ = dataR['NodesPsisTauOcc']
     TausMat = TausMat_IQR  #
-    #print 'TausMat', TausMat[0:10,:]
+
     print('Using all psi-tau values across all nodes to find the tau(iqr) distribution-cutoff')
     TausAll = TausMat.flatten()
     X = TausAll.reshape(-1, 1)
@@ -288,13 +288,13 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
 
         fr = np.linspace(0.85, 0.6, len(methods))
         for i in methods:
-            #print('i', i)
+
             color = colors[i]
             if method == 'all':
                 cutf = cutoff[i]
             else:
                 cutf = cutoff
-            #print(cutf, color)
+
             plt.vlines(cutf, ymin, ymax * fr[i], color=color, linestyle='dashed', lw=2.0)
             legends.append(Allmethods[i])
         ### use this to visually check the additional cut-off using mean, median etc. of all cutoffs.
@@ -333,7 +333,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
 
     extra = dict(badNodesPsisTau_of=badNodesPsisTau)
     dataR.update(extra)
-    #print 'dataR',dataR['badNodesPsisTau_of']
+
 
     #previously was generating a separate file *_of but now just adding an extra variable to the same file
     #badNodesPsisTau_of which should used at BP step
@@ -412,7 +412,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
                 G = data['G']
                 Gsub = data['Gsub']
             numConnComp = len(G['NodesConnComp'])
-            #print("Number of connected component:",numConnComp)
+
 
             anchorlist = [a[0] for a in p.anch_list]
             anchorlist = [a - 1 for a in anchorlist
@@ -426,20 +426,20 @@ def op(G, nodeRange, edgeNumRange, *argv):
                 nodesGsubi = Gsub[i]['originalNodes']
                 edgelistGsubi = Gsub[i]['originalEdgeList']
                 edgesGsubi = Gsub[i]['originalEdges']
-                #print ('Checking connected component ','i=',i,', Gsub[i]',', Original node list:',nodesGsubi,\
+
                 #  'Original edge list:',edgelistGsubi[0],'Original edges:', edgesGsubi, 'No. edges:',len(edgesGsubi))
 
-                #print ('Checking connected component ','i=',i,', Gsub[i]',', Original node list:',nodesGsubi,\
+
                 #    'Original edge list:',edgelistGsubi[0],'Size Edges:',len(edgesGsubi))
 
                 if any(x in anchorlist for x in nodesGsubi) or len(nodesGsubi) > 1:
-                    #print 'Atleast one anchor node in connected component',i,'is selected.\n'
+
                     nodelCsel.append(nodesGsubi.tolist())
                     edgelCsel.append(edgelistGsubi[0])
                 else:
                     connCompNoAnchor.append(i)
-                    #print 'Anchor node(s) in connected component',i,' NOT selected.'
-                    #print '\nIf you proceed without atleast one anchor node for the connected component',i,\
+
+
                     #    ', all the corresponding nodes will not be assigned with conformational coordinate labels.' \
                     #    'Cancel this program now or it will continue without the required anchors.\n'
                     #
@@ -448,7 +448,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
                 print('There are {} connected components with no anchors assigned. You can choose anchors for them ' \
                       'after the edge measurements are done, and re-run only the BP'.format(len(connCompNoAnchor)))
 
-            #print connCompNoAnchor,G['ConnCompNoAnchor']
+
 
             nodeRange = np.sort([y for x in nodelCsel for y in x])  #flatten list another way?
             edgeNumRange = np.sort([y for x in edgelCsel for y in x])  #flatten list another way?
@@ -489,7 +489,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
     for e in edgeNumRange:
         currPrD = G['Edges'][e, 0]
         nbrPrD = G['Edges'][e, 1]
-        #print 'Reading Edge:',e,'currPrD:',currPrD,'nbrPrD:',nbrPrD
+
         CC_meas_file = '{}{}_{}_{}'.format(p.CC_meas_file, e, currPrD, nbrPrD)
         data = myio.fin1(CC_meas_file)
         measureOFCurrNbrEdge = data['measureOFCurrNbrEdge']
@@ -500,19 +500,19 @@ def op(G, nodeRange, edgeNumRange, *argv):
         edgeMeasures_tblock[e] = measureOFCurrNbrEdge_tblock
 
     #Test 30aug2019
-    #print('before e 0:',edgeMeasures[0])
-    #print('before e 1:',edgeMeasures[1])
-    #print('before e 2:',edgeMeasures[2])
-    #print('before e 3:',edgeMeasures[3][:,:])
-    #print('before: edgeMeasures', np.shape(edgeMeasures))
+
+
+
+
+
 
     # This rescaling step is to prevent underflow/overflow, should be checked if does not work
     scaleRange = [5, 45]
     edgeMeasures = reScaleLinear(edgeMeasures, edgeNumRange, scaleRange)
 
-    #print('badNodesPsisBlock',badNodesPsisBlock[0:10,:])
-    #print('after rescale:',edgeMeasures[0][:,:])
-    #print('after rescale:',edgeMeasures[2][:,:])
-    #print('badNodesPsis',badNodesPsis)
-    #print('edgeMeasures_tblock',type(edgeMeasures_tblock))
+
+
+
+
+
     return edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock

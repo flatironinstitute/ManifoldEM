@@ -98,7 +98,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                                                                        (bin + float(pathw)) / p.nClass)).nonzero()[0]
 
                     if len(tauBin) == 0:
-                        #print('Bad bin:',bin)
+
                         continue
                     else:
                         imgs = IMGT[tauBin, :].astype(np.float32)
@@ -140,7 +140,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
         for num in range(0, numberOfJobs, numberOfWorkers):
 
-            #print 'num',num
+
             numNext = min(numberOfJobs, num + numberOfWorkers)
 
             traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file, p.trajName, num, numNext - 1)
@@ -171,7 +171,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                     phi = np.concatenate([phi, phis_bin_g[bin][y]])
                     theta = np.concatenate([theta, thetas_bin_g[bin][y]])
                     psi = np.concatenate([psi, psis_bin_g[bin][y]])
-                #print 'imgs',np.shape(imgs)
+
 
         if len(imgss_bin_g[bin]) == 0:
             print('Bad bin:', bin)

@@ -37,7 +37,7 @@ def normalizeRescaleVector(f, normalizeVec, rescaleRange):
         rescaleVec = 0
 
     if len(dims) > 2:
-        #print('Normalizing MxMx2 vector')
+
         fx = f[:, :, 0]
         fy = f[:, :, 1]
         l = np.sqrt(fx**2 + fy**2) + 1e-10
@@ -395,8 +395,8 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
     Mov = np.resize(Mov, (numFrames, dim, dim))
 
-    #print('opt mov 0',Mov[0,:,:], 'prD-psinum', prd_psinum) # temp
-    #print('opt mov 49',Mov[49,:,:], 'prD-psinum', prd_psinum) # temp
+
+
     # check the images being read
     #saveImage(Mov[0,:,:], prD, psinum_prD, 0)
     #saveImage(Mov[0,:,:], prD, psinum_prD, 49)
@@ -405,13 +405,13 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
     # for display use original images
     #displayImg = Mov[0,:,:]
-    #print('Mov.shape',np.shape(Mov))
+
     if label[0:3] == 'FWD':
-        #print('Optflow label',label[0:3])
+
         displayImg = Mov[0, :, :]
 
     elif label[0:3] == 'REV':
-        #print('Optflow label',label[0:3])
+
         displayImg = Mov[numFrames - 1, :, :]
 
     VxM = np.zeros((dim, dim))
@@ -446,18 +446,18 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
         # if needed use a median fitler for the optical flow vector field
         #medfw = 7
         if do_aniso_filt:
-            #print('Apply diffusion filter to the movie')
+
             Mov = anisodiff3(Mov, niter=5, kappa=50, gamma=0.1, step=(5., 3., 3.), option=1, ploton=False)
 
-        #print('numFrames',numFrames,'blockSize_avg',blockSize_avg)
+
         if do_simpleAvg:  # perform averaging over blockSize frames
-            #print('Perform averaging of movie frames')
+
             numAvgFrames = np.ceil(np.float(numFrames) / blockSize_avg).astype(int)
             AvgMov = np.zeros((numAvgFrames, dim, dim))
             for b in range(0, numAvgFrames):
                 frameStart = b * blockSize_avg
                 frameEnd = min((b + 1) * blockSize_avg, numFrames)
-                #print('frameStart',frameStart,'frameEnd',frameEnd)
+
                 blockMovie = Mov[frameStart:frameEnd, :, :]
                 AvgMov[b, :, :] = np.mean(blockMovie, axis=0, dtype=np.float64)
 
@@ -467,10 +467,10 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
             numAvgFrames = AvgMov.shape[0]
 
         else:  # keep original movie
-            #print('No averaging of movies done')
+
             numAvgFrames = numFrames
             AvgMov = Mov
-        #print('AvgMov.shape',np.shape(AvgMov))
+
 
         #start Optical flow algorithm
         ImgFrame_prev = AvgMov[0, :, :]
@@ -487,7 +487,7 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
         for frameno in range(0, numAvgFrames):
             ImgFrame_curr = AvgMov[frameno, :, :]
 
-            #print(ImgFrame_curr[120:125,120:125].T)
+
             if do_filterImage:
                 #ImgFrame_curr = cv2.bilateralFilter(np.float32(ImgFrame_curr),d,sc,sp)
                 ImgFrame_curr = lowpassfilt(ImgFrame_curr, sig)
@@ -548,11 +548,11 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
         VyM = FlowVec['Vy']
 
     # temporary trial of getting negative vectors directly from FW vectors
-    #print('VxM',VxM[160:165,160:165])
-    #print('VyM',VyM[160:165,160:165])
+
+
 
     if label[0:3] == 'REV':
-        #print('Optflow label if rev',label[0:3])
+
         VxM = copy.deepcopy(-1.0 * VxM)
         VyM = copy.deepcopy(-1.0 * VyM)
         FlowVec['Vx'] = VxM
@@ -585,5 +585,5 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
         writeOpticalFlowImage(figOutfile, label, displayImg, flow, OFvisualPrint, bound=0, gap=3, step=4)
 
-    #print('Vx-',label[0:3],FlowVec['Vx'][150:155,150:155])
+
     return FlowVec

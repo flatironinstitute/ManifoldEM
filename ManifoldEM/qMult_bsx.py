@@ -40,4 +40,4 @@ if __name__ == '__main__':
     q = sys.argv[1]
     s = sys.argv[2]
     result = op(q, s)
-    #print numpy.array(table)
+

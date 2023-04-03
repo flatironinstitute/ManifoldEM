@@ -99,7 +99,7 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
         kk = 10
         #if np.median(tau[:kk] > 0.8): this doesn't do it
         #    tau = 1-tau
-        #print 'yes'
+
         nSrecon = min(IMGT.shape)
         numclass = int(min(p.nClass, np.floor(nSrecon / 2.)))
 

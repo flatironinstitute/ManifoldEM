@@ -1,21 +1,15 @@
 import copy
-import logging
 import multiprocessing
 import operator
 import os
 import shutil
-import time
 
 import numpy as np
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen
 
 from ManifoldEM import myio, set_params, p
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
-
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
 
 
 @contextmanager
@@ -23,19 +17,6 @@ def poolcontext(*args, **kwargs):
     pool = multiprocessing.Pool(*args, **kwargs)
     yield pool
     pool.terminate()
-
-
-'''
-# this only works when PrD are in sequence
-# here N is a number (total nodes)
-def divide(N):
-    ll = []
-    for prD in range(N):
-        #CC_OF_file = '{}/prD_{}'.format(p.CC_OF_dir, prD)
-	    CC_OF_file = '{}{}'.format(p.CC_OF_file, prD)
-        ll.append([CC_OF_file,prD])
-    return ll
-'''
 
 
 # changed Nov 30, 2018, S.M.
@@ -73,28 +54,23 @@ function ComputeOpticalFlowPrDAll
 
 
 def stackDicts(a, b, op=operator.concat):
-    #op=lambda x,y: np.dstack((x,y),axis=2)
     op = lambda x, y: np.dstack((x, y))
     mergeDict = dict(a.items() + b.items() + [(k, op(a[k], b[k])) for k in set(b) & set(a)])
     return mergeDict
 
 
 def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
-
     OFvisualPrint = [opt_movie['OFvisual'], opt_movie['printFig']]
     Labels = ['FWD', 'REV']
 
     computeOF = 1
-    blockSize_avg = 5  #how many frames will used for normal averaging
+    blockSize_avg = 5  # how many frames will used for normal averaging
     currPrD = prds_psinums[0]
     psinum_currPrD = prds_psinums[1]
     prd_psinum = [currPrD, psinum_currPrD]
 
-    #print '\nprd_psinum',prd_psinum
-    MFWD = copy.deepcopy(Mov)  #FWD
-    #MREV = Mov[::-1,:] #REV
+    MFWD = copy.deepcopy(Mov)
     numFrames = Mov.shape[0]
-    #overlapFrames =  np.ceil(0.40*numFrames).astype(int)
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Compute the Optical Flow vectors for each movie
@@ -110,13 +86,11 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
 
         if splitmovie:
             # number of frames in each blocks
-            #blockSize_split = 20#25#np.ceil(numFrames/2).astype(int)+1 # except for the last block, remaining blocks will be of this size
             numBlocks_split = 3
             overlapFrames = 0  #12
 
             blockSize_split = np.round(
                 np.float(numFrames + (numBlocks_split - 1) * overlapFrames + 1) / (numBlocks_split)).astype(int)
-            #numBlocks_split = np.round(np.float(numFrames - blockSize_split  + 1)/(blockSize_split - overlapFrames)).astype(int) + 1 + 1
 
             # In case we fix blockSize, it should be noted that the numBlocks will be different for different
             # blocksize and overlap values
@@ -124,8 +98,6 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
             # numFrames and a new block is created with overlapping frames till frameEnd = numFrames
             # TO DO:better handling of this splitting into overlapping blocks
             for b in range(0, numBlocks_split):
-                #frameStart = max(0,b*overlapFrames)
-                #frameEnd = min(b*overlapFrames + blockSize_split - 1,numFrames)
                 frameStart = max(0, b * (blockSize_split - overlapFrames))
                 frameEnd = min(b * (blockSize_split - overlapFrames) + blockSize_split - 1, numFrames)
 
@@ -133,11 +105,8 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
                     frameEnd = numFrames
                 # check this criteria
                 if frameEnd - frameStart > 0:
-                    #print 'frameStart,frameEnd', frameStart,frameEnd
                     blockMovieFWD = MFWD[frameStart:frameEnd, :]
-                    #blockMovieREV = MREV[frameStart:frameEnd,:]
 
-                    #print('Computing Optical Flow for Movie Forward ...')
                     FlowVecFblock = OpticalFlowMovie.op(blockMovieFWD, prd_psinum, blockSize_avg,
                                                         Labels[0] + '-H' + str(b), OFvisualPrint)
                     if b == 0:
@@ -145,7 +114,6 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
                     else:
                         FlowVecFWD = stackDicts(FlowVecFWD, FlowVecFblock)
 
-                    #print('Computing Optical Flow for Movie Reverse ...')
                     # blockMovieFWD is used but due to label of 'REV', the negative vectors will be used after computing the FWD vectors
                     # If FWD vectors are provided, then reverse flow vectors are not going to be recomputed but will
                     # be obtained by reversing the FWD vectors (-Vx,-Vy)
@@ -164,29 +132,21 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
         else:
             FlowVecFWD = OpticalFlowMovie.op(MFWD, prd_psinum, blockSize_avg, Labels[0], OFvisualPrint)
 
-            #FlowVecREV = OpticalFlowMovie.op(MREV,prd_psinum,blockSize_avg,Labels[1],OFvisualPrint)
             # MFWD is used but due to label of 'REV', the negative vectors will be used after getting the FWD vectors
             FlowVecREV = OpticalFlowMovie.op(MFWD, prd_psinum, blockSize_avg, Labels[1], OFvisualPrint, FlowVecFWD)
 
-    else:
-        print('')
-        #print 'Using the previously computed Optical Flow vectors for Movie A ...'
-        #print 'Using the previously computed Optical Flow vectors for Movie B ...'
-
-    #print 'FlowVecFWD.shape',np.shape(FlowVecFWD['Vx']),FlowVecFWD['Vx']
     FlowVec = dict(FWD=FlowVecFWD, REV=FlowVecREV)
 
     return FlowVec
 
 
 def ComputeOptFlowPrDPsiAll1(input_data):
-
     CC_OF_file = input_data[0]
     currPrD = input_data[1]
     FlowVecPrD = np.empty(p.num_psis, dtype=object)
     psiSelcurrPrD = range(p.num_psis)
 
-    #load movie and tau param first
+    # load movie and tau param first
     moviePrDPsi, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc = LoadPrDPsiMoviesMasked.op(currPrD)
 
     badPsis = np.array(badPsis)
@@ -201,31 +161,24 @@ def ComputeOptFlowPrDPsiAll1(input_data):
     NodesPsisTauOcc = tauPsisOcc
     NodesPsisTauVals = tauPrDPsis
 
-
     myio.fout1(badNodesPsisTaufile_pd, ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
                [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
 
+    #calculate OF for each psi-movie
+    for psinum_currPrD in psiSelcurrPrD:
+        IMGcurrPrD = moviePrDPsi[psinum_currPrD]
 
-    computeOF = 1
-    if computeOF:
-        #calculate OF for each psi-movie
-        #loop over for psi selections for current prD
-        for psinum_currPrD in psiSelcurrPrD:
-            IMGcurrPrD = moviePrDPsi[psinum_currPrD]
+        prds_psinums = [currPrD, psinum_currPrD]
+        FlowVecPrDPsi = ComputePsiMovieOpticalFlow(IMGcurrPrD, p.opt_movie, prds_psinums)
+        FlowVecPrD[psinum_currPrD] = FlowVecPrDPsi
 
-            prds_psinums = [currPrD, psinum_currPrD]
-            FlowVecPrDPsi = ComputePsiMovieOpticalFlow(IMGcurrPrD, p.opt_movie, prds_psinums)
-            FlowVecPrD[psinum_currPrD] = FlowVecPrDPsi
-
-        CC_OF_file = '{}'.format(CC_OF_file)
-        myio.fout1(CC_OF_file, ['FlowVecPrD'], [FlowVecPrD])
+    CC_OF_file = '{}'.format(CC_OF_file)
+    myio.fout1(CC_OF_file, ['FlowVecPrD'], [FlowVecPrD])
 
 
 # If computing for a specified set of nodes, then call the function with nodeRange
 def op(nodeEdgeNumRange, *argv):
-
     set_params.op(1)
-
     multiprocessing.set_start_method('fork', force=True)
 
     if argv:
@@ -237,10 +190,8 @@ def op(nodeEdgeNumRange, *argv):
 
     p.findBadPsiTau = 1  # This needs to be interfaced with the GUI , to find bad psi movies
     if p.findBadPsiTau:
-        #initialize and write to file badpsis array
-        #print('\nInitialize and write a file to record badPsis')
+        # initialize and write to file badpsis array
         offset_OF_files = len(nodeRange) - count1(nodeRange)
-        #print('offset_OF_files',offset_OF_files)
         if offset_OF_files == 0:  # offset_OF_files=0 when no OF files were generated
             badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
             if os.path.exists(badNodesPsisTaufile):
@@ -266,17 +217,13 @@ def op(nodeEdgeNumRange, *argv):
         # but make sure the intialized variables are written out to the file only at the start
         # and not during resume of CC step
         if offset_OF_files == 0:
-            #print('badNodesPsisTaufile variables initialized...')
             myio.fout1(badNodesPsisTaufile,
                        ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
                        [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
-            #print('badNodesPsisTaufile initialized...')
-
 
     input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
     if argv:
         offset = len(nodeRange) - len(input_data)
-        #print('optical offset',offset)
         progress5.emit(int((offset / float(numberofJobs)) * 100))
 
     if p.ncpu == 1:  # avoids the multiprocessing package
@@ -297,7 +244,7 @@ def op(nodeEdgeNumRange, *argv):
 
     # multiprocessing is having difficulty in writing to the same file,
 
-# for now individual files were written and are being combined here
+    # for now individual files were written and are being combined here
     if p.findBadPsiTau:
         CC_dir_temp = '{}temp/'.format(p.CC_dir)
 
@@ -307,17 +254,13 @@ def op(nodeEdgeNumRange, *argv):
                 badNodesPsisTaufile_pd = '{}badNodesPsisTauFile_PD_{}'.format(CC_dir_temp, currPrD)
                 dataR = myio.fin1(badNodesPsisTaufile_pd)
 
-                #print( currPrD , dataR)
                 badPsis = dataR['badNodesPsisTau']  # based on a specific tau-iqr cutoff in LoadPrDPsiMoviesMasked
                 # but we actually use the raw iqr values to get a histogram of all iqr across all PDs to get the better cutoff later.
                 tauPsisIQR = dataR['NodesPsisTauIQR']
                 tauPsisOcc = dataR['NodesPsisTauOcc']
                 tauPrDPsis = dataR['NodesPsisTauVals']
-                #print ('read badNodesPsisTau', badNodesPsisTau,len(badPsis))
-                #print ('read NodesPsisTauIQR',NodesPsisTauIQR[0:10,:])
                 if len(badPsis) > 0:
                     badNodesPsisTau[currPrD, np.array(badPsis)] = -100
-                #print('tauPsisIQR',np.shape(tauPsisIQR))
                 NodesPsisTauIQR[currPrD, :] = tauPsisIQR
                 NodesPsisTauOcc[currPrD, :] = tauPsisOcc
                 NodesPsisTauVals[currPrD] = tauPrDPsis
