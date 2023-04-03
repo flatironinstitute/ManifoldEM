@@ -1,18 +1,13 @@
 import cv2
-import logging
 import mrcfile
 
 import numpy as np
 
-from ManifoldEM import annularMask, myio, p
-from ManifoldEM.CC import projectMask
+from ManifoldEM import annularMask, myio, p, projectMask
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		
 Modified:Sept 17,2021
 '''
-
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
 
 
 def getMask2D(prD, maskType, radius):
