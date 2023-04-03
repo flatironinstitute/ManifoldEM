@@ -5,7 +5,8 @@ import numpy as np
 from scipy.fftpack import fft2
 from scipy.fftpack import ifft2
 
-from ManifoldEM import DMembeddingII, myio, get_wiener, L2_distance, fit_1D_open_manifold_3D, svdRF
+from ManifoldEM import DMembeddingII, myio, get_wiener, L2_distance, svdRF
+from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,7 +138,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk
     lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op((Drecon**2), k, tune, 30)
 
     lamb = lamb[lamb > 0]
-    a, b, tau = fit_1D_open_manifold_3D.op(psirec)
+    a, b, tau = fit_1D_open_manifold_3D(psirec)
 
     # tau is #part (num-2ConOrder?)
     # psirec is #part x #eigs

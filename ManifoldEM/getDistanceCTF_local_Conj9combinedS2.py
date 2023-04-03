@@ -58,7 +58,7 @@ from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
 from ManifoldEM import ctemh_cryoFrank, myio, p, annularMask, projectMask
-from ManifoldEM.quaterion import q2Spider
+from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import rotate_fill
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
