@@ -11,8 +11,8 @@ Copyright (c) Columbia University Evan Seitz 2020 (python version)
 
 def op(orig_zip, new_zip, PrD):
     print('Initiating re-embedding...')
-    dist_file = '{}prD_{}'.format(p.dist_file, PrD)
-    psi_file = '{}prD_{}'.format(p.psi_file, PrD)
+    dist_file = p.get_dist_file(PrD)
+    psi_file = p.get_psi_file(PrD)
     eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, PrD + 1)
     data = myio.fin1(dist_file)
     D = data['D']
@@ -47,7 +47,7 @@ def op(orig_zip, new_zip, PrD):
 
     # remove the existing NLSA and movies etc, so that new ones can be created
     for psinum in range(p.num_psis):
-        psi2_file = '{}prD_{}_psi_{}'.format(p.psi2_file, PrD, psinum)
+        psi2_file = p.get_psi2_file(PrD) + f'_psi_{psinum}'
         progress_fname = os.path.join(p.psi2_prog, '%s_%s' % (PrD, psinum))
         if os.path.exists(psi2_file):
             os.remove(psi2_file)

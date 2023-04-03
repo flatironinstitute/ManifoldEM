@@ -41,7 +41,7 @@ def op(*argv):
     posPsi1All = [None] * p.numberofJobs
 
     for x in xSelect:
-        EL_file = '{}prD_{}'.format(p.EL_file, x)
+        EL_file = p.get_EL_file(x)
         File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
 
         if os.path.exists(File):

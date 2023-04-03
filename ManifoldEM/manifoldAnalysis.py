@@ -43,8 +43,8 @@ def divide(N):
     ll = []
     fin_PDs = fileCheck()
     for prD in range(N):
-        dist_file = '{}prD_{}'.format(p.dist_file, prD)
-        psi_file = '{}prD_{}'.format(p.psi_file, prD)
+        dist_file = p.get_dist_file(prD)
+        psi_file = p.get_psi_file(prD)
         eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, prD + 1)
         if prD not in fin_PDs:
             ll.append([dist_file, psi_file, eig_file, prD])

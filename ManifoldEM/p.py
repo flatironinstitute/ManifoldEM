@@ -145,6 +145,22 @@ tess_file: str = ''
 nowTime_file: str = ''
 
 
+def get_EL_file(prd_index: int):
+    return f'{_module.EL_file}prD_{prd_index}'
+
+
+def get_psi_file(prd_index: int):
+    return f'{_module.psi_file}prD_{prd_index}'
+
+
+def get_psi2_file(prd_index: int):
+    return f'{_module.psi2_file}prD_{prd_index}'
+
+
+def get_dist_file(prd_index: int):
+    return f'{_module.dist_file}prD_{prd_index}'
+
+
 def set_trash_list(trash_list):
     setattr(_module, 'trash_list', [bool(a) for a in trash_list])
 
@@ -160,6 +176,7 @@ def todict():
             res[var] = getattr(_module, var)
 
     return res
+
 
 def save(outfile: str):
     res = {'params': todict()}

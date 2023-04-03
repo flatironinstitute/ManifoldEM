@@ -6402,7 +6402,7 @@ class Manifold2dCanvas(QtGui.QDialog):
         self.canvas = FigureCanvas(self.figure)
         #self.toolbar = NavigationToolbar(self.canvas, self)
 
-        psi_file = '{}prD_{}'.format(p.psi_file, P4.user_PrD - 1)  #current embedding
+        psi_file = p.get_psi_file(P4.user_PrD - 1)  #current embedding
         data = myio.fin1(psi_file)
         x = data['psi'][:, Manifold2dCanvas.eigChoice1]
         y = data['psi'][:, Manifold2dCanvas.eigChoice2]
@@ -6672,7 +6672,7 @@ class Manifold2dCanvas(QtGui.QDialog):
             backup.op(P4.user_PrD, -1)
             np.savetxt(P4.origEmbedFile, P4.origEmbed, fmt='%i')
 
-            psi_file = '{}prD_{}'.format(p.psi_file, P4.user_PrD - 1)  #current embedding
+            psi_file = p.get_psi_file(P4.user_PrD - 1)  #current embedding
             data = myio.fin1(psi_file)
             x = data['psi'][:, Manifold2dCanvas.eigChoice1]
             y = data['psi'][:, Manifold2dCanvas.eigChoice2]
@@ -6950,7 +6950,7 @@ class BandwidthCanvas(FigureCanvas):
     R_squared = 0
 
     def __init__(self, parent=None, width=5, height=4, dpi=200):
-        psi_file = '{}prD_{}'.format(p.psi_file, P4.user_PrD - 1)  #current embedding
+        psi_file = p.get_psi_file(P4.user_PrD - 1)  #current embedding
         data = myio.fin1(psi_file)
         BandwidthCanvas.logEps = data['logEps']
         BandwidthCanvas.logSumWij = data['logSumWij']
@@ -7301,7 +7301,7 @@ class Manifold3dCanvas(QtGui.QDialog):
 
             # update choice on the 2D Embedding tab:
             Manifold2dCanvas.eigChoice1 = x
-            psi_file = '{}prD_{}'.format(p.psi_file, P4.user_PrD - 1)  #current embedding
+            psi_file = p.get_psi_file(P4.user_PrD - 1)  #current embedding
             data = myio.fin1(psi_file)
             x = data['psi'][:, Manifold2dCanvas.eigChoice1]
             y = data['psi'][:, Manifold2dCanvas.eigChoice2]
@@ -7330,7 +7330,7 @@ class Manifold3dCanvas(QtGui.QDialog):
 
             # update choice on the 2D Embedding tab:
             Manifold2dCanvas.eigChoice2 = y
-            psi_file = '{}prD_{}'.format(p.psi_file, P4.user_PrD - 1)  #current embedding
+            psi_file = p.get_psi_file(P4.user_PrD - 1)  #current embedding
             data = myio.fin1(psi_file)
             x = data['psi'][:, Manifold2dCanvas.eigChoice1]
             y = data['psi'][:, Manifold2dCanvas.eigChoice2]

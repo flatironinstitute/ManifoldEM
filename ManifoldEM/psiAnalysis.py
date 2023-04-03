@@ -37,10 +37,10 @@ def fileCheck(N):
 def divid(N, rc, fin_PDs):
     ll = []
     for prD in range(N):
-        dist_file = '{}prD_{}'.format(p.dist_file, prD)
-        psi_file = '{}prD_{}'.format(p.psi_file, prD)
-        psi2_file = '{}prD_{}'.format(p.psi2_file, prD)
-        EL_file = '{}prD_{}'.format(p.EL_file, prD)
+        dist_file = p.get_dist_file(prD)
+        psi_file = p.get_psi_file(prD)
+        psi2_file = p.get_psi2_file(prD)
+        EL_file = p.get_EL_file(prD)
         psinums = rc['psiNumsAll'][prD, :]
         senses = rc['sensesAll'][prD, :]
         psi_list = []  #list of incomplete psi values per PD

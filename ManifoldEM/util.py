@@ -6,7 +6,6 @@ import traceback
 
 from PIL import Image
 
-from ManifoldEM import myio
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

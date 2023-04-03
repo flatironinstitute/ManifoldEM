@@ -37,10 +37,10 @@ def divide1(R, psiNumsAll, sensesAll):
     ll = []
     fin_PDs = fileCheck()
     for prD in R:
-        dist_file = '{}prD_{}'.format(p.dist_file, prD)
-        psi_file = '{}prD_{}'.format(p.psi_file, prD)
-        psi2_file = '{}prD_{}'.format(p.psi2_file, prD)
-        EL_file = '{}prD_{}'.format(p.EL_file, prD)
+        dist_file = p.get_dist_file(prD)
+        psi_file = p.get_psi_file(prD)
+        psi2_file = p.get_psi2_file(prD)
+        EL_file = p.get_EL_file(prD)
         psinums = [psiNumsAll[0, prD]]
         senses = [sensesAll[0, prD]]
         if prD not in fin_PDs:

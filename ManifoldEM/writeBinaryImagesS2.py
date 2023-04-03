@@ -17,7 +17,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
     i = 0
     for x in xSelect:
         i += 1
-        EL_file = '{}prD_{}'.format(p.EL_file, x)
+        EL_file = p.get_EL_file(x)
         File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
         data = myio.fin1(File)
 
@@ -26,7 +26,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         posPath = posPathAll[x]
         psi1Path = posPsi1All[x]
 
-        dist_file = '{}prD_{}'.format(p.dist_file, x)
+        dist_file = p.get_dist_file(x)
         data = myio.fin1(dist_file)
         q = data['q']
 

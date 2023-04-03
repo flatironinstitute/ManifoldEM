@@ -39,7 +39,7 @@ def divide(CG, q, df, N):
         ind = CG[prD]
         q1 = q[:, ind]
         df1 = df[ind]
-        dist_file = '{}prD_{}'.format(p.dist_file, prD)
+        dist_file = p.get_dist_file(prD)
         if prD not in fin_PDs:
             ll.append([ind, q1, df1, dist_file, prD])
     return ll

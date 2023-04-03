@@ -13,41 +13,6 @@ Modified:Sept 17,2021
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-'''
-def psi_ang(PD):
-    lPD = sum(PD**2)
-    Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
-    Qr = Qr / np.sqrt(np.sum(Qr**2))
-    phi,theta,psi = q2Spider.op(Qr)
-
-    psi = np.mod(psi,2*np.pi)*(180/np.pi)
-    return psi
-
-def rotate_psi(prD,img):
-
-    #for prD in PrD:
-    dist_file = '{}prD_{}'.format(p.dist_file,prD)
-    data = myio.fin1(dist_file)
-    PD = data['PD']
-    psi = psi_ang(PD)
-    N = p.nPix
-
-    nF = img.shape[0]
-    #print 'nF',nF
-    #print 'img.shape',img.shape
-    img = img.reshape(nF,N,N)
-    #print 'img.shape',img.shape
-    for i in range(0,nF):
-        #im = img[i,:,:]
-        im = np.transpose(img[i,:,:])
-        #print 'im.shape',im.shape
-        im = rotatefill.op(im, -psi, visual=False) # plus or minus
-        img[i,:,:] = np.transpose(im)
-
-    img = img.reshape(nF,N*N)
-    #print 'img.shape',img.shape
-    return img
-'''
 
 
 def getMask2D(prD, maskType, radius):
@@ -66,7 +31,7 @@ def getMask2D(prD, maskType, radius):
         mask = annularMask.op(0, N2, N, N)
 
     elif maskType == 'volumetric':  #3d volume mask from user-input
-        dist_file = '{}prD_{}'.format(p.dist_file, prD)
+        dist_file = p.get_dist_file(prD)
         data = myio.fin1(dist_file)
         PD = data['PD']
         maskFile = p.mask_vol_file
@@ -177,7 +142,7 @@ def op(prD):
         mask2D = getMask2D(prD, maskType, radius)
 
     for psinum in range(NumPsis):
-        imgPsiFileName = '{}prD_{}_psi_{}'.format(psi2_file, prD, psinum)
+        imgPsiFileName = p.get_psi2_file(prD) + f'_psi_{psinum}'
         data_IMG = myio.fin1(imgPsiFileName)
         #IMG1 = data_IMG["IMG1"].T
 

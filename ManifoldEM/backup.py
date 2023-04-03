@@ -40,10 +40,10 @@ def op(PrD, choice):
             remove(tm_orig_file)
 
     # diff maps
-    psi_file = '{}prD_{}'.format(p.psi_file, PrD - 1)
+    psi_file = p.get_psi_file(PrD - 1)
     psi_orig_file = '{}orig_prD_{}'.format(p.psi_file, PrD - 1)
     # psianalysis
-    psi2_file = '{}prD_{}'.format(p.psi2_file, PrD - 1)
+    psi2_file = p.get_psi_file(PrD - 1)
     psi2_orig_file = '{}orig_prD_{}'.format(p.psi2_file, PrD - 1)
     # class avg
     ca_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, PrD)

@@ -55,7 +55,7 @@ def count(N):
 
 def movie(input_data, out_dir, dist_file, psi2_file, fps):
     prD = input_data[0]
-    dist_file1 = '{}prD_{}'.format(dist_file, prD)
+    dist_file1 = p.get_dist_file(prD)
     # Fetching NLSA outputs and making movies
     IMG1All = []
     Topo_mean = []
