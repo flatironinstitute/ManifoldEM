@@ -1,6 +1,6 @@
 import numpy as np
 
-from ManifoldEM import solve_d_R_d_tau_p_3D, a, linalg
+from ManifoldEM import solve_d_R_d_tau_p_3D, a
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

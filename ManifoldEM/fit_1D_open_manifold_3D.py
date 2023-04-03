@@ -1,6 +1,6 @@
 import numpy as np
 
-from ManifoldEM import get_fit_1D_open_manifold_3D_param, solve_d_R_d_tau_p_3D, a, linalg
+from ManifoldEM import get_fit_1D_open_manifold_3D_param, solve_d_R_d_tau_p_3D, a
 '''
 function [a,b,tau] = fit_1D_open_manifold_3D(psi)
 % 
