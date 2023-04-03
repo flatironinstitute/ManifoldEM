@@ -4,7 +4,7 @@ import datetime
 import math
 import numpy as np
 
-from ManifoldEM import S2tessellation, read_alignfile, myio, FindCCGraph, set_params, util, p
+from ManifoldEM import S2tessellation, myio, FindCCGraph, set_params, util, p, spider, star, util, p, qMult_bsx
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12,6 +12,113 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 Copyright (c) Columbia University Suvrajit Maji 2019 (python version)
 '''
+
+def get_from_relion(align_star_file, flip):
+    # check which RELION version; added by E. Seitz -- 10/23/21:
+    relion_old = True
+    with open(align_star_file, 'r') as f:
+        for l in f:
+            if l.startswith("data_optics"):
+                relion_old = False
+
+    if relion_old is True:
+        skip = 0
+        df = star.parse_star(align_star_file, skip, keep_index=False)
+        try:
+            U = df['rlnDefocusU'].values
+            V = df['rlnDefocusV'].values
+        except:
+            print("missing defocus")
+            exit(1)
+        if 'rlnOriginX' in df.columns and 'rlnOriginY' in df.columns:
+            shx = df['rlnOriginX'].values
+            shy = df['rlnOriginY'].values
+        else:
+            shx = U * 0.
+            shy = shx
+        sh = (shx, shy)
+        try:
+            phi = np.deg2rad(df['rlnAngleRot'].values)
+            theta = np.deg2rad(df['rlnAngleTilt'].values)
+            psi = np.deg2rad(df['rlnAnglePsi'].values)
+        except:
+            print("missing Euler angles")
+            exit(1)
+        try:
+            p.EkV = float(df['rlnVoltage'].values[0])
+            p.Cs = float(df['rlnSphericalAberration'].values[0])
+            p.AmpContrast = float(df['rlnAmplitudeContrast'].values[0])
+        except:
+            print('missing microscope parameters')
+            exit(1)
+
+    elif relion_old is False:  #added by E. Seitz -- 10/23/21
+        print('RELION Optics Group found.')
+        df0, skip = star.parse_star_optics(align_star_file, keep_index=False)
+        try:
+            p.EkV = float(df0['rlnVoltage'].values[0])
+            p.Cs = float(df0['rlnSphericalAberration'].values[0])
+            p.AmpContrast = float(df0['rlnAmplitudeContrast'].values[0])
+        except:
+            print('missing microscope parameters')
+            exit(1)
+
+        df = star.parse_star(align_star_file, skip, keep_index=False)
+        try:
+            U = df['rlnDefocusU'].values
+            V = df['rlnDefocusV'].values
+        except:
+            print("missing defocus")
+            exit(1)
+        if 'rlnOriginX' in df.columns and 'rlnOriginY' in df.columns:
+            shx = df['rlnOriginX'].values
+            shy = df['rlnOriginY'].values
+        else:
+            shx = U * 0.
+            shy = shx
+        sh = (shx, shy)
+        try:
+            phi = np.deg2rad(df['rlnAngleRot'].values)
+            theta = np.deg2rad(df['rlnAngleTilt'].values)
+            psi = np.deg2rad(df['rlnAnglePsi'].values)
+        except:
+            print("missing Euler angles")
+            exit(1)
+
+    qz, qy, qzs = util.eul_to_quat(phi, theta, psi, flip)
+    q = qMult_bsx.op(qzs, qMult_bsx.op(qy, qz))
+
+    return (sh, q, U, V)
+
+
+def get_q(align_param_file, phiCol, thetaCol, psiCol, flip):
+
+    # read the angles
+    align = spider.parse(align_param_file)
+    phi = np.deg2rad(align[:, phiCol])
+    theta = np.deg2rad(align[:, thetaCol])
+    psi = np.deg2rad(align[:, psiCol])
+    qz, qy, qzs = util.eul_to_quat(phi, theta, psi, flip)
+    q = qMult_bsx.op(qzs, qMult_bsx.op(qy, qz))
+    return q
+
+
+def get_df(align_param_file, dfCol):
+    # read df
+    align = spider.parse(align_param_file)
+    if len(dfCol) == 1:
+        df = align[:, dfCol]
+    if len(dfCol) == 2:
+        df = (align[:, dfCol[0]] + align[:, dfCol[1]]) / 2
+
+    return df
+
+
+def get_shift(align_param_file, shx_col, shy_col):
+    # read the x-y shifts
+    align = spider.parse(align_param_file)
+    sh = (align[:, shx_col] * 0, align[:, shy_col] * 0)
+    return sh
 
 
 def cart2sph(x, y, z):
@@ -71,17 +178,17 @@ def op(align_param_file):
 
     if not p.relion_data:  # assumes SPIDER data
         # read the angles
-        q = read_alignfile.get_q(align_param_file, p.phiCol, p.thetaCol, p.psiCol, flip=True)
+        q = get_q(align_param_file, p.phiCol, p.thetaCol, p.psiCol, flip=True)
         # double the number of data points by augmentation
         q = util.augment(q)
         # read defocus
-        df = read_alignfile.get_df(align_param_file, p.dfCol)
+        df = get_df(align_param_file, p.dfCol)
         # double the number of data points by augmentation
         df = np.concatenate((df, df))
-        sh = read_alignfile.get_shift(align_param_file, p.shx_col, p.shy_col)
+        sh = get_shift(align_param_file, p.shx_col, p.shy_col)
         size = len(df)
     else:
-        sh, q, U, V = read_alignfile.get_from_relion(align_param_file, flip=True)
+        sh, q, U, V = get_from_relion(align_param_file, flip=True)
         df = (U + V) / 2
         # double the number of data points by augmentation
         q = util.augment(q)
