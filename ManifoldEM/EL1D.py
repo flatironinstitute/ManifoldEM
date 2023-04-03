@@ -93,12 +93,15 @@ def op(*argv):
                                 psiTrunc=p.num_psiTrunc), input_data), 1):
                 if argv:
                     offset += 1
-                    progress6.emit(int((offset / float(len(R))) * 100))
+                    progress = int((offset / float(len(R))) * 100)
+                    if progress < 100:
+                        progress6.emit(progress)
 
             pool.close()
             pool.join()
 
     ComputeEnergy1D.op()
+    progress6.emit(100)
     set_params.op(0)
     return
 

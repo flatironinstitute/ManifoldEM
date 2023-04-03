@@ -15,7 +15,6 @@ Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 '''
 
 
-#def op(NLSAPar, DD, posPath, posPsi1, imgAll, CTF, ExtPar):
 def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk2 var also
     num = NLSAPar['num']
     ConOrder = NLSAPar['ConOrder']

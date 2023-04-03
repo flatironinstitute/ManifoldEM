@@ -354,7 +354,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
 
     if nodesAllBadPsis.shape[0] > 0:
         print('nodesAllBadPsis', nodesAllBadPsis)
-        trash_list[nodesAllBadPsis] = int(1)
+        trash_list[nodesAllBadPsis] = True
 
     return trash_list, num_nodesAllBadPsis
 
@@ -375,7 +375,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
             ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange)
 
     ## check for bad PDs found based on bad tau values
-    trash_list = np.array(p.trash_list)
+    trash_list = np.array(p.trash_list, dtype=bool)
     p.tau_occ_thresh = 0.35  # interface with GUI, p.py
     tau_occ_thresh = p.tau_occ_thresh
     # take the already existing trash_list and update it

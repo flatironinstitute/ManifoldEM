@@ -27,10 +27,10 @@ def op(*argv):
     #print psiNumsAll.shape,'a=',a
     xSelect = np.delete(xSelect, a)
     a = np.nonzero(p.trash_list == 1)[0]  # unassigned states, python
-    if xSelect:
+    if len(xSelect):
         xSelect = np.delete(xSelect, a)
 
-    if not xSelect:
+    if not len(xSelect):
         debug_print("No assigned states: Unable to compute energy profile")
 
 
@@ -77,10 +77,6 @@ def op(*argv):
                [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
     gc.collect()
 
-    if argv:
-        progress7 = argv[0]
-        progress7.emit(100)
-
     p.hUn = hUn
     OM_file = '{}OM'.format(p.OM_file)
     hUn.astype('int').tofile(OM_file)
@@ -97,13 +93,19 @@ def op(*argv):
     E.astype('float').tofile(OM1_file)
 
     set_params.op(0)
+
+    if argv:
+        progress7 = argv[0]
+        progress7.emit(100)
+
     return hUn
 
 
 if __name__ == '__main__':
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
+    import sys
+    if len(sys.argv) != 2:
+        sys.exit(1)
 
+    p.load(sys.argv[1])
     p.create_dir()
     op()

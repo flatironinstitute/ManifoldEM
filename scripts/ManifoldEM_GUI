@@ -122,11 +122,6 @@ options, args = parser.parse_args()
 global userInput
 userInput = options.userInput
 
-if options.mpiFile:
-    print('')
-    print('MPI initiated...')
-    print('')
-
 Graphics = not options.disable_graphics
 if Graphics is False:
     print('Mode set: 3D graphics disabled.')
@@ -2878,7 +2873,7 @@ class P4(QtGui.QWidget):
         # confirm conformational coordinates:
         def anchorCheck():
             # first save PDs chosen for removal to file:
-            P4.trash_list = np.array([int(P4.trashAll[i].isChecked()) for i in range(1, P3.PrD_total + 1)], dtype=int)
+            P4.trash_list = np.array([P4.trashAll[i].isChecked() for i in range(1, P3.PrD_total + 1)], dtype=bool)
 
             #### ZULU ####
             #{SECTION EVENTUALLY NEEDED FOR RE-DOING GRAPH IF TRASH LIST DIVIDED ANY ISLANDS INTO SUB-ISLANDS}
@@ -2889,7 +2884,7 @@ class P4(QtGui.QWidget):
 
             trashDir = os.path.join(P1.user_directory, 'outputs_{}/CC/user_removals.txt'.format(p.proj_name))
             np.savetxt(trashDir, P4.trash_list, fmt='%i', delimiter='\t')
-            p.trash_list = np.array(P4.trash_list)
+            p.trash_list = P4.trash_list
 
             # save anchors to file:
             anch_sum = sum(map(lambda anchor: int(anchor.isChecked()), P4.anchorsAll.values()))
@@ -2941,8 +2936,7 @@ class P4(QtGui.QWidget):
             elif P3.user_dimensions == 2:
                 P4.anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
 
-            keepers = np.array(P3.col)[1 - p.trash_list]
-
+            keepers = np.array(P3.col)[~p.trash_list]
             box = QtGui.QMessageBox(self)
             # check if at least one anchor is selected for each color:
             if set(keepers) == set(colors):

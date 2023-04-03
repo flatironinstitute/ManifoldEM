@@ -16,3 +16,7 @@
   * Probably just hold them in a zip archive to reduce filecount
 * TODO fix threshold PDs crash
   * Second tab when in the thresholding dialog
+* TODO Switch out progress tracking technique
+* TODO Low priority things
+  * start adding types to all the things
+  * remove duplicate code in ManifoldEM_GUI
