@@ -77,7 +77,6 @@ def magnitude_orientation(gx, gy):
     return magnitude, orientation
 
 
-@jit(forceobj=True)
 def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
     """
     Computes the coefficients for the bilinear (spatial) interpolation
@@ -244,6 +243,46 @@ def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=
     return normalised_blocks
 
 
+@jit(nopython=True)
+def interpolate_helper(magnitude, coefs, temp_coefs, csx, csy, sx, sy, n_cells_x, n_cells_y, nbins):
+    dx = csx // 2
+    dy = csy // 2
+    temp = np.zeros((sy, sx, nbins))
+    # hist(y0, x0)
+    ny, nx = magnitude.shape[0:2]
+
+    shift_x = nx - dx - (n_cells_x*csx - dx)
+    shift_y = ny - dy - (n_cells_y*csy - dy)
+    for y in range(ny - dy):
+        for x in range(nx - dx):
+            for k in range(nbins):
+                temp[y, x, k] += temp_coefs[y + dy, x + dx, k] * magnitude[y + dy, x + dx] * coefs[shift_y + y, shift_x + x]
+
+    # hist(y1, x0)
+    coefs = np.rot90(coefs)
+    for y in range(ny - dy):
+        for x in range(nx - dx):
+            for k in range(nbins):
+                temp[y+dy, x, k] += temp_coefs[y, x + dx, k] * magnitude[y, x + dx] * coefs[y, shift_x + x]
+
+    # hist(y1, x1)
+    coefs = np.rot90(coefs)
+    for y in range(ny - dy):
+        for x in range(nx - dx):
+            for k in range(nbins):
+                temp[y+dy, x+dx, k] += temp_coefs[y, x, k] * magnitude[y, x] * coefs[y, x]
+
+    # hist(y0, x1)
+    coefs = np.rot90(coefs)
+    for y in range(ny - dy):
+        for x in range(nx - dx):
+            for k in range(nbins):
+                temp[y, x+dx, k] += temp_coefs[y + dy, x, k] * magnitude[y + dy, x] * coefs[shift_y + y, x]
+
+    # Compute the histogram: sum over the cells
+    return temp.reshape((n_cells_y, csy, n_cells_x, csx, nbins)).sum(axis=3).sum(axis=1)
+
+
 @jit(forceobj=True)
 def interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y, signed_orientation=False, nbins=9):
     """ Returns a matrix of size (cell_size_x, cell_size_y, nbins) corresponding
@@ -284,30 +323,8 @@ def interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y, 
     # Coefficients of the spatial interpolation in every direction
     coefs = compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y)
 
-    temp = np.zeros((sy, sx, nbins))
-    # hist(y0, x0)
-    temp[:-dy, :-dx, :] += temp_coefs[dy:, dx:, :]*\
-        (magnitude[dy:, dx:]*coefs[-(n_cells_y*csy - dy):, -(n_cells_x*csx - dx):])[:, :, np.newaxis]
-
-    # hist(y1, x0)
-    coefs = np.rot90(coefs)
-    temp[dy:, :-dx, :] += temp_coefs[:-dy, dx:, :]*\
-        (magnitude[:-dy, dx:]*coefs[:(n_cells_y*csy - dy), -(n_cells_x*csx - dx):])[:, :, np.newaxis]
-
-    # hist(y1, x1)
-    coefs = np.rot90(coefs)
-    temp[dy:, dx:, :] += temp_coefs[:-dy, :-dx, :]*\
-        (magnitude[:-dy, :-dx]*coefs[:(n_cells_y*csy - dy), :(n_cells_x*csx - dx)])[:, :, np.newaxis]
-
-    # hist(y0, x1)
-    coefs = np.rot90(coefs)
-    temp[:-dy, dx:, :] += temp_coefs[dy:, :-dx, :]*\
-        (magnitude[dy:, :-dx]*coefs[-(n_cells_y*csy - dy):, :(n_cells_x*csx - dx)])[:, :, np.newaxis]
-
     # Compute the histogram: sum over the cells
-    orientation_histogram = temp.reshape((n_cells_y, csy, n_cells_x, csx, nbins)).sum(axis=3).sum(axis=1)
-
-    return orientation_histogram
+    return interpolate_helper(magnitude, coefs, temp_coefs, csx, csy, sx, sy, n_cells_x, n_cells_y, nbins)
 
 
 def draw_histogram(hist, csx, csy, signed_orientation=False):
