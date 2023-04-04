@@ -76,6 +76,7 @@ def magnitude_orientation(gx, gy):
 
     return magnitude, orientation
 
+
 @jit(forceobj=True)
 def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
     """
@@ -144,9 +145,6 @@ def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
         ccoefs[-dy:, :dx] = (1 - y) * flipud(x)
         ccoefs[-dy:, -dx:] = fliplr(y) * flipud(x)
 
-
-
-
         coefs = np.zeros((csx * n_cells - dx, csy * n_cells - dy))
         coefs[:-dy, :-dx] = np.tile(ccoefs, (n_cells - 1, n_cells - 1))
 
@@ -203,6 +201,7 @@ def interpolate_orientation(orientation, sx, sy, nbins, signed_orientation):
 
     return temp_coefs
 
+
 @jit()
 def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=False, normalise=True):
     """ builds a histogram of orientation for a cell centered around each pixel of the image
@@ -243,6 +242,7 @@ def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=
         normalised_blocks = normalised_blocks.flatten()
 
     return normalised_blocks
+
 
 @jit(forceobj=True)
 def interpolate(magnitude, orientation, csx, csy, sx, sy, n_cells_x, n_cells_y, signed_orientation=False, nbins=9):
@@ -392,8 +392,69 @@ def visualise_histogram(hist, csx, csy, signed_orientation=False):
     return hog_image
 
 
+@jit(nopython=True)
+def normalise_histogram_unblocked(orientation_histogram, eps):
+    n1, n2, n3 = orientation_histogram.shape
+    normalised_blocks = np.zeros_like(orientation_histogram)
+    for i in range(n1):
+        for j in range(n2):
+            divisor = 0.0
+            for k in range(n3):
+                divisor += orientation_histogram[i, j, k]
+            divisor = np.sqrt(divisor**2 + eps)
+            for k in range(n3):
+                normalised_blocks[i, j, k] = orientation_histogram[i, j, k] / divisor
+                if normalised_blocks[i, j, k] < 0.:
+                    normalised_blocks[i, j, k] = 0.0
+                if normalised_blocks[i, j, k] > 0.2:
+                    normalised_blocks[i, j, k] = 0.2
+
+            divisor = 0.0
+            for k in range(n3):
+                divisor += normalised_blocks[i, j, k]
+            divisor = np.sqrt(divisor**2 + eps)
+            for k in range(n3):
+                normalised_blocks[i, j, k] = normalised_blocks[i, j, k] / divisor
+
+    return normalised_blocks
+
+
+@jit(nopython=True)
+def normalise_histogram_blocked(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbins, eps):
+    n_blocksx = (n_cells_x - bx) + 1
+    n_blocksy = (n_cells_y - by) + 1
+    normalised_blocks = np.zeros((n_blocksy, n_blocksx, nbins))
+
+    for y in range(n_blocksy):
+        for x in range(n_blocksx):
+
+            divisor = 0.0
+            for i in range(by):
+                for j in range(bx):
+                    for k in range(nbins):
+                        divisor += orientation_histogram[y + i, x + j, k]
+            divisor = np.sqrt(divisor**2 + eps)
+
+            for k in range(nbins):
+                normalised_blocks[y, x, k] = orientation_histogram[y, x, k] / divisor
+                if normalised_blocks[y, x, k] < 0.0:
+                    normalised_blocks[y, x, k] = 0.0
+                if normalised_blocks[y, x, k] > 0.2:
+                    normalised_blocks[y, x, k] = 0.2
+
+            divisor = 0.0
+            for k in range(nbins):
+                divisor += normalised_blocks[y, x, k]
+            divisor = np.sqrt(divisor**2 + eps)
+            for k in range(nbins):
+                normalised_blocks[y, x, k] /= divisor
+
+    return normalised_blocks
+
+
+@jit(nopython=True)
 def normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbins):
-    """ normalises a histogram by blocks
+    """ Normalises a histogram by blocks.
 
     Parameters
     ----------
@@ -412,25 +473,12 @@ def normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbi
     In other words the histogram is first normalised block-wise using l2 norm, before clipping it by
         limiting the values between 0 and 0.02 and finally normalising again with l2 norm
     """
-    eps = 1e-7  #1e-16?
+    eps = 1e-7  # 1e-16?
 
-    if bx == 1 and by == 1:  #faster version
-        normalised_blocks = np.clip(
-            orientation_histogram / np.sqrt(orientation_histogram.sum(axis=-1)**2 + eps)[:, :, np.newaxis], 0, 0.2)
-        normalised_blocks /= np.sqrt(normalised_blocks.sum(axis=-1)**2 + eps)[:, :, np.newaxis]
-
+    if bx == 1 and by == 1:  # faster version
+        return normalise_histogram_unblocked(orientation_histogram, eps)
     else:
-        n_blocksx = (n_cells_x - bx) + 1
-        n_blocksy = (n_cells_y - by) + 1
-        normalised_blocks = np.zeros((n_blocksy, n_blocksx, nbins))
-
-        for x in range(n_blocksx):
-            for y in range(n_blocksy):
-                block = orientation_histogram[y:y + by, x:x + bx, :]
-                normalised_blocks[y, x, :] = np.clip(block[0, 0, :] / np.sqrt(block.sum()**2 + eps), 0, 0.2)
-                normalised_blocks[y, x, :] /= np.sqrt(normalised_blocks[y, x, :].sum()**2 + eps)
-
-    return normalised_blocks
+        return normalise_histogram_blocked(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbins, eps)
 
 
 def build_histogram(magnitude,
