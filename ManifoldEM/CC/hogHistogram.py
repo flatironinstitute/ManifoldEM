@@ -72,8 +72,14 @@ def magnitude_orientation(gx, gy):
     The orientation is in degree, NOT radian!!
     """
 
-    magnitude = np.sqrt(gx**2 + gy**2)
-    orientation = (np.arctan2(gy, gx) * 180 / np.pi) % 360
+    magnitude = np.empty_like(gx)
+    orientation = np.empty_like(gx)
+
+    scale_factor = 180. / np.pi
+    for i in range(gx.shape[0]):
+        for j in range(gx.shape[1]):
+            magnitude[i, j] = np.sqrt(gx[i, j]**2 + gy[i, j]**2)
+            orientation[i, j] = (np.arctan2(gy[i, j], gx[i, j]) * scale_factor) % 360
 
     return magnitude, orientation
 
@@ -261,22 +267,16 @@ def interpolate_helper(magnitude, coefs, temp_coefs, csx, csy, sx, sy, n_cells_x
             for k in range(nbins):
                 temp[y, x, k] += temp_coefs[y + dy, x + dx, k] * coef
 
-    for y in range(ny - dy):
-        for x in range(nx - dx):
             i, j = y, shift_x + x
             coef = magnitude[y, x + dx] * coefs[j, N - i - 1]
             for k in range(nbins):
                 temp[y + dy, x, k] += temp_coefs[y, x + dx, k] * coef
 
-    for y in range(ny - dy):
-        for x in range(nx - dx):
             i, j = y, x
             coef = magnitude[y, x] * coefs[N - i - 1, N - j - 1]
             for k in range(nbins):
                 temp[y+dy, x+dx, k] += temp_coefs[y, x, k] * coef
 
-    for y in range(ny - dy):
-        for x in range(nx - dx):
             i, j = shift_y + y, x
             coef = magnitude[y + dy, x] * coefs[N - j - 1, i]
             for k in range(nbins):
