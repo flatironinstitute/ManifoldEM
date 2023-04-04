@@ -10059,13 +10059,22 @@ class MainWindow(QtGui.QMainWindow):
         tabs.setTabEnabled(5, True)
 
 
+def precompile():
+    print("Precompiling numba routines")
+    from ManifoldEM.CC.hogHistogram import histogram_from_gradients, gradient
+    a = np.random.uniform(size=(10,10))
+    dx,dy = gradient(a)
+    histogram_from_gradients(dx, dy)
+
+
+
 if __name__ == '__main__':
     print('# =============================')
     print('#  %s' % (progname))
     print('#  v.%s Python 3' % (progversion))
     print('# =============================')
     print('')
-
+    precompile()
     app = QtGui.QApplication.instance()
     if app is None:
         app = QtGui.QApplication([])
