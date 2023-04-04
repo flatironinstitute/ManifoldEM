@@ -8575,7 +8575,7 @@ class MainWindow(QtGui.QMainWindow):
 
         MainWindow.inputsFile = ''
         if userInput != 'empty':
-            MainWindow.inputsFile = os.path.join(output_dir, 'params_' + userInput + '.toml')
+            MainWindow.inputsFile = userInput
 
         elif userInput == 'empty':
             msg = 'Would you like to initiate a new project or return to progress already made on a previous one?'
