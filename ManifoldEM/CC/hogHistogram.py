@@ -54,6 +54,7 @@ def gradient(image, same_size=False):
     return gx, gy
 
 
+@jit(nopython=True)
 def magnitude_orientation(gx, gy):
     """ Computes the magnitude and orientation matrices from the gradients gx gy
 
@@ -248,36 +249,38 @@ def interpolate_helper(magnitude, coefs, temp_coefs, csx, csy, sx, sy, n_cells_x
     dx = csx // 2
     dy = csy // 2
     temp = np.zeros((sy, sx, nbins))
-    # hist(y0, x0)
     ny, nx = magnitude.shape[0:2]
 
+    N = np.shape(coefs)[0]
     shift_x = nx - dx - (n_cells_x*csx - dx)
     shift_y = ny - dy - (n_cells_y*csy - dy)
     for y in range(ny - dy):
         for x in range(nx - dx):
+            i = shift_y + y, shift_x + x
+            coef = magnitude[y + dy, x + dx] * coefs[shift_y + y, shift_x + x]
             for k in range(nbins):
-                temp[y, x, k] += temp_coefs[y + dy, x + dx, k] * magnitude[y + dy, x + dx] * coefs[shift_y + y, shift_x + x]
+                temp[y, x, k] += temp_coefs[y + dy, x + dx, k] * coef
 
-    # hist(y1, x0)
-    coefs = np.rot90(coefs)
     for y in range(ny - dy):
         for x in range(nx - dx):
+            i, j = y, shift_x + x
+            coef = magnitude[y, x + dx] * coefs[j, N - i - 1]
             for k in range(nbins):
-                temp[y+dy, x, k] += temp_coefs[y, x + dx, k] * magnitude[y, x + dx] * coefs[y, shift_x + x]
+                temp[y + dy, x, k] += temp_coefs[y, x + dx, k] * coef
 
-    # hist(y1, x1)
-    coefs = np.rot90(coefs)
     for y in range(ny - dy):
         for x in range(nx - dx):
+            i, j = y, x
+            coef = magnitude[y, x] * coefs[N - i - 1, N - j - 1]
             for k in range(nbins):
-                temp[y+dy, x+dx, k] += temp_coefs[y, x, k] * magnitude[y, x] * coefs[y, x]
+                temp[y+dy, x+dx, k] += temp_coefs[y, x, k] * coef
 
-    # hist(y0, x1)
-    coefs = np.rot90(coefs)
     for y in range(ny - dy):
         for x in range(nx - dx):
+            i, j = shift_y + y, x
+            coef = magnitude[y + dy, x] * coefs[N - j - 1, i]
             for k in range(nbins):
-                temp[y, x+dx, k] += temp_coefs[y + dy, x, k] * magnitude[y + dy, x] * coefs[shift_y + y, x]
+                temp[y, x+dx, k] += temp_coefs[y + dy, x, k] * coef
 
     # Compute the histogram: sum over the cells
     return temp.reshape((n_cells_y, csy, n_cells_x, csx, nbins)).sum(axis=3).sum(axis=1)
