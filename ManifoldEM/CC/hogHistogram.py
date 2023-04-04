@@ -11,10 +11,10 @@ from numba import jit
 @jit()
 def gradient(image, same_size=False):
     """ Computes the Gradients of the image separated pixel difference
-    
-    Gradient of X is computed using the filter 
+
+    Gradient of X is computed using the filter
         [-1, 0, 1]
-    Gradient of X is computed using the filter 
+    Gradient of X is computed using the filter
         [[1,
           0,
           -1]]
@@ -26,7 +26,7 @@ def gradient(image, same_size=False):
         If True, boundaries are duplicated so that the gradients
         has the same size as the original image.
         Otherwise, the gradients will have shape (imy-2, imx-2)
-        
+
     Returns
     -------
     (Gradient X, Gradient Y), two numpy array with the same shape as image
@@ -61,11 +61,11 @@ def magnitude_orientation(gx, gy):
     ----------
     gx: gradient following the x axis of the image
     gy: gradient following the y axis of the image
-    
-    Returns 
+
+    Returns
     -------
     (magnitude, orientation)
-    
+
     Warning
     -------
     The orientation is in degree, NOT radian!!
@@ -80,7 +80,7 @@ def magnitude_orientation(gx, gy):
 def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
     """
     Computes the coefficients for the bilinear (spatial) interpolation
-    
+
     Parameters
     ----------
     csx: int
@@ -95,23 +95,23 @@ def compute_coefs(csx, csy, dx, dy, n_cells_x, n_cells_y):
         number of cells in the x axis
     n_cells_y: int
         number of cells in the y axis
-    
+
     Notes
     -----
     We consider an image: image[y, x] (NOT image[x, y]!!!)
-    
+
     /!\ csx and csy must be even number
-    
+
     Using the coefficients
     ----------------------
     The coefficient correspond to the interpolation in direction of the upper left corner of the image.
     In other words, if you interpolate img, and res is the result of your interpolation, you should do
-    
+
     res = zeros(n_cells_y*pixels_per_cell, n_cells_x*pixels_per_cell)
         with (csx, csy) the number of pixels per cell
          and dx, dy = csx//2, csy//2
     res[:-dx, :-dy] += img[dx:, dy:]*coefs
-    
+
     then you rotate the coefs and do the same thing for every part of the image
     """
     if csx != csy:
@@ -206,7 +206,7 @@ def interpolate_orientation(orientation, sx, sy, nbins, signed_orientation):
 @jit()
 def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=False, normalise=True):
     """ builds a histogram of orientation for a cell centered around each pixel of the image
-    
+
     Parameters
     ---------
     image: numpy array of shape (sizey, sizex)
@@ -218,11 +218,11 @@ def per_pixel_hog(image, dy=2, dx=2, signed_orientation=False, nbins=9, flatten=
         if False, the angles are between 0 and 180 degree.
     nbins : int, optional, default is 9
         Number of orientation bins.
-        
+
     Returns
     -------
     if visualise if True: (histogram of oriented gradient, visualisation image)
-    
+
     histogram of oriented gradient:
         numpy array of shape (n_cells_y, n_cells_x, nbins), flattened if flatten is True
     """
@@ -350,7 +350,7 @@ def draw_histogram(hist, csx, csy, signed_orientation=False):
 
 def visualise_histogram(hist, csx, csy, signed_orientation=False):
     """ Create an image visualisation of the histogram of oriented gradient
-    
+
     Parameters
     ----------
     hist: numpy array of shape (n_cells_y, n_cells_x, nbins)
@@ -363,7 +363,7 @@ def visualise_histogram(hist, csx, csy, signed_orientation=False):
         if True, sign information of the orientation is preserved,
             ie orientation angles are between 0 and 360 degree.
         if False, the angles are between 0 and 180 degree.
-    
+
     Return
     ------
     Image of shape (hist.shape[0]*csy, hist.shape[1]*csx)
@@ -394,7 +394,7 @@ def visualise_histogram(hist, csx, csy, signed_orientation=False):
 
 def normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbins):
     """ normalises a histogram by blocks
-    
+
     Parameters
     ----------
     bx: int
@@ -407,7 +407,7 @@ def normalise_histogram(orientation_histogram, bx, by, n_cells_x, n_cells_y, nbi
         number of cells in the y axis
     nbins : int, optional, default is 9
         Number of orientation bins.
-     
+
     The normalisation is done according to Dalal's original thesis, using L2-Hys.
     In other words the histogram is first normalised block-wise using l2 norm, before clipping it by
         limiting the values between 0 and 0.02 and finally normalising again with l2 norm
@@ -443,7 +443,7 @@ def build_histogram(magnitude,
                     flatten=False,
                     normalise=True):
     """ builds a histogram of orientation using the provided magnitude and orientation matrices
-    
+
     Parameters
     ---------
     magnitude: np-array of size (sy, sx)
@@ -451,7 +451,7 @@ def build_histogram(magnitude,
     orientation: np-array of size (sy, sx)
         matrix of orientations
     csx: int
-        number of columns of the cells 
+        number of columns of the cells
         MUST BE EVEN
     csy: int
         number of raws dimension of the cells
@@ -470,11 +470,11 @@ def build_histogram(magnitude,
         if False, the angles are between 0 and 180 degree.
     nbins : int, optional, default is 9
         Number of orientation bins.
-        
+
     Returns
     -------
     if visualise if True: (histogram of oriented gradient, visualisation image)
-    
+
     histogram of oriented gradient:
         numpy array of shape (n_cells_y, n_cells_x, nbins), flattened if flatten is True
     visualisation image:
@@ -559,7 +559,7 @@ def histogram_from_gradients(gradientx,
     Returns
     -------
     if visualise if True: (histogram of oriented gradient, visualisation image)
-    
+
     histogram of oriented gradient:
         numpy array of shape (n_cells_y, n_cells_x, nbins), flattened if flatten is True
     visualisation image:
@@ -630,7 +630,7 @@ def hog(image,
     Returns
     -------
     if visualise if True: (histogram of oriented gradient, visualisation image)
-    
+
     histogram of oriented gradient:
         numpy array of shape (n_cells_y, n_cells_x, nbins), flattened if flatten is True
     visualisation image:
