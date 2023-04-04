@@ -7937,9 +7937,13 @@ class Thresh_Viz(QtGui.QMainWindow):
             #return 'Phi={:1.2f}, Theta={:1.2f}'.format(((x*180)/np.pi)-180,y)
 
             # replot ThreshFinalCanvas:
-            ThreshFinalCanvas.axes.clear()
-            #ThreshFinalCanvas.axes.format_coord = format_coord
-            ThreshFinalCanvas.cbar.remove()
+            try:
+                # Crashes in the cbar remove sometimes, so only _try_ to cleanup
+                ThreshFinalCanvas.axes.clear()
+                #ThreshFinalCanvas.axes.format_coord = format_coord
+                ThreshFinalCanvas.cbar.remove()
+            except:
+                pass
             # thetas = [0,45,90,135,180,225,270,315] #in same order as labels below (ref only)
             theta_labels = [
                 '%s180%s' % (u"\u00B1", u"\u00b0"),
