@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 from ManifoldEM import p, myio, set_params
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
-from ManifoldEM.CC.hogHistogram import histogram_from_gradients
+from fasthog import hog_from_gradient as histogram_from_gradients
 
 
 @contextmanager
@@ -29,24 +29,14 @@ def poolcontext(*args, **kwargs):
 
 
 def HOGOpticalFlowPy(flowVec, hogFigfile):
-    cellSize = (4, 4)  # this is actually the block size
+    cellSize = (4, 4)
     cellsPerBlock = (2, 2)
-    visualize = False
-    nbins = 9
-    signedOrientation = True
-    histogramNormalize = True
-    flatten = False
-    sameSize = True
+    n_bins = 9
+    signedOrientation = True # FIXME: Add to FASTHOG (set by default)
 
     hog_params = dict(cell_size=cellSize,
                       cells_per_block=cellsPerBlock,
-                      visualise=visualize,
-                      nbins=nbins,
-                      signed_orientation=signedOrientation,
-                      normalise=histogramNormalize,
-                      flatten=flatten,
-                      same_size=sameSize)
-
+                      n_bins=n_bins)
     VxDim = flowVec['Vx'].shape
     if len(VxDim) > 2:
         VxStackDim = VxDim[2]
@@ -60,12 +50,7 @@ def HOGOpticalFlowPy(flowVec, hogFigfile):
                                           gy,
                                           cell_size=cellSize,
                                           cells_per_block=cellsPerBlock,
-                                          visualise=visualize,
-                                          nbins=nbins,
-                                          signed_orientation=signedOrientation,
-                                          normalise=histogramNormalize,
-                                          flatten=flatten,
-                                          same_size=sameSize)
+                                          n_bins=n_bins)
             tempH.append(tH)
 
         H = np.array(tempH)
@@ -80,12 +65,7 @@ def HOGOpticalFlowPy(flowVec, hogFigfile):
                                      gy,
                                      cell_size=cellSize,
                                      cells_per_block=cellsPerBlock,
-                                     visualise=visualize,
-                                     nbins=nbins,
-                                     signed_orientation=signedOrientation,
-                                     normalise=histogramNormalize,
-                                     flatten=flatten,
-                                     same_size=sameSize)
+                                     n_bins=n_bins)
 
     return H, hog_params
 

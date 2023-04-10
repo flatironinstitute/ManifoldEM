@@ -22,4 +22,4 @@
 * TODO fix oversubscription in 'finding conformational coordinates'
 * TODO proper relative pathing
   * Shouldn't have to cache all these paths either...
-
+* TODO Resume after eigenvector selection broken
