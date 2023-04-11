@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from functools import partial
 from subprocess import Popen
 
-from ManifoldEM import manifoldTrimmingAuto, myio, p, set_params
+from ManifoldEM import manifoldTrimmingAuto, myio, p
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,7 +52,7 @@ def divide(N):
 
 
 def op(*argv):
-    set_params.op(1)
+    p.load()
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -96,7 +96,7 @@ def op(*argv):
             pool.close()
             pool.join()
 
-    set_params.op(0)
+    p.save()
 
 
 if __name__ == '__main__':

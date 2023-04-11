@@ -22,7 +22,7 @@ Topo_list = [0, 1]  #list of eigenvectors to retain; [0,1] for first 2... [0,1,2
 def op(svd_dir, proj_name, user_dir):
     p.proj_name = proj_name
     p.user_dir = user_dir
-    set_params.op(1)
+    p.load()
     outputsDir = os.path.join(p.user_dir, 'outputs_%s' % proj_name)
 
     #b = np.zeros((p.nPix**3,p.nClass),dtype=np.float32)
@@ -104,5 +104,4 @@ if __name__ == '__main__':
     import p
     import mrcfile
     from ManifoldEM.core import svdRF
-    import set_params
     op(os.path.splitext(sys.argv[0])[0], sys.argv[1], sys.argv[2])  #enter the params file name

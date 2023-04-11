@@ -7,7 +7,7 @@ from numpy import linalg as LA
 from functools import partial
 from contextlib import contextmanager
 
-from ManifoldEM import p, myio, set_params
+from ManifoldEM import p, myio
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
 from fasthog import hog_from_gradient as histogram_from_gradients
 
@@ -303,7 +303,7 @@ def divide1(N, G):
 def op(G, nodeEdgeNumRange, *argv):
     multiprocessing.set_start_method('fork', force=True)
 
-    set_params.op(1)
+    p.load()
 
     nodeRange = nodeEdgeNumRange[0]
     edgeNumRange = nodeEdgeNumRange[1]
@@ -341,4 +341,4 @@ def op(G, nodeEdgeNumRange, *argv):
             pool.close()
             pool.join()
 
-    set_params.op(0)
+    p.save()

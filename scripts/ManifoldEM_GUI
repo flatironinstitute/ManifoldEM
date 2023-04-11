@@ -52,7 +52,7 @@ from ManifoldEM import p
 
 p.user_dir = output_dir  #default
 from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, embedd,
-                        FindConformationalCoord, EL1D, backup, PrepareOutputS2, set_params)
+                        FindConformationalCoord, EL1D, backup, PrepareOutputS2)
 from ManifoldEM.core import clusterAvg
 
 import logging
@@ -277,7 +277,7 @@ class Mayavi_S2(HasTraits):  # S2 Orientation Sphere, Electrostatic Potential Ma
             MainWindow.S2_iso = self.isosurface_level
             p.S2iso = MainWindow.S2_iso
             p.S2rescale = MainWindow.S2_scale  #arcade
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
 
         @on_trait_change('isosurface_level')  #Electrostatic Potential Map
         def update_scene2(self):
@@ -352,7 +352,7 @@ class Mayavi_S2(HasTraits):  # S2 Orientation Sphere, Electrostatic Potential Ma
             MainWindow.S2_iso = self.isosurface_level
             p.S2iso = MainWindow.S2_iso
             p.S2rescale = MainWindow.S2_scale  #arcade
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
 
         titleLeft = Str
         titleRight = Str
@@ -1494,7 +1494,7 @@ class P3(QtGui.QWidget):
                     tabs.setTabEnabled(4, False)
                     tabs.setTabEnabled(5, False)
                     p.resProj = 5  #revert progress prior to ever moving to Compilation tab
-                    set_params.op(0)  #send new GUI data to user parameters file
+                    p.save()  #send new GUI data to user parameters file
 
                     # =============================================
                     # Hard-remove pre-existing folders:
@@ -1517,7 +1517,7 @@ class P3(QtGui.QWidget):
                     # repeat of code from below (if P4.recompute == 0):
                     P3.user_dimensions = P3.entry_dim.value()
                     p.dim = P3.user_dimensions
-                    set_params.op(0)  #send new GUI data to user parameters file
+                    p.save()  #send new GUI data to user parameters file
 
                     if P3.dictGen == True:  #if P4 widget-dictionary has been created
                         if P3.user_dimensions == 1:
@@ -1606,7 +1606,7 @@ class P3(QtGui.QWidget):
             else:
                 P3.user_dimensions = P3.entry_dim.value()
                 p.dim = P3.user_dimensions
-                set_params.op(0)  #send new GUI data to user parameters file
+                p.save()  #send new GUI data to user parameters file
 
                 if P3.dictGen == True:  #if P4 widget-dictionary has been created
                     if P3.user_dimensions == 1:
@@ -2308,7 +2308,7 @@ class P3(QtGui.QWidget):
         tabs.setTabEnabled(0, False)
         tabs.setTabEnabled(1, False)
 
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
         P3.entry_proc.setDisabled(True)
         P3.entry_psi.setDisabled(True)
@@ -2327,7 +2327,7 @@ class P3(QtGui.QWidget):
             P3.button_eig.setDisabled(False)
             gc.collect()
             p.resProj = 2
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
             self.start_task2()
 
     ##########
@@ -2337,7 +2337,7 @@ class P3(QtGui.QWidget):
         tabs.setTabEnabled(0, False)
         tabs.setTabEnabled(1, False)
 
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
         P3.entry_proc.setDisabled(True)
         P3.entry_psi.setDisabled(True)
@@ -2356,7 +2356,7 @@ class P3(QtGui.QWidget):
             P3.button_psi.setDisabled(False)
             gc.collect()
             p.resProj = 3
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
             self.start_task3()
 
     ##########
@@ -2366,7 +2366,7 @@ class P3(QtGui.QWidget):
         tabs.setTabEnabled(0, False)
         tabs.setTabEnabled(1, False)
 
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
         P3.entry_proc.setDisabled(True)
         P3.entry_psi.setDisabled(True)
@@ -2384,7 +2384,7 @@ class P3(QtGui.QWidget):
             P3.button_psi.setText('Spectral Analysis Complete')
             gc.collect()
             p.resProj = 4
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
             self.start_task4()
 
     ##########
@@ -2394,7 +2394,7 @@ class P3(QtGui.QWidget):
         tabs.setTabEnabled(0, False)
         tabs.setTabEnabled(1, False)
 
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
         P3.entry_proc.setDisabled(True)
         P3.entry_psi.setDisabled(True)
@@ -2417,7 +2417,7 @@ class P3(QtGui.QWidget):
             P3.entry_dim.setDisabled(False)
             gc.collect()
             p.resProj = 5
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
 
 
 # =============================================================================
@@ -2978,7 +2978,7 @@ class P4(QtGui.QWidget):
                 P4.btn_finOut.setText('Recompile Results')
                 P4.recompute = 1
                 p.resProj = 6  # update progress
-                set_params.op(0)  # send new GUI data to user parameters file
+                p.save()  # send new GUI data to user parameters file
                 return
 
             msg = 'Final outputs have already been computed for a previous\
@@ -3015,7 +3015,7 @@ class P4(QtGui.QWidget):
             tabs.setTabEnabled(5, False)
 
             p.resProj = 6  #revert progress back to before ever running FindConformationalCoords.py
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
 
             # =============================================
             # Hard-remove pre-existing folders:
@@ -3507,7 +3507,7 @@ class P5(QtGui.QWidget):
         P5.entry_proc.setDisabled(True)
         P5.entry_opt.setDisabled(True)
 
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
         if P5.user_optFlow == 1 and P4.recompute == 1:
             # hard-remove pre-existing optical flow folders:
@@ -3527,7 +3527,7 @@ class P5(QtGui.QWidget):
         P5.progress5.setValue(val)
         if val == 100:
             p.resProj = 7
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
             gc.collect()
             P5.button_CC.setText('Conformational Coordinates Complete')
             self.start_task6()
@@ -3546,7 +3546,7 @@ class P5(QtGui.QWidget):
         P5.entry_temp.setDisabled(True)
         P5.entry_proc.setDisabled(True)
 
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
         task6 = threading.Thread(target=EL1D.op, args=(self.progress6Changed, ))
         ''' ZULU
@@ -3563,7 +3563,7 @@ class P5(QtGui.QWidget):
         P5.progress6.setValue(val)
         if val == 100:
             p.resProj = 8
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
             gc.collect()
             P5.button_erg.setText('Energy Landscape Complete')
 
@@ -3758,23 +3758,23 @@ class Erg1dMain(QtGui.QDialog):
         if Erg1dMain.entry_width.currentText() == '1 State':
             Erg1dMain.entry_width.model().item(0).setEnabled(False)
             p.width_1D = int(1)
-            set_params.op(0)
+            p.save()
         if Erg1dMain.entry_width.currentText() == '2 States':
             Erg1dMain.entry_width.model().item(1).setEnabled(False)
             p.width_1D = int(2)
-            set_params.op(0)
+            p.save()
         if Erg1dMain.entry_width.currentText() == '3 States':
             Erg1dMain.entry_width.model().item(2).setEnabled(False)
             p.width_1D = int(3)
-            set_params.op(0)
+            p.save()
         if Erg1dMain.entry_width.currentText() == '4 States':
             Erg1dMain.entry_width.model().item(3).setEnabled(False)
             p.width_1D = int(4)
-            set_params.op(0)
+            p.save()
         if Erg1dMain.entry_width.currentText() == '5 States':
             Erg1dMain.entry_width.model().item(4).setEnabled(False)
             p.width_1D = int(5)
-            set_params.op(0)
+            p.save()
 
     ##########
     # Task 7:
@@ -3816,7 +3816,7 @@ class Erg1dMain(QtGui.QDialog):
                 tabs.setTabEnabled(3, False)
                 tabs.setTabEnabled(4, False)
 
-                set_params.op(0)  #send new GUI data to parameters file
+                p.save()  #send new GUI data to parameters file
 
                 task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
                 task7.daemon = True
@@ -3838,7 +3838,7 @@ class Erg1dMain(QtGui.QDialog):
             tabs.setTabEnabled(3, False)
             tabs.setTabEnabled(4, False)
 
-            set_params.op(0)  #send new GUI data to parameters file
+            p.save()  #send new GUI data to parameters file
 
             task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
             task7.daemon = True
@@ -3849,7 +3849,7 @@ class Erg1dMain(QtGui.QDialog):
         Erg1dMain.progress7.setValue(val)
         if val == 100:
             p.resProj = 9
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
 
             Erg1dMain.reprepare = 1
             Erg1dMain.button_traj.setText('Recompute 3D Trajectories')
@@ -4140,23 +4140,23 @@ class Erg2dMain(QtGui.QDialog):
         if Erg2dMain.entry_width.currentText() == '1x1 State':
             Erg2dMain.entry_width.model().item(0).setEnabled(False)
             p.width_2D = int(1)
-            set_params.op(0)
+            p.save()
         if Erg2dMain.entry_width.currentText() == '2x2 States':
             Erg2dMain.entry_width.model().item(1).setEnabled(False)
             p.width_2D = int(2)
-            set_params.op(0)
+            p.save()
         if Erg2dMain.entry_width.currentText() == '3x3 States':
             Erg2dMain.entry_width.model().item(2).setEnabled(False)
             p.width_2D = int(3)
-            set_params.op(0)
+            p.save()
         if Erg2dMain.entry_width.currentText() == '4x4 States':
             Erg2dMain.entry_width.model().item(3).setEnabled(False)
             p.width_2D = int(4)
-            set_params.op(0)
+            p.save()
         if Erg2dMain.entry_width.currentText() == '5x5 States':
             Erg2dMain.entry_width.model().item(4).setEnabled(False)
             p.width_2D = int(5)
-            set_params.op(0)
+            p.save()
 
     def setCustom(self):  #ZULU need to update progress7 on which one is active
         if self.btn_cust.isChecked():
@@ -4367,7 +4367,7 @@ class Erg2dMain(QtGui.QDialog):
                 tabs.setTabEnabled(3, False)
                 tabs.setTabEnabled(4, False)
 
-                set_params.op(0)  #send new GUI data to parameters file
+                p.save()  #send new GUI data to parameters file
 
                 task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
                 task7.daemon = True
@@ -4389,7 +4389,7 @@ class Erg2dMain(QtGui.QDialog):
             tabs.setTabEnabled(3, False)
             tabs.setTabEnabled(4, False)
 
-            set_params.op(0)  #send new GUI data to parameters file
+            p.save()  #send new GUI data to parameters file
 
             task7 = threading.Thread(target=PrepareOutputS2.op, args=(self.progress7Changed, ))
             task7.daemon = True
@@ -4400,7 +4400,7 @@ class Erg2dMain(QtGui.QDialog):
         Erg1dMain.progress7.setValue(val)
         if val == 100:
             p.resProj = 9
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
 
             Erg2dMain.reprepare = 1
             Erg2dMain.button_traj.setText('Recompute 3D Trajectories')  #ZULU update for 2 choices
@@ -6795,7 +6795,7 @@ class Manifold2dCanvas(QtGui.QDialog):
     # Task 1:
     @QtCore.Slot()
     def start_task1(self):
-        set_params.op(0)  #send new GUI data to parameters file
+        p.save()  #send new GUI data to parameters file
 
         task1 = threading.Thread(target=psiAnalysis.op, args=(self.progress1Changed, ))
         task1.daemon = True
@@ -6812,7 +6812,7 @@ class Manifold2dCanvas(QtGui.QDialog):
     # Task 2:
     @QtCore.Slot()
     def start_task2(self):
-        set_params.op(0)  #send new GUI data to parameters file
+        p.save()  #send new GUI data to parameters file
 
         task2 = threading.Thread(target=NLSAmovie.op, args=(self.progress2Changed, ))
         task2.daemon = True
@@ -8303,7 +8303,7 @@ class DataThread(QtCore.QThread):
     DataFinished = QtCore.pyqtSignal()
 
     def run(self):
-        set_params.op(0)  #send new GUI data to parameters file
+        p.save()  #send new GUI data to parameters file
         Data.op(P1.user_alignment)
         self.DataFinished.emit()
 
@@ -8621,7 +8621,7 @@ class MainWindow(QtGui.QMainWindow):
                     fname_front = MainWindow.inputsFile.split('params_', 1)[1]
                     fname_sans = os.path.splitext(fname_front)[0]
                     p.proj_name = fname_sans  #update p.py with correct project name (not the GUI init)
-                    set_params.op(1)  #read in params from user parameters file
+                    p.load()  #read in params from user parameters file
 
                     # =========================================================
                     # DEVELOPER OPTION TO SHORTCUT RESUME PROGRESS:
@@ -9282,7 +9282,7 @@ class MainWindow(QtGui.QMainWindow):
                                     Erg2dMain.btn_custComp.setDisabled(False)
                                     Erg2dMain.btn_leastComp.setDisabled(True)
 
-                    set_params.op(0)  #send new GUI data to user parameters file
+                    p.save()  #send new GUI data to user parameters file
                     P4.user_PrD = 1
                     P4.PrD_hist = 1
                     P4.entry_PrD.setValue(1)
@@ -9379,7 +9379,7 @@ class MainWindow(QtGui.QMainWindow):
                 p.ang_width = P1.user_width
                 p.S2rescale = P1.S2rescale
                 p.relion_data = P1.relion_data
-                set_params.op(0)  #send new GUI data to user parameters file
+                p.save()  #send new GUI data to user parameters file
                 # =============================================================
                 Data.op(P1.user_alignment)
                 fname = open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb')
@@ -9491,7 +9491,7 @@ class MainWindow(QtGui.QMainWindow):
                 MainWindow.S2_iso_prev = MainWindow.S2_iso
                 p.S2rescale = MainWindow.S2_scale
                 p.S2iso = MainWindow.S2_iso
-                set_params.op(0)  #send new GUI data to user parameters file
+                p.save()  #send new GUI data to user parameters file
             if P3.user_dimensions == 1:
                 try:
                     P4.anchorsAll[P4.user_PrD].setDisabled(False)
@@ -9958,7 +9958,7 @@ class MainWindow(QtGui.QMainWindow):
                                        'outputs_{}'.format(p.proj_name))])  #delete output directory if it exists
                     if os.path.exists(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name))):
                         os.remove(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name)))
-                    set_params.op(0)  #send new GUI data to user parameters file
+                    p.save()  #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
                     tabs.setTabEnabled(1, True)
@@ -9983,7 +9983,7 @@ class MainWindow(QtGui.QMainWindow):
 
                 if reply == QtGui.QMessageBox.Yes:  #overwrite directory and continue to page 2
                     os.remove(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name)))
-                    set_params.op(0)  #send new GUI data to user parameters file
+                    p.save()  #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
                     tabs.setTabEnabled(1, True)
@@ -9993,7 +9993,7 @@ class MainWindow(QtGui.QMainWindow):
                     pass
 
             else:
-                set_params.op(0)  #send new GUI data to user parameters file
+                p.save()  #send new GUI data to user parameters file
                 p.create_dir()
                 # proceed to page 2:
                 tabs.setTabEnabled(1, True)
@@ -10031,7 +10031,7 @@ class MainWindow(QtGui.QMainWindow):
             # disable page 1:
             noReturn()
             p.resProj = 1
-            set_params.op(0)  #send new GUI data to user parameters file
+            p.save()  #send new GUI data to user parameters file
             # continue to page 3:
             tabs.setCurrentIndex(2)
             tabs.setTabEnabled(2, True)

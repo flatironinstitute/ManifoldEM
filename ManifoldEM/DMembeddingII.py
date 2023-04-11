@@ -1,9 +1,10 @@
 import numpy as np
 
 from collections import namedtuple
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, csc_matrix
+from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
-from ManifoldEM import p, sembeddingonFly
+from ManifoldEM import p
 from ManifoldEM.core import fergusonE
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -30,10 +31,10 @@ def sembedding(yVal, yCol, yRow, nS, options1):
     try:
         vals, vecs = eigsh(l, k=options.nEigs + 1, maxiter=300)
     except ArpackNoConvergence as e:
-
         vals = e.eigenvalues
         vecs = e.eigenvectors
         print("eigsh not converging in 300 iterations...")
+
     ix = np.argsort(vals)[::-1]
     vals = np.sort(vals)[::-1]
     vecs = vecs[:, ix]

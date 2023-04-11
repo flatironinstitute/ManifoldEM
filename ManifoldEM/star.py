@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ManifoldEM import set_params, p
+from ManifoldEM import p
 '''
 Copyright (c) Columbia University Sonya Hanson 2018
 Copyright (c) Columbia University Hstau Liao 2019
@@ -9,7 +9,7 @@ Copyright (c) Columbia University Evan Seitz 2021
 
 
 def write_star(star_file, traj_file, df):
-    set_params.op(1)
+    p.load()
 
     with open(star_file, 'w') as text_file:
         text_file.write(

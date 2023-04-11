@@ -2,6 +2,8 @@ import numpy as np
 import os
 import sys
 import toml
+from pprint import pprint
+
 from ManifoldEM.util import debug_print
 
 _module = sys.modules[__name__]
@@ -178,14 +180,19 @@ def todict():
     return res
 
 
-def save(outfile: str):
+def save(outfile: str = ''):
+    if outfile == '':
+        outfile = f'params_{proj_name}.toml'
     res = {'params': todict()}
     with open(outfile, 'w') as f:
         toml.dump(res, f)
         f.flush()
 
 
-def load(infile: str):
+def load(infile: str = ''):
+    if infile == '':
+        infile = f'params_{proj_name}.toml'
+
     with open(infile, 'r') as f:
         indict = toml.load(f)
 
@@ -195,6 +202,10 @@ def load(infile: str):
             debug_print(f"Warning: param '{param}' not found in parameters module")
         else:
             setattr(_module, param, val)
+
+
+def print():
+    pprint(todict())
 
 
 def create_dir():

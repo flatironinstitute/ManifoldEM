@@ -7,7 +7,7 @@ from functools import partial
 from contextlib import contextmanager
 from subprocess import Popen
 
-from ManifoldEM import myio, set_params, p, getDistanceCTF_local_Conj9combinedS2, Data
+from ManifoldEM import myio, p, getDistanceCTF_local_Conj9combinedS2, Data
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,7 +51,7 @@ def count(N):
 
 
 def op(*argv):
-    set_params.op(1)
+    p.load()
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -62,7 +62,7 @@ def op(*argv):
     df = data['df']
     q = data['q']
     sh = data['sh']
-    set_params.op(1)
+    p.load()
     size = len(df)
 
     filterPar = dict(type='Butter', Qc=0.5, N=8)
@@ -78,7 +78,7 @@ def op(*argv):
     # SPIDER only: compute the nPix = sqrt(len(bin file)/(4*num_part))
     if p.relion_data is False:
         p.nPix = int(np.sqrt(os.path.getsize(p.img_stack_file) / (4 * p.num_part)))
-        set_params.op(0)  #send new GUI data to user parameters file
+        p.save()  #send new GUI data to user parameters file
 
     input_data = divide(CG, q, df, p.numberofJobs)
     if argv:
@@ -112,7 +112,7 @@ def op(*argv):
             pool.close()
             pool.join()
 
-    set_params.op(0)
+    p.save()
 
 
 if __name__ == '__main__':

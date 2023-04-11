@@ -8,7 +8,7 @@ from functools import partial
 from contextlib import contextmanager
 from subprocess import Popen
 
-from ManifoldEM import p, psiAnalysisParS2, myio, set_params, ComputeEnergy1D
+from ManifoldEM import p, psiAnalysisParS2, myio, ComputeEnergy1D
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,8 +55,8 @@ def count1(R):
 
 
 def op(*argv):
-    set_params.op(1)
-    #set_params.op(-1)
+    p.load()
+    #p.print()
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -102,7 +102,7 @@ def op(*argv):
 
     ComputeEnergy1D.op()
     progress6.emit(100)
-    set_params.op(0)
+    p.save()
     return
 
 

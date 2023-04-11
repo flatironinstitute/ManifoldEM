@@ -9,7 +9,7 @@ import numpy as np
 from functools import partial
 from contextlib import contextmanager
 
-from ManifoldEM import myio, p, set_params, myio
+from ManifoldEM import myio, p, myio
 from ManifoldEM.core import makeMovie
 '''
 % scriptPsiNLSAmovie
@@ -103,7 +103,7 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
 
 
 def op(*argv):
-    set_params.op(1)
+    p.load()
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -137,7 +137,7 @@ def op(*argv):
             pool.close()
             pool.join()
 
-    set_params.op(0)
+    p.save()
 
 
 if __name__ == '__main__':

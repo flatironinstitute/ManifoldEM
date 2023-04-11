@@ -24,7 +24,7 @@ beginnig and ending frames affected: f=5
 def op(proj_name, user_dir, type, f, k):
     p.proj_name = proj_name
     p.user_dir = user_dir
-    set_params.op(1)
+    p.load()
     outputsDir = os.path.join(p.user_dir, 'outputs_%s' % proj_name)
     f = int(f)
     k = int(k)
@@ -57,6 +57,4 @@ if __name__ == '__main__':
     sys.path.append(modDir)
     import p
     import mrcfile
-    import svdRF
-    import set_params
     op(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])  #enter the params file name

@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 
-from ManifoldEM import p, set_params, myio
+from ManifoldEM import p, myio
 from ManifoldEM.util import debug_print
 ''' %Version V 1.2
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)
@@ -17,7 +17,7 @@ from ManifoldEM.util import debug_print
 
 def op(*argv):
     print("Computing the energy landscape...")
-    set_params.op(1)
+    p.load()
 
     data = myio.fin1(p.CC_file)
     psiNumsAll = data['psinums']
@@ -92,7 +92,7 @@ def op(*argv):
     OM1_file = '{}EL'.format(p.OM1_file)
     E.astype('float').tofile(OM1_file)
 
-    set_params.op(0)
+    p.save()
 
     if argv:
         progress7 = argv[0]

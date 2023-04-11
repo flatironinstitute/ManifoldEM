@@ -8,7 +8,7 @@ import numpy as np
 from functools import partial
 from contextlib import contextmanager
 
-from ManifoldEM import myio, set_params, p
+from ManifoldEM import myio, p
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
 
@@ -178,7 +178,7 @@ def ComputeOptFlowPrDPsiAll1(input_data):
 
 # If computing for a specified set of nodes, then call the function with nodeRange
 def op(nodeEdgeNumRange, *argv):
-    set_params.op(1)
+    p.load()
     multiprocessing.set_start_method('fork', force=True)
 
     if argv:

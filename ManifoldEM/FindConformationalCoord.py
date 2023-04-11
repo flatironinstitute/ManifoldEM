@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 
-from ManifoldEM import myio, FindCCGraphPruned, set_params, p
+from ManifoldEM import myio, FindCCGraphPruned, p
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
@@ -13,7 +13,7 @@ from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 
 
 def op(*argv):
-    set_params.op(1)
+    p.load()
 
     # file i/o
     CC_file = '{}/CC_file'.format(p.CC_dir)

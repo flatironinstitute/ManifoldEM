@@ -8,7 +8,7 @@ from functools import partial
 from contextlib import contextmanager
 from subprocess import Popen
 
-from ManifoldEM import p, psiAnalysisParS2, myio, set_params
+from ManifoldEM import p, psiAnalysisParS2, myio
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +54,7 @@ def divid(N, rc, fin_PDs):
 
 
 def op(*argv):
-    set_params.op(1)
+    p.load()
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -103,7 +103,7 @@ def op(*argv):
             pool.close()
             pool.join()
 
-    set_params.op(0)
+    p.save()
 
 
 if __name__ == '__main__':

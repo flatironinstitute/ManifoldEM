@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import math
 
-from ManifoldEM import S2tessellation, myio, FindCCGraph, set_params, util, p, star
+from ManifoldEM import S2tessellation, myio, FindCCGraph, util, p, star
 from ManifoldEM.quaternion import qMult_bsx
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
@@ -204,7 +204,7 @@ def write_angles(ang_file, color, S20, full, NC):
 
 
 def op(align_param_file):
-    set_params.op(1)
+    p.load()
     visual = False
 
     if not p.relion_data:  # assumes SPIDER data
@@ -247,7 +247,7 @@ def op(align_param_file):
                [CG1, CG, nG, q, df, S2, S20_th, sh, NC])
 
     p.numberofJobs = len(CG)
-    set_params.op(0)
+    p.save()
 
     if p.resProj == 0 and (np.shape(CG)[0] > 2):
         G, Gsub = FindCCGraph.op()

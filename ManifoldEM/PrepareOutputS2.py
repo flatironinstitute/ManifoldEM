@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from ManifoldEM import writeRelionS2, p, myio, set_params
+from ManifoldEM import writeRelionS2, p, myio
 
 def op(*argv):
     """This script prepares the image stacks and orientations for 3D reconstruction."""
@@ -12,7 +12,7 @@ def op(*argv):
     # Copyright (c) Columbia Univ Hstau Liao 2018 (python version)
     # Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 
-    set_params.op(1)
+    p.load()
     print("Writing output files...")
 
     data = myio.fin1(p.CC_file)
