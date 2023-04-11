@@ -2,9 +2,8 @@ import os
 import numpy as np
 import datetime
 import math
-import numpy as np
 
-from ManifoldEM import S2tessellation, myio, FindCCGraph, set_params, util, p, spider, star, util, p
+from ManifoldEM import S2tessellation, myio, FindCCGraph, set_params, util, p, star
 from ManifoldEM.quaternion import qMult_bsx
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
@@ -92,10 +91,41 @@ def get_from_relion(align_star_file, flip):
     return (sh, q, U, V)
 
 
+def parse_spider(filename: str):
+    """
+    Parse a SPIDER DOC file.
+
+    Parameters
+    ----------
+    filename : str
+               Name of the file
+
+    Returns
+    -------
+    np.array(dtype=float64)
+        Table of values in file
+    """
+    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    table = []
+    with open(filename, 'r') as fin:
+        p.num_part = 0
+        for line in fin:
+            line1 = line.strip()
+            words = line1.split()
+            if words[0].find(';') == -1:
+                p.num_part += 1
+                words = [float(x) for x in words]
+                table.append(words)
+    table = np.array(table)
+    # skip the second column
+    table = np.hstack((table[:, 0].reshape(-1, 1), table[:, 2:]))
+    return table
+
+
 def get_q(align_param_file, phiCol, thetaCol, psiCol, flip):
 
     # read the angles
-    align = spider.parse(align_param_file)
+    align = parse_spider(align_param_file)
     phi = np.deg2rad(align[:, phiCol])
     theta = np.deg2rad(align[:, thetaCol])
     psi = np.deg2rad(align[:, psiCol])
@@ -106,7 +136,7 @@ def get_q(align_param_file, phiCol, thetaCol, psiCol, flip):
 
 def get_df(align_param_file, dfCol):
     # read df
-    align = spider.parse(align_param_file)
+    align = parse_spider(align_param_file)
     if len(dfCol) == 1:
         df = align[:, dfCol]
     if len(dfCol) == 2:
@@ -117,7 +147,7 @@ def get_df(align_param_file, dfCol):
 
 def get_shift(align_param_file, shx_col, shy_col):
     # read the x-y shifts
-    align = spider.parse(align_param_file)
+    align = parse_spider(align_param_file)
     sh = (align[:, shx_col] * 0, align[:, shy_col] * 0)
     return sh
 
