@@ -1,7 +1,7 @@
 import numpy as np
 
 from scipy.ndimage import gaussian_filter
-from scipy.ndimage.filters import convolve as filter2
+import cv2 as cv
 
 # original version adapted from "scivision pyoptflow",
 # modified and customized by Suvrajit Maji
@@ -14,6 +14,8 @@ kernelY = np.array([[-1.0, -1.0], [1.0, 1.0]]) * .25  # kernel for computing d/d
 
 kernelT = np.ones((2, 2)) * .25
 
+def filter2(image, kernel):
+    return cv.filter2D(image, -1, kernel, borderType=cv.BORDER_REFLECT)
 
 #def computeDerivatives(im1: np.ndarray, im2: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 def computeDerivatives(im1, im2):
