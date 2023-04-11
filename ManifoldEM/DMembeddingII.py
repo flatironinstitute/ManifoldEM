@@ -9,9 +9,106 @@ from ManifoldEM.core import fergusonE
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
-Copyright (c) Columbia University Evan Seitz 2019 (python version)    
-  
+Copyright (c) Columbia University Evan Seitz 2019 (python version)
+
 '''
+
+def sembedding(yVal, yCol, yRow, nS, options1):
+    """
+     Laplacian eigenfunction embedding using sparse arrays
+    """
+    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
+
+    options = namedtuple('options', 'sigma alpha visual nEigs autotune')
+    options.sigma = options1.sigma
+    options.alpha = options1.alpha
+    options.nEigs = options1.nEigs
+    options.autotune = 0
+
+    l, sigmaTune = slaplacian(yVal, yCol, yRow, nS, options)
+    try:
+        vals, vecs = eigsh(l, k=options.nEigs + 1, maxiter=300)
+    except ArpackNoConvergence as e:
+
+        vals = e.eigenvalues
+        vecs = e.eigenvectors
+        print("eigsh not converging in 300 iterations...")
+    ix = np.argsort(vals)[::-1]
+    vals = np.sort(vals)[::-1]
+    vecs = vecs[:, ix]
+
+    return (vals, vecs)
+
+
+def slaplacian(*arg):
+    """
+    Given a set of nS data points, and the dinstances to nN nearest neighbors
+    for each data point, slaplacian computes a sparse, nY by nY symmetric
+    graph Laplacian matrix l.
+
+    The input data are supplied in the column vectors yVal and yInd of length
+    nY * nN such that
+
+    yVal( ( i - 1 ) * nN + ( 1 : nN ) ) contains the distances to the
+    nN nearest neighbors of data point i sorted in ascending order, and
+
+    yInd( ( i - 1 ) * nN + ( 1 : nN ) ) contains the indices of the nearest
+    neighbors.
+
+    yVal and yInd can be computed by calling nndist
+
+    slaplacian admits a number of options passed as name-value pairs
+
+    alpha : normalization, according to Coifman & Lafon
+
+    nAutotune : number of nearest neighbors for autotuning. Set to zero if no
+    autotuning is to be performed
+
+    sigma: width of the Gaussian kernel
+
+    Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    Copyright (c) Columbia University Hstau Liao 2019 (python version)
+    Copyright (c) Columbia University Evan Seitz 2019 (python version)
+    """
+    yVal = arg[0]
+    yCol = arg[1]
+    yRow = arg[2]
+    nS = arg[3]  #dataset size
+    options = arg[4]  #options.sigma: Gaussian width
+
+    nNZ = len(yVal)  #number of nonzero elements
+
+    # if required, compute autotuning distances:
+    if options.autotune > 0:
+        print('Autotuning is not implemented in this version of slaplacian' + '\n')
+    else:
+        sigmaTune = options.sigma
+
+
+    yVal = yVal / sigmaTune**2
+
+    # compute the unnormalized weight matrix:
+    yVal = np.exp(-yVal)  #apply exponential weights (yVal is distance**2)
+    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
+    d = np.array(l.sum(axis=0)).T
+
+    if options.alpha != 1:  #apply non-isotropic normalization
+        d = d**options.alpha
+
+    yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
+    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
+
+    # normalize by the degree matrix to form normalized graph Laplacian:
+    d = np.array(l.sum(axis=0))
+    d = np.sqrt(d).T
+
+    yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
+    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
+    l = np.abs(l + l.T) / 2.0  #iron out numerical wrinkles
+    temp = l - l.T
+
+    return (l, sigmaTune)
 
 
 def get_yColVal(params):
@@ -159,7 +256,7 @@ def op(D, k, tune, prefsigma):  #*arg
     options.visual = visual
     options.nEigs = nEigs
 
-    lamb, v = sembeddingonFly.op(yVal, yCol, yRow, nS, options)
+    lamb, v = sembedding(yVal, yCol, yRow, nS, options)
 
     #psi = v[:, 1 : nEigs+1]/np.tile(v[:, 0 ].reshape((-1,1)), (1, nEigs))
     true_shape = v.shape[1] - 1
