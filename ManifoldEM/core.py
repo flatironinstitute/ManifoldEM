@@ -98,7 +98,7 @@ def makeMovie(IMG1, prD, psinum, fps):
     # Copyright (c) Columbia University Hstau Liao 2018 (python version)
     # Copyright (c) Columbia University Evan Seitz 2019 (python version)
 
-    dim = int(np.floor(np.sqrt(max(IMG1.shape))))  # window size
+    dim = int(np.sqrt(max(IMG1.shape)))  # window size
     nframes = IMG1.shape[1]
     images = -IMG1
     gif_path = os.path.join(p.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')

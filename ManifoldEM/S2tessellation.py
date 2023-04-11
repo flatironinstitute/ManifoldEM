@@ -40,7 +40,7 @@ def _classS2(X, Q):
 
 
 def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
-    nG = np.floor(4 * np.pi / (shAngWidth**2)).astype(int)
+    nG = int(4 * np.pi / (shAngWidth**2))
     # reference angles
     S20, it = distribute3Sphere.op(nG)
 
@@ -54,11 +54,10 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
     CG1 = [[] for i in range(S20.shape[1])]
     for i, index in enumerate(IND.ravel()):
         CG1[index].append(i)
-
     CG1 = np.array([np.array(a) for a in CG1], dtype=object)
 
     # lower-thresholded
-    mid = np.floor(S20.shape[1] / 2).astype(int)
+    mid = S20.shape[1] // 2
     # halving first
     NC1 = NC[:mid]
     NC2 = NC[mid:]
@@ -89,16 +88,6 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
         CG.append(a)
 
     CG = np.array(CG, dtype=object)
-
-    if visual:
-        ax = Axes3D(fig)
-        ax.set_xlim3d(-1, 1)
-        ax.set_ylim3d(-1, 1)
-        ax.set_zlim3d(-1, 1)
-
-        for i in range(np.floor(CG.shape[1]) / 2):
-            a = CG[i]
-            ax.scatter(S2(1, a[::40]), S2(1, a[::40]), S2(2, a[::40]), marker='o', s=20, alpha=0.6)
 
     return (CG1, CG, nG, S2, S20_th, S20, NC)
     #CG1: list of lists, each of which is a list of image indices within one PD

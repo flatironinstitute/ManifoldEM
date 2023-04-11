@@ -67,7 +67,7 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
     psi = data_psi['psi']  #coordinates of all images in 15-dim space from diffusion map: e.g., shape=(numPDs,15)
     posPath = data_psi['posPath']  #indices of every image in PD: e.g., shape=(numPDs,); [0,1,2,...(numPDs-1)]
     nS = len(posPath)  #number of images in PD
-    ConOrder = int(np.floor(float(nS) / conOrderRange))
+    ConOrder = nS // conOrderRange
     # if ConOrder is large, noise-free 2D frames expected w/ small range of conformations, \
     # while losing snapshots at edges
 
@@ -101,7 +101,7 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
         #    tau = 1-tau
 
         nSrecon = min(IMGT.shape)
-        numclass = int(min(p.nClass, np.floor(nSrecon / 2.)))
+        numclass = min(p.nClass, nSrecon // 2)
 
         tau = (tau - min(tau)) / (max(tau) - min(tau))
         tauinds = []

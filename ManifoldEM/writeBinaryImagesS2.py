@@ -33,7 +33,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         q = q[:, posPath[psi1Path]]  # python
         nS = q.shape[1]
 
-        conOrder = np.floor(float(nS) / p.conOrderRange).astype(int)
+        conOrder = nS // p.conOrderRange
         copies = conOrder
         q = q[:, copies - 1:nS - conOrder]
 

@@ -147,7 +147,7 @@ def write_angles(ang_file, color, S20, full, NC):
     if full == 1:  #already thresholded S20
         L = range(0, S20.shape[1])
     else:  #full S20, still need to take the correct half
-        mid = np.floor(S20.shape[1] / 2).astype(int)
+        mid = S20.shape[1] // 2
         NC1 = NC[:int(mid)]
         NC2 = NC[int(mid):]
         if len(NC1) >= len(NC2):  #first half of S2
