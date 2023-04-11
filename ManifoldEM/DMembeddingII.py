@@ -3,7 +3,8 @@ import numpy as np
 from collections import namedtuple
 from scipy.sparse import csr_matrix
 
-from ManifoldEM import p, fergusonE, sembeddingonFly
+from ManifoldEM import p, sembeddingonFly
+from ManifoldEM.core import fergusonE
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,7 +134,7 @@ def op(D, k, tune, prefsigma):  #*arg
     resnorm = np.inf
 
     logEps = np.arange(-150, 150.2, 0.2)
-    popt, logSumWij, resnorm, R_squared = fergusonE.op(np.sqrt(yVal), logEps, a0)
+    popt, logSumWij, resnorm, R_squared = fergusonE(np.sqrt(yVal), logEps, a0)
     nS = D.shape[0]
     nEigs = min(p.num_eigs, nS - 3)  #number of eigenfunctions to compute
     nA = 0  #autotuning parameter

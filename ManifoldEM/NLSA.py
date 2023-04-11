@@ -5,7 +5,8 @@ import numpy as np
 from scipy.fftpack import fft2
 from scipy.fftpack import ifft2
 
-from ManifoldEM import DMembeddingII, myio, get_wiener, L2_distance, svdRF
+from ManifoldEM import DMembeddingII, myio, get_wiener
+from ManifoldEM.core import L2_distance, svdRF
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -84,7 +85,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk
         print('A is an imaginary matrix!')
         sys.exit()
 
-    U, S, V = svdRF.op(A)
+    U, S, V = svdRF(A)
     VX = np.matmul(V.T, psiC.T)
 
     sdiag = np.diag(S)
@@ -132,7 +133,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk
         IMGT[:, i] = ttmp
 
     nSrecon = min(IMGT.shape)
-    Drecon = L2_distance.op(IMGT, IMGT)
+    Drecon = L2_distance(IMGT, IMGT)
     k = nSrecon
 
     lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op((Drecon**2), k, tune, 30)

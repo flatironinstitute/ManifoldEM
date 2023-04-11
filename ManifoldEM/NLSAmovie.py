@@ -8,9 +8,9 @@ import numpy as np
 
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen
 
-from ManifoldEM import myio, p, set_params, myio, makeMovie
+from ManifoldEM import myio, p, set_params, myio
+from ManifoldEM.core import makeMovie
 '''
 % scriptPsiNLSAmovie
 % Matlab Version V1.2
@@ -65,7 +65,7 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
         IMG1All.append(data['IMG1'])
         Topo_mean.append(data['Topo_mean'])
         # make movie
-        makeMovie.op(IMG1All[psinum], prD, psinum, fps)
+        makeMovie(IMG1All[psinum], prD, psinum, fps)
 
         ######################
         # write topos

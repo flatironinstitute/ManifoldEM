@@ -1,4 +1,3 @@
-import logging
 import pickle
 
 import numpy as np
@@ -7,8 +6,6 @@ from ManifoldEM import myio, p
 from ManifoldEM.CC import MRFGeneratePotentials, MRFBeliefPropagation
 from ManifoldEM.CC.MRFBeliefPropagation import createBPalg
 
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
 '''
 function list = rearrange(seeds,nn)
 % function to return a list of nodes ordered according to the

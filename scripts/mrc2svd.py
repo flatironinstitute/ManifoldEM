@@ -40,7 +40,7 @@ def op(svd_dir, proj_name, user_dir):
             print('Input volume:', (bin + 1))
     topoNum = 8  #number of topos considered
     print('Performing SVD...')
-    U, S, V = svdRF.op(b)
+    U, S, V = svdRF(b)
     print('SVD complete. Preparing volumes...')
     sdiag = np.diag(S)
 
@@ -103,6 +103,6 @@ if __name__ == '__main__':
     sys.path.append(modDir)
     import p
     import mrcfile
-    import svdRF
+    from ManifoldEM.core import svdRF
     import set_params
     op(os.path.splitext(sys.argv[0])[0], sys.argv[1], sys.argv[2])  #enter the params file name

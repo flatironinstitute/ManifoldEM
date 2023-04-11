@@ -51,8 +51,9 @@ import pickle
 from ManifoldEM import p
 
 p.user_dir = output_dir  #default
-from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, embedd, clusterAvg,
+from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, embedd,
                         FindConformationalCoord, EL1D, backup, PrepareOutputS2, set_params)
+from ManifoldEM.core import clusterAvg
 
 import logging
 from traits.api import HasTraits, Instance, on_trait_change, List, Str, Int, Float, Range, Button, Enum
@@ -6762,7 +6763,7 @@ class Manifold2dCanvas(QtGui.QDialog):
 
         print('Encircled Points:', index_enc)
 
-        Manifold2dCanvas.imgAvg = clusterAvg.op(idx_encircled, P4.user_PrD - 1)
+        Manifold2dCanvas.imgAvg = clusterAvg(idx_encircled, P4.user_PrD - 1)
         self.ClusterAvg()
 
     def ClusterAvg(self):
