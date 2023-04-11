@@ -329,11 +329,10 @@ def op(G, nodeEdgeNumRange, *argv):
                 offset += 1
                 progress5.emit(int((offset / float(numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(
-                    pool.imap_unordered(
-                        partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
-                        input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(
+                    partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
+                    input_data):
                 if argv:
                     offset += 1
                     progress5.emit(int((offset / float(numberofJobs)) * 99))

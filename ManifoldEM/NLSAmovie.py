@@ -117,27 +117,27 @@ def op(*argv):
     if argv:
         progress4 = argv[0]
         offset = p.numberofJobs - len(input_data)
-        progress4.emit(int((offset / float(p.numberofJobs)) * 100))
+        progress4.emit(int((offset / float(p.numberofJobs)) * 99))
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):
             movie(input_data[i], p.out_dir, p.dist_file, p.psi2_file, p.fps)
             if argv:
                 offset += 1
-                progress4.emit(int((offset / float(p.numberofJobs)) * 100))
+                progress4.emit(int((offset / float(p.numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(
-                    pool.imap_unordered(
-                        partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
-                        input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(
+                    partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
+                    input_data):
                 if argv:
                     offset += 1
-                    progress4.emit(int((offset / float(p.numberofJobs)) * 100))
+                    progress4.emit(int((offset / float(p.numberofJobs)) * 99))
 
             pool.close()
             pool.join()
 
     p.save()
+    progress4.emit(100)
 
 
 if __name__ == '__main__':

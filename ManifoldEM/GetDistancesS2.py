@@ -93,26 +93,25 @@ def op(*argv):
             getDistanceCTF_local_Conj9combinedS2.op(input_data[i], filterPar, p.img_stack_file, sh, size, options)
             if argv:
                 offset += 1
-                progress1.emit(int((offset / float(p.numberofJobs)) * 100))
+                progress1.emit(int((offset / float(p.numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(
-                    pool.imap_unordered(
-                        partial(getDistanceCTF_local_Conj9combinedS2.op,
-                                filterPar=filterPar,
-                                imgFileName=p.img_stack_file,
-                                sh=sh,
-                                nStot=size,
-                                options=options), input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(
+                    partial(getDistanceCTF_local_Conj9combinedS2.op,
+                            filterPar=filterPar,
+                            imgFileName=p.img_stack_file,
+                            sh=sh,
+                            nStot=size,
+                            options=options), input_data):
                 if argv:
                     offset += 1
-                    progress1.emit(int((offset / float(p.numberofJobs)) * 100))
-
+                    progress1.emit(int((offset / float(p.numberofJobs)) * 99))
 
             pool.close()
             pool.join()
 
     p.save()
+    progress1.emit(100)
 
 
 if __name__ == '__main__':

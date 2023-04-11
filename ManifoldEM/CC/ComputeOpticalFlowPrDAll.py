@@ -224,25 +224,23 @@ def op(nodeEdgeNumRange, *argv):
     input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
     if argv:
         offset = len(nodeRange) - len(input_data)
-        progress5.emit(int((offset / float(numberofJobs)) * 100))
+        progress5.emit(int((offset / float(numberofJobs)) * 99))
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):
             ComputeOptFlowPrDPsiAll1(input_data[i])
             if argv:
                 offset += 1
-                progress5.emit(int((offset / float(numberofJobs)) * 100))
+                progress5.emit(int((offset / float(numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(pool.imap_unordered(partial(ComputeOptFlowPrDPsiAll1), input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data):
                 if argv:
                     offset += 1
-                    progress5.emit(int((offset / float(numberofJobs)) * 100))
+                    progress5.emit(int((offset / float(numberofJobs)) * 99))
 
             pool.close()
             pool.join()
-
-    # multiprocessing is having difficulty in writing to the same file,
 
     # for now individual files were written and are being combined here
     if p.findBadPsiTau:
@@ -276,3 +274,4 @@ def op(nodeEdgeNumRange, *argv):
                 print('Removing temp directory', CC_dir_temp)
                 if os.path.exists(CC_dir_temp):
                     shutil.rmtree(CC_dir_temp)
+

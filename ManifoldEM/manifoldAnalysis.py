@@ -66,7 +66,7 @@ def op(*argv):
     if argv:
         progress2 = argv[0]
         offset = p.numberofJobs - len(input_data)
-        progress2.emit(int((offset / float(p.numberofJobs)) * 100))
+        progress2.emit(int((offset / float(p.numberofJobs)) * 99))
 
     print("Processing {} projection directions.".format(len(input_data)))
     for i in range(p.numberofJobs):
@@ -78,26 +78,26 @@ def op(*argv):
             manifoldTrimmingAuto.op(input_data[i], posPath, p.tune, p.rad, visual, doSave)
             if argv:
                 offset += 1
-                progress2.emit(int((offset / float(p.numberofJobs)) * 100))
+                progress2.emit(int((offset / float(p.numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(
-                    pool.imap_unordered(
-                        partial(manifoldTrimmingAuto.op,
-                                posPath=posPath,
-                                tune=p.tune,
-                                rad=p.rad,
-                                visual=visual,
-                                doSave=doSave), input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(
+                    partial(manifoldTrimmingAuto.op,
+                            posPath=posPath,
+                            tune=p.tune,
+                            rad=p.rad,
+                            visual=visual,
+                            doSave=doSave),
+                    input_data):
                 if argv:
                     offset += 1
-                    progress2.emit(int((offset / float(p.numberofJobs)) * 100))
+                    progress2.emit(int((offset / float(p.numberofJobs)) * 99))
 
             pool.close()
             pool.join()
 
     p.save()
-
+    progress2.emit(100)
 
 if __name__ == '__main__':
     p.user_dir = '../'

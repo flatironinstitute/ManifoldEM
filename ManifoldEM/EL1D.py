@@ -72,7 +72,7 @@ def op(*argv):
     if argv:
         progress6 = argv[0]
         offset = len(R) - len(input_data)
-        progress6.emit(int((offset / float(len(R))) * 100))
+        progress6.emit(int((offset / float(len(R))) * 99))
 
     print("Processing {} projection directions.".format(len(input_data)))
 
@@ -81,29 +81,26 @@ def op(*argv):
             psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
             if argv:
                 offset += 1
-                progress6.emit(int((offset / float(len(R))) * 100))
+                progress6.emit(int((offset / float(len(R))) * 99))
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(
-                    pool.imap_unordered(
-                        partial(psiAnalysisParS2.op,
-                                conOrderRange=p.conOrderRange,
-                                traj_name=p.trajName,
-                                isFull=isFull,
-                                psiTrunc=p.num_psiTrunc), input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(
+                    partial(psiAnalysisParS2.op,
+                            conOrderRange=p.conOrderRange,
+                            traj_name=p.trajName,
+                            isFull=isFull,
+                            psiTrunc=p.num_psiTrunc),
+                    input_data):
                 if argv:
                     offset += 1
-                    progress = int((offset / float(len(R))) * 100)
-                    if progress < 100:
-                        progress6.emit(progress)
+                    progress6.emit((offset / float(len(R))) * 99)
 
             pool.close()
             pool.join()
 
     ComputeEnergy1D.op()
-    progress6.emit(100)
     p.save()
-    return
+    progress6.emit(100)
 
 
 if __name__ == '__main__':

@@ -70,7 +70,7 @@ def op(*argv):
     if argv:
         progress3 = argv[0]
         offset = np.count_nonzero(fin_PDs == 1)
-        progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
+        progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 99))
 
     print(f"Processing {len(input_data)} projection directions.")
 
@@ -83,27 +83,25 @@ def op(*argv):
                 psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
 
     else:
-        with poolcontext(processes=p.ncpu, maxtasksperchild=1) as pool:
-            for i, _ in enumerate(
-                    pool.imap_unordered(
-                        partial(psiAnalysisParS2.op,
-                                conOrderRange=p.conOrderRange,
-                                traj_name=p.trajName,
-                                isFull=isFull,
-                                psiTrunc=p.num_psiTrunc), input_data), 1):
+        with poolcontext(processes=p.ncpu) as pool:
+            for _ in pool.imap_unordered(
+                    partial(psiAnalysisParS2.op,
+                            conOrderRange=p.conOrderRange,
+                            traj_name=p.trajName,
+                            isFull=isFull,
+                            psiTrunc=p.num_psiTrunc), input_data):
                 if argv:
                     progress3 = argv[0]
                     fin_PDs = fileCheck(
                         p.numberofJobs)  #array of finished PDs (0's are unfinished, 1's are finished)
                     offset = np.count_nonzero(fin_PDs == 1)
-                    progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
-
-
+                    progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 99))
 
             pool.close()
             pool.join()
 
     p.save()
+    progress3.emit(100)
 
 
 if __name__ == '__main__':
