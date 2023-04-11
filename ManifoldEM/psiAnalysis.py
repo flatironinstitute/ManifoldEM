@@ -72,7 +72,7 @@ def op(*argv):
         offset = np.count_nonzero(fin_PDs == 1)
         progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
 
-    print("Processing {} projection directions.".format(len(input_data)))
+    print(f"Processing {len(input_data)} projection directions.")
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):

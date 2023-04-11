@@ -5,7 +5,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.neighbors import NearestNeighbors
 
-from ManifoldEM import distribute3Sphere
+from ManifoldEM.core import distribute3Sphere
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,7 +42,7 @@ def _classS2(X, Q):
 def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
     nG = int(4 * np.pi / (shAngWidth**2))
     # reference angles
-    S20, it = distribute3Sphere.op(nG)
+    S20, it = distribute3Sphere(nG)
 
     S20 = S20.T
     # projection angles

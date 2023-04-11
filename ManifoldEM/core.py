@@ -138,7 +138,7 @@ def fergusonE(D, logEps, a0):
         eps = np.exp(logEps[k])
         d = 1. / (2. * eps) * D2
         d = -d[d < thr]
-        Wij = np.exp(d)  #see Coifman 2008
+        Wij = np.exp(d)  # see Coifman 2008
         logSumWij[k] = np.log(np.sum(Wij))
 
     # curve fitting of a tanh():
@@ -151,8 +151,99 @@ def fergusonE(D, logEps, a0):
         a0 = 1 * (np.random.rand(4, 1) - .5)
 
         residuals = logSumWij - fun(logEps, popt[0], popt[1], popt[2], popt[3])
-        ss_res = np.sum(residuals**2)  #residual sum of squares
-        ss_tot = np.sum((logSumWij - np.mean(logSumWij))**2)  #total sum of squares
-        R_squared = 1 - (ss_res / ss_tot)  #R**2-value
+        ss_res = np.sum(residuals**2)  # residual sum of squares
+        ss_tot = np.sum((logSumWij - np.mean(logSumWij))**2)  # total sum of squares
+        R_squared = 1 - (ss_res / ss_tot)  # R**2-value
 
     return (popt, logSumWij, resnorm, R_squared)
+
+
+def annularMask(a: float, b: float, N: int, M: int):
+    """
+    returns a N x M matrix with an annular (donut) mask of inner
+    radius a and outer radius b. Pixels outside the donut or inside the hole
+    are filled with 0, and the rest with 1.
+
+    The circles with radii a and b are centered on pixel (N/2,M/2).
+
+    Programmed December 2007, modified by Peter Schwander December 2008 (Python version by Hstau Liao 2018)
+    Copyright (c) Russell Fung 2007
+    """
+    aSq = a * a
+    bSq = b * b
+    mask = np.zeros((N, M))
+    for xx in range(N):
+        xDist = xx - N / 2 + 1
+        xDistSq = xDist * xDist
+        for yy in range(M):
+            yDist = yy - M / 2
+            yDistSq = yDist * yDist
+            rSq = xDistSq + yDistSq
+            mask[xx, yy] = (rSq >= aSq) & (rSq < bSq)
+
+    return mask
+
+
+def distribute3Sphere(numPts: int):
+    """
+    distributes numPts points roughly uniformly on a unit 3-sphere and
+    returns the coordinates in results. Number of iterations required is
+    returned in iter.
+
+    Algorithm adapted from L. Lovisolo and E.A.B. da Silva, Uniform
+    distribution of points on a hyper-sphere with applications to vector
+    bit-plane encoding, IEE Proc.-Vis. Image Signal Process., Vol. 148, No.
+    3, June 2001
+
+    Programmed February 2009
+    Copyright (c) Russell Fung 2009
+    Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
+    maxIter = 100
+    K = numPts
+    A3 = 4 * np.pi  # surface area of a unit 3-sphere
+    delta = np.exp(np.log(A3 / K) / 2.)
+    results = np.zeros((2 * K, 3))
+    # algorithm sometimes returns more/ less points
+    it = 0
+    id = 0
+
+    while id != K and it < maxIter:
+        it = it + 1
+        id = 0
+        dw1 = delta
+        for w1 in np.arange(0.5 * dw1, np.pi, dw1):
+            cw1 = np.cos(w1)
+            sw1 = np.sin(w1)
+            x1 = cw1
+            dw2 = dw1 / sw1
+            for w2 in np.arange(0.5 * dw2, 2 * np.pi, dw2):
+                cw2 = np.cos(w2)
+                sw2 = np.sin(w2)
+                x2 = sw1 * cw2
+                x3 = sw1 * sw2
+
+                results[id, :] = np.hstack((x1, x2, x3))
+                id = id + 1
+
+        delta = delta * np.exp(np.log(float(id) / K) / 2.)
+
+    results = results[0:K, :]
+    return (results, it)
+
+
+def get_wiener(CTF, posPath, posPsi1, ConOrder, num):
+    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    dim = CTF.shape[1]
+    SNR = 5
+    CTF1 = CTF[posPath[posPsi1], :, :]
+    wiener_dom = np.zeros((num - ConOrder, dim, dim), dtype='float64')
+    for i in range(num - ConOrder):
+        for ii in range(ConOrder):
+            ind_CTF = ConOrder - ii + i
+            wiener_dom[i, :, :] = wiener_dom[i, :, :] + CTF1[ind_CTF, :, :]**2
+
+    wiener_dom = wiener_dom + 1. / SNR
+
+    return (wiener_dom, CTF1)

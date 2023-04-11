@@ -57,7 +57,8 @@ from scipy.ndimage.interpolation import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
-from ManifoldEM import ctemh_cryoFrank, myio, p, annularMask, projectMask
+from ManifoldEM import ctemh_cryoFrank, myio, p, projectMask
+from ManifoldEM.core import annularMask
 from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import rotate_fill
 
@@ -241,7 +242,7 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
     CTF = np.zeros((nS, N, N))  # each (i,:,:) is the CTF
     D = np.zeros((nS, nS))  # distances among the particles in the bin
 
-    msk = annularMask.op(0, N2, N, N)
+    msk = annularMask(0, N2, N, N)
 
     # read images with conjugates
     imgLabels = np.zeros(nS, dtype=int)

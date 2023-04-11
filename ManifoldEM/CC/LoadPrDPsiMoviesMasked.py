@@ -3,7 +3,8 @@ import mrcfile
 
 import numpy as np
 
-from ManifoldEM import annularMask, myio, p, projectMask
+from ManifoldEM import myio, p, projectMask
+from ManifoldEM.core import annularMask
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		
 Modified:Sept 17,2021
@@ -23,7 +24,7 @@ def getMask2D(prD, maskType, radius):
             N2 = radius  # also includes radius = 0
         if prD == 0:
             print('Annular mask radius: {} pixels'.format(N2))
-        mask = annularMask.op(0, N2, N, N)
+        mask = annularMask(0, N2, N, N)
 
     elif maskType == 'volumetric':  #3d volume mask from user-input
         dist_file = p.get_dist_file(prD)

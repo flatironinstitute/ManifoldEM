@@ -5,8 +5,8 @@ import numpy as np
 from scipy.fftpack import fft2
 from scipy.fftpack import ifft2
 
-from ManifoldEM import DMembeddingII, myio, get_wiener
-from ManifoldEM.core import L2_distance, svdRF
+from ManifoldEM import DMembeddingII, myio
+from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -48,7 +48,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk
     if 'prD' in ExtPar:
         IMG1 = imgAll[posPath[posPsi1], :, :]
         # Wiener filtering
-        wiener_dom, CTF1 = get_wiener.op(CTF, posPath, posPsi1, ConOrder, num)
+        wiener_dom, CTF1 = get_wiener(CTF, posPath, posPsi1, ConOrder, num)
     elif 'cuti' in ExtPar:
         IMG1 = imgAll[posPsi1, :, :]
 
