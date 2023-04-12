@@ -48,7 +48,6 @@ def op(*argv):
     xSelect = list(set(xSelect) - set(xLost))
 
     # Section II
-    visual = 0
     tauAvg = np.array([])
     for x in xSelect:
         tau = trajTaus[x]
@@ -60,7 +59,6 @@ def op(*argv):
     traj_file2 = "{}name{}_vars".format(p.traj_file, p.trajName)
     myio.fout1(traj_file2, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'],
                [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
-    gc.collect()
 
     # Section III
     if argv:
@@ -69,7 +67,6 @@ def op(*argv):
     else:
         writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg)
 
-    gc.collect()
     if argv:
         progress7 = argv[0]
         progress7.emit(100)
