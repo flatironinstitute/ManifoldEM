@@ -51,7 +51,7 @@ import numpy as np
 from functools import partial
 from contextlib import contextmanager
 
-from scipy.ndimage.interpolation import shift
+from scipy.ndimage import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
