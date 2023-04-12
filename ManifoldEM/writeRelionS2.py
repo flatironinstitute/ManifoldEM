@@ -124,7 +124,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
             for x in range(num, numNext):
                 y = np.mod(x, numberOfWorkers)
-                if y >= np.shape(imgss_bin_g[bin])[0]:
+                if y >= len(imgss_bin_g[bin]):
                     continue
 
                 if num == 0 and x == 0:
@@ -144,7 +144,6 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
             continue
 
         print('Concatenated imgs, shape', np.shape(imgs))
-        print('Start writing trajectory data to file...')
 
         traj_file_rel = 'imgsRELION_{}_{}_of_{}.mrcs'.format(p.trajName, bin + 1, p.nClass)
         traj_file = '{}{}'.format(p.relion_dir, traj_file_rel)
@@ -159,7 +158,6 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
         df = pandas.DataFrame(data=dict(phi=phi, theta=theta, psi=psi))
         star.write_star(ang_file, traj_file_rel, df)
-        print('Writing trajectory data for bin {} into .mrcs and .star format... done.\n'.format(bin))
 
     if argv:
         progress7 = argv[0]
