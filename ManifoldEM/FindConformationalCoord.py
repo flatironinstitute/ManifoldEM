@@ -82,7 +82,7 @@ def op(*argv):
 
             print('\nFind CC: Writing the output to disk...\n')
             p.CC_file = '{}/CC_file'.format(p.CC_dir)
-            myio.fout1(p.CC_file, ['psinums', 'senses'], [psinums, senses])
+            myio.fout1(p.CC_file, psinums=psinums, senses=senses)
 
             p.allAnchorPassed = 1
 
@@ -128,7 +128,7 @@ def op(*argv):
     data = myio.fin1(CC_graph_file)
     extra = dict(nodeRange=nodeRange, edgeNumRange=edgeNumRange, ConnCompNoAnchor=connCompNoAnchor)
     data.update(extra)
-    myio.fout2(CC_graph_file, data)
+    myio.fout1(CC_graph_file, **data)
 
     # compute all pairwise edge measurements
     # Step 1: compute the optical flow vectors for all prds
@@ -177,7 +177,7 @@ def op(*argv):
     # save
     print('\nFind CC: Writing the output to disk...\n')
     p.CC_file = '{}/CC_file'.format(p.CC_dir)
-    myio.fout1(p.CC_file, ['psinums', 'senses'], [psinums, senses])
+    myio.fout1(p.CC_file, psinums=psinums, senses=senses)
 
     if p.dim == 1:  # 1 dimension
         node_list = np.empty((G['nNodes'], 4))

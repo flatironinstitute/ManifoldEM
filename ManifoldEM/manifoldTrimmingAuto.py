@@ -1,11 +1,7 @@
 import os
-import gc
-import h5py
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from scipy.io import loadmat
 
 from ManifoldEM import p, DMembeddingII, myio
 '''
@@ -78,9 +74,8 @@ def op(input_data, posPath, tune, rad, visual, doSave):
     posPath = posPath[posPath1]
 
     if doSave['Is']:
-        myio.fout1(psi_file,
-                   ['lamb', 'psi', 'sigma', 'mu', 'posPath', 'ind', 'logEps', 'logSumWij', 'popt', 'R_squared'],
-                   [lamb, psi, sigma, mu, posPath, ind, logEps, logSumWij, popt, R_squared])
+        myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind,
+                   logEps=logEps, logSumWij=logSumWij, popt=popt, R_squared=R_squared)
 
         #######################################################
         # create empty PD files after each Pickle dump to...

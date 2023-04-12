@@ -137,10 +137,8 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
             # output result
 
             outFile = '{}_{}_1'.format(EL_file, traj_name)
-            myio.fout1(outFile, [
-                'IMG1', 'IMGT', 'posPath', 'PosPsi1', 'psirec', 'tau', 'psiC1', 'mu', 'VX', 'sdiag', 'Topo_mean',
-                'tauinds'
-            ], [IMG1, IMGT, posPath, PosPsi1, psirec, tau, psiC1, mu, VX, sdiag, Topo_mean, tauinds])
+            myio.fout1(outFile, IMG1=IMG1, IMGT=IMGT, posPath=posPath, PosPsi1=PosPsi1, psirec=psirec,
+                       tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag, Topo_mean=Topo_mean, tauinds=tauinds)
 
             #######################################################
             # create empty PD files after each Pickle dump to...
@@ -151,8 +149,8 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
 
         else:  # first pass
             outFile = '{}_psi_{}'.format(psi2_file, psinum)
-            myio.fout1(outFile, ['IMG1', 'psirec', 'tau', 'psiC1', 'mu', 'VX', 'sdiag', 'Topo_mean', 'tauinds'],
-                       [IMG1, psirec, tau, psiC1, mu, VX, sdiag, Topo_mean, tauinds])
+            myio.fout1(outFile, IMG1=IMG1, psirec=psirec, tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag,
+                       Topo_mean=Topo_mean, tauinds=tauinds)
 
             #######################################################
             # create empty PD files after each Pickle dump to...

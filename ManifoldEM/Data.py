@@ -240,11 +240,10 @@ def op(align_param_file):
     nowTime = nowTime.strftime("%d-%b-%Y %H:%M:%S")
 
     p.nowTime_file = os.path.join(p.user_dir, 'outputs_{}/nowTime'.format(p.proj_name))
-    myio.fout1(p.nowTime_file, ['nowTime'], [nowTime])
+    myio.fout1(p.nowTime_file, nowTime=nowTime)
     p.tess_file = os.path.join(p.user_dir, 'outputs_{}/selecGCs'.format(p.proj_name))
 
-    myio.fout1(p.tess_file, ['CG1', 'CG', 'nG', 'q', 'df', 'S2', 'S20', 'sh', 'NC'],
-               [CG1, CG, nG, q, df, S2, S20_th, sh, NC])
+    myio.fout1(p.tess_file, CG1=CG1, CG=CG, nG=nG, q=q, df=df, S2=S2, S20=S20_th, sh=sh, NC=NC)
 
     p.numberofJobs = len(CG)
     p.save()

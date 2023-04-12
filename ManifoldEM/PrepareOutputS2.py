@@ -55,10 +55,10 @@ def op(*argv):
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
-    ## added June 2020, S.M.
+    # added June 2020, S.M.
     traj_file2 = "{}name{}_vars".format(p.traj_file, p.trajName)
-    myio.fout1(traj_file2, ['trajTaus', 'posPsi1All', 'posPathAll', 'xSelect', 'tauAvg'],
-               [trajTaus, posPsi1All, posPathAll, xSelect, tauAvg])
+    myio.fout1(traj_file2, trajTaus=trajTaus, posPsi1All=posPsi1All, posPathAll=posPathAll,
+               xSelect=xSelect, tauAvg=tauAvg)
 
     # Section III
     if argv:

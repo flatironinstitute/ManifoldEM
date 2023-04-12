@@ -76,7 +76,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                 IMG1[bin, :] = np.mean(IMGT[tauBin, :], axis=0)
 
         bin_file = '{}PD_{}_Traj{}'.format(p.bin_dir, x, p.trajName)
-        myio.fout1(bin_file, ['IMG1'], [IMG1])
+        myio.fout1(bin_file, IMG1=IMG1)
 
         if argv:
             progress7 = argv[0]

@@ -43,9 +43,7 @@ import math
 import logging
 import sys
 import mrcfile
-import gc
 import warnings
-import time
 import os
 import multiprocessing
 
@@ -389,14 +387,9 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
 
     imgAllIntensity = np.mean(imgAllFlip**2, axis=0)
 
-    #April 2020, include  vol mask 2d, msk2
-    myio.fout1(outFile, [
-        'D', 'ind', 'q', 'df', 'CTF', 'imgAll', 'msk2', 'PD', 'PDs', 'Psis', 'imgAvg', 'imgAvgFlip',
-        'imgLabels', 'Dnom', 'Nom', 'imgAllIntensity', 'version', 'options'
-    ], [
-        D, ind, q, df, CTF, imgAll, msk2, PD, PDs, Psis, imgAvg, imgAvgFlip, imgLabels, Dnom, Nom,
-        imgAllIntensity, version, options
-    ])  # members of options
+    myio.fout1(outFile, D=D, ind=ind, q=q, df=df, CTF=CTF, imgAll=imgAll, msk2=msk2, PD=PD, PDs=PDs, Psis=Psis,
+               imgAvg=imgAvg, imgAvgFlip=imgAvgFlip, imgLabels=imgLabels, Dnom=Dnom, Nom=Nom,
+               imgAllIntensity=imgAllIntensity, version=version, options=options)
 
     #######################################################
     # create empty PD files after each Pickle dump to...

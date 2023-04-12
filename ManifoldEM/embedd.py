@@ -43,7 +43,7 @@ def op(orig_zip, new_zip, PrD):
         with open(eig_file, "a") as file:  #updated 9/11/21
             file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
 
-    myio.fout1(psi_file, ['lamb', 'psi', 'sigma', 'mu', 'posPath', 'ind'], [lamb, psi, sigma, mu, posPath, ind])
+    myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind)
 
     # remove the existing NLSA and movies etc, so that new ones can be created
     for psinum in range(p.num_psis):

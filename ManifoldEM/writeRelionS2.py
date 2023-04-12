@@ -100,9 +100,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                     psis[bin].append(psi)
 
             traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file, p.trajName, num, numNext - 1)
-            key_list = ['imgss', 'phis', 'thetas', 'psis']
-            v_list = [imgss, phis, thetas, psis]
-            myio.fout1(traj_bin_file, key_list, v_list)
+            myio.fout1(traj_bin_file, imgss=imgss, phis=phis, thetas=thetas, psis=psis)
 
             print('Done saving group.')
     else:

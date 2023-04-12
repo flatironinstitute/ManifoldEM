@@ -161,10 +161,13 @@ def ComputeOptFlowPrDPsiAll1(input_data):
     NodesPsisTauOcc = tauPsisOcc
     NodesPsisTauVals = tauPrDPsis
 
-    myio.fout1(badNodesPsisTaufile_pd, ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
-               [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
+    myio.fout1(badNodesPsisTaufile_pd,
+               badNodesPsisTau=badNodesPsisTau,
+               NodesPsisTauIQR=NodesPsisTauIQR,
+               NodesPsisTauOcc=NodesPsisTauOcc,
+               NodesPsisTauVals=NodesPsisTauVals)
 
-    #calculate OF for each psi-movie
+    # calculate OF for each psi-movie
     for psinum_currPrD in psiSelcurrPrD:
         IMGcurrPrD = moviePrDPsi[psinum_currPrD]
 
@@ -173,7 +176,7 @@ def ComputeOptFlowPrDPsiAll1(input_data):
         FlowVecPrD[psinum_currPrD] = FlowVecPrDPsi
 
     CC_OF_file = '{}'.format(CC_OF_file)
-    myio.fout1(CC_OF_file, ['FlowVecPrD'], [FlowVecPrD])
+    myio.fout1(CC_OF_file, FlowVecPrD=FlowVecPrD)
 
 
 # If computing for a specified set of nodes, then call the function with nodeRange
@@ -218,8 +221,10 @@ def op(nodeEdgeNumRange, *argv):
         # and not during resume of CC step
         if offset_OF_files == 0:
             myio.fout1(badNodesPsisTaufile,
-                       ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
-                       [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
+                       badNodesPsisTau=badNodesPsisTau,
+                       NodesPsisTauIQR=NodesPsisTauIQR,
+                       NodesPsisTauOcc=NodesPsisTauOcc,
+                       NodesPsisTauVals=NodesPsisTauVals)
 
     input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
     if argv:
@@ -265,8 +270,10 @@ def op(nodeEdgeNumRange, *argv):
 
             badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
             myio.fout1(badNodesPsisTaufile,
-                       ['badNodesPsisTau', 'NodesPsisTauIQR', 'NodesPsisTauOcc', 'NodesPsisTauVals'],
-                       [badNodesPsisTau, NodesPsisTauIQR, NodesPsisTauOcc, NodesPsisTauVals])
+                       badNodesPsisTau=badNodesPsisTau,
+                       NodesPsisTauIQR=NodesPsisTauIQR,
+                       NodesPsisTauOcc=NodesPsisTauOcc,
+                       NodesPsisTauVals=NodesPsisTauVals)
 
             rem_temp_dir = 0
             if rem_temp_dir:

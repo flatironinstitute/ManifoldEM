@@ -265,8 +265,10 @@ def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
     else:
         measureOFCurrNbrEdge_tblock = []
 
-    myio.fout1(CC_meas_file, ['measureOFCurrNbrEdge', 'measureOFCurrNbrEdge_tblock', 'badNodesPsisBlock'],
-               [measureOFCurrNbrEdge, measureOFCurrNbrEdge_tblock, badNodesPsisBlock])
+    myio.fout1(CC_meas_file,
+               measureOFCurrNbrEdge=measureOFCurrNbrEdge,
+               measureOFCurrNbrEdge_tblock=measureOFCurrNbrEdge_tblock,
+               badNodesPsisBlock=badNodesPsisBlock)
 
     #######################################################
     # create empty PD files after each Pickle dump to...

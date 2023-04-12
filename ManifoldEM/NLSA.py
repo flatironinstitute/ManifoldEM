@@ -144,7 +144,7 @@ def op(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):  #pass the msk
     # tau is #part (num-2ConOrder?)
     # psirec is #part x #eigs
 
-    if NLSAPar['save'] == True:
-        myio.fout1(ExtPar['filename'], ['psirec', 'tau', 'a', 'b'], [psirec, tau, a, b])
+    if NLSAPar['save'] is True:
+        myio.fout1(ExtPar['filename'], psirec=psirec, tau=tau, a=a, b=b)
 
     return (IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau)

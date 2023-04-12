@@ -287,7 +287,7 @@ def op():
     # proceed to the pairwise measurements only after we are fine with the connected components
     Gsub, G = getSubGraph(G)
 
-    myio.fout1(p.CC_graph_file, ['G', 'Gsub'], [G, Gsub])
+    myio.fout1(p.CC_graph_file, G=G, Gsub=Gsub)
     return G, Gsub
 
 

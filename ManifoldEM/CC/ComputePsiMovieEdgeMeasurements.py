@@ -338,7 +338,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     #previously was generating a separate file *_of but now just adding an extra variable to the same file
     #badNodesPsisTau_of which should used at BP step
     badNodesPsisTaufile_of = '{}'.format(badNodesPsisTaufile)
-    myio.fout2(badNodesPsisTaufile_of, dataR)
+    myio.fout1(badNodesPsisTaufile_of, **dataR)
 
     # sort of redundant to set -100 and not bad_idx directly but for consistency, we leave it like this for now
     NumbadPsis = np.sum(badNodesPsisTau == -100, axis=1)
@@ -458,7 +458,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
             data = myio.fin1(CC_graph_file_pruned)
             extra = dict(nodeRange=nodeRange, edgeNumRange=edgeNumRange, ConnCompNoAnchor=connCompNoAnchor)
             data.update(extra)
-            myio.fout2(CC_graph_file_pruned, data)
+            myio.fout1(CC_graph_file_pruned, **data)
 
     # Step 2. Compute the pairwise edge measurements
     # Save individual edge measurements
