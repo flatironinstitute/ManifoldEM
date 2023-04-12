@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
 import os
+if not 'OMP_NUM_THREADS' in os.environ:
+    os.environ['OMP_NUM_THREADS'] = '1'
+
+import sys
 import time
 import psutil
 import csv
@@ -9652,7 +9655,7 @@ class MainWindow(QtGui.QMainWindow):
                                     <dd>Defined via:\
                                     <i>Shannon angle</i> = <i>resolution</i> / <i>object diameter</i></dd>\
                                     <dd> </dd>\
-                                <\dl>\
+                                </dl>\
                                 <br />\
                                 <b>Angle Width:</b>\
                                 the width of the aperture (in radians); cannot exceed sqrt(4pi).\
@@ -9661,7 +9664,7 @@ class MainWindow(QtGui.QMainWindow):
                                     <i>angle width</i> = <i>Shannon angle</i> * <i>aperture index</i>\
                                     </dd>\
                                     <dd> </dd>\
-                                <\dl>\
+                                </dl>\
                                 <br /><br /></p></span>")
         box.setStandardButtons(QtGui.QMessageBox.Ok)
         ret = box.exec_()
