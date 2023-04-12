@@ -21,3 +21,4 @@
   * Shouldn't have to cache all these paths either...
 * TODO Resume after eigenvector selection broken
 * TODO Parallelize 3d trajectory calculation
+* TODO Relative pathing
