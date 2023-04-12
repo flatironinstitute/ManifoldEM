@@ -1,3 +1,4 @@
+import numba
 import numpy as np
 from scipy import optimize
 '''
@@ -5,6 +6,25 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)    
 '''
+
+
+@numba.jit(nopython=True)
+def qMult(q1, q2):
+    return np.array([
+        q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
+        q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
+        q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1],
+        q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0],
+        ])
+
+
+@numba.jit(nopython=True)
+def optfunc(a, q):
+    b = 0.5 * a
+    q1 = np.array([np.cos(b[0]), 0., 0., -np.sin(b[0])])
+    q2 = np.array([np.cos(b[1]), 0., -np.sin(b[1]), 0.])
+    q3 = np.array([np.cos(b[2]), 0., 0., -np.sin(b[2])])
+    return q - qMult(q3, qMult(q2, q1))
 
 
 def q2Spider(q):
@@ -15,25 +35,20 @@ def q2Spider(q):
     Copyright(c) UWM, Peter Schwander Jan. 31, 2014, Mar. 19, 2014 matlab version
     version = 'q2Spider, V1.1'
 
-    Copyright (c) Columbia University Hstau Liao 2018 (python version)    
+    Copyright (c) Columbia University Hstau Liao 2018 (python version)
     '''
-
     # assert unit quaternion
-    q = q / np.sqrt(sum(q**2))
+    q = q / np.linalg.norm(q)
 
     def dev1(a):
-        q1 = np.array([np.cos(a[0] / 2.), 0., 0., -np.sin(a[0] / 2.)])  # see write-up
-        q2 = np.array([np.cos(a[1] / 2.), 0, -np.sin(a[1] / 2.), 0.])
-        q3 = np.array([np.cos(a[2] / 2.), 0., 0., -np.sin(a[2] / 2)])
-        F = q - qMult_bsx(q3, qMult_bsx(q2, q1)).flatten()
-        return F
+        return optfunc(a, q)
 
     lb = -np.inf
     ub = np.inf
     tol = 1e-12
 
     a0 = np.array([0, 0, 0])
-    res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol)
+    res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol, method='lm')
     a = res.x
 
     phi = a[0]
@@ -41,6 +56,7 @@ def q2Spider(q):
     psi = a[2]
 
     return (phi, theta, psi)
+
 
 def qMult_bsx(q, s):
     """import globfunction p = qMult_bsx(q,s)
@@ -67,46 +83,6 @@ def qMult_bsx(q, s):
 
     p = np.vstack((q0 * s0 - np.sum(qv * sv, axis=0), q0 * sv + s0 * qv + c))
     return p
-
-
-def q2Spider(q):
-    '''Converts a quaternion to corresponding rotation sequence in Spider 3D convention
-    Due to the 3D convention for all angles there is no need to negate psi
-    q: 4x1
-    Implementation by optimization
-    Copyright(c) UWM, Peter Schwander Jan. 31, 2014, Mar. 19, 2014 matlab version
-    version = 'q2Spider, V1.1'
-
-    Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    '''
-    # assert unit quaternion
-    q = q / np.sqrt(sum(q**2))
-
-    def dev1(a):
-        q1 = np.array([np.cos(a[0] / 2.), 0., 0., -np.sin(a[0] / 2.)])  # see write-up
-        q2 = np.array([np.cos(a[1] / 2.), 0, -np.sin(a[1] / 2.), 0.])
-        q3 = np.array([np.cos(a[2] / 2.), 0., 0., -np.sin(a[2] / 2)])
-        F = q - qMult_bsx(q3, qMult_bsx(q2, q1)).flatten()
-
-        return F
-
-    lb = -np.inf
-    ub = np.inf
-    tol = 1e-12
-    exitflag = np.nan
-    resnorm = np.inf
-
-    a0 = np.array([0, 0, 0])
-    nTry = 0
-    # tic
-    res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol)
-    a = res.x
-    phi = a[0]  #% (2*np.pi) * 180 / np.pi
-    theta = a[1]  #% (2*np.pi) * 180 / np.pi
-    psi = a[2]  #% (2*np.pi) * 180 / np.pi
-
-    #% nTry
-    return (phi, theta, psi)
 
 
 def psi_ang(PD):
