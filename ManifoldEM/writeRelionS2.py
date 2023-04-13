@@ -165,5 +165,3 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         if signal == 100:
             signal = 95
         progress7.emit(signal)
-
-    return 'ok'
