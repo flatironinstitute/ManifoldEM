@@ -29,13 +29,14 @@ def poolcontext(*args, **kwargs):
 
 
 def HOGOpticalFlowPy(flowVec, hogFigfile):
-    cellSize = (4, 4)
-    cellsPerBlock = (2, 2)
+    cell_size = (4, 4)
+    cells_per_block = (2, 2)
     n_bins = 9
-    signedOrientation = True # FIXME: Add to FASTHOG (set by default)
+    signed_orientation = True
+    norm_type = 'L2-Hys'
 
-    hog_params = dict(cell_size=cellSize,
-                      cells_per_block=cellsPerBlock,
+    hog_params = dict(cell_size=cell_size,
+                      cells_per_block=cells_per_block,
                       n_bins=n_bins)
     VxDim = flowVec['Vx'].shape
     if len(VxDim) > 2:
@@ -48,9 +49,12 @@ def HOGOpticalFlowPy(flowVec, hogFigfile):
 
             tH = histogram_from_gradients(gx,
                                           gy,
-                                          cell_size=cellSize,
-                                          cells_per_block=cellsPerBlock,
-                                          n_bins=n_bins)
+                                          cell_size=cell_size,
+                                          cells_per_block=cells_per_block,
+                                          n_bins=n_bins,
+                                          signed=signed_orientation,
+                                          norm_type=norm_type,
+                                          )
             tempH.append(tH)
 
         H = np.array(tempH)
@@ -63,9 +67,11 @@ def HOGOpticalFlowPy(flowVec, hogFigfile):
         gy = flowVec['Vy']
         H = histogram_from_gradients(gx,
                                      gy,
-                                     cell_size=cellSize,
-                                     cells_per_block=cellsPerBlock,
-                                     n_bins=n_bins)
+                                     cell_size=cell_size,
+                                     cells_per_block=cells_per_block,
+                                     n_bins=n_bins,
+                                     signed=signed_orientation,
+                                     norm_type=norm_type)
 
     return H, hog_params
 
