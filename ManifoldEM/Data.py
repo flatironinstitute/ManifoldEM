@@ -2,6 +2,7 @@ import os
 import numpy as np
 import datetime
 import math
+import csv
 
 from ManifoldEM import S2tessellation, myio, FindCCGraph, util, p, star
 from ManifoldEM.quaternion import qMult_bsx
@@ -171,36 +172,28 @@ def genColorConnComp(G):
 
 
 def write_angles(ang_file, color, S20, full, NC):
-    if os.path.exists(ang_file):
-        os.remove(ang_file)
+    with open(ang_file, 'w') as f:
+        csvwriter = csv.writer(f, delimiter='\t')
+        csvwriter.writerow(("PrD", "theta", "phi", "psi", "x", "y", "z", "ClusterID"))
 
-    if full == 1:  #already thresholded S20
-        L = range(0, S20.shape[1])
-    else:  #full S20, still need to take the correct half
-        mid = S20.shape[1] // 2
-        NC1 = NC[:int(mid)]
-        NC2 = NC[int(mid):]
-        if len(NC1) >= len(NC2):  #first half of S2
-            L = range(0, mid)
-        else:
-            L = range(mid, int(S20.shape[1]))  #second half of S2
+        if full == 1:  # already thresholded S20
+            L = range(0, S20.shape[1])
+        else:  # full S20, still need to take the correct half
+            mid = S20.shape[1] // 2
+            NC1 = NC[:int(mid)]
+            NC2 = NC[int(mid):]
+            if len(NC1) >= len(NC2):  # first half of S2
+                L = range(0, mid)
+            else:
+                L = range(mid, int(S20.shape[1]))  # second half of S2
 
-    prD_idx = 0  #needs to always start at 0 regardless of which half used above
-    for prD in L:
-        x = S20[0, prD]
-        y = S20[1, prD]
-        z = S20[2, prD]
-        r, phi, theta = cart2sph(x, y, z)
+        for idx, prD in enumerate(L):
+            x, y, z = S20[0:3, prD]
+            r, phi, theta = cart2sph(x, y, z)
+            clusterID = color[prD][0] if full else 0
 
-        if full:
-            prDColor = color[prD]
-        else:
-            prDColor = int(0)
+            csvwriter.writerow((idx + 1, theta, phi, 0, x, y, z, clusterID))
 
-        with open(ang_file, "a") as file:
-            file.write("%d\t%.2f\t%.2f\t%d\t%.4f\t%.4f\t%.4f\t%d\n" %
-                       (prD_idx + 1, theta, phi, int(0), x, y, z, prDColor))
-        prD_idx += 1
 
 
 def op(align_param_file):

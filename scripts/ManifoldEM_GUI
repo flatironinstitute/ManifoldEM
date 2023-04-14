@@ -10,6 +10,7 @@ import psutil
 import csv
 import multiprocessing
 import optparse
+import pandas
 
 from PyQt5.QtWidgets import QApplication
 from subprocess import call
@@ -2013,20 +2014,17 @@ class P3(QtGui.QWidget):
         # PREPARE P4:
         # =====================================================================
         # PD threshold on Alignment data:
-        fname = os.path.join(P1.user_directory, 'outputs_{}/topos/Euler_PrD/PrD_map.txt'.format(p.proj_name))
-        data = []
-        with open(fname) as values:
-            for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                data.append(column)
 
-        P3.prd = data[0]
-        P3.theta = data[1]
-        P3.phi = data[2]
-        psi = data[3]
-        x = data[4]
-        y = data[5]
-        z = data[6]
-        c = data[7]  #colors of connected components
+        data = pandas.read_csv(p.ref_ang_file, delimiter='\t')
+
+        P3.prd = data['PrD'].tolist()
+        P3.theta = data['theta'].tolist()
+        P3.phi = data['phi'].tolist()
+        psi = data['psi'].tolist()
+        x = data['x'].tolist()
+        y = data['y'].tolist()
+        z = data['z'].tolist()
+        c = data['ClusterID'].tolist()  #colors of connected components
 
         xyzc = np.column_stack((x, y, z, c))
 
@@ -4640,15 +4638,11 @@ class PDSeleMain(QtGui.QMainWindow):
     def onTabChange(self, i):
         if i == 1:  #signals when view switched to tab 2
             # re-visualize selections:
-            PrD_map = os.path.join(P1.user_directory, 'outputs_{}/topos/Euler_PrD/PrD_map.txt'.format(p.proj_name))
-            PrD_map_eul = []
-            with open(PrD_map) as values:
-                for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                    PrD_map_eul.append(column)
+            PrD_map_eul = pandas.read_csv(p.ref_ang_file, delimiter='\t')
 
-            phi_all0 = PrD_map_eul[2]
-            theta_all0 = PrD_map_eul[1]
-            c_all0 = PrD_map_eul[7]
+            phi_all0 = PrD_map_eul['phi']
+            theta_all0 = PrD_map_eul['theta']
+            c_all0 = PrD_map_eul['ClusterID']
 
             phi_all = []
             theta_all = []
@@ -8800,8 +8794,8 @@ class MainWindow(QtGui.QMainWindow):
                     print('\tlow threshold: %s' % p.PDsizeThL)
                     print('\thigh threshold: %s' % p.PDsizeThH)
                     print('\tthresholding PDs...')
-                    fname = open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb')
-                    data = pickle.load(fname)
+                    with open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb') as fname:
+                        data = pickle.load(fname)
                     # all tessellated bins:
                     totalPrDs = int(np.shape(data['CG1'])[0])
                     mid = data['CG1'].shape[0] // 2
@@ -8844,13 +8838,10 @@ class MainWindow(QtGui.QMainWindow):
                     # read points from tesselated sphere:
                     PrD_map1 = os.path.join(P1.user_directory,
                                             'outputs_{}/topos/Euler_PrD/PrD_map1.txt'.format(p.proj_name))
-                    PrD_map1_eul = []
-                    with open(PrD_map1) as values:
-                        for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                            PrD_map1_eul.append(column)
+                    PrD_map1_eul = pandas.read_csv(p.ref_ang_file1, '\t')
 
-                    P1.all_phi = PrD_map1_eul[2]
-                    P1.all_theta = PrD_map1_eul[1]
+                    P1.all_phi = PrD_map1_eul['phi']
+                    P1.all_theta = PrD_map1_eul['theta']
 
                     # ad hoc ratios to make sure S2 volume doesn't freeze-out due to too many particles to plot:
                     ratio1 = float(sum(P1.all_occ)) / 2000
@@ -8865,21 +8856,13 @@ class MainWindow(QtGui.QMainWindow):
                     # update distribution tab:
                     print('\trendering visualizations...')
 
-                    fname.close()
-
                     # =========================================================
                     # Calculate total PDs:
                     # =========================================================
-                    PrD_map0 = os.path.join(P1.user_directory,
-                                            'outputs_{}/topos/Euler_PrD/PrD_map.txt'.format(p.proj_name))
-                    PrD_map0_eul = []
-                    with open(PrD_map0) as values:
-                        for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                            PrD_map0_eul.append(column)
+                    PrD_map0_eul = pandas.read_csv(p.ref_ang_file, delimiter='\t')
+                    P3.PrD_total = len(PrD_map0_eul)
 
-                    P3.PrD_total = len(PrD_map0_eul[1])
                     print('\ttotal PDs: %s' % P3.PrD_total)
-                    fname.close()
                     # =========================================================
 
                     P3.dictGen = False
@@ -9385,11 +9368,10 @@ class MainWindow(QtGui.QMainWindow):
                 p.save()  #send new GUI data to user parameters file
                 # =============================================================
                 Data.op(P1.user_alignment)
-                fname = open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb')
-                data = pickle.load(fname)
+                with open(os.path.join(P1.user_directory, 'outputs_{}/selecGCs'.format(p.proj_name)), 'rb') as fname:
+                    data = pickle.load(fname)
                 P1.S2 = data['S2']
                 P1.CG = data['CG']
-                fname.close()
 
                 if np.shape(P1.CG)[0] <= 2:  #if less than 2, number of jobs = 0 or 1; won't work
                     msg = 'The most populated bins do not hold enough data points\
@@ -9469,17 +9451,11 @@ class MainWindow(QtGui.QMainWindow):
                     P2.viz1.update_scene1()
 
                     # read points from tessellated sphere:
-                    PrD_map1 = os.path.join(P1.user_directory,
-                                            'outputs_{}/topos/Euler_PrD/PrD_map1.txt'.format(p.proj_name))
-                    PrD_map1_eul = []
-                    with open(PrD_map1) as values:
-                        for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                            PrD_map1_eul.append(column)
+                    PrD_map1_eul = pandas.read_csv(p.ref_ang_file1, delimiter='\t')
 
-                    P1.all_phi = PrD_map1_eul[2]
-                    P1.all_theta = PrD_map1_eul[1]
+                    P1.all_phi = PrD_map1_eul['phi']
+                    P1.all_theta = PrD_map1_eul['theta']
 
-                    fname.close()
                     # =========================================================
 
         if i == 3:  #auto-update Mayavi_Rho figure
