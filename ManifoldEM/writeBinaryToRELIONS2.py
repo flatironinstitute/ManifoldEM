@@ -81,6 +81,3 @@ def op(nClass, nPix, trajName, relion_dir, bin_dir, *argv):  # Orientations
             if signal == 100:
                 signal = 95
             progress7.emit(signal)
-
-    res = 'ok'
-    return res

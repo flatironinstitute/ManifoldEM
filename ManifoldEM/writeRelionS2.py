@@ -160,8 +160,4 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         star.write_star(ang_file, traj_file_rel, df)
 
     if argv:
-        progress7 = argv[0]
-        signal = int((bin / float(p.nClass)) * 100)
-        if signal == 100:
-            signal = 95
-        progress7.emit(signal)
+        argv[0].emit(int((bin / p.nClass) * 99))

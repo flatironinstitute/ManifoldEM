@@ -1,6 +1,4 @@
-import time
 import os
-import gc
 import multiprocessing
 
 import matplotlib.pyplot as plt
@@ -9,7 +7,8 @@ import numpy as np
 from functools import partial
 from contextlib import contextmanager
 
-from ManifoldEM import myio, p, myio
+from ManifoldEM import myio, p
+from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
 '''
 % scriptPsiNLSAmovie
@@ -40,17 +39,6 @@ def divide(N):
             continue
         ll.append([prD])
     return ll
-
-
-def count(N):
-    c = 0
-    for prD in range(N):
-        image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
-        if os.path.exists(image_file):
-            continue
-
-        c += 1
-    return c
 
 
 def movie(input_data, out_dir, dist_file, psi2_file, fps):
@@ -114,36 +102,25 @@ def op(*argv):
 
     print("Making the 2D movies...")
     input_data = divide(p.numberofJobs)
+
     if argv:
         progress4 = argv[0]
-        offset = p.numberofJobs - len(input_data)
-        progress4.emit(int((offset / float(p.numberofJobs)) * 99))
+    else:
+        progress4 = NullEmitter()
+
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):
             movie(input_data[i], p.out_dir, p.dist_file, p.psi2_file, p.fps)
-            if argv:
-                offset += 1
-                progress4.emit(int((offset / float(p.numberofJobs)) * 99))
+            progress4.emit(int((i / p.numberofJobs) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(
+            for i, _ in enumerate(pool.imap_unordered(
                     partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
-                    input_data):
-                if argv:
-                    offset += 1
-                    progress4.emit(int((offset / float(p.numberofJobs)) * 99))
+                    input_data)):
+                progress4.emit(int((i / p.numberofJobs) * 99))
 
             pool.close()
             pool.join()
 
     p.save()
     progress4.emit(100)
-
-
-if __name__ == '__main__':
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.nowTime_file = os.path.join(p.user_dir, 'data_output/nowTime')
-    p.create_dir()
-    op()

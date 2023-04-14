@@ -38,11 +38,6 @@ def divide1(R, psiNumsAll, sensesAll):
     return ll
 
 
-def count1(R):
-    c = len(R) - len(fileCheck())
-    return c
-
-
 def op(*argv):
     p.load()
     #p.print()

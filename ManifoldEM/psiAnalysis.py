@@ -1,14 +1,13 @@
-import os
-import time
 import multiprocessing
 
 import numpy as np
 
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen
 
-from ManifoldEM import p, psiAnalysisParS2, myio
+from ManifoldEM import p, psiAnalysisParS2
+from ManifoldEM.util import NullEmitter
+
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,8 +58,8 @@ def op(*argv):
 
     if argv:
         progress3 = argv[0]
-        offset = np.count_nonzero(fin_PDs == 1)
-        progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 99))
+    else:
+        progress3 = NullEmitter()
 
     print(f"Processing {len(input_data)} projection directions.")
 
@@ -71,28 +70,22 @@ def op(*argv):
                 psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc, argv[0])
             else:  #for non-GUI
                 psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
-
+            progress3.emit(int(99 * (i / p.numberofJobs)))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(
-                    partial(psiAnalysisParS2.op,
-                            conOrderRange=p.conOrderRange,
-                            traj_name=p.trajName,
-                            isFull=isFull,
-                            psiTrunc=p.num_psiTrunc), input_data):
-                pass
+            for i, _ in enumerate(
+                    pool.imap_unordered(
+                        partial(psiAnalysisParS2.op,
+                                conOrderRange=p.conOrderRange,
+                                traj_name=p.trajName,
+                                isFull=isFull,
+                                psiTrunc=p.num_psiTrunc),
+                        input_data)):
+                if argv:
+                    argv[0].emit(int(99 * (i / p.numberofJobs)))
 
             pool.close()
             pool.join()
 
     p.save()
     progress3.emit(100)
-
-
-if __name__ == '__main__':
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.nowTime_file = os.path.join(p.user_dir, 'data_output/nowTime')
-    p.create_dir()
-    op()

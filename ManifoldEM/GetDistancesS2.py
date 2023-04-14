@@ -1,13 +1,12 @@
 import os
-import time
 import multiprocessing
 import numpy as np
 
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen
 
 from ManifoldEM import myio, p, getDistanceCTF_local_Conj9combinedS2, Data
+from ManifoldEM.util import NullEmitter
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,8 +56,6 @@ def op(*argv):
                    relion_data=p.relion_data,
                    thres=p.PDsizeThH)
 
-    sigmaH = 0
-
     # SPIDER only: compute the nPix = sqrt(len(bin file)/(4*num_part))
     if p.relion_data is False:
         p.nPix = int(np.sqrt(os.path.getsize(p.img_stack_file) / (4 * p.num_part)))
@@ -69,6 +66,8 @@ def op(*argv):
         progress1 = argv[0]
         offset = p.numberofJobs - len(input_data)
         progress1.emit(int((offset / float(p.numberofJobs)) * 100))
+    else:
+        progress1 = NullEmitter()
 
     print("Processing {} projection directions.".format(len(input_data)))
 
@@ -76,20 +75,17 @@ def op(*argv):
         for i in range(len(input_data)):
             getDistanceCTF_local_Conj9combinedS2.op(input_data[i], filterPar, p.img_stack_file, sh, size, options)
             if argv:
-                offset += 1
-                progress1.emit(int((offset / float(p.numberofJobs)) * 99))
+                progress1.emit(int(((offset + i) / float(p.numberofJobs)) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(
+            for i, _ in enumerate(pool.imap_unordered(
                     partial(getDistanceCTF_local_Conj9combinedS2.op,
                             filterPar=filterPar,
                             imgFileName=p.img_stack_file,
                             sh=sh,
                             nStot=size,
-                            options=options), input_data):
-                if argv:
-                    offset += 1
-                    progress1.emit(int((offset / float(p.numberofJobs)) * 99))
+                            options=options), input_data)):
+                progress1.emit(int(((offset + i) / p.numberofJobs) * 99))
 
             pool.close()
             pool.join()

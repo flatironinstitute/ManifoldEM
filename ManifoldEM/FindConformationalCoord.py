@@ -86,13 +86,6 @@ def op(*argv):
 
             p.allAnchorPassed = 1
 
-            if argv:
-                progress5 = argv[0]
-                # We introduce some time delay for proper communication between the execution of this code and the GUI
-                for i in range(101):
-
-                    progress5.emit(int(i))
-
             return
     else:
         print('Some(or all) of the anchor nodes are NOT in the Graph node list.')
@@ -105,18 +98,16 @@ def op(*argv):
     for i in range(numConnComp):
         nodesGsubi = Gsub[i]['originalNodes']
         edgelistGsubi = Gsub[i]['originalEdgeList']
-        edgesGsubi = Gsub[i]['originalEdges']
 
         if any(x in anchorlist for x in nodesGsubi):
-
             nodelCsel.append(nodesGsubi.tolist())
             edgelCsel.append(edgelistGsubi[0])
         else:
             connCompNoAnchor.append(i)
             print('Anchor node(s) in connected component', i, ' NOT selected.')
             print('\nIf you proceed without atleast one anchor node for the connected component',i,\
-                ', all the corresponding nodes will not be assigned with reaction coordinate labels.' \
-                'cancel this program now or after 20 sec it will continue without the required anchors.\n')
+                  ', all the corresponding nodes will not be assigned with reaction coordinate labels.' \
+                  'cancel this program now or after 20 sec it will continue without the required anchors.\n')
 
 
     G.update(ConnCompNoAnchor=connCompNoAnchor)
@@ -215,13 +206,3 @@ def op(*argv):
     if argv:
         progress5 = argv[0]
         progress5.emit(int(100))
-
-
-
-if __name__ == '__main__':
-    sys.path.append('../')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.nowTime_file = os.path.join(p.out_dir, '/nowTime')
-    p.create_dir()
-
-    op()

@@ -1,13 +1,11 @@
-import sys
 import os
-import time
 import multiprocessing
 
 from contextlib import contextmanager
 from functools import partial
-from subprocess import Popen
 
-from ManifoldEM import manifoldTrimmingAuto, myio, p
+from ManifoldEM import manifoldTrimmingAuto, p
+from ManifoldEM.util import NullEmitter
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,18 +49,18 @@ def op(*argv):
         progress2 = argv[0]
         offset = p.numberofJobs - len(input_data)
         progress2.emit(int((offset / float(p.numberofJobs)) * 99))
+    else:
+        progress2 = NullEmitter()
 
     print("Processing {} projection directions.".format(len(input_data)))
     for i in range(p.numberofJobs):
         subdir = p.out_dir + '/topos/PrD_{}'.format(i + 1)
         os.makedirs(subdir, exist_ok=True)
 
-    if p.ncpu == 1:  #avoids the multiprocessing package
+    if p.ncpu == 1:
         for i in range(len(input_data)):
             manifoldTrimmingAuto.op(input_data[i], posPath, p.tune, p.rad, visual, doSave)
-            if argv:
-                offset += 1
-                progress2.emit(int((offset / float(p.numberofJobs)) * 99))
+            progress2.emit(int((offset + i / p.numberofJobs) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
             for _ in pool.imap_unordered(
@@ -73,20 +71,10 @@ def op(*argv):
                             visual=visual,
                             doSave=doSave),
                     input_data):
-                if argv:
-                    offset += 1
-                    progress2.emit(int((offset / float(p.numberofJobs)) * 99))
+                progress2.emit(int(((offset + i) / p.numberofJobs) * 99))
 
             pool.close()
             pool.join()
 
     p.save()
     progress2.emit(100)
-
-if __name__ == '__main__':
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.nowTime_file = os.path.join(p.user_dir, 'data_output/nowTime')
-    p.create_dir()
-    op()
