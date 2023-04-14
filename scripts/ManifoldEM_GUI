@@ -8838,7 +8838,7 @@ class MainWindow(QtGui.QMainWindow):
                     # read points from tesselated sphere:
                     PrD_map1 = os.path.join(P1.user_directory,
                                             'outputs_{}/topos/Euler_PrD/PrD_map1.txt'.format(p.proj_name))
-                    PrD_map1_eul = pandas.read_csv(p.ref_ang_file1, '\t')
+                    PrD_map1_eul = pandas.read_csv(p.ref_ang_file1, delimiter='\t')
 
                     P1.all_phi = PrD_map1_eul['phi']
                     P1.all_theta = PrD_map1_eul['theta']
