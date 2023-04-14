@@ -63,14 +63,14 @@ def op(*argv):
             progress2.emit(int((offset + i / p.numberofJobs) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(
+            for i, _ in enumerate(pool.imap_unordered(
                     partial(manifoldTrimmingAuto.op,
                             posPath=posPath,
                             tune=p.tune,
                             rad=p.rad,
                             visual=visual,
                             doSave=doSave),
-                    input_data):
+                    input_data)):
                 progress2.emit(int(((offset + i) / p.numberofJobs) * 99))
 
             pool.close()

@@ -5,10 +5,10 @@ import os
 import shutil
 
 import numpy as np
-from functools import partial
 from contextlib import contextmanager
 
 from ManifoldEM import myio, p
+from ManifoldEM.util import NullEmitter
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
 
@@ -230,6 +230,8 @@ def op(nodeEdgeNumRange, *argv):
     if argv:
         offset = len(nodeRange) - len(input_data)
         progress5.emit(int((offset / float(numberofJobs)) * 99))
+    else:
+        progress5 = NullEmitter()
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):
@@ -239,10 +241,8 @@ def op(nodeEdgeNumRange, *argv):
                 progress5.emit(int((offset / float(numberofJobs)) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data):
-                if argv:
-                    offset += 1
-                    progress5.emit(int((offset / float(numberofJobs)) * 99))
+            for i, _ in enumerate(pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data)):
+                progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
 
             pool.close()
             pool.join()

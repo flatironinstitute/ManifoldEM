@@ -1,14 +1,12 @@
 import multiprocessing
-import os
-import time
 
 import numpy as np
 
 from functools import partial
 from contextlib import contextmanager
-from subprocess import Popen
 
 from ManifoldEM import p, psiAnalysisParS2, myio, ComputeEnergy1D
+from ManifoldEM.util import NullEmitter
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,27 +55,25 @@ def op(*argv):
         progress6 = argv[0]
         offset = len(R) - len(input_data)
         progress6.emit(int((offset / float(len(R))) * 99))
+    else:
+        progress6 = NullEmitter()
 
     print("Processing {} projection directions.".format(len(input_data)))
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):
             psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
-            if argv:
-                offset += 1
-                progress6.emit(int((offset / float(len(R))) * 99))
+            progress6.emit(int(((offset + i) / len(R)) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(
+            for i, _ in enumerate(pool.imap_unordered(
                     partial(psiAnalysisParS2.op,
                             conOrderRange=p.conOrderRange,
                             traj_name=p.trajName,
                             isFull=isFull,
                             psiTrunc=p.num_psiTrunc),
-                    input_data):
-                if argv:
-                    offset += 1
-                    progress6.emit((offset / float(len(R))) * 99)
+                    input_data)):
+                progress6.emit(((offset + i) / len(R)) * 99)
 
             pool.close()
             pool.join()

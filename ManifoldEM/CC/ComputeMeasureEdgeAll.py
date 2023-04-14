@@ -9,6 +9,7 @@ from contextlib import contextmanager
 
 from ManifoldEM import p, myio
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
+from ManifoldEM.util import NullEmitter
 from fasthog import hog_from_gradient as histogram_from_gradients
 
 
@@ -305,6 +306,8 @@ def op(G, nodeEdgeNumRange, *argv):
 
     if argv:
         progress5 = argv[0]
+    else:
+        progress5 = NullEmitter()
 
     #extract info for psi selection/sense of ref and psi candidates for nbr
     input_data = divide1(edgeNumRange, G)  # changed Nov 30, 2018, S.M.
@@ -317,16 +320,13 @@ def op(G, nodeEdgeNumRange, *argv):
         for i in range(len(input_data)):
             ComputeEdgeMeasurePairWisePsiAll(input_data[i], G, flowVecPctThresh)
             if argv:
-                offset += 1
-                progress5.emit(int((offset / float(numberofJobs)) * 99))
+                progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
-            for _ in pool.imap_unordered(
+            for i, _ in enumerate(pool.imap_unordered(
                     partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
-                    input_data):
-                if argv:
-                    offset += 1
-                    progress5.emit(int((offset / float(numberofJobs)) * 99))
+                    input_data)):
+                progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
 
             pool.close()
             pool.join()

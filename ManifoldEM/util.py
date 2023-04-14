@@ -1,5 +1,4 @@
 import numpy as np
-import logging
 import sys
 import pickle
 import traceback
@@ -12,12 +11,9 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 Copyright (c) Columbia University Hstau Liao 2018 (python version)    
 '''
 
-#_logger = logging.getLogger(__name__)
-#_logger.setLevel(logging.DEBUG)
-
 
 class NullEmitter:
-    def emit(self):
+    def emit(self, percent):
         pass
 
 def debug_trace():
