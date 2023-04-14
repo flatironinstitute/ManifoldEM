@@ -276,13 +276,6 @@ def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
                measureOFCurrNbrEdge_tblock=measureOFCurrNbrEdge_tblock,
                badNodesPsisBlock=badNodesPsisBlock)
 
-    #######################################################
-    # create empty PD files after each Pickle dump to...
-    # ...be used to resume (avoiding corrupt Pickle files):
-    progress_fname = os.path.join(p.CC_meas_prog, '%s' % (edgeNum))
-    open(progress_fname, 'a').close()  #create empty file to signify non-corrupted Pickle dump
-    #######################################################
-
 
 # changed Nov 30, 2018, S.M.
 # here N is a list of (edge) numbers

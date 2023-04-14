@@ -77,19 +77,6 @@ def op(input_data, posPath, tune, rad, visual, doSave):
         myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind,
                    logEps=logEps, logSumWij=logSumWij, popt=popt, R_squared=R_squared)
 
-        #######################################################
-        # create empty PD files after each Pickle dump to...
-        # ...be used to resume (avoiding corrupt Pickle files):
-        progress_fname = os.path.join(p.psi_prog, '%s' % (prD))
-        open(progress_fname, 'a').close()  #create empty file to signify non-corrupted Pickle dump
-        #######################################################
-
-    if os.path.exists(eig_file):
-        os.remove(eig_file)
-
-    for i in range(len(lamb) - 1):
-        with open(eig_file, "a") as file:
+    with open(eig_file, "w") as file:
+        for i in range(len(lamb) - 1):
             file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
-
-if __name__ == '__main__':
-    op()

@@ -140,24 +140,11 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
             myio.fout1(outFile, IMG1=IMG1, IMGT=IMGT, posPath=posPath, PosPsi1=PosPsi1, psirec=psirec,
                        tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag, Topo_mean=Topo_mean, tauinds=tauinds)
 
-            #######################################################
-            # create empty PD files after each Pickle dump to...
-            # ...be used to resume (avoiding corrupt Pickle files):
-            progress_fname = os.path.join(p.EL_prog, '%s' % (prD))
-            open(progress_fname, 'a').close()  #create empty file to signify non-corrupted Pickle dump
-            #######################################################
-
         else:  # first pass
             outFile = '{}_psi_{}'.format(psi2_file, psinum)
             myio.fout1(outFile, IMG1=IMG1, psirec=psirec, tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag,
                        Topo_mean=Topo_mean, tauinds=tauinds)
 
-            #######################################################
-            # create empty PD files after each Pickle dump to...
-            # ...be used to resume (avoiding corrupt Pickle files):
-            progress_fname = os.path.join(p.psi2_prog, '%s_%s' % (prD, psinum))
-            open(progress_fname, 'a').close()  #create empty file to signify non-corrupted Pickle dump
-            #######################################################
             if argv:
                 progress3 = argv[0]
                 fin_PDs = fileCheck(p.numberofJobs)  #array of finished PDs (0's are unfinished, 1's are finished)

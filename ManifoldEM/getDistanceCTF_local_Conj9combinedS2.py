@@ -391,13 +391,6 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
                imgAvg=imgAvg, imgAvgFlip=imgAvgFlip, imgLabels=imgLabels, Dnom=Dnom, Nom=Nom,
                imgAllIntensity=imgAllIntensity, version=version, options=options)
 
-    #######################################################
-    # create empty PD files after each Pickle dump to...
-    # ...be used to resume (avoiding corrupt Pickle files):
-    progress_fname = os.path.join(p.dist_prog, '%s' % (prD))
-    open(progress_fname, 'a').close()  #create empty file to signify non-corrupted Pickle dump
-    #######################################################
-
 
 def get_wiener1(CTF1):
     SNR = 5

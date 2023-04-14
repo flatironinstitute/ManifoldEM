@@ -48,11 +48,8 @@ def op(orig_zip, new_zip, PrD):
     # remove the existing NLSA and movies etc, so that new ones can be created
     for psinum in range(p.num_psis):
         psi2_file = p.get_psi2_file(PrD) + f'_psi_{psinum}'
-        progress_fname = os.path.join(p.psi2_prog, '%s_%s' % (PrD, psinum))
         if os.path.exists(psi2_file):
             os.remove(psi2_file)
-        if os.path.exists(progress_fname):
-            os.remove(progress_fname)
 
     ca_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, PrD + 1)
     if os.path.exists(ca_file):
