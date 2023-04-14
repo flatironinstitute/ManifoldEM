@@ -92,14 +92,3 @@ def op(*argv):
 
     p.save()
     progress1.emit(100)
-
-
-if __name__ == '__main__':
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.nowTime_file = os.path.join(p.user_dir, 'data_output/nowTime')
-    p.align_param_file = os.path.join(p.user_dir, 'run_it300_data.star')
-    p.img_stack_file = os.path.join(p.user_dir, '2_toy42_stack.mrcs')
-    p.create_dir()
-    Data.op(p.align_param_file)
-    op()

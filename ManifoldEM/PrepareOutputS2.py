@@ -72,11 +72,3 @@ def op(*argv):
         progress7.emit(100)
 
     print('finished manifold embedding!')
-
-
-if __name__ == '__main__':
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.create_dir()
-    op()

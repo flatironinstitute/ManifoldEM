@@ -99,13 +99,3 @@ def op(*argv):
         progress7.emit(100)
 
     return hUn
-
-
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) != 2:
-        sys.exit(1)
-
-    p.load(sys.argv[1])
-    p.create_dir()
-    op()

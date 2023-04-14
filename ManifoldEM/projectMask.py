@@ -127,9 +127,3 @@ def op(vol, PD):
     msk = msk.reshape(nPix, nPix).T
     msk = msk > 1
     return msk
-
-
-if __name__ == '__main__':
-    vol = np.ones((10, 10, 10))
-    PD = np.array([0.3, 0.4, 0.5])
-    op(vol, PD)

@@ -41,10 +41,3 @@ def op(k, params):
 
     y = (np.sin(wr) - ampc * np.cos(wr)) * wi
     return y
-
-
-if __name__ == '__main__':
-
-    k = sys.argv[1]
-    params = sys.argv[2]
-    result = op(k, params)

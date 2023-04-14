@@ -247,14 +247,3 @@ def op(align_param_file):
 
         write_angles(p.ref_ang_file, nodesColor, S20_th, 1, NC)  #to PrD_map.txt (thresh bins)
         write_angles(p.ref_ang_file1, nodesColor, S20, 0, NC)  #to PrD_map1.txt (all bins)
-
-
-if __name__ == '__main__':
-
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'outputs_{}/'.format(p.proj_name))
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.nowTime_file = os.path.join(p.user_dir, 'outputs_{}/nowTime'.format(p.proj_name))
-    p.align_param_file = os.path.join(p.user_dir, 'data_input/Alignments/few2.tls')
-    p.create_dir()
-    op(p.align_param_file)

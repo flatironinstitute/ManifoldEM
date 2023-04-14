@@ -85,15 +85,3 @@ def op(*argv):
     ComputeEnergy1D.op()
     p.save()
     progress6.emit(100)
-
-
-if __name__ == '__main__':
-    print("Recomputing the NLSA snapshots using the found reaction coordinates...")
-
-    p.user_dir = '../'
-    p.out_dir = os.path.join(p.user_dir, 'data_output/')
-    p.tess_file = '{}/selecGCs'.format(p.out_dir)
-    p.nowTime_file = os.path.join(p.user_dir, 'data_output/nowTime')
-    p.create_dir()
-
-    op()
