@@ -35,11 +35,6 @@ def diff_corr(a, b, max):
 
 def fileCheck(N):
     fin_PDs = np.zeros(shape=(N, p.num_psis), dtype=int)  #zeros signify PD_psi entry not complete
-    for root, dirs, files in os.walk(p.psi2_prog):
-        for file in sorted(files):
-            if not file.startswith('.'):  #ignore hidden files
-                fin_PD, fin_psi = file.split('_')
-                fin_PDs[int(fin_PD), int(fin_psi)] = int(1)
     return fin_PDs
 
 
@@ -145,15 +140,3 @@ def op(input_data, conOrderRange, traj_name, isFull, psiTrunc, *argv):
             myio.fout1(outFile, IMG1=IMG1, psirec=psirec, tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag,
                        Topo_mean=Topo_mean, tauinds=tauinds)
 
-            if argv:
-                progress3 = argv[0]
-                fin_PDs = fileCheck(p.numberofJobs)  #array of finished PDs (0's are unfinished, 1's are finished)
-                offset = np.count_nonzero(fin_PDs == 1)
-                progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 100))
-
-    res = 'ok'
-    return res
-
-
-if __name__ == '__main__':
-    op()

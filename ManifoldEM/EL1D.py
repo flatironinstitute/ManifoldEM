@@ -24,18 +24,8 @@ def poolcontext(*args, **kwargs):
     pool.terminate()
 
 
-def fileCheck():
-    fin_PDs = []  #collect list of previously finished PDs from ELConc{}/
-    for root, dirs, files in os.walk(p.EL_prog):
-        for file in sorted(files):
-            if not file.startswith('.'):  #ignore hidden files
-                fin_PDs.append(int(file))
-    return fin_PDs
-
-
 def divide1(R, psiNumsAll, sensesAll):
     ll = []
-    fin_PDs = fileCheck()
     for prD in R:
         dist_file = p.get_dist_file(prD)
         psi_file = p.get_psi_file(prD)
@@ -43,8 +33,7 @@ def divide1(R, psiNumsAll, sensesAll):
         EL_file = p.get_EL_file(prD)
         psinums = [psiNumsAll[0, prD]]
         senses = [sensesAll[0, prD]]
-        if prD not in fin_PDs:
-            ll.append([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prD])
+        ll.append([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prD])
 
     return ll
 

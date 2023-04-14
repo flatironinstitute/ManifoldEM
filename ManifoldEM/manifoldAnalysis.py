@@ -25,29 +25,13 @@ def poolcontext(*args, **kwargs):
     pool.close()
 
 
-def fileCheck():
-    fin_PDs = []  # collect list of previously finished PDs from diff_maps/progress/
-    for root, dirs, files in os.walk(p.psi_prog):
-        for file in sorted(files):
-            if not file.startswith('.'):  # ignore hidden files
-                fin_PDs.append(int(file))
-    return fin_PDs
-
-
-def count(N):
-    c = N - len(fileCheck())
-    return c
-
-
 def divide(N):
     ll = []
-    fin_PDs = fileCheck()
     for prD in range(N):
         dist_file = p.get_dist_file(prD)
         psi_file = p.get_psi_file(prD)
         eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, prD + 1)
-        if prD not in fin_PDs:
-            ll.append([dist_file, psi_file, eig_file, prD])
+        ll.append([dist_file, psi_file, eig_file, prD])
     return ll
 
 

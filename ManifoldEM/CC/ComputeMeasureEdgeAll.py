@@ -282,21 +282,11 @@ def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
 def divide1(N, G):
     ll = []
 
-    fin_edges = []  # collect list of previously finished PDs from CC/CC_meas/
-    for root, dirs, files in os.walk(p.CC_meas_prog):
-        for file in sorted(files):
-            if not file.startswith('.'):  #ignore hidden files
-                fin_edges.append(int(file))
-
     for e in N:
         currPrD = G['Edges'][e, 0]
         nbrPrD = G['Edges'][e, 1]
         CC_meas_file = '{}{}_{}_{}'.format(p.CC_meas_file, e, currPrD, nbrPrD)
-
-        if e in fin_edges:
-            continue
-        else:
-            ll.append([currPrD, nbrPrD, CC_meas_file, e])
+        ll.append([currPrD, nbrPrD, CC_meas_file, e])
 
     return ll
 

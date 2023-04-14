@@ -24,16 +24,6 @@ def poolcontext(*args, **kwargs):
     pool.terminate()
 
 
-def fileCheck(N):
-    fin_PDs = np.zeros(shape=(N, p.num_psis), dtype=int)  #zeros signify PD_psi entry not complete
-    for root, dirs, files in os.walk(p.psi2_prog):
-        for file in sorted(files):
-            if not file.startswith('.'):  #ignore hidden files
-                fin_PD, fin_psi = file.split('_')
-                fin_PDs[int(fin_PD), int(fin_psi)] = int(1)
-    return fin_PDs
-
-
 def divid(N, rc, fin_PDs):
     ll = []
     for prD in range(N):
@@ -64,7 +54,7 @@ def op(*argv):
 
     print("Computing the NLSA snapshots...")
     isFull = 0
-    fin_PDs = fileCheck(p.numberofJobs)  # array of finished PDs (0's are unfinished, 1's are finished)
+    fin_PDs = np.zeros(shape=(p.numberofJobs, p.num_psis), dtype=int)
     input_data = divid(p.numberofJobs, rc, fin_PDs)
 
     if argv:
@@ -90,12 +80,7 @@ def op(*argv):
                             traj_name=p.trajName,
                             isFull=isFull,
                             psiTrunc=p.num_psiTrunc), input_data):
-                if argv:
-                    progress3 = argv[0]
-                    fin_PDs = fileCheck(
-                        p.numberofJobs)  #array of finished PDs (0's are unfinished, 1's are finished)
-                    offset = np.count_nonzero(fin_PDs == 1)
-                    progress3.emit(int((offset / float((p.numberofJobs) * p.num_psis)) * 99))
+                pass
 
             pool.close()
             pool.join()

@@ -100,14 +100,10 @@ opt_mask_param: int = 0                    # for either none, radius (Int), or i
 # FIXME: These really shouldn't be cached, or at the very least should be put in their own subdict...
 user_dir: str = ''
 dist_dir: str = ''
-dist_prog: str = ''
 psi_dir: str = ''
-psi_prog: str = ''
 psi2_dir: str = ''
-psi2_prog: str = ''
 movie2d_dir: str = ''
 EL_dir: str = ''
-EL_prog: str = ''
 tau_dir: str = ''
 OM_dir: str = ''
 Var_dir: str = ''
@@ -118,7 +114,6 @@ relion_dir: str = ''
 CC_dir: str = ''
 CC_OF_dir: str = ''
 CC_meas_dir: str = ''
-CC_meas_prog: str = ''
 out_dir: str = ''
 post_dir: str = ''
 vol_dir: str = ''
@@ -212,20 +207,16 @@ def create_dir():
     # input and output directories and files
     p = _module
     p.dist_dir = os.path.join(user_dir, 'outputs_{}/distances/'.format(proj_name))
-    p.dist_prog = os.path.join(dist_dir, 'progress/')
-    os.makedirs(dist_prog, exist_ok=True)
+    os.makedirs(p.dist_dir, exist_ok=True)
 
     p.psi_dir = os.path.join(user_dir, 'outputs_{}/diff_maps/'.format(proj_name))
-    p.psi_prog = os.path.join(psi_dir, 'progress/')
-    os.makedirs(psi_prog, exist_ok=True)
+    os.makedirs(psi_dir, exist_ok=True)
 
     p.psi2_dir = os.path.join(user_dir, 'outputs_{}/psi_analysis/'.format(proj_name))
-    p.psi2_prog = os.path.join(psi2_dir, 'progress/')
-    os.makedirs(psi2_prog, exist_ok=True)
+    os.makedirs(psi2_dir, exist_ok=True)
 
     p.EL_dir = os.path.join(user_dir, 'outputs_{}/ELConc{}/'.format(proj_name, conOrderRange))
-    p.EL_prog = os.path.join(EL_dir, 'progress/')
-    os.makedirs(EL_prog, exist_ok=True)
+    os.makedirs(EL_dir, exist_ok=True)
 
     p.OM_dir = os.path.join(user_dir, '{}OM/'.format(EL_dir))
     os.makedirs(OM_dir, exist_ok=True)
@@ -243,8 +234,7 @@ def create_dir():
     os.makedirs(CC_OF_dir, exist_ok=True)
 
     p.CC_meas_dir = os.path.join(CC_dir, 'CC_meas')
-    p.CC_meas_prog = os.path.join(CC_meas_dir, 'progress')
-    os.makedirs(CC_meas_prog, exist_ok=True)
+    os.makedirs(CC_meas_dir, exist_ok=True)
 
     #################
     # post-processing:

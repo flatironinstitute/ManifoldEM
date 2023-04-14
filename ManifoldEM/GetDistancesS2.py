@@ -23,31 +23,15 @@ def poolcontext(*args, **kwargs):
     pool.terminate()
 
 
-def fileCheck():
-    fin_PDs = []  #collect list of previously finished PDs from distances/progress/
-    for root, dirs, files in os.walk(p.dist_prog):
-        for file in sorted(files):
-            if not file.startswith('.'):  #ignore hidden files
-                fin_PDs.append(int(file))
-    return fin_PDs
-
-
 def divide(CG, q, df, N):
     ll = []
-    fin_PDs = fileCheck()
     for prD in range(N):
         ind = CG[prD]
         q1 = q[:, ind]
         df1 = df[ind]
         dist_file = p.get_dist_file(prD)
-        if prD not in fin_PDs:
-            ll.append([ind, q1, df1, dist_file, prD])
+        ll.append([ind, q1, df1, dist_file, prD])
     return ll
-
-
-def count(N):
-    c = N - len(fileCheck())
-    return c
 
 
 def op(*argv):
