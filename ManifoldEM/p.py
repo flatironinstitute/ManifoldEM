@@ -62,7 +62,7 @@ numberofJobs: int = 0  # total number of bins to consider for manifold embedding
 
 # eigenfunction parameters:
 num_eigs: int = 15      # number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)
-num_psiTrunc:int = 8    # number of eigenfunctions for truncated views
+num_psiTrunc: int = 8    # number of eigenfunctions for truncated views
 num_psis: int = 8
 # tune automation suggestion (Ali): larger tune = smaller gaussian width; turns data into
 # islands/chunks (can't see long-range patterns); a good tune should form a 'good' psirec parabola.
@@ -96,6 +96,11 @@ opt_movie: dict = {'printFig': 0,
                    'flowVecPctThresh': 95}
 opt_mask_type: int = 0                     # 0:None, 1:Annular, 2:Volumetric
 opt_mask_param: int = 0                    # for either none, radius (Int), or iso(Int)
+
+findBadPsiTau: int = 1
+tau_occ_thresh: float = 0.5
+use_pruned_graph: bool = False
+
 
 # FIXME: These really shouldn't be cached, or at the very least should be put in their own subdict...
 user_dir: str = ''
