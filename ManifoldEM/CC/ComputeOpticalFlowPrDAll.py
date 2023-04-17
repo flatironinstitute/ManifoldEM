@@ -232,6 +232,7 @@ def op(nodeEdgeNumRange, *argv):
         progress5.emit(int((offset / float(numberofJobs)) * 99))
     else:
         progress5 = NullEmitter()
+        offset = 0
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i in range(len(input_data)):

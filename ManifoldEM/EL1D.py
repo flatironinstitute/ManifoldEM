@@ -57,6 +57,7 @@ def op(*argv):
         progress6.emit(int((offset / float(len(R))) * 99))
     else:
         progress6 = NullEmitter()
+        offset = 0
 
     print("Processing {} projection directions.".format(len(input_data)))
 

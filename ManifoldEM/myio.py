@@ -9,7 +9,6 @@ def fin1(filename):
     with open(filename, 'rb') as f:
         try:
             data = pickle.load(f)
-            f.close()
             return data
         except Exception as e:
             debug_print(str(e))

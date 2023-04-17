@@ -54,10 +54,9 @@ def op(*argv):
     numConnComp = len(G['NodesConnComp'])
 
 
-    anchorlist = [a[0] for a in p.anch_list]
-    anchorlist = [a - 1 for a in anchorlist]  # we need labels with 0 index to compare with the node labels in G, Gsub
-
-    print('\nAnchor list:', anchorlist, ', Number of anchor nodes:', len(anchorlist), '\n')
+    anchorlist = [a[0] - 1 for a in p.anch_list]  # we need labels with 0 index to compare with the node labels in G, Gsub
+    print(f'Number of anchor nodes: {len(anchorlist)}')
+    print(f'Anchor list: {anchorlist}')
 
     if any(a in anchorlist for a in G['Nodes']):
         if len(anchorlist) + numTrashPDs == G['nNodes']:

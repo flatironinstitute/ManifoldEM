@@ -20,11 +20,9 @@ Modified:Sept 21,2021
 
 # this rescaling function should ensure to keep the exp(-M) values within a certain range as to prevent
 # numerical overflow/underflow
-
-
 # do it for all values across all edges, to check for outliers and relative edge values after scaling
 # are comparable in this way
-def reScaleLinear(M, edgeNumRange, mvalrange):
+def rescale_linear(M, edgeNumRange, mvalrange):
     numE = max(edgeNumRange)
     nm = np.zeros(numE + 1, dtype=int)
     all_m = []
@@ -42,7 +40,7 @@ def reScaleLinear(M, edgeNumRange, mvalrange):
 
     all_m[all_m > upper_thresh] = upper_thresh
 
-    ## linear scaling of values within the range 'mvalr', min and max to mapped to min(mvalr) and max(mvalr)
+    # linear scaling of values within the range 'mvalr', min and max to mapped to min(mvalr) and max(mvalr)
     scaled_all_m = np.interp(all_m, (np.min(all_m), np.max(all_m)), mvalrange)
     M_scaled = np.empty(M.shape, dtype=object)
     nm_start = 0
@@ -54,7 +52,7 @@ def reScaleLinear(M, edgeNumRange, mvalrange):
     return M_scaled
 
 
-def findThreshHist(X, nbins, method=1, vis=False):
+def findThreshHist(X, nbins, method=1):
     # this is still experimental
     # would work if the data values are sort of bi-modal distribution
 
@@ -133,10 +131,8 @@ def findThreshHist(X, nbins, method=1, vis=False):
         indx = np.where(
             np.logical_and(valleys >= np.min(kmeans.cluster_centers_), valleys <= np.max(kmeans.cluster_centers_)))
         t_thresh_p = valleys[indx]
-        #if not t_thresh_p:
-        #	t_thresh_p=NaN
         print('1. find peaks threshold:', t_thresh_p)
-        #if there are multiple peaks/valleys, choose the one between the centers found by other reliable methods
+        # if there are multiple peaks/valleys, choose the one between the centers found by other reliable methods
         # such as kmeans below
         t = t_thresh_p.copy()
 
@@ -168,7 +164,7 @@ def findThreshHist(X, nbins, method=1, vis=False):
         t = t_thresh_g.copy()
 
     if method == 4 or method == 'all':
-        #5. This for only if we have exp+gauss (given the data) ...
+        # 5. This for only if we have exp+gauss (given the data) ...
         # a. If the data has only mixture of gaussians, then use gauss+gauss curve fit,
         # in fact gmm(method=4) would work fine in that case and curve fit would not be required.
         # b. Uses filtered h.
@@ -197,20 +193,9 @@ def findThreshHist(X, nbins, method=1, vis=False):
             t_thresh_c = findIntersectionOfFuncs(funce, funcg, popt, 0.0)
             print('4. Curve_fit intersection.threshold:', t_thresh_c, ', centers:', kmeans.cluster_centers_.T)
             t = t_thresh_c.copy()
-
-            if vis:
-                plt.plot(xdata, ydata, 'b-', label='data')
-                plt.plot(xdata, func(xdata, *popt), '-', color='r', lw=2)
-                plt.plot(xdata, funce(xdata, *popt[0:2]), '-', color='orange', lw=3)
-                plt.plot(xdata, funcg(xdata, *popt[2:5]), '-', color='green', lw=3)
-                plt.plot(t_thresh_c, funcg(t_thresh_c, *popt[2:5]), 'ro', markersize=8)
-                plt.title('curve_fit intersection', fontsize=20)
-                plt.show()
-
         except:
             print('4. curve-fitting failed..., using kmeans instead.')
             # in that case just use the kmeans values (method=1)?
-            #t_thresh_c = separateHist(X, kmeans.labels_, kmeans.cluster_centers_.T,bedges,'kmeans',0)
             t_thresh_c = t_thresh_k.copy()
             print('Kmeans.threshold:', t_thresh_c, ', centers:', kmeans.cluster_centers_.T)
             t = t_thresh_c.copy()
@@ -224,10 +209,10 @@ def findThreshHist(X, nbins, method=1, vis=False):
 
 
 def checkBadPsis(trash_list, tau_occ_thresh=0.35):
-    ### Oct 2020, this is still experimental
-    ### It would be good to interface this part also with the GUI , to visually check the cut-off selected
-    ### for the bad tau iqr distribution and occupancy ...
-    ### Check if there are significant bad PDs(>10) after Optical Flow computations of the psi-movies,
+    # Oct 2020, this is still experimental
+    # It would be good to interface this part also with the GUI , to visually check the cut-off selected
+    # for the bad tau iqr distribution and occupancy ...
+    # Check if there are significant bad PDs(>10) after Optical Flow computations of the psi-movies,
     # if yes then prune those bad nodes. The nodes are not removed from the graph but the edges are modified
     # just update the graph G with new edge connections
 
@@ -239,7 +224,6 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     dataR = myio.fin1(badNodesPsisTaufile)
 
     badNodesPsisTau = dataR['badNodesPsisTau']  # this was pre-calculated using some tau-cutoff, here we are update it
-    TausCell = dataR['NodesPsisTauVals']
     TausMat_IQR = dataR['NodesPsisTauIQR']
     TausMat_Occ = dataR['NodesPsisTauOcc']
     TausMat = TausMat_IQR  #
@@ -263,7 +247,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     #        otherwise GMM will have issues)
     # 4. Curve fitting with Kmeans
 
-    method = 'all'  #integer between 0 to 4 or 'all'
+    method = 'all'  # integer between 0 to 4 or 'all'
     numAllMethods = len(Allmethods)
 
     if method == 'all':
@@ -274,7 +258,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
         methods.append(method)
         print('Method:', Allmethods[method])
 
-    cutoff, hmax, yfilt = findThreshHist(X, nbins, method=method, vis=visual)
+    cutoff, hmax, yfilt = findThreshHist(X, nbins, method=method)
 
     if visual:
         colors = ['red', 'orange', 'blue', 'cyan', 'olive']
@@ -365,30 +349,28 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # Step 1. Compute Optical Flow Vectors
     # Save the optical flow vectors for each psi-movie of individual projection direction
-    #p.getOpticalFlow = 1 ### temp
     if p.getOpticalFlow:
         print('\n1.Now computing optical flow vectors for all (selected) PrDs...\n')
-        #Optical flow vectors for each psi-movies of each node are saved to disk
+        # Optical flow vectors for each psi-movies of each node are saved to disk
         if argv:
             ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, argv[0])
         else:
             ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange)
 
-    ## check for bad PDs found based on bad tau values
+    # check for bad PDs found based on bad tau values
     trash_list = p.get_trash_list()
     p.tau_occ_thresh = 0.35  # interface with GUI, p.py
     tau_occ_thresh = p.tau_occ_thresh
+
     # take the already existing trash_list and update it
     trash_list_chk, num_nodesAllBadPsis = checkBadPsis(trash_list, tau_occ_thresh)
 
     # trash_list_chk will be used inside the following pruned graph creation if p.use_pruned_graph =1
     # p.trash_list = trash_list_chk
     # FindCCGraphPruned uses p.trash_list to create the pruned graph
-
     CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
 
     p.use_pruned_graph = 0  # interface with gui
-
     if p.use_pruned_graph:
         #Step 2a. June 2020
         ### Check if there are significant bad PDs(>10 or 5 ?) after Optical Flow computations of the psi-movies,
@@ -403,7 +385,6 @@ def op(G, nodeRange, edgeNumRange, *argv):
         # update the p.trash_list
         p.set_trash_list(trash_list_chk)
         if num_nodesAllBadPsis > num_bad_nodes_prune_cutoff:
-
             if not os.path.exists(CC_graph_file_pruned):
                 G, Gsub = FindCCGraphPruned.op(CC_graph_file_pruned)
             else:
@@ -413,11 +394,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
                 Gsub = data['Gsub']
             numConnComp = len(G['NodesConnComp'])
 
-
-            anchorlist = [a[0] for a in p.anch_list]
-            anchorlist = [a - 1 for a in anchorlist
-                          ]  # we need labels with 0 index to compare with the node labels in G, Gsub
-
+            anchorlist = [a[0] - 1 for a in p.anch_list]  # we need labels with 0 index to compare with the node labels in G, Gsub
             nodelCsel = []
             edgelCsel = []
             # this list keeps track of the connected component (single nodes included) for which no anchor was provided
@@ -425,30 +402,16 @@ def op(G, nodeRange, edgeNumRange, *argv):
             for i in range(numConnComp):
                 nodesGsubi = Gsub[i]['originalNodes']
                 edgelistGsubi = Gsub[i]['originalEdgeList']
-                edgesGsubi = Gsub[i]['originalEdges']
-
-                #  'Original edge list:',edgelistGsubi[0],'Original edges:', edgesGsubi, 'No. edges:',len(edgesGsubi))
-
-
-                #    'Original edge list:',edgelistGsubi[0],'Size Edges:',len(edgesGsubi))
 
                 if any(x in anchorlist for x in nodesGsubi) or len(nodesGsubi) > 1:
-
                     nodelCsel.append(nodesGsubi.tolist())
                     edgelCsel.append(edgelistGsubi[0])
                 else:
                     connCompNoAnchor.append(i)
 
-
-                    #    ', all the corresponding nodes will not be assigned with conformational coordinate labels.' \
-                    #    'Cancel this program now or it will continue without the required anchors.\n'
-                    #
-
             if len(connCompNoAnchor) > 0:
                 print('There are {} connected components with no anchors assigned. You can choose anchors for them ' \
                       'after the edge measurements are done, and re-run only the BP'.format(len(connCompNoAnchor)))
-
-
 
             nodeRange = np.sort([y for x in nodelCsel for y in x])  #flatten list another way?
             edgeNumRange = np.sort([y for x in edgelCsel for y in x])  #flatten list another way?
@@ -462,7 +425,6 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # Step 2. Compute the pairwise edge measurements
     # Save individual edge measurements
-    #p.getAllEdgeMeasures = 1####temp
     if p.getAllEdgeMeasures:
         print('\n2.Now computing pairwise edge-measurements...\n')
         # measures for creating potentials later on
@@ -476,9 +438,8 @@ def op(G, nodeRange, edgeNumRange, *argv):
     # to be used for node-potential and edge-potential calculations
     print('\n3.Reading all the edge measurements from disk...')
     # load the measurements file for each edge separately
-    #edgeMeasures = np.empty((len(edgeNumRange)),dtype=object)
 
-    #in case there are some nodes/edges for which we do not want to calculate the measures, the number of edges and
+    # in case there are some nodes/edges for which we do not want to calculate the measures, the number of edges and
     # max edge indices may not match, so use the full G.nEdges as the size of the edgeMeasures. The edges which are not
     # calculated will remain as empty
     print('Edges', G['nEdges'])
@@ -499,20 +460,8 @@ def op(G, nodeRange, edgeNumRange, *argv):
         edgeMeasures[e] = measureOFCurrNbrEdge
         edgeMeasures_tblock[e] = measureOFCurrNbrEdge_tblock
 
-    #Test 30aug2019
-
-
-
-
-
-
     # This rescaling step is to prevent underflow/overflow, should be checked if does not work
     scaleRange = [5, 45]
-    edgeMeasures = reScaleLinear(edgeMeasures, edgeNumRange, scaleRange)
-
-
-
-
-
+    edgeMeasures = rescale_linear(edgeMeasures, edgeNumRange, scaleRange)
 
     return edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock

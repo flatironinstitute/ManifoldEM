@@ -304,6 +304,7 @@ def op(G, nodeEdgeNumRange, *argv):
     numberofJobs = len(nodeRange) + len(edgeNumRange)
     flowVecPctThresh = p.opt_movie['flowVecPctThresh']
 
+    offset = 0
     if argv:
         progress5 = argv[0]
     else:
