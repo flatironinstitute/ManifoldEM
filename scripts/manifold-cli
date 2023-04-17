@@ -34,6 +34,7 @@ init_parser.add_argument('-o', '--overwrite', action='store_true',
 
 distance_parser = subparsers.add_parser("calc-distance")
 distance_parser.add_argument("input_file", type=str)
+distance_parser.add_argument("--num-psis", type=int, default=8)
 
 manifold_analysis_parser = subparsers.add_parser("manifold-analysis")
 manifold_analysis_parser.add_argument("input_file", type=str)
@@ -97,7 +98,10 @@ def load_state(args):
     fname_sans = os.path.splitext(fname_front)[0]
     p.proj_name = fname_sans
     p.load()
-    p.ncpu = args.ncpu
+    if hasattr(args, "ncpu"):
+        p.ncpu = args.ncpu
+    if hasattr(args, "num_psis"):
+        p.num_psis = args.num_psis
     p.save()
 
 
