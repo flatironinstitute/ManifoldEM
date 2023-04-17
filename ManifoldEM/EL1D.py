@@ -59,11 +59,11 @@ def op(*argv):
         progress6 = NullEmitter()
         offset = 0
 
-    print("Processing {} projection directions.".format(len(input_data)))
+    print(f"Processing {len(input_data)} projection directions.")
 
     if p.ncpu == 1:  # avoids the multiprocessing package
-        for i in range(len(input_data)):
-            psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
+        for i, datai in enumerate(input_data):
+            psiAnalysisParS2.op(datai, p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
             progress6.emit(int(((offset + i) / len(R)) * 99))
     else:
         with poolcontext(processes=p.ncpu) as pool:
