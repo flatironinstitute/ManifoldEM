@@ -77,7 +77,7 @@ fps: float = 5.0
 
 # energy landscape parameters:
 dim: int = 1              # user-defined number of dimensions (reaction coordinates); {1,2}
-temperature: float = 25.0 # user-defined pre-quenching temperature of experiments
+temperature: int = 25     # user-defined pre-quenching temperature of experiments
 trajName: str = '1'       # filename for exported (2D) trajectories
 nClass: int = 50          # number of states partitioned within each 1D reaction coordinate; results in a 50x1 1D ELS
 width_1D: int = 1         # user-defined width of trajectory in 1D energy path
