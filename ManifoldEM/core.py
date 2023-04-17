@@ -1,5 +1,7 @@
 """Utilities that can be defined with basically one function."""
 import os
+import io
+import zipfile
 import imageio
 import warnings
 import numpy as np
@@ -102,15 +104,21 @@ def makeMovie(IMG1, prD, psinum, fps):
     nframes = IMG1.shape[1]
     images = -IMG1
     gif_path = os.path.join(p.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')
+    zip_path = os.path.join(p.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.zip')
     frame_dt = 1.0/fps
-    with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
-        for i in range(nframes):
-            img = images[:, i].reshape(dim, dim)
-            frame = np.round(255 * (img - np.min(img)) / (np.max(img) - np.min(img))).astype(np.uint8)
+    with zipfile.ZipFile(zip_path, 'w') as fzip:
+        with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
+            for i in range(nframes):
+                img = images[:, i].reshape(dim, dim)
+                frame = np.round(255 * (img - np.min(img)) / (np.max(img) - np.min(img))).astype(np.uint8)
+                frame_path = 'frame{:02d}.png'.format(i)
 
-            frame_path = p.out_dir + '/topos/PrD_{}/psi_{}/frame{:02d}.png'.format(prD + 1, psinum + 1, i)
-            imageio.imwrite(frame_path, frame)
-            writer.append_data(frame)
+                b = io.BytesIO()
+                imageio.imwrite(b, frame)
+                b.seek(0)
+                fzip.writestr(frame_path, b.read())
+
+                writer.append_data(frame)
 
 
 def fergusonE(D, logEps, a0):

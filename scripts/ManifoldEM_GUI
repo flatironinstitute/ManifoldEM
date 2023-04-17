@@ -2434,7 +2434,7 @@ class P4(QtGui.QWidget):
     user_PrD = 1
     PrD_hist = 1  #keeps track of previous PrD visited, for removal
     user_psi = 1
-    vidDir = ''
+    gif_path = ''
     anch_list = []  #final user anchor selections
     # widget dictionaries for all PrDs:
     anchorsAll = {}
@@ -3118,7 +3118,7 @@ class P4(QtGui.QWidget):
         BandwidthMain_window.show()
 
     def CC_vid1(self, n):
-        P4.vidDir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s/' % (p.proj_name, P4.user_PrD, n))
+        P4.gif_path = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s.gif' % (p.proj_name, P4.user_PrD, n))
         global PrD_window
         try:
             PrD_window.close()
@@ -3159,16 +3159,8 @@ class P4(QtGui.QWidget):
             pass
 
         Vid2Canvas.run = 0
-        Vid2Canvas.vidDir1 = ''
-        Vid2Canvas.vidDir2 = ''
-        Vid2Canvas.imgDir1 = ''
-        Vid2Canvas.imgDir2 = ''
-        Vid2Canvas.img_paths = []
-        Vid2Canvas.img_paths = []
-        Vid2Canvas.imgs1 = []
-        Vid2Canvas.imgs2 = []
-        Vid2Canvas.frames1 = 0
-        Vid2Canvas.frames2 = 0
+        Vid2Canvas.gif_path1 = ''
+        Vid2Canvas.gif_path2 = ''
         PrD2_window = PrD2_Viz()
 
         PrD2_window.setWindowTitle('Compare NLSA Movies')
@@ -5710,25 +5702,18 @@ class VidCanvas(QtGui.QDialog):
     imgDir = ''
     img_paths = []
     imgs = []
-    frames = 0  #total number of frames
     run = 0  #switch, {-1,0,1} :: {backwards,pause,forward}
     f = 0  #frame index (current frame)
     rec = 0  #safeguard for recursion limit
     delay = .001  #playback delay in ms
 
+    def get_frame_count():
+        return len(VidCanvas.imgs)
+
     def __init__(self, parent=None):
         super(VidCanvas, self).__init__(parent)
 
-        i = 0
-        for root, dirs, files in os.walk(P4.vidDir):
-            for file in sorted(files):
-                if not file.startswith('.'):  #ignore hidden files
-                    if file.endswith(".png"):
-                        VidCanvas.img_paths.append(os.path.join(root, file))
-                        VidCanvas.imgs.append(imageio.imread(VidCanvas.img_paths[i]))
-                        i += 1
-
-        VidCanvas.frames = int(len(VidCanvas.imgs)) - 1
+        VidCanvas.imgs = list(imageio.get_reader(P4.gif_path))
 
         self.figure = Figure(dpi=200, facecolor='w', edgecolor='w')
         self.ax = self.figure.add_axes([0, 0, 1, 1])
@@ -5741,7 +5726,7 @@ class VidCanvas(QtGui.QDialog):
 
         VidCanvas.canvas = FigureCanvas(self.figure)
         #self.toolbar = NavigationToolbar(VidCanvas.canvas, self)
-        self.currentIMG = self.ax.imshow(VidCanvas.imgs[0])  #plot initial data
+        self.currentIMG = self.ax.imshow(VidCanvas.imgs[0], cmap='gray')  #plot initial data
         VidCanvas.canvas.draw()  #refresh canvas
 
         # player control buttons:
@@ -5777,7 +5762,7 @@ class VidCanvas(QtGui.QDialog):
 
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(VidCanvas.frames)
+        self.slider.setMaximum(VidCanvas.get_frame_count() - 1)
         self.slider.setValue(0)
         self.slider.setTickInterval(1)
         self.slider.valueChanged.connect(self.sliderUpdate)
@@ -5803,11 +5788,12 @@ class VidCanvas(QtGui.QDialog):
         VidCanvas.canvas.draw()  #refresh canvas
         VidCanvas.canvas.start_event_loop(self.delay)
 
+        max_index = VidCanvas.get_frame_count()
         if VidCanvas.run == 1:
-            if VidCanvas.f < VidCanvas.frames:
+            if VidCanvas.f < max_index:
                 VidCanvas.f += 1
                 self.scroll(VidCanvas.f)
-            elif VidCanvas.f == VidCanvas.frames:
+            elif VidCanvas.f == max_index:
                 VidCanvas.f = 0
                 self.rec += 1  #recursion safeguard
                 if self.rec == 10:
@@ -5820,7 +5806,7 @@ class VidCanvas(QtGui.QDialog):
                 VidCanvas.f -= 1
                 self.scroll(VidCanvas.f)
             elif VidCanvas.f == 0:
-                VidCanvas.f = VidCanvas.frames
+                VidCanvas.f = max_index
                 self.rec += 1  #recusion safeguard
                 if self.rec == 10:
                     self.rec = 0
@@ -5839,7 +5825,7 @@ class VidCanvas(QtGui.QDialog):
         VidCanvas.run = 0
         self.rec = 0
         VidCanvas.canvas.stop_event_loop()
-        if VidCanvas.f == VidCanvas.frames:
+        if VidCanvas.f == VidCanvas.get_frame_count() - 1:
             VidCanvas.f = 0
         else:
             VidCanvas.f += 1
@@ -5888,7 +5874,7 @@ class VidCanvas(QtGui.QDialog):
         self.rec = 0
         VidCanvas.canvas.stop_event_loop()
         if VidCanvas.f == 0:
-            VidCanvas.f = VidCanvas.frames
+            VidCanvas.f = VidCanvas.get_frame_count() - 1
         else:
             VidCanvas.f -= 1
 
@@ -5911,16 +5897,8 @@ class VidCanvas(QtGui.QDialog):
 
 
 class Vid2Canvas(QtGui.QDialog):
-    vidDir1 = ''
-    vidDir2 = ''
-    imgDir1 = ''
-    imgDir2 = ''
-    img_paths1 = []
-    img_paths2 = []
     imgs1 = []
     imgs2 = []
-    frames1 = 0  #total number of frames in movie 1
-    frames2 = 0  #total number of frames in movie 2
     run = 0  #switch, {-1,0,1} :: {backwards,pause,forward}
     f = 0  #frame index (current frame)
     rec = 0  #safeguard for recursion limit
@@ -5937,15 +5915,12 @@ class Vid2Canvas(QtGui.QDialog):
         picSize = picImg.size
         Vid2Canvas.blank = np.ones([picSize[0], picSize[1], 3], dtype=int) * 255  #white background
         # =====================================================================
-        self.vidDir1 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s/' % (p.proj_name, 1, 1))
-        i = 0
-        for root, dirs, files in os.walk(self.vidDir1):
-            for file in sorted(files):
-                if not file.startswith('.'):  #ignore hidden files
-                    if file.endswith(".png"):
-                        self.imgs1.append(Vid2Canvas.blank)
-                        self.imgs2.append(Vid2Canvas.blank)
-                        i += 1
+
+        gif_path1 = os.path.join(P1.user_directory, f'outputs_{p.proj_name}/topos/PrD_1/psi_1.gif')
+        imgs1 = imageio.get_reader(gif_path1)
+        for j in range(len(imgs1)):
+            self.imgs1.append(Vid2Canvas.blank)
+            self.imgs2.append(Vid2Canvas.blank)
 
         self.label_Vline = QtGui.QLabel('')  #separating line
         self.label_Vline.setFont(font_standard)
@@ -6013,8 +5988,6 @@ class Vid2Canvas(QtGui.QDialog):
         self.btnSet2.setChecked(False)
         self.btnSet2.setDisabled(False)
 
-        self.frames1 = int(len(self.imgs1)) - 1
-
         self.figure1 = Figure(dpi=200, facecolor='w', edgecolor='w')
         self.ax1 = self.figure1.add_axes([0, 0, 1, 1])
         self.ax1.axis('off')
@@ -6025,10 +5998,8 @@ class Vid2Canvas(QtGui.QDialog):
             item.patch.set_visible(False)
 
         Vid2Canvas.canvas1 = FigureCanvas(self.figure1)
-        self.currentIMG1 = self.ax1.imshow(self.imgs1[0])  #plot initial data
+        self.currentIMG1 = self.ax1.imshow(self.imgs1[0], cmap='gray')  #plot initial data
         Vid2Canvas.canvas1.draw()  #refresh canvas
-
-        self.frames2 = int(len(self.imgs2)) - 1
 
         self.figure2 = Figure(dpi=200, facecolor='w', edgecolor='w')
         self.ax2 = self.figure2.add_axes([0, 0, 1, 1])
@@ -6040,7 +6011,7 @@ class Vid2Canvas(QtGui.QDialog):
             item.patch.set_visible(False)
 
         Vid2Canvas.canvas2 = FigureCanvas(self.figure2)
-        self.currentIMG2 = self.ax2.imshow(self.imgs2[0])  #plot initial data
+        self.currentIMG2 = self.ax2.imshow(self.imgs2[0], cmap='gray')  #plot initial data
         Vid2Canvas.canvas2.draw()  #refresh canvas
 
         # player control buttons:
@@ -6076,7 +6047,7 @@ class Vid2Canvas(QtGui.QDialog):
 
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(self.frames1)
+        self.slider.setMaximum(VidCanvas.get_frame_count() - 1)
         self.slider.setValue(0)
         self.slider.setTickInterval(1)
         self.slider.valueChanged.connect(self.sliderUpdate)
@@ -6122,50 +6093,29 @@ class Vid2Canvas(QtGui.QDialog):
         Vid2Canvas.buttonForward.setFocus()
         Vid2Canvas.buttonBackward.setDisabled(False)
         Vid2Canvas.buttonPause.setDisabled(True)
-        self.img_paths1 = []
-        self.imgs1 = []
-        self.vidDir1 = ''
 
         prD = self.PrD1.value()
         psi = self.Psi1.value()
-        self.vidDir1 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s/' % (p.proj_name, prD, psi))
+        self.gif_path1 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s.gif' % (p.proj_name, prD, psi))
+        self.imgs1 = list(imageio.get_reader(self.gif_path1))
 
         if self.btnSet1.isChecked():
             self.PrD1.setDisabled(True)
             self.Psi1.setDisabled(True)
             self.sense1.setDisabled(True)
 
-            i = 0
-            for root, dirs, files in os.walk(self.vidDir1):
-                for file in sorted(files):
-                    if not file.startswith('.'):  #ignore hidden files
-                        if file.endswith(".png"):
-                            self.img_paths1.append(os.path.join(root, file))
-                            self.imgs1.append(imageio.imread(self.img_paths1[i]))
-                            i += 1
-
             if self.sense1.currentText() == 'Sense: REV':
                 self.imgs1.reverse()
-
         else:
             self.PrD1.setDisabled(False)
             self.Psi1.setDisabled(False)
             self.sense1.setDisabled(False)
+            self.imgs1 = [Vid2Canvas.blank] * len(self.imgs1)
 
-            i = 0
-            for root, dirs, files in os.walk(self.vidDir1):
-                for file in sorted(files):
-                    if not file.startswith('.'):  #ignore hidden files
-                        if file.endswith(".png"):
-                            self.imgs1.append(Vid2Canvas.blank)
-                            i += 1
-
-        gc.collect()
         Vid2Canvas.canvas1.flush_events()
 
-        self.frames1 = int(len(self.imgs1)) - 1
-        self.slider.setMaximum(self.frames1)
-        self.currentIMG1 = self.ax1.imshow(self.imgs1[0])  #plot initial frame
+        self.slider.setMaximum(len(self.imgs1) - 1)
+        self.currentIMG1 = self.ax1.imshow(self.imgs1[0], cmap='gray')  #plot initial frame
         self.slider.setValue(0)
         self.f = self.slider.value()
 
@@ -6181,27 +6131,16 @@ class Vid2Canvas(QtGui.QDialog):
         Vid2Canvas.buttonForward.setFocus()
         Vid2Canvas.buttonBackward.setDisabled(False)
         Vid2Canvas.buttonPause.setDisabled(True)
-        self.img_paths2 = []
-        self.imgs2 = []
-        self.vidDir2 = ''
 
         prD = self.PrD2.value()
         psi = self.Psi2.value()
-        self.vidDir2 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s/' % (p.proj_name, prD, psi))
+        self.gif_path2 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s.gif' % (p.proj_name, prD, psi))
+        self.imgs2 = list(imageio.get_reader(self.gif_path2))
 
         if self.btnSet2.isChecked():
             self.PrD2.setDisabled(True)
             self.Psi2.setDisabled(True)
             self.sense2.setDisabled(True)
-
-            i = 0
-            for root, dirs, files in os.walk(self.vidDir2):
-                for file in sorted(files):
-                    if not file.startswith('.'):  #ignore hidden files
-                        if file.endswith(".png"):
-                            self.img_paths2.append(os.path.join(root, file))
-                            self.imgs2.append(imageio.imread(self.img_paths2[i]))
-                            i += 1
 
             if self.sense2.currentText() == 'Sense: REV':
                 self.imgs2.reverse()
@@ -6210,21 +6149,12 @@ class Vid2Canvas(QtGui.QDialog):
             self.PrD2.setDisabled(False)
             self.Psi2.setDisabled(False)
             self.sense2.setDisabled(False)
+            self.imgs2 = [Vid2Canvas.blank] * len(self.imgs2)
 
-            i = 0
-            for root, dirs, files in os.walk(self.vidDir2):
-                for file in sorted(files):
-                    if not file.startswith('.'):  #ignore hidden files
-                        if file.endswith(".png"):
-                            self.imgs2.append(Vid2Canvas.blank)
-                            i += 1
-
-        gc.collect()
         Vid2Canvas.canvas2.flush_events()
 
-        self.frames2 = int(len(self.imgs2)) - 1
-        self.slider.setMaximum(self.frames2)
-        self.currentIMG2 = self.ax2.imshow(self.imgs2[0])  #plot initial frame
+        self.slider.setMaximum(len(self.imgs2) - 1)
+        self.currentIMG2 = self.ax2.imshow(self.imgs2[0], cmap='gray')  #plot initial frame
         self.slider.setValue(0)
         self.f = self.slider.value()
 
@@ -6242,11 +6172,12 @@ class Vid2Canvas(QtGui.QDialog):
         Vid2Canvas.canvas1.start_event_loop(self.delay)
         Vid2Canvas.canvas2.start_event_loop(self.delay)
 
+        max_index = VidCanvas.get_frame_count()
         if self.run == 1:
-            if self.f < self.frames1:
+            if self.f < max_index:
                 self.f += 1
                 self.scroll(self.f)
-            elif self.f == self.frames1:
+            elif self.f == max_index:
                 self.f = 0
                 self.rec += 1  #recursion safeguard
                 if self.rec == 10:
@@ -6259,7 +6190,7 @@ class Vid2Canvas(QtGui.QDialog):
                 self.f -= 1
                 self.scroll(self.f)
             elif self.f == 0:
-                self.f = self.frames1
+                self.f = max_index
                 self.rec += 1  #recusion safeguard
                 if self.rec == 10:
                     self.rec = 0
@@ -6280,7 +6211,7 @@ class Vid2Canvas(QtGui.QDialog):
         self.rec = 0
         Vid2Canvas.canvas1.stop_event_loop()
         Vid2Canvas.canvas2.stop_event_loop()
-        if self.f == self.frames1:
+        if self.f == VidCanvas.get_frame_count() - 1:
             self.f = 0
         else:
             self.f += 1
@@ -6332,7 +6263,7 @@ class Vid2Canvas(QtGui.QDialog):
         Vid2Canvas.canvas1.stop_event_loop()
         Vid2Canvas.canvas2.stop_event_loop()
         if self.f == 0:
-            self.f = self.frames1
+            self.f = VidCanvas.get_frame_count() - 1
         else:
             self.f -= 1
 
