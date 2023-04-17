@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+
+import os
+if not 'OMP_NUM_THREADS' in os.environ:
+    os.environ['OMP_NUM_THREADS'] = '1'
+
+import shutil
+
+from argparse import ArgumentParser
+
+from ManifoldEM import p, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie
+from ManifoldEM.util import calc_ang_width, calc_shannon, get_image_width_from_stack
+
+parser = ArgumentParser(
+    prog="manifold",
+    description="Command-line interface for ManifoldEM package",
+)
+parser.add_argument('-n', '--ncpu', type=int, default=1)
+subparsers = parser.add_subparsers(help=None, dest="command")
+
+init_parser = subparsers.add_parser("init", help="init help")
+init_parser.add_argument('-p', "--project-name", type=str, help="Name of project to create", required=True)
+init_parser.add_argument('-v', "--avg-volume", type=str, default="")
+init_parser.add_argument('-a', "--alignment", type=str, default="")
+init_parser.add_argument('-i', "--image-stack", type=str, default="")
+init_parser.add_argument('-m', "--mask-volume", type=str, default="")
+init_parser.add_argument('-s', "--pixel-size", type=float, required=True)
+init_parser.add_argument('-d', "--diameter", type=float, required=True)
+init_parser.add_argument('-r', "--resolution", type=float, required=True)
+init_parser.add_argument('-x', "--aperture-index", type=int, default=1)
+
+
+distance_parser = subparsers.add_parser("calc-distance")
+distance_parser.add_argument("input_file", type=str)
+
+manifold_analysis_parser = subparsers.add_parser("manifold-analysis")
+manifold_analysis_parser.add_argument("input_file", type=str)
+
+psi_analysis_parser = subparsers.add_parser("psi-analysis")
+psi_analysis_parser.add_argument("input_file", type=str)
+
+nlsa_movie_parser = subparsers.add_parser("nlsa-movie")
+nlsa_movie_parser.add_argument("input_file", type=str)
+
+
+def init(args):
+    p.proj_name = args.project_name
+    p.user_dir = os.path.join(os.getcwd(), "output")
+    proj_file = f'params_{p.proj_name}.toml'
+    output_dir = os.path.join(p.user_dir, f'outputs_{p.proj_name}')
+
+    if os.path.isfile(proj_file) or os.path.isdir(output_dir):
+        response = None
+        while response != 'y' and response != 'n':
+            response = input("Project appears to exist. Overwrite? y/n\n").lower()
+        if response == 'n':
+            print("Aborting")
+            return 1
+        print("Removing previous project")
+        if os.path.isdir(output_dir):
+            shutil.rmtree(output_dir)
+
+    p.avg_vol_file = args.avg_volume
+    p.align_param_file = args.alignment
+    p.img_stack_file = args.image_stack
+    p.mask_vol_file = args.mask_volume
+
+    p.pix_size = args.pixel_size
+    p.obj_diam = args.diameter
+    p.resol_est = args.resolution
+    p.ap_index = args.aperture_index
+    p.S2rescale = 1.0
+    p.relion_data = args.alignment.endswith('.star')
+
+    p.sh = calc_shannon(args.resolution, args.diameter)
+    p.ang_width = calc_ang_width(args.aperture_index, args.resolution, args.diameter)
+    p.nPix = get_image_width_from_stack(p.img_stack_file)
+
+    p.create_dir()
+    p.save()
+
+    Data.op(p.align_param_file)
+    p.resProj = 1
+    p.save()
+
+
+def load_state(args):
+    fname_front = args.input_file.split('params_', 1)[1]
+    fname_sans = os.path.splitext(fname_front)[0]
+    p.proj_name = fname_sans
+    p.load()
+    p.ncpu = args.ncpu
+    p.save()
+
+
+def calc_distance(args):
+    load_state(args)
+    GetDistancesS2.op()
+    p.resProj = 2
+    p.save()
+
+
+def manifold_analysis(args):
+    load_state(args)
+    manifoldAnalysis.op()
+    p.resProj = 3
+    p.save()
+
+
+def psi_analysis(args):
+    load_state(args)
+    psiAnalysis.op()
+    p.resProj = 4
+    p.save()
+
+
+def nlsa_movie(args):
+    load_state(args)
+    NLSAmovie.op()
+    p.resProj = 5
+    p.save()
+
+
+args = parser.parse_args()
+if args.command == "init":
+    init(args)
+if args.command == "calc-distance":
+    calc_distance(args)
+if args.command == "manifold-analysis":
+    manifold_analysis(args)
+if args.command == "psi-analysis":
+    psi_analysis(args)
+if args.command == "nlsa-movie":
+    nlsa_movie(args)

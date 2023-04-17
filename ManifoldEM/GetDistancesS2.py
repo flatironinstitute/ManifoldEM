@@ -68,6 +68,7 @@ def op(*argv):
         progress1.emit(int((offset / float(p.numberofJobs)) * 100))
     else:
         progress1 = NullEmitter()
+        offset = 0
 
     print("Processing {} projection directions.".format(len(input_data)))
 

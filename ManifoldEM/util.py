@@ -1,3 +1,4 @@
+import mrcfile
 import numpy as np
 import sys
 import pickle
@@ -5,16 +6,44 @@ import traceback
 
 from PIL import Image
 
+from ManifoldEM import p
+
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Columbia University Hstau Liao 2018 (python version)    
+Copyright (c) Columbia University Hstau Liao 2018 (python version)
 '''
 
 
 class NullEmitter:
     def emit(self, percent):
         pass
+
+
+def get_image_width_from_stack(stack_file: str):
+    img_width = 0
+    if stack_file.endswith('.mrcs'):
+        mrc = mrcfile.mmap(p.img_stack_file, mode='r')
+        if not mrc.is_image_stack():
+            mrc.close()
+            mrc = mrcfile.mmap(p.img_stack_file, mode='r+')
+            mrc.set_image_stack()
+
+        img_width = mrc.data[0].shape[0]
+        mrc.close()
+    else:
+        img_width = int(np.sqrt(os.path.getsize(stack_file) / (4 * p.num_part)))
+
+    return img_width
+
+
+def calc_shannon(res: float, dia: float) -> float:
+    return res / dia
+
+
+def calc_ang_width(aperture: int, resolution: float, diameter: float) -> float:
+    return min(aperture * resolution / diameter, 4 * np.sqrt(4 * np.pi))
+
 
 def debug_trace():
     from PyQt5.QtCore import pyqtRemoveInputHook
