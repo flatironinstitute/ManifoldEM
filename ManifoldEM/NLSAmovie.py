@@ -92,13 +92,7 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
 
 def op(*argv):
     p.load()
-
     multiprocessing.set_start_method('fork', force=True)
-
-    for i in range(p.numberofJobs):
-        for j in range(p.num_psis):
-            subdir = p.out_dir + '/topos/PrD_{}/psi_{}'.format(i + 1, j + 1)
-            os.makedirs(subdir, exist_ok=True)
 
     print("Making the 2D movies...")
     input_data = divide(p.numberofJobs)
