@@ -73,18 +73,9 @@ def findThreshHist(X, nbins, method=1):
         sol_root = fsolve(lambda x: funce(x, p1, p2) - funcg(x, p3, p4, p5), x0)
         return sol_root
 
-    def separateHist(X, labels, cluster_centers, bedges, tl, vis):
+    def separateHist(X, labels, cluster_centers, bedges, tl):
         id0 = np.argmin(cluster_centers)
-        id1 = np.argmax(cluster_centers)
-        Xid0 = X[labels == id0]
-        Xid1 = X[labels == id1]
-        if vis:
-            plt.hist(Xid0, bedges, color='gold')
-            plt.hist(Xid1, bedges, color='green')
-            plt.title(tl, fontsize=20)
-            plt.show()
-        th = np.max(X[labels == id0])
-        return th
+        return np.max(X[labels == id0])
 
     # histogram
     h, bedges = np.histogram(X, bins=nbins)
@@ -93,9 +84,7 @@ def findThreshHist(X, nbins, method=1):
     if method == 0 or method == 1 or method == 4 or method == 'all':
         # 1. kmeans
         kmeans = KMeans(n_clusters=2).fit(X)
-        if method == 1:
-            vis = False
-        t_thresh_k = separateHist(X, kmeans.labels_, kmeans.cluster_centers_.T, bedges, 'kmeans', vis)
+        t_thresh_k = separateHist(X, kmeans.labels_, kmeans.cluster_centers_.T, bedges, 'kmeans')
         if method == 0 or method == 'all':
             print('0. Kmeans.threshold:', t_thresh_k, ', centers:', kmeans.cluster_centers_.T)
 
@@ -159,7 +148,7 @@ def findThreshHist(X, nbins, method=1):
             gmm.fit(X)
 
         glabels = gmm.predict(X)
-        t_thresh_g = separateHist(X, glabels, gmm.means_.T, bedges, 'gmm', vis)
+        t_thresh_g = separateHist(X, glabels, gmm.means_.T, bedges, 'gmm')
         print('3. Gmm.threshold:', t_thresh_g, 'centers:', gmm.means_.T)
         t = t_thresh_g.copy()
 
@@ -236,7 +225,6 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
 
     nbins = 50  # we could use optimal bin finding methods such as 'fd','scott' etc,
     #plt.savefig('tau_iqrhist_cutoff.png')
-    visual = False
 
     Allmethods = ['K-means', 'find_peaks', 'Otsu', 'GMM', 'Curve-fit Intersection']
     # choose cutoff method type
@@ -259,39 +247,6 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
         print('Method:', Allmethods[method])
 
     cutoff, hmax, yfilt = findThreshHist(X, nbins, method=method)
-
-    if visual:
-        colors = ['red', 'orange', 'blue', 'cyan', 'olive']
-        fig = plt.figure(figsize=(12, 6))
-        plt.hist(X, nbins)
-        _, xbins = np.histogram(X, nbins - 1)
-
-        ymin = 0
-        ymax = hmax
-        legends = []
-
-        fr = np.linspace(0.85, 0.6, len(methods))
-        for i in methods:
-
-            color = colors[i]
-            if method == 'all':
-                cutf = cutoff[i]
-            else:
-                cutf = cutoff
-
-            plt.vlines(cutf, ymin, ymax * fr[i], color=color, linestyle='dashed', lw=2.0)
-            legends.append(Allmethods[i])
-        ### use this to visually check the additional cut-off using mean, median etc. of all cutoffs.
-        if method == 'all':  # what to do when using multiple methods , if we want a single cut-off ?
-            plt.vlines(np.median(cutoff), ymin, ymax * 0.5, color='green', linestyle='dashed', lw=2.0)
-        legends.append('Selected(median of all cutoffs)')
-        plt.legend(legends, loc='upper right', fontsize=20)
-        #plt.plot(xbins, yfilt, color='brown')
-        #legends.append('Filtered hist counts')
-        plt.title('Tau(iqr) distribution cutoff(s)', fontsize=20)
-        plt.show()
-        tauvalfigfile = os.path.join(p.CC_dir, 'tau-val-distribution')
-        fig.savefig(tauvalfigfile + '.png')
 
     if cutoff.size > 1:  # how do we compare and choose the cut-off when using multiple methods?
         # just choose the min, max, mean , median , etc. oro compare
