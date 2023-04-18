@@ -1,5 +1,6 @@
 import os
 import multiprocessing
+import tqdm
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,9 +22,9 @@ Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
-def divide(N):
+def _construct_input_data(N):
     ll = []
-    for prD in range(N):  #prDs
+    for prD in range(N):
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
@@ -81,27 +82,25 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
 
 
 def op(*argv):
+    print("Making the 2D movies...")
     p.load()
     multiprocessing.set_start_method('fork', force=True)
+    use_gui_progress = len(argv) > 0
 
-    print("Making the 2D movies...")
-    input_data = divide(p.numberofJobs)
-
-    if argv:
-        progress4 = argv[0]
-    else:
-        progress4 = NullEmitter()
+    input_data = _construct_input_data(p.numberofJobs)
+    n_jobs = len(input_data)
+    progress4 = argv[0] if use_gui_progress else NullEmitter()
+    movie_local = partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps)
 
     if p.ncpu == 1:  # avoids the multiprocessing package
-        for i, datai in enumerate(input_data):
-            movie(datai, p.out_dir, p.dist_file, p.psi2_file, p.fps)
-            progress4.emit(int((i / p.numberofJobs) * 99))
+        for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+            movie_local(datai)
+            progress4.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=p.ncpu) as pool:
-            for i, _ in enumerate(pool.imap_unordered(
-                    partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
-                    input_data)):
-                progress4.emit(int((i / p.numberofJobs) * 99))
+            for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(movie_local, input_data)),
+                                  total=n_jobs, disable=use_gui_progress):
+                progress4.emit(int(99 * i / n_jobs))
 
     p.save()
     progress4.emit(100)

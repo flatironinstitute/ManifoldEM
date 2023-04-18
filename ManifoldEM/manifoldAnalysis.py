@@ -37,7 +37,6 @@ def op(*argv):
     n_jobs = len(input_data)
     progress2 = argv[0] if use_gui_progress else NullEmitter()
 
-    print(f"Processing {n_jobs} projection directions.")
     for i in range(n_jobs):
         subdir = os.path.join(p.out_dir, 'topos', f'PrD_{i+1}')
         os.makedirs(subdir, exist_ok=True)

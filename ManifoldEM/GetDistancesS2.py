@@ -54,7 +54,6 @@ def op(*argv):
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()
 
-    print(f"Processing {len(input_data)} projection directions for distance calculation")
     if p.ncpu == 1 or options['parallel'] is True:
         for i, datai in tqdm.tqdm(enumerate(input_data),
                                   total=n_jobs, disable=use_gui_progress):
