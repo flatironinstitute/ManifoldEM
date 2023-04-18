@@ -102,9 +102,6 @@ class Params(sys.__class__):
 
     # FIXME: These really shouldn't be cached, or at the very least should be put in their own subdict...
     user_dir: str = ''
-    dist_dir: str = ''
-    psi_dir: str = ''
-    psi2_dir: str = ''
     movie2d_dir: str = ''
     EL_dir: str = ''
     tau_dir: str = ''
@@ -146,6 +143,20 @@ class Params(sys.__class__):
     @property
     def tess_file(self) -> str:
         return os.path.join(self.out_dir, 'selecGCs')
+
+
+    @property
+    def dist_dir(self) -> str:
+        return os.path.join(self.out_dir, 'distances')
+
+    @property
+    def psi_dir(self) -> str:
+        return os.path.join(self.out_dir, 'diff_maps')
+
+
+    @property
+    def psi2_dir(self) -> str:
+        return os.path.join(self.out_dir, 'psi_analysis')
 
 
     def get_EL_file(self, prd_index: int):
@@ -211,14 +222,12 @@ class Params(sys.__class__):
 
     def create_dir(self):
         # input and output directories and files
+
+        self.out_dir = os.path.join(self.user_dir, f'outputs_{self.proj_name}')
+
         p = self
-        p.dist_dir = os.path.join(p.user_dir, 'outputs_{}/distances/'.format(p.proj_name))
         os.makedirs(p.dist_dir, exist_ok=True)
-
-        p.psi_dir = os.path.join(p.user_dir, 'outputs_{}/diff_maps/'.format(p.proj_name))
         os.makedirs(p.psi_dir, exist_ok=True)
-
-        p.psi2_dir = os.path.join(p.user_dir, 'outputs_{}/psi_analysis/'.format(p.proj_name))
         os.makedirs(p.psi2_dir, exist_ok=True)
 
         p.EL_dir = os.path.join(p.user_dir, 'outputs_{}/ELConc{}/'.format(p.proj_name, p.conOrderRange))
@@ -254,7 +263,6 @@ class Params(sys.__class__):
         os.makedirs(p.anim_dir, exist_ok=True)
 
         #################
-        p.out_dir = os.path.join(p.user_dir, 'outputs_{}/'.format(p.proj_name))
         os.makedirs(os.path.join(p.out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
 
         p.dist_file = '{}/IMGs_'.format(p.dist_dir)
