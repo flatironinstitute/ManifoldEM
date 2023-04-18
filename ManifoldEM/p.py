@@ -101,9 +101,7 @@ class Params(sys.__class__):
 
 
     # FIXME: These really shouldn't be cached, or at the very least should be put in their own subdict...
-    user_dir: str = ''
-    movie2d_dir: str = ''
-    EL_dir: str = ''
+    user_dir: str = ''  # Root directory for project
     tau_dir: str = ''
     OM_dir: str = ''
     Var_dir: str = ''
@@ -123,9 +121,7 @@ class Params(sys.__class__):
     psi_file: str = ''
     psi2_file: str = ''
     movie2d_file: str = ''
-    EL_file: str = ''
     tau_file: str = ''
-    OM_file: str = ''
     OM1_file: str = ''
     Var_file: str = ''
     rho_file: str = ''
@@ -149,6 +145,7 @@ class Params(sys.__class__):
     def dist_dir(self) -> str:
         return os.path.join(self.out_dir, 'distances')
 
+
     @property
     def psi_dir(self) -> str:
         return os.path.join(self.out_dir, 'diff_maps')
@@ -157,6 +154,26 @@ class Params(sys.__class__):
     @property
     def psi2_dir(self) -> str:
         return os.path.join(self.out_dir, 'psi_analysis')
+
+
+    @property
+    def EL_dir(self) -> str:
+        return os.path.join(self.out_dir, f'ELConc{self.conOrderRange}')
+
+
+    @property
+    def OM_dir(self) -> str:
+        return os.path.join(self.EL_dir, 'OM')
+
+
+    @property
+    def EL_file(self) -> str:
+        return os.path.join(self.EL_dir, 'S2_')
+
+
+    @property
+    def OM_file(self) -> str:
+        return os.path.join(self.OM_dir, 'S2_')
 
 
     def get_EL_file(self, prd_index: int):
@@ -229,11 +246,7 @@ class Params(sys.__class__):
         os.makedirs(p.dist_dir, exist_ok=True)
         os.makedirs(p.psi_dir, exist_ok=True)
         os.makedirs(p.psi2_dir, exist_ok=True)
-
-        p.EL_dir = os.path.join(p.user_dir, 'outputs_{}/ELConc{}/'.format(p.proj_name, p.conOrderRange))
         os.makedirs(p.EL_dir, exist_ok=True)
-
-        p.OM_dir = os.path.join(p.user_dir, '{}OM/'.format(p.EL_dir))
         os.makedirs(p.OM_dir, exist_ok=True)
 
         p.Var_dir = os.path.join(p.user_dir, 'outputs_{}/Var/'.format(p.proj_name))
@@ -268,8 +281,6 @@ class Params(sys.__class__):
         p.dist_file = '{}/IMGs_'.format(p.dist_dir)
         p.psi_file = '{}/gC_trimmed_psi_'.format(p.psi_dir)
         p.psi2_file = '{}/S2_'.format(p.psi2_dir)
-        p.EL_file = '{}/S2_'.format(p.EL_dir)
-        p.OM_file = '{}/S2_'.format(p.OM_dir)
         p.OM1_file = '{}/S2_'.format(p.OM_dir)
         p.Var_file = '{}/S2_'.format(p.Var_dir)
         p.rho_file = '{}/rho'.format(p.OM_dir)

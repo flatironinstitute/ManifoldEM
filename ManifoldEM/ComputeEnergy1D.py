@@ -78,7 +78,7 @@ def op(*argv):
     gc.collect()
 
     p.hUn = hUn
-    OM_file = '{}OM'.format(p.OM_file)
+    OM_file = f'{p.OM_file}OM'
     hUn.astype('int').tofile(OM_file)
 
     #################

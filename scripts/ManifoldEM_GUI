@@ -3555,8 +3555,8 @@ class P5(QtGui.QWidget):
             gc.collect()
             P5.button_erg.setText('Energy Landscape Complete')
 
-            fnameOM = os.path.join(P1.user_directory, 'outputs_{}/ELConc50/OM/S2_OM'.format(p.proj_name))  #occupancy
-            fnameEL = os.path.join(P1.user_directory, 'outputs_{}/ELConc50/OM/S2_EL'.format(p.proj_name))  #energy
+            fnameOM = f'{p.OM_file}OM'
+            fnameEL = f'{p.OM_file}EL'
             P4.Occ1d = np.fromfile(fnameOM, dtype=int)
             P4.Erg1d = np.fromfile(fnameEL)
 
@@ -9155,10 +9155,9 @@ class MainWindow(QtGui.QMainWindow):
                                 P5.button_toP6.setDisabled(True)
                                 print('\ttemperature: %s' % (p.temperature))
                                 if p.dim == 1:
-                                    fnameOM = os.path.join(P1.user_directory, 'outputs_{}/ELConc50/OM/S2_OM'.format(
-                                        p.proj_name))  #occupancy
-                                    fnameEL = os.path.join(P1.user_directory,
-                                                           'outputs_{}/ELConc50/OM/S2_EL'.format(p.proj_name))  #energy
+                                    fnameOM = f'{p.OM_file}OM'
+                                    fnameEL = f'{p.OM_file}EL'
+
                                     P4.Occ1d = np.fromfile(fnameOM, dtype=int)
                                     P4.Erg1d = np.fromfile(fnameEL)
                                     Erg1dMain.entry_width.setCurrentIndex(int(p.width_1D) - 1)
