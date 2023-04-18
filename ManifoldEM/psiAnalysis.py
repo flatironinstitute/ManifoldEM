@@ -3,7 +3,6 @@ import multiprocessing
 import numpy as np
 
 from functools import partial
-from contextlib import contextmanager
 
 from ManifoldEM import p, psiAnalysisParS2
 from ManifoldEM.util import NullEmitter
@@ -14,13 +13,6 @@ Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 Copyright (c) Hstau Liao 2018 (python version)
 Copyright (c) Evan Seitz 2019 (python version)
 '''
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
 
 
 def divid(N, rc, fin_PDs):
@@ -63,16 +55,15 @@ def op(*argv):
 
     print(f"Processing {len(input_data)} projection directions.")
 
-    if p.ncpu == 1:  # avoids the multiprocessing package
-        for i in range(len(input_data)):
-            if argv:  #for p.ncpu=1, progress3 update happens inside psiAnalysisParS2;
-                # however, same signal can't be sent if multiprocessing
-                psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc, argv[0])
-            else:  #for non-GUI
-                psiAnalysisParS2.op(input_data[i], p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
+    if p.ncpu == 1:
+        for i, datai in enumerate(input_data):
+            if argv:
+                psiAnalysisParS2.op(datai, p.conOrderRange, p.trajName, isFull, p.num_psiTrunc, argv[0])
+            else:
+                psiAnalysisParS2.op(datai, p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
             progress3.emit(int(99 * (i / p.numberofJobs)))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(
                     pool.imap_unordered(
                         partial(psiAnalysisParS2.op,
@@ -83,9 +74,6 @@ def op(*argv):
                         input_data)):
                 if argv:
                     argv[0].emit(int(99 * (i / p.numberofJobs)))
-
-            pool.close()
-            pool.join()
 
     p.save()
     progress3.emit(100)

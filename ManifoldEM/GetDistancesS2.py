@@ -3,7 +3,6 @@ import multiprocessing
 import numpy as np
 
 from functools import partial
-from contextlib import contextmanager
 
 from ManifoldEM import myio, p, getDistanceCTF_local_Conj9combinedS2, Data
 from ManifoldEM.util import NullEmitter
@@ -13,13 +12,6 @@ Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
 
 
 def divide(CG, q, df, N):
@@ -70,15 +62,14 @@ def op(*argv):
         progress1 = NullEmitter()
         offset = 0
 
-    print("Processing {} projection directions.".format(len(input_data)))
+    print(f"Processing {len(input_data)} projection directions.")
 
-    if p.ncpu == 1 or options['parallel'] == True:  # avoids the multiprocessing package
-        for i in range(len(input_data)):
-            getDistanceCTF_local_Conj9combinedS2.op(input_data[i], filterPar, p.img_stack_file, sh, size, options)
-            if argv:
-                progress1.emit(int(((offset + i) / float(p.numberofJobs)) * 99))
+    if p.ncpu == 1 or options['parallel'] is True:
+        for i, datai in enumerate(input_data):
+            getDistanceCTF_local_Conj9combinedS2.op(datai, filterPar, p.img_stack_file, sh, size, options)
+            progress1.emit(int(((offset + i) / float(p.numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(
                     partial(getDistanceCTF_local_Conj9combinedS2.op,
                             filterPar=filterPar,
@@ -87,9 +78,6 @@ def op(*argv):
                             nStot=size,
                             options=options), input_data)):
                 progress1.emit(int(((offset + i) / p.numberofJobs) * 99))
-
-            pool.close()
-            pool.join()
 
     p.save()
     progress1.emit(100)

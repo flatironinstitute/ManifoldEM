@@ -49,7 +49,6 @@ import multiprocessing
 
 import numpy as np
 from functools import partial
-from contextlib import contextmanager
 
 from scipy.ndimage import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
@@ -74,13 +73,6 @@ Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
 
 
 def num_proc(n):
@@ -363,20 +355,18 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
         plt.show()
 
     if not options['avgOnly']:
-
-        if options['parallel'] == True:
+        if options['parallel'] is True:
             k = num_proc(p.ncpu)  # number of processes
             inc = int(nS / k)  # sqrt size of each job
             k1 = np.ceil(float(nS) / inc).astype(int)  # sqrt number of final blocks
 
             ll = divide(k1, inc)  # list of
             d = np.zeros((inc, inc))
-            with poolcontext(processes=p.ncpu) as pool:
+            with multiprocessing.Pool(processes=p.ncpu) as pool:
                 results = pool.map(partial(conquer, fy=fy, CTF=CTF, d=d, M=nS), ll)
             for bb in range(len(ll)):
                 D = fillin(ll[bb], D, results[bb], nS)
             D = D + D.T  # restore full distance matrix
-
         else:
             fy = fy.reshape(nS, N**2)
             CTF = CTF.reshape(nS, N**2)

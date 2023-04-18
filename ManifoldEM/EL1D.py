@@ -3,7 +3,6 @@ import multiprocessing
 import numpy as np
 
 from functools import partial
-from contextlib import contextmanager
 
 from ManifoldEM import p, psiAnalysisParS2, myio, ComputeEnergy1D
 from ManifoldEM.util import NullEmitter
@@ -13,13 +12,6 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
 
 
 def divide1(R, psiNumsAll, sensesAll):
@@ -38,7 +30,6 @@ def divide1(R, psiNumsAll, sensesAll):
 
 def op(*argv):
     p.load()
-    #p.print()
 
     multiprocessing.set_start_method('fork', force=True)
 
@@ -66,7 +57,7 @@ def op(*argv):
             psiAnalysisParS2.op(datai, p.conOrderRange, p.trajName, isFull, p.num_psiTrunc)
             progress6.emit(int(((offset + i) / len(R)) * 99))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(
                     partial(psiAnalysisParS2.op,
                             conOrderRange=p.conOrderRange,
@@ -75,9 +66,6 @@ def op(*argv):
                             psiTrunc=p.num_psiTrunc),
                     input_data)):
                 progress6.emit(((offset + i) / len(R)) * 99)
-
-            pool.close()
-            pool.join()
 
     ComputeEnergy1D.op()
     p.save()

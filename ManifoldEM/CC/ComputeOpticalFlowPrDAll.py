@@ -5,18 +5,10 @@ import os
 import shutil
 
 import numpy as np
-from contextlib import contextmanager
 
 from ManifoldEM import myio, p
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
 
 
 # changed Nov 30, 2018, S.M.
@@ -235,18 +227,13 @@ def op(nodeEdgeNumRange, *argv):
         offset = 0
 
     if p.ncpu == 1:  # avoids the multiprocessing package
-        for i in range(len(input_data)):
-            ComputeOptFlowPrDPsiAll1(input_data[i])
-            if argv:
-                offset += 1
-                progress5.emit(int((offset / float(numberofJobs)) * 99))
+        for i, datai in enumerate(input_data):
+            ComputeOptFlowPrDPsiAll1(datai)
+            progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data)):
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
-
-            pool.close()
-            pool.join()
 
     # for now individual files were written and are being combined here
     if p.findBadPsiTau:

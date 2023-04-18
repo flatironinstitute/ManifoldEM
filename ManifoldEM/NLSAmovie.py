@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from functools import partial
-from contextlib import contextmanager
 
 from ManifoldEM import myio, p
 from ManifoldEM.util import NullEmitter
@@ -21,15 +20,6 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
-    pool.close()
-
 
 def divide(N):
     ll = []
@@ -103,18 +93,15 @@ def op(*argv):
         progress4 = NullEmitter()
 
     if p.ncpu == 1:  # avoids the multiprocessing package
-        for i in range(len(input_data)):
-            movie(input_data[i], p.out_dir, p.dist_file, p.psi2_file, p.fps)
+        for i, datai in enumerate(input_data):
+            movie(datai, p.out_dir, p.dist_file, p.psi2_file, p.fps)
             progress4.emit(int((i / p.numberofJobs) * 99))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(
                     partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps),
                     input_data)):
                 progress4.emit(int((i / p.numberofJobs) * 99))
-
-            pool.close()
-            pool.join()
 
     p.save()
     progress4.emit(100)

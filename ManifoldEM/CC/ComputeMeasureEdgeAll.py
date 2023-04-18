@@ -5,19 +5,11 @@ import numpy as np
 
 from numpy import linalg as LA
 from functools import partial
-from contextlib import contextmanager
 
 from ManifoldEM import p, myio
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
 from ManifoldEM.util import NullEmitter
 from fasthog import hog_from_gradient as histogram_from_gradients
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
 
 
 '''
@@ -318,18 +310,15 @@ def op(G, nodeEdgeNumRange, *argv):
         progress5.emit(int((offset / float(numberofJobs)) * 99))
 
     if p.ncpu == 1:  # avoids the multiprocessing package
-        for i in range(len(input_data)):
-            ComputeEdgeMeasurePairWisePsiAll(input_data[i], G, flowVecPctThresh)
+        for i, datai in enumerate(input_data):
+            ComputeEdgeMeasurePairWisePsiAll(datai, G, flowVecPctThresh)
             if argv:
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(
                     partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
                     input_data)):
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
-
-            pool.close()
-            pool.join()
 
     p.save()

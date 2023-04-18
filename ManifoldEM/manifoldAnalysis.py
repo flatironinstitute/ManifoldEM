@@ -1,7 +1,6 @@
 import os
 import multiprocessing
 
-from contextlib import contextmanager
 from functools import partial
 
 from ManifoldEM import manifoldTrimmingAuto, p
@@ -13,14 +12,6 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
-
-
-@contextmanager
-def poolcontext(*args, **kwargs):
-    pool = multiprocessing.Pool(*args, **kwargs)
-    yield pool
-    pool.terminate()
-    pool.close()
 
 
 def divide(N):
@@ -53,17 +44,17 @@ def op(*argv):
         progress2 = NullEmitter()
         offset = 0
 
-    print("Processing {} projection directions.".format(len(input_data)))
+    print(f"Processing {len(input_data)} projection directions.")
     for i in range(p.numberofJobs):
         subdir = p.out_dir + '/topos/PrD_{}'.format(i + 1)
         os.makedirs(subdir, exist_ok=True)
 
     if p.ncpu == 1:
-        for i in range(len(input_data)):
-            manifoldTrimmingAuto.op(input_data[i], posPath, p.tune, p.rad, visual, doSave)
+        for i, datai in enumerate(input_data):
+            manifoldTrimmingAuto.op(datai, posPath, p.tune, p.rad, visual, doSave)
             progress2.emit(int((offset + i / p.numberofJobs) * 99))
     else:
-        with poolcontext(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(
                     partial(manifoldTrimmingAuto.op,
                             posPath=posPath,
@@ -73,9 +64,6 @@ def op(*argv):
                             doSave=doSave),
                     input_data)):
                 progress2.emit(int(((offset + i) / p.numberofJobs) * 99))
-
-            pool.close()
-            pool.join()
 
     p.save()
     progress2.emit(100)
