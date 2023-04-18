@@ -11,31 +11,21 @@ from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
     Created: Dec 2017. Modified:Aug 16,2019
 '''
 
+def force_remove(*paths):
+    for path in paths:
+        if os.path.isfile(path):
+            os.remove(path)
+
 
 def op(*argv):
     p.load()
 
-    # file i/o
-    CC_file = '{}/CC_file'.format(p.CC_dir)
-    if os.path.exists(CC_file):
-        os.remove(CC_file)
-
-    nodeOutputFile = '{}/comp_psi_sense_nodes.txt'.format(p.CC_dir)
-    if os.path.exists(nodeOutputFile):
-        os.remove(nodeOutputFile)
-
-    nodeBelFile1 = '{}/nodeAllStateBel_rc1.txt'.format(p.CC_dir)
-    if os.path.exists(nodeBelFile1):
-        os.remove(nodeBelFile1)
-
-    nodeBelFile2 = '{}/nodeAllStateBel_rc2.txt'.format(p.CC_dir)
-    if os.path.exists(nodeBelFile2):
-        os.remove(nodeBelFile2)
+    nodeOutputFile = os.path.join(p.CC_dir, 'comp_psi_sense_nodes.txt')
+    nodeBelFile1 = os.path.join(p.CC_dir, 'nodeAllStateBel_rc1.txt')
+    nodeBelFile2 = os.path.join(p.CC_dir, 'nodeAllStateBel_rc2.txt')
+    force_remove(p.CC_file, nodeBelFile1, nodeBelFile2)
 
     CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
-
-    #if OF_CC, OF_CC_fig directory doesn't exist then
-    os.makedirs(p.CC_OF_dir, exist_ok=True)
 
     # if trash PDs were created manually
     trash_list_PDs = np.nonzero(p.get_trash_list())[0]
@@ -53,34 +43,32 @@ def op(*argv):
 
     numConnComp = len(G['NodesConnComp'])
 
-
-    anchorlist = [a[0] - 1 for a in p.anch_list]  # we need labels with 0 index to compare with the node labels in G, Gsub
+    # we need labels with 0 index to compare with the node labels in G, Gsub
+    anchorlist = [a[0] - 1 for a in p.anch_list]
     print(f'Number of anchor nodes: {len(anchorlist)}')
     print(f'Anchor list: {anchorlist}')
 
     if any(a in anchorlist for a in G['Nodes']):
         if len(anchorlist) + numTrashPDs == G['nNodes']:
-            print('\nAll nodes have been manually selected (as anchor nodes). ' \
-                 'Conformational-coordinate propagation is not required. Exiting this program.\n')
+            print('\nAll nodes have been manually selected (as anchor nodes). '
+                  'Conformational-coordinate propagation is not required. Exiting this program.\n')
 
             psinums = np.zeros((2, G['nNodes']), dtype='int')
             senses = np.zeros((2, G['nNodes']), dtype='int')
 
-            for a in p.anch_list:  #for row in anch_list; e.g. [1, 1, -1, 0]
+            for a in p.anch_list:
                 psinums[0, a[0] - 1] = a[1] - 1
                 senses[0, a[0] - 1] = a[2]
 
             idx = 0
-            for t in p.get_trash_list():  #for row in trash_list; e.g. [36, True] means PD 36 is Trash
-
-                if t == 1:
+            for is_trash_index in p.get_trash_list():
+                if is_trash_index:
                     psinums[0, idx] = -1
                     senses[0, idx] = 0
 
                 idx += 1
 
             print('\nFind CC: Writing the output to disk...\n')
-            p.CC_file = '{}/CC_file'.format(p.CC_dir)
             myio.fout1(p.CC_file, psinums=psinums, senses=senses)
 
             p.allAnchorPassed = 1
@@ -104,15 +92,14 @@ def op(*argv):
         else:
             connCompNoAnchor.append(i)
             print('Anchor node(s) in connected component', i, ' NOT selected.')
-            print('\nIf you proceed without atleast one anchor node for the connected component',i,\
-                  ', all the corresponding nodes will not be assigned with reaction coordinate labels.' \
+            print('\nIf you proceed without atleast one anchor node for the connected component', i,
+                  ', all the corresponding nodes will not be assigned with reaction coordinate labels.'
                   'cancel this program now or after 20 sec it will continue without the required anchors.\n')
-
 
     G.update(ConnCompNoAnchor=connCompNoAnchor)
 
-    nodeRange = np.sort([y for x in nodelCsel for y in x])  #flatten list another way?
-    edgeNumRange = np.sort([y for x in edgelCsel for y in x])  #flatten list another way?
+    nodeRange = np.sort([y for x in nodelCsel for y in x])
+    edgeNumRange = np.sort([y for x in edgelCsel for y in x])
 
     # adding these two params to the CC graph file *Hstau Aug 19
     data = myio.fin1(CC_graph_file)
@@ -124,16 +111,11 @@ def op(*argv):
     # Step 1: compute the optical flow vectors for all prds
     # Step 2: compute the pairwise edge measurements for all psi - psi movies
     # Step 3: Extract the pairwise edge measurements to be used for node-potential and edge-potential calculations
-    if argv:
-        edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock = ComputePsiMovieEdgeMeasurements.op(
-            G, nodeRange, edgeNumRange, argv[0])
-    else:
-        edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock = ComputePsiMovieEdgeMeasurements.op(
-            G, nodeRange, edgeNumRange)
+    edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock = \
+        ComputePsiMovieEdgeMeasurements.op(G, nodeRange, edgeNumRange, *argv)
 
     # If graph G was updated by pruning or otherwise during OF or Edge measurement step, it writes pruned G, so read
     # it here and pass to BP step
-
     if os.path.exists(CC_graph_file_pruned):
         data = myio.fin1(CC_graph_file_pruned)
         G = data['G']
@@ -143,10 +125,9 @@ def op(*argv):
 
     # Setup and run the Optimization: Belief propagation
     print('\n4.Running Global optimization to estimate state probability of all nodes ...')
-
     BPoptions = dict(maxProduct=0, verbose=0, tol=1e-4, maxIter=300, eqnStates=1.0, alphaDamp=1.0)
 
-    #reaction coordinate number rc = 1,2
+    # reaction coordinate number rc = 1,2
     psinums = np.zeros((2, G['nNodes']), dtype='int')
     senses = np.zeros((2, G['nNodes']), dtype='int')
     cc = 1
@@ -166,13 +147,12 @@ def op(*argv):
 
     # save
     print('\nFind CC: Writing the output to disk...\n')
-    p.CC_file = '{}/CC_file'.format(p.CC_dir)
     myio.fout1(p.CC_file, psinums=psinums, senses=senses)
 
     if p.dim == 1:  # 1 dimension
         node_list = np.empty((G['nNodes'], 4))
-        node_list[:, 0] = range(1, G['nNodes'] + 1)  # 1 indexing
-        node_list[:, 1] = psinums[0, :] + 1  # indexing 1
+        node_list[:, 0] = np.arange(1, G['nNodes'] + 1)
+        node_list[:, 1] = psinums[0, :] + 1
         node_list[:, 2] = senses[0, :]
         node_list[:, 3] = OptNodeBel_cc1
 
@@ -187,14 +167,14 @@ def op(*argv):
 
     elif p.dim == 2:  # 2 dimension
         node_list = np.empty((G['nNodes'], 7))
-        node_list[:, 0] = range(1, G['nNodes'] + 1)  # 1 indexing
-        node_list[:, 1:3] = (psinums + 1).T  # indexing 1 and indices 1:3 means 1 & 2
-        node_list[:, 3:5] = senses.T  #indices 3:5 means 3 & 4
+        node_list[:, 0] = np.arange(1, G['nNodes'] + 1)
+        node_list[:, 1:3] = (psinums + 1).T
+        node_list[:, 3:5] = senses.T
         node_list[:, 5] = OptNodeBel_cc1
         node_list[:, 6] = OptNodeBel_cc2
 
         # save the found psinum , senses also as text file
-        #node_list is variable name with columns: if dim =1 : (PrD, CC1, S1) + (CC2, S2) if dim =2
+        # node_list is variable name with columns: if dim =1 : (PrD, CC1, S1) + (CC2, S2) if dim =2
         np.savetxt(nodeOutputFile, node_list, fmt='%i\t%i\t%i\t%i\t%i\t%f\t%f', delimiter='\t')
 
         nodeBels2 = np.empty((nodeBelief_cc2.T.shape[0], nodeBelief_cc2.T.shape[1] + 1))

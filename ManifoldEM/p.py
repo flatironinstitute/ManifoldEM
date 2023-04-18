@@ -97,7 +97,7 @@ opt_movie: dict = {'printFig': 0,
 opt_mask_type: int = 0                     # 0:None, 1:Annular, 2:Volumetric
 opt_mask_param: int = 0                    # for either none, radius (Int), or iso(Int)
 
-findBadPsiTau: int = 1
+findBadPsiTau: bool = True
 tau_occ_thresh: float = 0.5
 use_pruned_graph: bool = False
 

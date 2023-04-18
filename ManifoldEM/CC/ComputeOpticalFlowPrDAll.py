@@ -13,28 +13,14 @@ from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
 # changed Nov 30, 2018, S.M.
 # here N is a list of (node) numbers
-def divide1(R):
+def _construct_input_data(R):
     ll = []
     for prD in R:
-        CC_OF_file = '{}{}'.format(p.CC_OF_file, prD)
-        if os.path.exists(CC_OF_file):
-            data = myio.fin1(CC_OF_file)
-            if data is not None:
-                continue
+        CC_OF_file = f'{p.CC_OF_file}{prD}'
+        if os.path.exists(CC_OF_file) and os.path.getsize(CC_OF_file):
+            continue
         ll.append([CC_OF_file, prD])
     return ll
-
-
-def count1(R):
-    c = 0
-    for prD in R:
-        CC_OF_file = '{}{}'.format(p.CC_OF_file, prD)
-        if os.path.exists(CC_OF_file):
-            data = myio.fin1(CC_OF_file)
-            if data is not None:
-                continue
-        c += 1
-    return c
 
 
 '''
@@ -71,11 +57,10 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
     # the vectors separtely , with splitmovie = 1, this is experimental now.
 
     # at present the stacking of the dictionary for two blocks has been checked, for others needs to be verified
-    splitmovie = 0
+    splitmovie = False
     FlowVecFWD = []
     FlowVecREV = []
     if computeOF:
-
         if splitmovie:
             # number of frames in each blocks
             numBlocks_split = 3
@@ -120,7 +105,6 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
 
                 if frameEnd == numFrames:
                     break
-
         else:
             FlowVecFWD = OpticalFlowMovie.op(MFWD, prd_psinum, blockSize_avg, Labels[0], OFvisualPrint)
 
@@ -172,25 +156,22 @@ def ComputeOptFlowPrDPsiAll1(input_data):
 
 
 # If computing for a specified set of nodes, then call the function with nodeRange
-def op(nodeEdgeNumRange, *argv):
+def op(node_edge_num_range, *argv):
     p.load()
     multiprocessing.set_start_method('fork', force=True)
 
-    if argv:
-        progress5 = argv[0]
+    node_range = node_edge_num_range[0]
+    edge_num_range = node_edge_num_range[1]
+    numberofJobs = len(node_range) + len(edge_num_range)
+    input_data = _construct_input_data(node_range)
 
-    nodeRange = nodeEdgeNumRange[0]
-    edgeNumRange = nodeEdgeNumRange[1]
-    numberofJobs = len(nodeRange) + len(edgeNumRange)
-
-    p.findBadPsiTau = 1  # This needs to be interfaced with the GUI , to find bad psi movies
     if p.findBadPsiTau:
         # initialize and write to file badpsis array
-        offset_OF_files = len(nodeRange) - count1(nodeRange)
+        offset_OF_files = len(node_range) - len(input_data)
         if offset_OF_files == 0:  # offset_OF_files=0 when no OF files were generated
-            badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
-            if os.path.exists(badNodesPsisTaufile):
-                os.remove(badNodesPsisTaufile)
+            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
+            if os.path.exists(bad_nodes_psis_taufile):
+                os.remove(bad_nodes_psis_taufile)
 
         CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
         if os.path.exists(CC_graph_file_pruned):
@@ -199,12 +180,12 @@ def op(nodeEdgeNumRange, *argv):
             dataG = myio.fin1(p.CC_graph_file)
 
         G = dataG['G']
-        badNodesPsisTau = np.zeros((G['nNodes'], p.num_psis)).astype(int)
-        NodesPsisTauIQR = np.zeros((G['nNodes'], p.num_psis)) + 5.  # any positive real number > 1.0 outside tau range
+        bad_nodes_psis_tau = np.zeros((G['nNodes'], p.num_psis)).astype(int)
+        nodes_psis_tau_IQR = np.zeros((G['nNodes'], p.num_psis)) + 5.  # any positive real number > 1.0 outside tau range
         # tau range is [0,1.0], since a zero or small tau value by default means it will be automatically assigned
         # as a bad tau depending on the cut-off
-        NodesPsisTauOcc = np.zeros((G['nNodes'], p.num_psis))
-        NodesPsisTauVals = [[None]] * G['nNodes']
+        nodes_psis_tau_occ = np.zeros((G['nNodes'], p.num_psis))
+        nodes_psis_tau_vals = [[None]] * G['nNodes']
 
         # the above variables are initialized at the start and also at resume of CC step
         # and used later for combining the individual bad tau PD files
@@ -212,15 +193,15 @@ def op(nodeEdgeNumRange, *argv):
         # but make sure the intialized variables are written out to the file only at the start
         # and not during resume of CC step
         if offset_OF_files == 0:
-            myio.fout1(badNodesPsisTaufile,
-                       badNodesPsisTau=badNodesPsisTau,
-                       NodesPsisTauIQR=NodesPsisTauIQR,
-                       NodesPsisTauOcc=NodesPsisTauOcc,
-                       NodesPsisTauVals=NodesPsisTauVals)
+            myio.fout1(bad_nodes_psis_taufile,
+                       badNodesPsisTau=bad_nodes_psis_tau,
+                       NodesPsisTauIQR=nodes_psis_tau_IQR,
+                       NodesPsisTauOcc=nodes_psis_tau_occ,
+                       NodesPsisTauVals=nodes_psis_tau_vals)
 
-    input_data = divide1(nodeRange)  # changed Nov 30, 2018, S.M.
     if argv:
-        offset = len(nodeRange) - len(input_data)
+        offset = len(node_range) - len(input_data)
+        progress5 = argv[0]
         progress5.emit(int((offset / float(numberofJobs)) * 99))
     else:
         progress5 = NullEmitter()
@@ -241,7 +222,7 @@ def op(nodeEdgeNumRange, *argv):
 
         # if CC_dir_temp exists and is non-empty  combine the individual files again
         if os.path.exists(CC_dir_temp) and len(os.listdir(CC_dir_temp)) > 0:
-            for currPrD in nodeRange:
+            for currPrD in node_range:
                 badNodesPsisTaufile_pd = '{}badNodesPsisTauFile_PD_{}'.format(CC_dir_temp, currPrD)
                 dataR = myio.fin1(badNodesPsisTaufile_pd)
 
@@ -251,22 +232,21 @@ def op(nodeEdgeNumRange, *argv):
                 tauPsisOcc = dataR['NodesPsisTauOcc']
                 tauPrDPsis = dataR['NodesPsisTauVals']
                 if len(badPsis) > 0:
-                    badNodesPsisTau[currPrD, np.array(badPsis)] = -100
-                NodesPsisTauIQR[currPrD, :] = tauPsisIQR
-                NodesPsisTauOcc[currPrD, :] = tauPsisOcc
-                NodesPsisTauVals[currPrD] = tauPrDPsis
+                    bad_nodes_psis_tau[currPrD, np.array(badPsis)] = -100
+                nodes_psis_tau_IQR[currPrD, :] = tauPsisIQR
+                nodes_psis_tau_occ[currPrD, :] = tauPsisOcc
+                nodes_psis_tau_vals[currPrD] = tauPrDPsis
 
-            badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
-            myio.fout1(badNodesPsisTaufile,
-                       badNodesPsisTau=badNodesPsisTau,
-                       NodesPsisTauIQR=NodesPsisTauIQR,
-                       NodesPsisTauOcc=NodesPsisTauOcc,
-                       NodesPsisTauVals=NodesPsisTauVals)
+            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
+            myio.fout1(bad_nodes_psis_taufile,
+                       badNodesPsisTau=bad_nodes_psis_tau,
+                       NodesPsisTauIQR=nodes_psis_tau_IQR,
+                       NodesPsisTauOcc=nodes_psis_tau_occ,
+                       NodesPsisTauVals=nodes_psis_tau_vals)
 
-            rem_temp_dir = 0
+            rem_temp_dir = False
             if rem_temp_dir:
                 # remove the temp directory if rem_temp_dir=1, or manually delete later
                 print('Removing temp directory', CC_dir_temp)
                 if os.path.exists(CC_dir_temp):
                     shutil.rmtree(CC_dir_temp)
-

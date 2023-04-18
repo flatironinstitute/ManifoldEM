@@ -307,10 +307,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
     if p.getOpticalFlow:
         print('\n1.Now computing optical flow vectors for all (selected) PrDs...\n')
         # Optical flow vectors for each psi-movies of each node are saved to disk
-        if argv:
-            ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, argv[0])
-        else:
-            ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange)
+        ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, *argv)
 
     # check for bad PDs found based on bad tau values
     trash_list = p.get_trash_list()
