@@ -674,20 +674,15 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
                     z0 = (r0 * np.cos(theta0))
 
                     # read points from tesselated sphere:
-                    fname = os.path.join(P1.user_directory,
-                                         'outputs_{}/topos/Euler_PrD/PrD_map.txt'.format(p.proj_name))
-                    data = []
-                    with open(fname) as values:
-                        for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                            data.append(column)
+                    data = pandas.read_csv(p.ref_ang_file, delimiter='\t')
 
-                    prds = data[0]
-                    thetas = data[1]
-                    phis = data[2]
-                    psis = data[3]
-                    xs = data[4]
-                    ys = data[5]
-                    zs = data[6]
+                    prds = data['PrD']
+                    thetas = data['theta']
+                    phis = data['phi']
+                    psis = data['psi']
+                    xs = data['x']
+                    ys = data['y']
+                    zs = data['z']
 
                     xyz = np.column_stack((xs, ys, zs))
                     angs = np.column_stack((thetas, phis))
@@ -8767,8 +8762,6 @@ class MainWindow(QtGui.QMainWindow):
                             pd_all += 1
 
                     # read points from tesselated sphere:
-                    PrD_map1 = os.path.join(P1.user_directory,
-                                            'outputs_{}/topos/Euler_PrD/PrD_map1.txt'.format(p.proj_name))
                     PrD_map1_eul = pandas.read_csv(p.ref_ang_file1, delimiter='\t')
 
                     P1.all_phi = PrD_map1_eul['phi']
