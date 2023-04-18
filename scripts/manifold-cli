@@ -58,6 +58,8 @@ el_parser.add_argument("input_file", type=str)
 
 
 def load_state(args):
+    if args.command == "init":
+        return
     fname_front = args.input_file.split('params_', 1)[1]
     fname_sans = os.path.splitext(fname_front)[0]
     p.proj_name = fname_sans
@@ -106,56 +108,41 @@ def init(args):
     p.nPix = get_image_width_from_stack(p.img_stack_file)
 
     p.create_dir()
-    p.save()
 
 
 def threshold(args):
-    load_state(args)
     Data.op(p.align_param_file)
     p.resProj = 1
-    p.save()
 
 
 def calc_distance(args):
-    load_state(args)
     GetDistancesS2.op()
     p.resProj = 2
-    p.save()
 
 
 def manifold_analysis(args):
-    load_state(args)
     manifoldAnalysis.op()
     p.resProj = 3
-    p.save()
 
 
 def psi_analysis(args):
-    load_state(args)
     psiAnalysis.op()
     p.resProj = 4
-    p.save()
 
 
 def nlsa_movie(args):
-    load_state(args)
     NLSAmovie.op()
     p.resProj = 5
-    p.save()
 
 
 def find_conformational_coordinates(args):
-    load_state(args)
     FindConformationalCoord.op()
     p.resProj = 7
-    p.save()
 
 
 def energy_landscape(args):
-    load_state(args)
     EL1D.op()
     p.resProj = 8
-    p.save()
 
 
 _funcs = {
@@ -172,4 +159,6 @@ _funcs = {
 
 if __name__ == "__main__":
     main_args = parser.parse_args()
+    load_state(main_args)
     _funcs[main_args.command](main_args)
+    p.save()
