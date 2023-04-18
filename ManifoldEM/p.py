@@ -104,36 +104,26 @@ class Params(sys.__class__):
     user_dir: str = ''  # Root directory for project
     tau_dir: str = ''
     OM_dir: str = ''
-    Var_dir: str = ''
     NLSA_dir: str = ''
-    traj_dir: str = ''
     bin_dir: str = ''
     relion_dir: str = ''
     CC_dir: str = ''
     CC_OF_dir: str = ''
     CC_meas_dir: str = ''
     out_dir: str = ''
-    post_dir: str = ''
     vol_dir: str = ''
     svd_dir: str = ''
-    anim_dir: str = ''
     dist_file: str = ''
     psi_file: str = ''
     psi2_file: str = ''
-    movie2d_file: str = ''
     tau_file: str = ''
     OM1_file: str = ''
-    Var_file: str = ''
     rho_file: str = ''
-    remote_file: str = ''
     NLSA_file: str = ''
-    traj_file: str = ''
     CC_file: str = ''
     CC_OF_file: str = ''
     CC_meas_file: str = ''
     CC_graph_file: str = ''
-    ref_ang_file: str = ''
-    ref_ang_file1: str = ''
 
 
     @property
@@ -174,6 +164,26 @@ class Params(sys.__class__):
     @property
     def OM_file(self) -> str:
         return os.path.join(self.OM_dir, 'S2_')
+
+
+    @property
+    def traj_dir(self) -> str:
+        return os.path.join(self.out_dir, 'traj')
+
+
+    @property
+    def traj_file(self) -> str:
+        return os.path.join(self.traj_dir, 'traj_')
+
+
+    @property
+    def ref_ang_file(self) -> str:
+        return os.path.join(self.out_dir, 'topos', 'Euler_PrD', 'PrD_map.txt')
+
+
+    @property
+    def ref_ang_file1(self) -> str:
+        return os.path.join(self.out_dir, 'topos', 'Euler_PrD', 'PrD_map1.txt')
 
 
     def get_EL_file(self, prd_index: int):
@@ -248,10 +258,6 @@ class Params(sys.__class__):
         os.makedirs(p.psi2_dir, exist_ok=True)
         os.makedirs(p.EL_dir, exist_ok=True)
         os.makedirs(p.OM_dir, exist_ok=True)
-
-        p.Var_dir = os.path.join(p.user_dir, 'outputs_{}/Var/'.format(p.proj_name))
-        os.makedirs(p.Var_dir, exist_ok=True)
-        p.traj_dir = os.path.join(p.user_dir, 'outputs_{}/traj/'.format(p.proj_name))
         os.makedirs(p.traj_dir, exist_ok=True)
 
         p.relion_dir = bin_dir = os.path.join(p.user_dir, 'outputs_{}/bin/'.format(p.proj_name))
@@ -265,33 +271,17 @@ class Params(sys.__class__):
         os.makedirs(p.CC_meas_dir, exist_ok=True)
 
         #################
-        # post-processing:
-        p.post_dir = os.path.join(p.user_dir, 'outputs_{}/post/'.format(proj_name))
-        p.vol_dir = os.path.join(p.post_dir, '1_vol')
-        p.svd_dir = os.path.join(p.post_dir, '2_svd')
-        p.anim_dir = os.path.join(p.post_dir, '3_anim')
-        os.makedirs(p.post_dir, exist_ok=True)
-        os.makedirs(p.vol_dir, exist_ok=True)
-        os.makedirs(p.svd_dir, exist_ok=True)
-        os.makedirs(p.anim_dir, exist_ok=True)
-
-        #################
         os.makedirs(os.path.join(p.out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
 
         p.dist_file = '{}/IMGs_'.format(p.dist_dir)
         p.psi_file = '{}/gC_trimmed_psi_'.format(p.psi_dir)
         p.psi2_file = '{}/S2_'.format(p.psi2_dir)
         p.OM1_file = '{}/S2_'.format(p.OM_dir)
-        p.Var_file = '{}/S2_'.format(p.Var_dir)
         p.rho_file = '{}/rho'.format(p.OM_dir)
-        p.remote_file = '{}/rem_'.format(p.Var_dir)
-        p.traj_file = '{}/traj_'.format(p.traj_dir)
         p.CC_graph_file = '{}graphCC'.format(p.CC_dir)
         p.CC_OF_file = '{}OF_prD_'.format(p.CC_OF_dir)
         p.CC_meas_file = '{}meas_edge_prDs_'.format(p.CC_meas_dir)
         p.CC_file = '{}CC_file'.format(p.CC_dir)
-        p.ref_ang_file = '{}/topos/Euler_PrD/PrD_map.txt'.format(p.out_dir)
-        p.ref_ang_file1 = '{}/topos/Euler_PrD/PrD_map1.txt'.format(p.out_dir)
 
 
 sys.modules[__name__].__class__ = Params
