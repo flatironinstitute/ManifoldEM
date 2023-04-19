@@ -72,8 +72,8 @@ def op(*argv):
     myio.fout1(traj_file, hUn=hUn)
 
     # added June 2020, S.M.
-    p.traj_file_vars = "{}name{}_vars".format(p.traj_file, p.trajName)
-    myio.fout1(p.traj_file_vars, trajTaus=trajTaus, posPsi1All=posPsi1All,
+    traj_file_vars = f"{p.traj_file}name{p.trajName}_vars"
+    myio.fout1(traj_file_vars, trajTaus=trajTaus, posPsi1All=posPsi1All,
                posPathAll=posPathAll, xSelect=xSelect, tauAvg=tauAvg)
     gc.collect()
 
