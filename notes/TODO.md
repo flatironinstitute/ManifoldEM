@@ -1,24 +1,12 @@
 * TODO anchor node bug (delete prd?)
   * This just requires a much deeper understanding of their data structures, which will be
     easier as refactoring occurs. On hold sadly.
-* TODO NLSA.py cli
-  * Less necessary now that I've added --nograph, but CLI still very useful
 * TODO 2d landscape
   * Already some beta code here (set Beta=False in ManifoldEM_GUI)
 * TODO remove .op ridiculousness
 * TODO optimize "PD Thresholding"
-* TODO Compress IMGs_prD (distances)
-  * Given that images are signed float64s, first step might be to make float32 rather than scaled int
-* TODO compress pngs
-  * Probably just hold them in a zip archive to reduce filecount
 * TODO Low priority things
   * start adding types to all the things
   * remove duplicate code in ManifoldEM_GUI
-  * switch out progress tracking technique
 * TODO parallelize the final step (3d trajectories)
-* TODO fix oversubscription in 'finding conformational coordinates'
-* TODO proper relative pathing
-  * Shouldn't have to cache all these paths either...
-* TODO Resume after eigenvector selection broken
 * TODO Parallelize 3d trajectory calculation
-* TODO Relative pathing

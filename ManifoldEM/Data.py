@@ -1,28 +1,31 @@
-import os
-import numpy as np
-import datetime
+"""Load image stack/volume/etc data files.
+
+Loads input data files and populates the global parameters with relevant derived values. Also
+calculates the graph structure according to the currently set low and high threshold values.
+
+Copyright (c) Columbia University Hstau Liao 2018
+Copyright (c) Columbia University Evan Seitz 2019
+Copyright (c) Columbia University Suvrajit Maji 2019
+Copyright (c) Flatiron Institute Robert Blackwell 2023
+"""
 import math
 import csv
 
+import numpy as np
+
 from ManifoldEM import S2tessellation, myio, FindCCGraph, util, p, star
 from ManifoldEM.quaternion import qMult_bsx
-'''
-Copyright (c) UWM, Ali Dashti 2016 (matlab version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Columbia University Hstau Liao 2018 (python version)
-Copyright (c) Columbia University Evan Seitz 2019 (python version)
-Copyright (c) Columbia University Suvrajit Maji 2019 (python version)
-'''
+
 
 def get_from_relion(align_star_file, flip):
-    # check which RELION version; added by E. Seitz -- 10/23/21:
     relion_old = True
     with open(align_star_file, 'r') as f:
-        for l in f:
-            if l.startswith("data_optics"):
+        for line in f:
+            if line.startswith("data_optics"):
                 relion_old = False
+                break
 
-    if relion_old is True:
+    if relion_old:
         skip = 0
         df = star.parse_star(align_star_file, skip, keep_index=False)
         try:
@@ -53,7 +56,7 @@ def get_from_relion(align_star_file, flip):
             print('missing microscope parameters')
             exit(1)
 
-    elif relion_old is False:  #added by E. Seitz -- 10/23/21
+    else:
         print('RELION Optics Group found.')
         df0, skip = star.parse_star_optics(align_star_file, keep_index=False)
         try:
@@ -124,7 +127,6 @@ def parse_spider(filename: str):
 
 
 def get_q(align_param_file, phiCol, thetaCol, psiCol, flip):
-
     # read the angles
     align = parse_spider(align_param_file)
     phi = np.deg2rad(align[:, phiCol])
@@ -238,5 +240,5 @@ def op(align_param_file):
         G, Gsub = FindCCGraph.op()
         nodesColor = genColorConnComp(G)
 
-        write_angles(p.ref_ang_file, nodesColor, S20_th, 1, NC)  #to PrD_map.txt (thresh bins)
-        write_angles(p.ref_ang_file1, nodesColor, S20, 0, NC)  #to PrD_map1.txt (all bins)
+        write_angles(p.ref_ang_file, nodesColor, S20_th, 1, NC)  # to PrD_map.txt (thresh bins)
+        write_angles(p.ref_ang_file1, nodesColor, S20, 0, NC)  # to PrD_map1.txt (all bins)

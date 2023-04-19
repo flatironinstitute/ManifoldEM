@@ -11,27 +11,26 @@ Copyright (c) Columbia University Suvrajit Maji 2019
 Copyright (c) Flatiron Institute Robert Blackwell 2023
 
 """
-import numpy as np
 import os
 import sys
 import toml
 from pprint import pprint
 
+import numpy as np
+
 from ManifoldEM.util import debug_print
 
-"""
-resProj structure:
-    0: default; new project
-    1: user has confirmed Data.py entries, but not yet started (or partially started) GetDistancesS2.py
-    2: GetDistances.py complete, possible partial-progress on manifoldAnalysis.py
-    3: manifoldAnalysis.py complete, possible partial-progress on psiAnalysis.py
-    4: psiAnalysis.py complete, possible partial-progress on NLSAmovie.py
-    5: NLSAmovie.py complete
-    6: PD anchors chosen/saved, "Compile" button clicked, possible partial-progress on FindReactionCoord.py
-    7: FindReactionCoord.py complete, possible partial-progress on EL1D.py
-    8: EL1D.py complete, possible partial-progress on PrepareOutputS2.py
-    9: PrepareOutputS2.py complete
-"""
+# resProj structure:
+#     0: default; new project
+#     1: user has confirmed Data.py entries
+#     2: GetDistances.py complete
+#     3: manifoldAnalysis.py complete
+#     4: psiAnalysis.py complete
+#     5: NLSAmovie.py complete
+#     6: PD anchors chosen/saved, "Compile" button clicked
+#     7: FindReactionCoord.py complete
+#     8: EL1D.py complete
+#     9: PrepareOutputS2.py complete
 class Params(sys.__class__):
     proj_name: str = ''            # name of the project :D
     resProj: int = 0               # see above
