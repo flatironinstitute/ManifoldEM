@@ -272,8 +272,8 @@ class Params(sys.__class__):
 
     def todict(self):
         res = {}
-        for var in dir(self):
-            if not var.startswith('_') and isinstance(getattr(self, var), (int, list, dict, float, str)):
+        for var in dir(Params):
+            if not var.startswith('_') and isinstance(getattr(Params, var), (int, list, dict, float, str)):
                 res[var] = getattr(self, var)
 
         return res
