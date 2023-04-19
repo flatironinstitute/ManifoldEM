@@ -197,32 +197,30 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     G.update(nPsiModes=p.num_psis)  # update the nPsiModes in case p.num_psis is changed in the later steps
     G.update(maxState=maxState)
 
+    anch_list = np.array(p.anch_list)
     if cc == 1:
 
         # format: PrD,CC1,S1 for 1D
         # p.anch_list = np.array([[1,1,1],[2,1,-1]])  #TEMP should PrD and CC1 start from 1 or 0?
-        p.anch_list = np.array(p.anch_list)
 
-
-
-        IndStatePlusOne = p.anch_list[:, 2] == 1
-        IndStateMinusOne = p.anch_list[:, 2] == -1
-        anchorNodesPlusOne = p.anch_list[IndStatePlusOne, 0] - 1
-        anchorNodesMinusOne = p.anch_list[IndStateMinusOne, 0] - 1
-        anchorStatePlusOne = p.anch_list[IndStatePlusOne, 1] - 1
-        anchorStateMinusOne = p.anch_list[IndStateMinusOne, 1] + NumPsis - 1
+        IndStatePlusOne = anch_list[:, 2] == 1
+        IndStateMinusOne = anch_list[:, 2] == -1
+        anchorNodesPlusOne = anch_list[IndStatePlusOne, 0] - 1
+        anchorNodesMinusOne = anch_list[IndStateMinusOne, 0] - 1
+        anchorStatePlusOne = anch_list[IndStatePlusOne, 1] - 1
+        anchorStateMinusOne = anch_list[IndStateMinusOne, 1] + NumPsis - 1
 
     elif cc == 2:
         if argv:
             nodeStateBP_cc1 = argv[0]
 
         # format: PrD,CC1,S1,CC2,S2 for 2D
-        IndStatePlusOne = p.anch_list[:, 4] == 1
-        IndStateMinusOne = p.anch_list[:, 4] == -1
-        anchorNodesPlusOne = p.anch_list[IndStatePlusOne, 0] - 1
-        anchorNodesMinusOne = p.anch_list[IndStateMinusOne, 0] - 1
-        anchorStatePlusOne = p.anch_list[IndStatePlusOne, 3] - 1
-        anchorStateMinusOne = p.anch_list[IndStateMinusOne, 3] + NumPsis - 1
+        IndStatePlusOne = anch_list[:, 4] == 1
+        IndStateMinusOne = anch_list[:, 4] == -1
+        anchorNodesPlusOne = anch_list[IndStatePlusOne, 0] - 1
+        anchorNodesMinusOne = anch_list[IndStateMinusOne, 0] - 1
+        anchorStatePlusOne = anch_list[IndStatePlusOne, 3] - 1
+        anchorStateMinusOne = anch_list[IndStateMinusOne, 3] + NumPsis - 1
 
     #anchorNodes = [anchorNodesPlusOne, anchorNodesMinusOne]
 

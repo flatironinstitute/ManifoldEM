@@ -93,7 +93,7 @@ class Params(sys.__class__):
     #  reaction coordinates parameters:
     getOpticalFlow: bool = True                # default True to compute optical flow vectors
     getAllEdgeMeasures: bool = True            # default True to compute edge measures
-    anch_list: list[int] = []                  # user-defined PD anchors for Belief Propagation
+    anch_list: list[list[int]] = []            # user-defined PD anchors for Belief Propagation
     trash_list: list[bool] = []                # user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
     opt_movie: dict = {'printFig': 0,
                        'OFvisual': 0,
