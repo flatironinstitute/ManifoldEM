@@ -96,20 +96,6 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
 
 
 def op(prD):
-
-    p.findBadPsiTau = 1  # interface with GUI, p.py
-    p.tau_occ_thresh = 0.35  # interface with GUI, p.py
-    '''
-    useMask = 1 # default
-    p.mask_vol_file = ''
-    #use mask or not, for movies
-    if not p.mask_vol_file:
-        # use default annular/circular mask
-        maskType = 'annular'
-    else:
-        useMask = 1
-        maskType ='mask3Dprojection'
-    '''
     useMask = 0  # default
     if p.opt_mask_type == 0:
         useMask = 0

@@ -311,7 +311,6 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # check for bad PDs found based on bad tau values
     trash_list = p.get_trash_list()
-    p.tau_occ_thresh = 0.35  # interface with GUI, p.py
     tau_occ_thresh = p.tau_occ_thresh
 
     # take the already existing trash_list and update it
@@ -322,7 +321,6 @@ def op(G, nodeRange, edgeNumRange, *argv):
     # FindCCGraphPruned uses p.trash_list to create the pruned graph
     CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
 
-    p.use_pruned_graph = 0  # interface with gui
     if p.use_pruned_graph:
         #Step 2a. June 2020
         ### Check if there are significant bad PDs(>10 or 5 ?) after Optical Flow computations of the psi-movies,
