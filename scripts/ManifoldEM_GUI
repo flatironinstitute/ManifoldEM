@@ -22,7 +22,6 @@ for k, v in os.environ.items():
         del os.environ[k]
 
 time_init = time.strftime("%Y%m%d_%H%M%S")
-output_dir = os.path.join(os.getcwd(), 'output')
 
 from pyface.qt import QtGui, QtCore
 import threading
@@ -54,7 +53,6 @@ import pickle
 
 from ManifoldEM import p
 
-p.user_dir = output_dir  #default
 from ManifoldEM import (p, myio, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, embedd,
                         FindConformationalCoord, EL1D, backup, PrepareOutputS2)
 from ManifoldEM.core import clusterAvg
@@ -97,7 +95,6 @@ p.PDsizeThH = 2000
 p.dim = 1 if Beta else 2
 p.ncpu = 1
 p.num_psis = 8
-p.user_dir = output_dir
 p.proj_name = time_init
 p.temperature = 25
 # as a note, the word 'ZULU' is used throughout this document as a bookmark for pending items by E. Seitz.
@@ -796,7 +793,6 @@ class P1(QtGui.QWidget):
     user_stack = ''
     user_alignment = ''
     user_name = time_init
-    user_directory = output_dir
     # full S2 angles:
     x1 = []
     y1 = []
@@ -2045,8 +2041,7 @@ class P3(QtGui.QWidget):
         # Create dictionary for anchor widgets:
         # =============================================================================
         P3.dictGen = True
-        P4.origEmbedFile = os.path.join(P1.user_directory,
-                                        'outputs_{}/topos/Euler_PrD/PrD_embeds.txt'.format(p.proj_name))
+        P4.origEmbedFile = os.path.join(p.euler_dir, 'PrD_embeds.txt')
         for i in range(1, P3.PrD_total + 1):
             CC1 = QtGui.QSpinBox(self)
             CC1.setMinimum(1)
@@ -2192,7 +2187,7 @@ class P3(QtGui.QWidget):
         # =====================================================================
         # create blank image if topos file doesn't exists
         # =====================================================================
-        picDir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_1.png' % (p.proj_name, P4.user_PrD))
+        picDir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_1.png')
         picImg = Image.open(picDir)
         picSize = picImg.size
         blank = np.zeros([picSize[0], picSize[1], 3], dtype=np.uint8)
@@ -2203,8 +2198,7 @@ class P3(QtGui.QWidget):
         # =====================================================================
         P4.user_PrD = P4.entry_PrD.value()
 
-        P4.pic1Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_1.png' % (p.proj_name, P4.user_PrD))
+        P4.pic1Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_1.png')
         if os.path.isfile(P4.pic1Dir):
             P4.label_pic1.setPixmap(QtGui.QPixmap(P4.pic1Dir))
             P4.button_pic1.setDisabled(False)
@@ -2214,8 +2208,7 @@ class P3(QtGui.QWidget):
             P4.label_pic1.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic1.setDisabled(True)
 
-        P4.pic2Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_2.png' % (p.proj_name, P4.user_PrD))
+        P4.pic2Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_2.png')
         if os.path.isfile(P4.pic2Dir):
             P4.label_pic2.setPixmap(QtGui.QPixmap(P4.pic2Dir))
             P4.button_pic2.setDisabled(False)
@@ -2225,8 +2218,7 @@ class P3(QtGui.QWidget):
             P4.label_pic2.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic2.setDisabled(True)
 
-        P4.pic3Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_3.png' % (p.proj_name, P4.user_PrD))
+        P4.pic3Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_3.png')
         if os.path.isfile(P4.pic3Dir):
             P4.label_pic3.setPixmap(QtGui.QPixmap(P4.pic3Dir))
             P4.button_pic3.setDisabled(False)
@@ -2236,8 +2228,7 @@ class P3(QtGui.QWidget):
             P4.label_pic3.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic3.setDisabled(True)
 
-        P4.pic4Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_4.png' % (p.proj_name, P4.user_PrD))
+        P4.pic4Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_4.png')
         if os.path.isfile(P4.pic4Dir):
             P4.label_pic4.setPixmap(QtGui.QPixmap(P4.pic4Dir))
             P4.button_pic4.setDisabled(False)
@@ -2247,8 +2238,7 @@ class P3(QtGui.QWidget):
             P4.label_pic4.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic4.setDisabled(True)
 
-        P4.pic5Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_5.png' % (p.proj_name, P4.user_PrD))
+        P4.pic5Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_5.png')
         if os.path.isfile(P4.pic5Dir):
             P4.label_pic5.setPixmap(QtGui.QPixmap(P4.pic5Dir))
             P4.button_pic5.setDisabled(False)
@@ -2258,8 +2248,7 @@ class P3(QtGui.QWidget):
             P4.label_pic5.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic5.setDisabled(True)
 
-        P4.pic6Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_6.png' % (p.proj_name, P4.user_PrD))
+        P4.pic6Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_6.png')
         if os.path.isfile(P4.pic6Dir):
             P4.label_pic6.setPixmap(QtGui.QPixmap(P4.pic6Dir))
             P4.button_pic6.setDisabled(False)
@@ -2269,8 +2258,7 @@ class P3(QtGui.QWidget):
             P4.label_pic6.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic6.setDisabled(True)
 
-        P4.pic7Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_7.png' % (p.proj_name, P4.user_PrD))
+        P4.pic7Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_7.png')
         if os.path.isfile(P4.pic7Dir):
             P4.label_pic7.setPixmap(QtGui.QPixmap(P4.pic7Dir))
             P4.button_pic7.setDisabled(False)
@@ -2280,8 +2268,8 @@ class P3(QtGui.QWidget):
             P4.label_pic7.setPixmap(QtGui.QPixmap(blankpix))
             P4.button_pic7.setDisabled(True)
 
-        P4.pic8Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_8.png' % (p.proj_name, P4.user_PrD))
+
+        P4.pic8Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_8.png')
         if os.path.isfile(P4.pic8Dir):
             P4.label_pic8.setPixmap(QtGui.QPixmap(P4.pic8Dir))
             P4.button_pic8.setDisabled(False)
@@ -2508,8 +2496,7 @@ class P4(QtGui.QWidget):
             # =================================================================
             # create blank image if topos file doesn't exist
             # =================================================================
-            picDir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_1.png' % (p.proj_name, P4.user_PrD))
+            picDir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_1.png')
             picImg = Image.open(picDir)
             picSize = picImg.size
             blank = np.zeros([picSize[0], picSize[1], 3], dtype=np.uint8)
@@ -2520,8 +2507,8 @@ class P4(QtGui.QWidget):
             # =================================================================
             P4.user_PrD = P4.entry_PrD.value()
             topos_sum = 0
-            P4.pic1Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_1.png' % (p.proj_name, P4.user_PrD))
+
+            P4.pic1Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_1.png')
             if os.path.isfile(P4.pic1Dir):
                 P4.label_pic1.setPixmap(QtGui.QPixmap(P4.pic1Dir))
                 P4.button_pic1.setDisabled(False)
@@ -2530,8 +2517,7 @@ class P4(QtGui.QWidget):
                 P4.label_pic1.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic1.setDisabled(True)
 
-            P4.pic2Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_2.png' % (p.proj_name, P4.user_PrD))
+            P4.pic2Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_2.png')
             if os.path.isfile(P4.pic2Dir):
                 P4.label_pic2.setPixmap(QtGui.QPixmap(P4.pic2Dir))
                 P4.button_pic2.setDisabled(False)
@@ -2540,8 +2526,8 @@ class P4(QtGui.QWidget):
                 P4.label_pic2.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic2.setDisabled(True)
 
-            P4.pic3Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_3.png' % (p.proj_name, P4.user_PrD))
+
+            P4.pic3Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_3.png')
             if os.path.isfile(P4.pic3Dir):
                 P4.label_pic3.setPixmap(QtGui.QPixmap(P4.pic3Dir))
                 P4.button_pic3.setDisabled(False)
@@ -2550,8 +2536,7 @@ class P4(QtGui.QWidget):
                 P4.label_pic3.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic3.setDisabled(True)
 
-            P4.pic4Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_4.png' % (p.proj_name, P4.user_PrD))
+            P4.pic4Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_4.png')
             if os.path.isfile(P4.pic4Dir):
                 P4.label_pic4.setPixmap(QtGui.QPixmap(P4.pic4Dir))
                 P4.button_pic4.setDisabled(False)
@@ -2560,8 +2545,7 @@ class P4(QtGui.QWidget):
                 P4.label_pic4.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic4.setDisabled(True)
 
-            P4.pic5Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_5.png' % (p.proj_name, P4.user_PrD))
+            P4.pic5Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_5.png')
             if os.path.isfile(P4.pic5Dir):
                 P4.label_pic5.setPixmap(QtGui.QPixmap(P4.pic5Dir))
                 P4.button_pic5.setDisabled(False)
@@ -2570,8 +2554,7 @@ class P4(QtGui.QWidget):
                 P4.label_pic5.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic5.setDisabled(True)
 
-            P4.pic6Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_6.png' % (p.proj_name, P4.user_PrD))
+            P4.pic6Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_6.png')
             if os.path.isfile(P4.pic6Dir):
                 P4.label_pic6.setPixmap(QtGui.QPixmap(P4.pic6Dir))
                 P4.button_pic6.setDisabled(False)
@@ -2580,8 +2563,7 @@ class P4(QtGui.QWidget):
                 P4.label_pic6.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic6.setDisabled(True)
 
-            P4.pic7Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_7.png' % (p.proj_name, P4.user_PrD))
+            P4.pic7Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_7.png')
             if os.path.isfile(P4.pic7Dir):
                 P4.label_pic7.setPixmap(QtGui.QPixmap(P4.pic7Dir))
                 P4.button_pic7.setDisabled(False)
@@ -2590,8 +2572,7 @@ class P4(QtGui.QWidget):
                 P4.label_pic7.setPixmap(QtGui.QPixmap(blankpix))
                 P4.button_pic7.setDisabled(True)
 
-            P4.pic8Dir = os.path.join(P1.user_directory,
-                                      'outputs_%s/topos/PrD_%s/topos_8.png' % (p.proj_name, P4.user_PrD))
+            P4.pic8Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_8.png')
             if os.path.isfile(P4.pic8Dir):
                 P4.label_pic8.setPixmap(QtGui.QPixmap(P4.pic8Dir))
                 P4.button_pic8.setDisabled(False)
@@ -2716,8 +2697,7 @@ class P4(QtGui.QWidget):
             ClassAvgMain_window.show()
 
         P4.label_pic1 = QtGui.QLabel()
-        P4.pic1Dir = os.path.join(P1.user_directory,
-                                  'outputs_%s/topos/PrD_%s/topos_1.png' % (p.proj_name, P4.user_PrD))
+        P4.pic1Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_1.png')
         P4.label_pic1.setPixmap(QtGui.QPixmap(P4.pic1Dir))
         P4.label_pic1.setMinimumSize(minSize, minSize)
         P4.label_pic1.setScaledContents(True)
@@ -2732,7 +2712,7 @@ class P4(QtGui.QWidget):
         P4.button_pic1.show()
 
         P4.label_pic2 = QtGui.QLabel()
-        P4.pic2Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_2' % (p.proj_name, P4.user_PrD))
+        P4.pic2Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_2.png')
         P4.label_pic2.setPixmap(QtGui.QPixmap(P4.pic2Dir))
         P4.label_pic2.setMinimumSize(minSize, minSize)
         P4.label_pic2.setScaledContents(True)
@@ -2747,7 +2727,7 @@ class P4(QtGui.QWidget):
         P4.button_pic2.show()
 
         P4.label_pic3 = QtGui.QLabel()
-        P4.pic3Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_3' % (p.proj_name, P4.user_PrD))
+        P4.pic3Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_3.png')
         P4.label_pic3.setPixmap(QtGui.QPixmap(P4.pic3Dir))
         P4.label_pic3.setMinimumSize(minSize, minSize)
         P4.label_pic3.setScaledContents(True)
@@ -2762,7 +2742,7 @@ class P4(QtGui.QWidget):
         P4.button_pic3.show()
 
         P4.label_pic4 = QtGui.QLabel()
-        P4.pic4Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_4' % (p.proj_name, P4.user_PrD))
+        P4.pic4Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_4.png')
         P4.label_pic4.setPixmap(QtGui.QPixmap(P4.pic4Dir))
         P4.label_pic4.setMinimumSize(minSize, minSize)
         P4.label_pic4.setScaledContents(True)
@@ -2784,7 +2764,7 @@ class P4(QtGui.QWidget):
         self.label_Hline.show()
 
         P4.label_pic5 = QtGui.QLabel()
-        P4.pic5Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_5' % (p.proj_name, P4.user_PrD))
+        P4.pic5Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_5.png')
         P4.label_pic5.setPixmap(QtGui.QPixmap(P4.pic5Dir))
         P4.label_pic5.setMinimumSize(minSize, minSize)
         P4.label_pic5.setScaledContents(True)
@@ -2799,7 +2779,7 @@ class P4(QtGui.QWidget):
         P4.button_pic5.show()
 
         P4.label_pic6 = QtGui.QLabel()
-        P4.pic6Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_6' % (p.proj_name, P4.user_PrD))
+        P4.pic6Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_6.png')
         P4.label_pic6.setPixmap(QtGui.QPixmap(P4.pic6Dir))
         P4.label_pic6.setMinimumSize(minSize, minSize)
         P4.label_pic6.setScaledContents(True)
@@ -2814,7 +2794,7 @@ class P4(QtGui.QWidget):
         P4.button_pic6.show()
 
         P4.label_pic7 = QtGui.QLabel()
-        P4.pic7Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_7' % (p.proj_name, P4.user_PrD))
+        P4.pic7Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_7.png')
         P4.label_pic7.setPixmap(QtGui.QPixmap(P4.pic7Dir))
         P4.label_pic7.setMinimumSize(minSize, minSize)
         P4.label_pic7.setScaledContents(True)
@@ -2829,7 +2809,7 @@ class P4(QtGui.QWidget):
         P4.button_pic7.show()
 
         P4.label_pic8 = QtGui.QLabel()
-        P4.pic8Dir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_8' % (p.proj_name, P4.user_PrD))
+        P4.pic8Dir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_8.png')
         P4.label_pic8.setPixmap(QtGui.QPixmap(P4.pic8Dir))
         P4.label_pic8.setMinimumSize(minSize, minSize)
         P4.label_pic8.setScaledContents(True)
@@ -2876,7 +2856,7 @@ class P4(QtGui.QWidget):
             #trash_reviewed = T or F variable
             ##############
 
-            trashDir = os.path.join(P1.user_directory, 'outputs_{}/CC/user_removals.txt'.format(p.proj_name))
+            trashDir = os.path.join(p.CC_dir, 'user_removals.txt')
             np.savetxt(trashDir, P4.trash_list, fmt='%i', delimiter='\t')
             p.set_trash_list(P4.trash_list)
 
@@ -2966,8 +2946,7 @@ class P4(QtGui.QWidget):
 
             P4.anch_list, anch_zip = itertools.tee(P4.anch_list)
             p.anch_list = list(anch_zip)  #PrD,CC1,S1 for 1D; PrD,CC1,S1,CC2,S2 for 2D
-            anchInputs = os.path.join(P1.user_directory,
-                                      'outputs_{}/CC/user_anchors.txt'.format(p.proj_name))
+            anchInputs = os.path.join(p.CC_dir, 'user_anchors.txt')
             np.savetxt(anchInputs, p.anch_list, fmt='%i', delimiter='\t')
             gotoP5(self)
             if P4.recompute == 0:
@@ -3113,7 +3092,7 @@ class P4(QtGui.QWidget):
         BandwidthMain_window.show()
 
     def CC_vid1(self, n):
-        P4.gif_path = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s.gif' % (p.proj_name, P4.user_PrD, n))
+        P4.gif_path = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', f'psi_{n}.gif')
         global PrD_window
         try:
             PrD_window.close()
@@ -3499,12 +3478,8 @@ class P5(QtGui.QWidget):
 
         if P5.user_optFlow == 1 and P4.recompute == 1:
             # hard-remove pre-existing optical flow folders:
-            rcDir2 = os.path.join(P1.user_directory, 'outputs_{}/CC/CC_OF'.format(p.proj_name))
-            rcDir3 = os.path.join(P1.user_directory, 'outputs_{}/CC/CC_OF_fig'.format(p.proj_name))
-            if os.path.isdir(rcDir2):
-                shutil.rmtree(rcDir2)
-            if os.path.isdir(rcDir3):
-                shutil.rmtree(rcDir3)
+            if os.path.isdir(p.CC_OF_dir):
+                shutil.rmtree(p.CC_OF_dir)
 
         task5 = threading.Thread(target=FindConformationalCoord.op, args=(self.progress5Changed, ))
         task5.daemon = True
@@ -3788,10 +3763,9 @@ class Erg1dMain(QtGui.QDialog):
             if reply == QtGui.QMessageBox.Yes:
                 Erg1dMain.progress7.setValue(0)
                 # hard-remove pre-existing PrepareOutputS2 outputs:
-                prepDir1 = os.path.join(P1.user_directory, 'outputs_{}/bin'.format(p.proj_name))
-                if os.path.isdir(prepDir1):
-                    shutil.rmtree(prepDir1)
-                    os.makedirs(prepDir1)
+                if os.path.isdir(p.bin_dir):
+                    shutil.rmtree(p.bin_dir)
+                    os.makedirs(p.bin_dir)
 
                 Erg1dMain.button_traj.setDisabled(True)
                 Erg1dMain.button_traj.setText('Computing 3D Trajectories')
@@ -4231,8 +4205,7 @@ class Erg2dMain(QtGui.QDialog):
             reply = box.exec_()
             if reply == QtGui.QMessageBox.Yes:
                 timestr = time.strftime("%Y%m%d-%H%M%S")
-                custSaveDir = os.path.join(P1.user_directory,
-                                           'outputs_%s/traj/custom_path_%s.npy' % (p.proj_name, timestr))
+                custSaveDir = os.path.join(p.traj_dir, f'custom_path_{timestr}.npy')
                 np.save(custSaveDir,
                         np.asarray(Erg2dUpdate.points_in_line))  #ZULU need to save to p.py, and load back in
             else:
@@ -4339,10 +4312,9 @@ class Erg2dMain(QtGui.QDialog):
             if reply == QtGui.QMessageBox.Yes:
                 Erg2dMain.progress7.setValue(0)
                 # hard-remove pre-existing PrepareOutputS2 outputs:
-                prepDir1 = os.path.join(P1.user_directory, 'outputs_{}/bin'.format(p.proj_name))  #ZULU, HSTAU
-                if os.path.isdir(prepDir1):
-                    shutil.rmtree(prepDir1)
-                    os.makedirs(prepDir1)
+                if os.path.isdir(p.bin_dir):
+                    shutil.rmtree(p.bin_dir)
+                    os.makedirs(p.bin_dir)
 
                 Erg2dMain.button_traj.setDisabled(True)
                 Erg2dMain.button_traj.setText('Computing 3D Trajectories')  #ZULU update for 2 choices
@@ -4446,7 +4418,7 @@ class Erg2dUpdate(Erg2dCanvas):
             LS2d = np.random.uniform(0, 2, (70, 70))  #ZULU, P4.Occ2d
         else:  #plot energies
             #ZULU #P4.Erg2d #energy path for plot
-            fnameLS = os.path.join(output_dir, 'demo/EL_Ribo_70x70.txt')
+            fnameLS = 'demo/EL_Ribo_70x70.txt'
             try:
                 LS2d = loadtxt(fnameLS, float, delimiter=',')
             except ValueError:
@@ -5000,8 +4972,7 @@ class PDSeleCanvas1(QtGui.QDialog):
                     temp_anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
 
                 timestr = time.strftime("%Y%m%d-%H%M%S")
-                tempAnchInputs = os.path.join(P1.user_directory,
-                                              'outputs_%s/CC/temp_anchors_%s.txt' % (p.proj_name, timestr))
+                tempAnchInputs = os.path.join(p.CC_dir, f'temp_anchors_{timestr}.txt')
 
                 np.savetxt(tempAnchInputs, list(temp_anch_list), fmt='%i', delimiter='\t')
 
@@ -5087,7 +5058,7 @@ class PDSeleCanvas1(QtGui.QDialog):
                         P4.entry_PrD.setValue(1)
 
                     elif P3.user_dimensions == 2:
-                        fname = os.path.join(P1.user_directory, 'outputs_{}/CC/user_anchors.txt'.format(p.proj_name))
+                        fname = os.path.join(p.CC_dir, 'user_anchors.txt')
                         data = []
                         with open(fname) as values:
                             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -5303,8 +5274,7 @@ class PDSeleCanvas1(QtGui.QDialog):
                         trashList.append(int(0))
 
                 timestr = time.strftime("%Y%m%d-%H%M%S")
-                trashDir = os.path.join(P1.user_directory,
-                                        'outputs_%s/CC/temp_removals_%s.txt' % (p.proj_name, timestr))
+                trashDir = os.path.join(p.CC_dir, f'temp_removals_{timestr}.txt')
                 np.savetxt(trashDir, trashList, fmt='%i', delimiter='\t')
 
                 box = QtGui.QMessageBox(self)
@@ -5427,7 +5397,7 @@ class PDSeleCanvas1(QtGui.QDialog):
 
     def rebedListGen(self):
         # read points from re-embedding file:
-        fname = os.path.join(P1.user_directory, 'outputs_{}/topos/Euler_PrD/PrD_embeds.txt'.format(p.proj_name))
+        fname = os.path.join(p.euler_dir, 'PrD_embeds.txt')
         data = []
         with open(fname) as values:
             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -5546,7 +5516,7 @@ class ClassAvgCanvas(FigureCanvas):
         self.plot()
 
     def plot(self):
-        fname = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/class_avg.png' % (p.proj_name, P4.user_PrD))
+        fname = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'class_avg.png')
         img = mpimg.imread(fname)
         ax = self.figure.add_subplot(111)
         ax.clear()
@@ -5905,13 +5875,13 @@ class Vid2Canvas(QtGui.QDialog):
         # =====================================================================
         # Create blank image for initiation:
         # =====================================================================
-        picDir = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/topos_1.png' % (p.proj_name, P4.user_PrD))
+        picDir = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'topos_1.png')
         picImg = Image.open(picDir)
         picSize = picImg.size
         Vid2Canvas.blank = np.ones([picSize[0], picSize[1], 3], dtype=int) * 255  #white background
         # =====================================================================
 
-        gif_path1 = os.path.join(P1.user_directory, f'outputs_{p.proj_name}/topos/PrD_1/psi_1.gif')
+        gif_path1 = os.path.join(p.out_dir, 'topos', 'PrD_1', 'psi_1.gif')
         imgs1 = imageio.get_reader(gif_path1)
         for j in range(len(imgs1)):
             self.imgs1.append(Vid2Canvas.blank)
@@ -6091,7 +6061,7 @@ class Vid2Canvas(QtGui.QDialog):
 
         prD = self.PrD1.value()
         psi = self.Psi1.value()
-        self.gif_path1 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s.gif' % (p.proj_name, prD, psi))
+        self.gif_path1 = os.path.join(p.out_dir, 'topos', f'PrD_{prD}', f'psi_{psi}.gif')
         self.imgs1 = list(imageio.get_reader(self.gif_path1))
 
         if self.btnSet1.isChecked():
@@ -6129,7 +6099,7 @@ class Vid2Canvas(QtGui.QDialog):
 
         prD = self.PrD2.value()
         psi = self.Psi2.value()
-        self.gif_path2 = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/psi_%s.gif' % (p.proj_name, prD, psi))
+        self.gif_path2 = os.path.join(p.out_dir, 'topos', f'PrD_{prD}', f'psi_{psi}.gif')
         self.imgs2 = list(imageio.get_reader(self.gif_path2))
 
         if self.btnSet2.isChecked():
@@ -7017,7 +6987,7 @@ class EigValCanvas(FigureCanvas):
         EigValCanvas.eig_n2 = []
         EigValCanvas.eig_v2 = []
 
-        fname = os.path.join(P1.user_directory, 'outputs_%s/topos/PrD_%s/eig_spec.txt' % (p.proj_name, P4.user_PrD))
+        fname = os.path.join(p.out_dir, 'topos', f'PrD_{P4.user_PrD}', 'eig_spec.txt')
         data = []
         with open(fname) as values:
             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -7071,8 +7041,7 @@ class Manifold3dCanvas(QtGui.QDialog):
         self.initComplete = 0
         self.eigVals = []
 
-        eig_fname = os.path.join(P1.user_directory,
-                                 'outputs_%s/topos/PrD_%s/eig_spec.txt' % (p.proj_name, P4.user_PrD))
+        eig_fname = os.path.join(p.out_dir, 'topos', f'PrD_{prD}', 'eig_spec.txt')
         data = []
         with open(eig_fname) as values:
             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -7081,7 +7050,7 @@ class Manifold3dCanvas(QtGui.QDialog):
             self.eigVals.append(float(i))
 
         # psi from diffusion maps:
-        outDirDiff = os.path.join(P1.user_directory, 'outputs_{}/diff_maps'.format(p.proj_name))
+        outDirDiff = p.psi_dir
         diff_fname = open(os.path.join(outDirDiff, 'gC_trimmed_psi_prD_%s' % (self.PrD - 1)), 'rb')
         diff_data = pickle.load(diff_fname)
         self.psi = diff_data['psi']  #* self.eigVals #scale eigenvectors by corresponding eigenvalues
@@ -7305,7 +7274,7 @@ class PsiCanvas(QtGui.QDialog):
         self.initComplete = 0
 
         # psis from psi analsis:
-        self.outDirPsi = os.path.join(P1.user_directory, 'outputs_{}/psi_analysis'.format(p.proj_name))
+        self.outDirPsi = p.psi2_dir
         self.psi_fname = open(
             os.path.join(self.outDirPsi, 'S2_prD_%s_psi_%s' % (self.PrD - 1, Manifold2dCanvas.eig_current - 1)), 'rb')
         self.psi_data = pickle.load(self.psi_fname)
@@ -7559,7 +7528,7 @@ class ChronosCanvas(QtGui.QDialog):
         self.PrD = P4.user_PrD
 
         # chronos from psi analsis:
-        self.outDirChr = os.path.join(P1.user_directory, 'outputs_{}/psi_analysis'.format(p.proj_name))
+        self.outDirChr = p.psi2_dir
         self.chr_fname = open(
             os.path.join(self.outDirChr, 'S2_prD_%s_psi_%s' % (self.PrD - 1, Manifold2dCanvas.eig_current - 1)), 'rb')
         self.chr_data = pickle.load(self.chr_fname)
@@ -7712,7 +7681,7 @@ class TauCanvas(QtGui.QDialog):
         PrD = P4.user_PrD
 
         # tau from psi analsis:
-        outDirTau = os.path.join(P1.user_directory, 'outputs_{}/psi_analysis'.format(p.proj_name))
+        outDirTau = p.psi2_dir
         tau_fname = open(os.path.join(outDirTau, 'S2_prD_%s_psi_%s' % (PrD - 1, Manifold2dCanvas.eig_current - 1)),
                          'rb')
         tau_data = pickle.load(tau_fname)
@@ -8507,7 +8476,7 @@ class MainWindow(QtGui.QMainWindow):
             box = QtGui.QMessageBox()
             box.setWindowTitle('%s Startup' % progname)
             box.setText('<b>Project Initiation</b>')
-            iconDir = os.path.join(output_dir, 'icons/70x70.png')
+            iconDir = 'icons/70x70.png'
             if iconDir:
                 box.setIconPixmap(QtGui.QPixmap(iconDir))
             box.setFont(font_standard)
@@ -8543,6 +8512,8 @@ class MainWindow(QtGui.QMainWindow):
                 try:
                     fname_front = MainWindow.inputsFile.split('params_', 1)[1]
                     fname_sans = os.path.splitext(fname_front)[0]
+                    proj_root = os.path.dirname(os.path.abspath(MainWindow.inputsFile))
+                    os.chdir(proj_root)
                     p.proj_name = fname_sans  #update p.py with correct project name (not the GUI init)
                     p.load()  #read in params from user parameters file
 
@@ -8907,8 +8878,7 @@ class MainWindow(QtGui.QMainWindow):
                         P3.button_toP4.setDisabled(False)
 
                         # keep track of number of times user has re-embedded per PD:
-                        P4.origEmbedFile = os.path.join(
-                            P1.user_directory, 'outputs_{}/topos/Euler_PrD/PrD_embeds.txt'.format(p.proj_name))
+                        P4.origEmbedFile = os.path.join(p.euler_dir, 'PrD_embeds.txt')
                         if os.path.isfile(P4.origEmbedFile) is False:
                             for i in range(P3.PrD_total):
                                 P4.origEmbed.append(int(1))  #1 is True = PD has its original embedding
@@ -8987,8 +8957,7 @@ class MainWindow(QtGui.QMainWindow):
                         print('\trendering visualizations...')
 
                         # keep track of number of times user has re-embedded per PD:
-                        P4.origEmbedFile = os.path.join(
-                            P1.user_directory, 'outputs_{}/topos/Euler_PrD/PrD_embeds.txt'.format(p.proj_name))
+                        P4.origEmbedFile = os.path.join(p.euler_dir, 'PrD_embeds.txt')
                         data = []
                         with open(P4.origEmbedFile) as values:
                             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -9003,7 +8972,7 @@ class MainWindow(QtGui.QMainWindow):
 
                         # re-configure removals based on most recent user_removals.txt:
                         print('\tupdating user removals...')
-                        fname = os.path.join(P1.user_directory, 'outputs_{}/CC/user_removals.txt'.format(p.proj_name))
+                        fname = os.path.join(p.CC_dir, 'user_removals.txt')
                         data = []
                         with open(fname) as values:
                             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -9024,8 +8993,7 @@ class MainWindow(QtGui.QMainWindow):
                         # re-configure anchors based on most recent user_anchors.txt:
                         print('\tupdating user anchors...')
                         if P3.user_dimensions == 1:
-                            fname = os.path.join(P1.user_directory,
-                                                 'outputs_{}/CC/user_anchors.txt'.format(p.proj_name))
+                            fname = os.path.join(p.CC_dir, 'user_anchors.txt')
                             data = []
                             with open(fname) as values:
                                 for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -9068,8 +9036,7 @@ class MainWindow(QtGui.QMainWindow):
                             P4.entry_PrD.setValue(1)
 
                         elif P3.user_dimensions == 2:
-                            fname = os.path.join(P1.user_directory,
-                                                 'outputs_{}/CC/user_anchors.txt'.format(p.proj_name))
+                            fname = os.path.join(p.CC_dir, 'user_anchors.txt')
                             data = []
                             with open(fname) as values:
                                 for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -9808,7 +9775,7 @@ class MainWindow(QtGui.QMainWindow):
         box.setWindowTitle('%s About' % progname)
         box.setText('<b>%s v.%s Python 3</b>' % (progname, progversion))
         box.setFont(font_standard)
-        iconDir = os.path.join(output_dir, 'icons/200x200.png')
+        iconDir = 'icons/200x200.png'
         if iconDir:
             box.setIconPixmap(QtGui.QPixmap(iconDir))  #ZULU
         box.setInformativeText('<span style="font-weight:normal;">\
@@ -9839,7 +9806,7 @@ class MainWindow(QtGui.QMainWindow):
 
         if (P1.user_volume != '' and P1.user_stack != '' and P1.user_alignment != '' and P1.user_shannon != 0.0
                 and P1.user_width != 0.0):
-            if os.path.exists(os.path.join(P1.user_directory, 'outputs_{}'.format(p.proj_name))):
+            if os.path.exists(p.out_dir):
                 box = QtGui.QMessageBox(self)
 
                 box.setWindowTitle('%s Conflict' % progname)
@@ -9854,11 +9821,10 @@ class MainWindow(QtGui.QMainWindow):
                 reply = box.exec_()
 
                 if reply == QtGui.QMessageBox.Yes:  #overwrite directory and continue to page 2
-                    call(["rm", "-r",
-                          os.path.join(P1.user_directory,
-                                       'outputs_{}'.format(p.proj_name))])  #delete output directory if it exists
-                    if os.path.exists(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name))):
-                        os.remove(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name)))
+                    if os.path.exists(p.out_dir):
+                        shutil.rmtree(p.out_dir)
+                    if os.path.exists(f'params_{p.proj_name}.toml'):
+                        os.remove(f'params_{p.proj_name}.toml')
                     p.save()  #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:
@@ -9868,7 +9834,7 @@ class MainWindow(QtGui.QMainWindow):
                 elif reply == QtGui.QMessageBox.No:
                     pass
 
-            elif os.path.exists(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name))):
+            elif os.path.exists(f'params_{p.proj_name}.toml'):
                 box = QtGui.QMessageBox(self)
 
                 box.setWindowTitle('%s Conflict' % progname)
@@ -9883,7 +9849,7 @@ class MainWindow(QtGui.QMainWindow):
                 reply = box.exec_()
 
                 if reply == QtGui.QMessageBox.Yes:  #overwrite directory and continue to page 2
-                    os.remove(os.path.join(output_dir, 'params_{}.toml'.format(p.proj_name)))
+                    os.remove(f'params_{p.proj_name}.toml')
                     p.save()  #send new GUI data to user parameters file
                     p.create_dir()
                     # proceed to page 2:

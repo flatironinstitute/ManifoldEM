@@ -146,8 +146,8 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         print('Concatenated imgs, shape', np.shape(imgs))
 
         traj_file_rel = 'imgsRELION_{}_{}_of_{}.mrcs'.format(p.trajName, bin + 1, p.nClass)
-        traj_file = '{}{}'.format(p.relion_dir, traj_file_rel)
-        ang_file = '{}EulerAngles_{}_{}_of_{}.star'.format(p.relion_dir, p.trajName, bin + 1, p.nClass)
+        traj_file = '{}{}'.format(p.bin_dir, traj_file_rel)
+        ang_file = '{}EulerAngles_{}_{}_of_{}.star'.format(p.bin_dir, p.trajName, bin + 1, p.nClass)
 
         if os.path.exists(traj_file):
             mrc = mrcfile.open(traj_file, mode='r+')

@@ -1,3 +1,16 @@
+"""A place to hold parameters and generate paths.
+
+This was implemented originally as basically a global namespace (implemented via globals on the
+module). To maintain that structure, but provide better functionality (like class @properties
+and sanity checking), we use a weird scheme where the module itself is a class instance of
+Params.
+
+Copyright (c) Columbia University Evan Seitz 2019
+Copyright (c) Columbia University Hstau Liao 2019
+Copyright (c) Columbia University Suvrajit Maji 2019
+Copyright (c) Flatiron Institute Robert Blackwell 2023
+
+"""
 import numpy as np
 import os
 import sys
@@ -6,12 +19,6 @@ from pprint import pprint
 
 from ManifoldEM.util import debug_print
 
-
-'''
-Copyright (c) Columbia University Evan Seitz 2019
-Copyright (c) Columbia University Hstau Liao 2019
-Copyright (c) Columbia University Suvrajit Maji 2019
-'''
 """
 resProj structure:
     0: default; new project
@@ -96,34 +103,38 @@ class Params(sys.__class__):
     opt_mask_param: int = 0                    # for either none, radius (Int), or iso(Int)
 
     findBadPsiTau: bool = True
-    tau_occ_thresh: float = 0.5
+    tau_occ_thresh: float = 0.35
     use_pruned_graph: bool = False
 
 
-    # FIXME: These really shouldn't be cached, or at the very least should be put in their own subdict...
-    user_dir: str = ''  # Root directory for project
-    tau_dir: str = ''
-    OM_dir: str = ''
-    NLSA_dir: str = ''
-    bin_dir: str = ''
-    relion_dir: str = ''
-    CC_dir: str = ''
-    CC_OF_dir: str = ''
-    CC_meas_dir: str = ''
-    out_dir: str = ''
-    vol_dir: str = ''
-    svd_dir: str = ''
-    dist_file: str = ''
-    psi_file: str = ''
-    psi2_file: str = ''
-    tau_file: str = ''
-    OM1_file: str = ''
-    rho_file: str = ''
-    NLSA_file: str = ''
-    CC_file: str = ''
-    CC_OF_file: str = ''
-    CC_meas_file: str = ''
-    CC_graph_file: str = ''
+    @property
+    def user_dir(self) -> str:
+        return 'output'
+
+
+    @property
+    def out_dir(self) -> str:
+        return os.path.join(self.user_dir, f'outputs_{self.proj_name}')
+
+
+    @property
+    def psi_file(self) -> str:
+        return os.path.join(self.psi_dir, 'gC_trimmed_psi_')
+
+
+    @property
+    def psi2_file(self) -> str:
+        return os.path.join(self.psi2_dir, 'S2_')
+
+
+    @property
+    def OM1_file(self) -> str:
+        return os.path.join(self.OM_dir, 'S2_')
+
+
+    @property
+    def rho_file(self) -> str:
+        return os.path.join(self.OM_dir, 'rho')
 
 
     @property
@@ -134,6 +145,11 @@ class Params(sys.__class__):
     @property
     def dist_dir(self) -> str:
         return os.path.join(self.out_dir, 'distances')
+
+
+    @property
+    def dist_file(self) -> str:
+        return os.path.join(self.dist_dir, 'IMGs_')
 
 
     @property
@@ -172,18 +188,63 @@ class Params(sys.__class__):
 
 
     @property
+    def CC_dir(self) -> str:
+        return os.path.join(self.out_dir, 'CC')
+
+
+    @property
+    def CC_file(self) -> str:
+        return os.path.join(self.CC_dir,  'CC_file')
+
+
+    @property
+    def CC_graph_file(self) -> str:
+        return os.path.join(self.CC_dir, 'graphCC')
+
+
+    @property
+    def CC_meas_dir(self) -> str:
+        return os.path.join(self.CC_dir, 'CC_meas')
+
+
+    @property
+    def CC_meas_file(self) -> str:
+        return os.path.join(self.CC_meas_dir, 'meas_edge_prDs_')
+
+
+    @property
+    def CC_OF_dir(self) -> str:
+        return os.path.join(self.CC_dir, 'CC_OF')
+
+
+    @property
+    def CC_OF_file(self) -> str:
+        return os.path.join(self.CC_OF_dir, 'OF_prD_')
+
+
+    @property
     def traj_file(self) -> str:
         return os.path.join(self.traj_dir, 'traj_')
 
 
     @property
+    def euler_dir(self) -> str:
+        return os.path.join(self.out_dir, 'topos', 'Euler_PrD')
+
+
+    @property
     def ref_ang_file(self) -> str:
-        return os.path.join(self.out_dir, 'topos', 'Euler_PrD', 'PrD_map.txt')
+        return os.path.join(self.euler_dir, 'PrD_map.txt')
 
 
     @property
     def ref_ang_file1(self) -> str:
-        return os.path.join(self.out_dir, 'topos', 'Euler_PrD', 'PrD_map1.txt')
+        return os.path.join(self.euler_dir, 'PrD_map1.txt')
+
+
+    @property
+    def bin_dir(self) -> str:
+        return os.path.join(self.out_dir, 'bin')
 
 
     def get_EL_file(self, prd_index: int):
@@ -248,40 +309,18 @@ class Params(sys.__class__):
 
 
     def create_dir(self):
-        # input and output directories and files
+        os.makedirs(self.dist_dir, exist_ok=True)
+        os.makedirs(self.psi_dir, exist_ok=True)
+        os.makedirs(self.psi2_dir, exist_ok=True)
+        os.makedirs(self.EL_dir, exist_ok=True)
+        os.makedirs(self.OM_dir, exist_ok=True)
+        os.makedirs(self.traj_dir, exist_ok=True)
+        os.makedirs(self.bin_dir, exist_ok=True)
+        os.makedirs(self.CC_dir, exist_ok=True)
+        os.makedirs(self.CC_OF_dir, exist_ok=True)
+        os.makedirs(self.CC_meas_dir, exist_ok=True)
+        os.makedirs(self.euler_dir, exist_ok=True)
 
-        self.out_dir = os.path.join(self.user_dir, f'outputs_{self.proj_name}')
-
-        p = self
-        os.makedirs(p.dist_dir, exist_ok=True)
-        os.makedirs(p.psi_dir, exist_ok=True)
-        os.makedirs(p.psi2_dir, exist_ok=True)
-        os.makedirs(p.EL_dir, exist_ok=True)
-        os.makedirs(p.OM_dir, exist_ok=True)
-        os.makedirs(p.traj_dir, exist_ok=True)
-
-        p.relion_dir = bin_dir = os.path.join(p.user_dir, 'outputs_{}/bin/'.format(p.proj_name))
-        os.makedirs(bin_dir, exist_ok=True)
-
-        p.CC_dir = os.path.join(p.user_dir, 'outputs_{}/CC/'.format(p.proj_name))
-        p.CC_OF_dir = os.path.join(p.CC_dir, 'CC_OF')
-        os.makedirs(p.CC_OF_dir, exist_ok=True)
-
-        p.CC_meas_dir = os.path.join(p.CC_dir, 'CC_meas')
-        os.makedirs(p.CC_meas_dir, exist_ok=True)
-
-        #################
-        os.makedirs(os.path.join(p.out_dir, 'topos', 'Euler_PrD'), exist_ok=True)
-
-        p.dist_file = '{}/IMGs_'.format(p.dist_dir)
-        p.psi_file = '{}/gC_trimmed_psi_'.format(p.psi_dir)
-        p.psi2_file = '{}/S2_'.format(p.psi2_dir)
-        p.OM1_file = '{}/S2_'.format(p.OM_dir)
-        p.rho_file = '{}/rho'.format(p.OM_dir)
-        p.CC_graph_file = '{}graphCC'.format(p.CC_dir)
-        p.CC_OF_file = '{}OF_prD_'.format(p.CC_OF_dir)
-        p.CC_meas_file = '{}meas_edge_prDs_'.format(p.CC_meas_dir)
-        p.CC_file = '{}CC_file'.format(p.CC_dir)
 
 
 sys.modules[__name__].__class__ = Params

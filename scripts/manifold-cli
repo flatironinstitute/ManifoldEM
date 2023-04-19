@@ -76,11 +76,9 @@ def load_state(args):
 
 def init(args):
     p.proj_name = args.project_name
-    p.user_dir = os.path.join(os.getcwd(), "output")
     proj_file = f'params_{p.proj_name}.toml'
-    output_dir = os.path.join(p.user_dir, f'outputs_{p.proj_name}')
 
-    if os.path.isfile(proj_file) or os.path.isdir(output_dir):
+    if os.path.isfile(proj_file) or os.path.isdir(p.out_dir):
         response = 'y' if args.overwrite else None
         while response not in ('y', 'n'):
             response = input("Project appears to exist. Overwrite? y/n\n").lower()
@@ -88,8 +86,8 @@ def init(args):
             print("Aborting")
             return 1
         print("Removing previous project")
-        if os.path.isdir(output_dir):
-            shutil.rmtree(output_dir)
+        if os.path.isdir(p.out_dir):
+            shutil.rmtree(p.out_dir)
 
     p.avg_vol_file = args.avg_volume
     p.align_param_file = args.alignment
