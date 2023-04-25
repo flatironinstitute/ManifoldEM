@@ -8153,7 +8153,7 @@ class ThreshAllCanvas(QtGui.QDialog):
 
     def DataFinished(self):
         with open(p.tess_file, 'rb') as f:
-            data = pickle.load(fname)
+            data = pickle.load(f)
             P1.S2 = data['S2']
             P1.CG = data['CG']
 
