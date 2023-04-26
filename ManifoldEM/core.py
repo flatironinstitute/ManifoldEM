@@ -114,7 +114,7 @@ def makeMovie(IMG1, prD, psinum, fps):
                 frame_path = 'frame{:02d}.png'.format(i)
 
                 b = io.BytesIO()
-                imageio.imwrite(b, frame)
+                imageio.imwrite(b, frame, format='png')
                 b.seek(0)
                 fzip.writestr(frame_path, b.read())
 
