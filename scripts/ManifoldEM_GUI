@@ -7041,7 +7041,7 @@ class Manifold3dCanvas(QtGui.QDialog):
         self.initComplete = 0
         self.eigVals = []
 
-        eig_fname = os.path.join(p.out_dir, 'topos', f'PrD_{prD}', 'eig_spec.txt')
+        eig_fname = os.path.join(p.out_dir, 'topos', f'PrD_{self.PrD}', 'eig_spec.txt')
         data = []
         with open(eig_fname) as values:
             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
