@@ -7,13 +7,14 @@ from .energetics_tab import EnergeticsTab
 
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QScrollArea, QDesktopWidget)
 
+from typing import List, Union
+
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('ManifoldEM')
 
         self.tabs = QTabWidget(self)
-        self.tabs.resize(250, 150)
         self.tabs.addTab(ImportTab(self), 'Import')
         self.tabs.addTab(DistributionTab(self), 'Distribution')
         self.tabs.addTab(EmbeddingTab(self), 'Embedding')
@@ -42,4 +43,28 @@ class MainWindow(QMainWindow):
         self.setMaximumSize(max_screen_size.width(), max_screen_size.height())
         self.resize(7 * max_screen_size.width() // 10, 7 * max_screen_size.height() // 10)
 
+        self.set_tab_state(False, ['Distribution', 'Embedding', 'Eigenvectors', 'Compilation', 'Energetics'])
         self.show()
+
+
+    def set_tab_state(self, state: bool, tab_names: Union[List[str], None] = None):
+        tab_indices = {
+            'Import': 0,
+            'Distribution': 1,
+            'Embedding': 2,
+            'Eigenvectors': 3,
+            'Compilation': 4,
+            'Energetics': 5,
+        }
+
+        if not tab_names:
+            for index in range(self.tabs.count()):
+                self.tabs.setTabEnabled(index, state)
+            return
+
+        for tab_name in tab_names:
+            index = tab_indices.get(tab_name, None)
+            if index:
+                self.tabs.setTabEnabled(index, state)
+            else:
+                print(f"Invalid tab name: {tab_name}")
