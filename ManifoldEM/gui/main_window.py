@@ -1,4 +1,9 @@
 from .import_tab import ImportTab
+from .distribution_tab import DistributionTab
+from .embedding_tab import EmbeddingTab
+from .eigenvectors_tab import EigenvectorsTab
+from .compilation_tab import CompilationTab
+from .energetics_tab import EnergeticsTab
 
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QScrollArea, QDesktopWidget)
 
@@ -7,10 +12,15 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('ManifoldEM')
 
-        self.import_tab = ImportTab(self)
         self.tabs = QTabWidget(self)
         self.tabs.resize(250, 150)
-        self.tabs.addTab(self.import_tab, 'Import')
+        self.tabs.addTab(ImportTab(self), 'Import')
+        self.tabs.addTab(DistributionTab(self), 'Distribution')
+        self.tabs.addTab(EmbeddingTab(self), 'Embedding')
+        self.tabs.addTab(EigenvectorsTab(self), 'Eigenvectors')
+        self.tabs.addTab(CompilationTab(self), 'Compilation')
+        self.tabs.addTab(EnergeticsTab(self), 'Energetics')
+
         self.groupscroll = QHBoxLayout()
         self.groupscrollbox = QGroupBox()
 
