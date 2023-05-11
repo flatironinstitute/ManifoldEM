@@ -99,7 +99,6 @@ def threshold_pds():
     return [int(el) for el in S2_density_all]
 
 
-
 class S2View(HasTraits):
     scene1 = Instance(MlabSceneModel, ())
     scene2 = Instance(MlabSceneModel, ())
@@ -110,29 +109,40 @@ class S2View(HasTraits):
     theta = Str
     display_thresh = Button('PD Thresholding')
     isosurface_level = Range(2, 9, 3, mode='enum')
-    S2_rho = Int
     S2_density_all = List([5, 10, 25, 50, 100, 250, 500, 1000, 10000, 100000])
-    S2_density = Enum(S2_rho, values='S2_density_all')
+    S2_density = Enum(1000, values='S2_density_all')
+
+    click_on = Int
+    titleLeft = Str
+    titleRight = Str
+    title = Str
+
+    def _title_default(self):
+        return 'Electrostatic Potential Map'
+
+    def _titleLeft_default(self):
+        return 'S2 Orientation Distribution'
+
+    def _titleRight_default(self):
+        return 'Electrostatic Potential Map'
+
+    def _phi_default(self):
+        return '%s%s' % (0, u"\u00b0")
+
+    def _theta_default(self):
+        return '%s%s' % (0, u"\u00b0")
 
     def __init__(self):
-        # if Graphics is False:
-        if False:
-            def update_S2_density_all(self):
-                pass
-
-            def update_S2_params(self):
-                pass
-
-            def update_scene1(self):
-                pass
-
-            def update_scene2(self):
-                pass
-
-            return
-
         self.df_vol = None
 
+    def load_data(self):
+        self.update_S2_params()
+        with open(p.tess_file, 'rb') as f:
+            data = pickle.load(f)
+            self.S2_data = data['S2']
+
+        self.S2_density_all = threshold_pds()
+        self.get_volume_data()
 
     def get_volume_data(self):
         if self.df_vol is None:
@@ -142,19 +152,16 @@ class S2View(HasTraits):
                 mrc.header.maps = 3
                 self.df_vol = mrc.data
 
-    def _phi_default(self):
-        return '%s%s' % (0, u"\u00b0")
-
-    def _theta_default(self):
-        return '%s%s' % (0, u"\u00b0")
-
-    def _S2_rho_default(self):
-        return 100
-
     def update_S2_params(self):
         self.isosurface_level = int(p.visualization_params['S2_isosurface_level'])
         self.S2_scale = float(p.visualization_params['S2_scale'])
         self.S2_density = int(p.visualization_params['S2_density'])
+
+    def sync_params(self):
+        p.visualization_params['S2_scale'] = self.S2_scale
+        p.visualization_params['S2_density'] = self.S2_density
+        p.visualization_params['S2_isosurface_level'] = self.isosurface_level
+        p.save()  # send new GUI data to user parameters file
 
     @on_trait_change('display_angle')
     def view_anglesP2(self):
@@ -165,9 +172,6 @@ class S2View(HasTraits):
 
     @on_trait_change('S2_scale, S2_density')  #S2 Orientation Sphere
     def update_scene1(self):
-        self.get_volume_data()
-        self.update_S2_params()
-
         # store current camera info:
         view = self.scene1.mlab.view()
         roll = self.scene1.mlab.roll()
@@ -206,15 +210,7 @@ class S2View(HasTraits):
         testPlot.actor.property.opacity = 0
         #####################
 
-        splot.actor.actor.scale = np.multiply(
-            self.S2_scale,
-            np.array([
-                len(self.df_vol) / np.sqrt(2),
-                len(self.df_vol) / np.sqrt(2),
-                len(self.df_vol) / np.sqrt(2),
-            ])
-        )
-
+        splot.actor.actor.scale = self.S2_scale * len(self.df_vol) / np.sqrt(2.0) * np.ones(3)
         splot.actor.property.backface_culling = True
         splot.mlab_source.reset
 
@@ -226,7 +222,7 @@ class S2View(HasTraits):
         self.scene1.mlab.roll(roll)
 
         def press_callback(vtk_obj, event):  # left mouse down callback
-            self.click_on = 1
+            click_on = 1
 
         def hold_callback(vtk_obj, event):  # camera rotate callback
             if self.click_on > 0:
@@ -242,17 +238,10 @@ class S2View(HasTraits):
         self.fig1.scene.scene.interactor.add_observer('InteractionEvent', hold_callback)
         self.fig1.scene.scene.interactor.add_observer('EndInteractionEvent', release_callback)
 
-        # if display parameters have changed, store them to be grabbed by tab 4:
-        p.visualization_params['S2_scale'] = self.S2_scale
-        p.visualization_params['S2_density'] = self.S2_density
-        p.visualization_params['S2_isosurface_level'] = self.isosurface_level
-        p.save()  # send new GUI data to user parameters file
+        self.sync_params()
 
     @on_trait_change('isosurface_level')  #Electrostatic Potential Map
     def update_scene2(self):
-        self.get_volume_data()
-        self.update_S2_params()
-
         # store current camera info:
         view = mlab.view()
         roll = mlab.roll()
@@ -318,17 +307,7 @@ class S2View(HasTraits):
         self.fig2.scene.scene.interactor.add_observer('InteractionEvent', hold_callback)
         self.fig2.scene.scene.interactor.add_observer('EndInteractionEvent', release_callback)
 
-        # if display parameters have changed, store them to be grabbed by tab 4:
-        p.save()  # send new GUI data to user parameters file
-
-    titleLeft = Str
-    titleRight = Str
-
-    def _titleLeft_default(self):
-        return 'S2 Orientation Distribution'
-
-    def _titleRight_default(self):
-        return 'Electrostatic Potential Map'
+        self.sync_params()
 
     @on_trait_change('display_thresh')
     def GCsViewer(self):
@@ -454,10 +433,6 @@ class DistributionTab(QWidget):
         self.show()
 
     def activate(self):
-        with open(p.tess_file, 'rb') as f:
-            data = pickle.load(f)
-            self.viz.S2_data = data['S2']
-
-        self.viz.S2_density_all = threshold_pds()
-        self.viz.update_scene2()
+        self.viz.load_data()
         self.viz.update_scene1()
+        self.viz.update_scene2()
