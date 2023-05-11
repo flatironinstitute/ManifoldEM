@@ -17,8 +17,7 @@ from scipy import stats
 import pandas
 import mrcfile
 
-
-from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, on_trait_change
+from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, observe
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 
 class ThresholdView(QMainWindow):
@@ -105,34 +104,20 @@ class S2View(HasTraits):
     S2_scale_all = List([.2, .4, .6, .8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0])
     S2_scale = Enum(1.0, values='S2_scale_all')
     display_angle = Button('Display Euler Angles')
-    phi = Str
-    theta = Str
+    phi = Str("0\u00b0")
+    theta = Str("0\u00b0")
     display_thresh = Button('PD Thresholding')
     isosurface_level = Range(2, 9, 3, mode='enum')
     S2_density_all = List([5, 10, 25, 50, 100, 250, 500, 1000, 10000, 100000])
     S2_density = Enum(1000, values='S2_density_all')
 
-    click_on = Int
-    titleLeft = Str
-    titleRight = Str
-    title = Str
-
-    def _title_default(self):
-        return 'Electrostatic Potential Map'
-
-    def _titleLeft_default(self):
-        return 'S2 Orientation Distribution'
-
-    def _titleRight_default(self):
-        return 'Electrostatic Potential Map'
-
-    def _phi_default(self):
-        return '%s%s' % (0, u"\u00b0")
-
-    def _theta_default(self):
-        return '%s%s' % (0, u"\u00b0")
+    click_on = Int(0)
+    titleLeft = Str('S2 Orientation Distribution')
+    titleRight = Str('Electrostatic Potential Map')
+    title = Str('Electrostatic Potential Map')
 
     def __init__(self):
+        HasTraits.__init__(self)
         self.df_vol = None
 
     def load_data(self):
@@ -161,17 +146,17 @@ class S2View(HasTraits):
         p.visualization_params['S2_scale'] = self.S2_scale
         p.visualization_params['S2_density'] = self.S2_density
         p.visualization_params['S2_isosurface_level'] = self.isosurface_level
-        p.save()  # send new GUI data to user parameters file
+        p.save()
 
-    @on_trait_change('display_angle')
-    def view_anglesP2(self):
+    @observe('display_angle')
+    def view_anglesP2(self, event):
         viewS2 = self.scene1.mlab.view(figure=self.fig1)
         azimuth = viewS2[0]  # phi: 0-360
         elevation = viewS2[1]  # theta: 0-180
         print_anglesP2(azimuth, elevation)
 
-    @on_trait_change('S2_scale, S2_density')  #S2 Orientation Sphere
-    def update_scene1(self):
+    @observe('S2_scale, S2_density')  #S2 Orientation Sphere
+    def update_scene1(self, event):
         # store current camera info:
         view = self.scene1.mlab.view()
         roll = self.scene1.mlab.roll()
@@ -222,7 +207,7 @@ class S2View(HasTraits):
         self.scene1.mlab.roll(roll)
 
         def press_callback(vtk_obj, event):  # left mouse down callback
-            click_on = 1
+            self.click_on = 1
 
         def hold_callback(vtk_obj, event):  # camera rotate callback
             if self.click_on > 0:
@@ -240,8 +225,8 @@ class S2View(HasTraits):
 
         self.sync_params()
 
-    @on_trait_change('isosurface_level')  #Electrostatic Potential Map
-    def update_scene2(self):
+    @observe('isosurface_level')  #Electrostatic Potential Map
+    def update_scene2(self, event):
         # store current camera info:
         view = mlab.view()
         roll = mlab.roll()
@@ -309,8 +294,8 @@ class S2View(HasTraits):
 
         self.sync_params()
 
-    @on_trait_change('display_thresh')
-    def GCsViewer(self):
+    @observe('display_thresh')
+    def GCsViewer(self, event):
         global GCs_window
         try:
             GCs_window.close()
@@ -405,8 +390,8 @@ class DistributionTab(QWidget):
         layout.setSpacing(10)
 
         self.viz = S2View()
-        ui_element = self.viz.edit_traits(parent=self, kind='subpanel').control
-        layout.addWidget(ui_element, 0, 0, 1, 6)
+        self.ui_element = self.viz.edit_traits(parent=self, kind='subpanel').control
+        layout.addWidget(self.ui_element, 0, 0, 1, 6)
 
         # next page:
         self.label_Hline = QLabel("")  #aesthetic line left
@@ -434,5 +419,5 @@ class DistributionTab(QWidget):
 
     def activate(self):
         self.viz.load_data()
-        self.viz.update_scene1()
-        self.viz.update_scene2()
+        self.viz.update_scene1(None)
+        self.viz.update_scene2(None)
