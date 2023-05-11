@@ -3,6 +3,8 @@
 import os
 if not 'OMP_NUM_THREADS' in os.environ:
     os.environ['OMP_NUM_THREADS'] = '1'
+if not 'MKL_NUM_THREADS' in os.environ:
+    os.environ['MKL_NUM_THREADS'] = '1'
 
 import sys
 import time
@@ -126,17 +128,8 @@ if Graphics is False:
     print('Mode set: 3D graphics disabled.')
 
 # =============================================================================
-# OS identification (if needed):
-# =============================================================================
-Windows = sys.platform.lower().startswith(('win', 'microsoft'))
-Mac = sys.platform.lower().startswith('darwin')
-Linux = sys.platform.lower().startswith(('linux', 'linux2'))
-
-# =============================================================================
 # MayaVI viz 1 (P2):
 # =============================================================================
-
-
 class Mayavi_S2(HasTraits):  # S2 Orientation Sphere, Electrostatic Potential Map
     if Graphics is False:
 
@@ -1115,17 +1108,11 @@ class P1(QtGui.QWidget):
 
         def calc_shannon():
             P1.user_shannon = np.divide(P1.user_resolution, P1.user_diameter)
-            P1.entry_shannon.setValue(P1.user_shannon)
-            p.sh = float(P1.user_shannon)
+            P1.entry_shannon.setValue(p.sh)
 
         def calc_angWidth():
-            P1.user_width = ((P1.user_aperture) * (P1.user_resolution)) / P1.user_diameter
-
-            if P1.user_width > np.sqrt(4 * np.pi):
-                P1.user_width = np.sqrt(4 * np.pi)  #max value constraint
-
+            P1.user_width = p.ang_width
             P1.entry_angWidth.setValue(P1.user_width)
-            p.ang_width = P1.user_width
 
         # pixel size input:
         def choose_pixel():
@@ -9249,8 +9236,6 @@ class MainWindow(QtGui.QMainWindow):
                 p.obj_diam = P1.user_diameter
                 p.resol_est = P1.user_resolution
                 p.ap_index = P1.user_aperture
-                p.sh = P1.user_shannon
-                p.ang_width = P1.user_width
                 p.S2rescale = P1.S2rescale
                 p.relion_data = P1.relion_data
                 p.save()  #send new GUI data to user parameters file
@@ -9929,6 +9914,13 @@ class MainWindow(QtGui.QMainWindow):
 
 
 if __name__ == '__main__':
+    print("""
+ __  __             _  __       _     _ _____ __  __
+|  \/  | __ _ _ __ (_)/ _| ___ | | __| | ____|  \/  |
+| |\/| |/ _` | '_ \| | |_ / _ \| |/ _` |  _| | |\/| |
+| |  | | (_| | | | | |  _| (_) | | (_| | |___| |  | |
+|_|  |_|\__,_|_| |_|_|_|  \___/|_|\__,_|_____|_|  |_|
+""")
     print('# =============================')
     print('#  %s' % (progname))
     print('#  v.%s Python 3' % (progversion))
