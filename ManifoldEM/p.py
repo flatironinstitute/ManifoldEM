@@ -34,7 +34,7 @@ from ManifoldEM.util import debug_print
 class Params(sys.__class__):
     proj_name: str = ''            # name of the project :D
     resProj: int = 0               # see above
-    relion_data: bool = False      # working with relion data?
+    relion_data: bool = True       # working with relion data?
     ncpu: int = 1                  # number of CPUs for multiprocessing
     avg_vol_file: str = ''         # average volume file (e.g., .mrc)
     img_stack_file: str = ''       # image stack file (e.g., .mrcs)
@@ -53,7 +53,6 @@ class Params(sys.__class__):
     obj_diam: float = 0.0  # diameter of macromolecule [Angstroms]
     resol_est: float = 0.0 # estimated resolution [Angstroms]
     ap_index: int = 1      # aperture index {1,2,3...}; increases tessellated bin size
-    ang_width: float = 0.0 # angle width (via: ap_index * resol_est / obj_diam)
     sh: float = 0.0        # Shannon angle (pix_size / obj_diam)
 
     # tessellation binning:
@@ -104,6 +103,16 @@ class Params(sys.__class__):
     findBadPsiTau: bool = True
     tau_occ_thresh: float = 0.35
     use_pruned_graph: bool = False
+
+    @property
+    def ang_width(self) -> float:
+        if not self.obj_diam:
+            return 0.0
+        return np.min(((self.ap_index * self.resol_est) / self.obj_diam, np.sqrt(4 * np.pi)))
+
+    @property
+    def sh(self) -> float:
+        return self.resol_est / self.obj_diam
 
 
     @property

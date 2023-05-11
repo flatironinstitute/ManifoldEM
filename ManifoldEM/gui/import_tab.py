@@ -1,13 +1,16 @@
+import os
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QLabel, QFrame, QLineEdit, QPushButton, QFileDialog, QMessageBox,
-                             QInputDialog, QDoubleSpinBox, QGridLayout, QWidget)
+from PyQt5.QtWidgets import (QLabel, QFrame, QLineEdit, QFileDialog, QMessageBox, QInputDialog,
+                             QDoubleSpinBox, QGridLayout, QWidget, QPushButton)
 
 from numbers import Number
 from typing import Tuple, Union
+import shutil
 import tempfile
 
-import numpy as np
 from ManifoldEM import p
+from ManifoldEM.Data import op as process_orientations
 
 def choose_pixel(entry: QDoubleSpinBox):
     p.pix_size = float(entry.value())
@@ -26,14 +29,10 @@ def choose_aperture(entry: QDoubleSpinBox):
 
 
 def update_shannon(entry: QDoubleSpinBox):
-    if p.obj_diam:
-        p.sh = p.resol_est / p.obj_diam
     entry.setValue(p.sh)
 
 
 def update_ang_width(entry: QDoubleSpinBox):
-    if p.obj_diam:
-        p.ang_width = np.min([(p.ap_index * p.resol_est) / p.obj_diam, np.sqrt(4 * np.pi)])
     entry.setValue(p.ang_width)
 
 
@@ -166,13 +165,15 @@ def num_selector(offset: Tuple[int, int], field_name: str, suffix: str, default_
 class ImportTab(QWidget):
     def __init__(self, parent=None):
         super(ImportTab, self).__init__(parent)
+        self.parent = parent
+
         layout = self.layout = QGridLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
 
         text_field_selector(0, "Average Volume", "", "Browse", choose_avg_vol, self)
         text_field_selector(1, "Alignment File", "", "Browse", choose_align, self)
-        text_field_selector(2, "Image Stack", "", "Browse", choose_align, self)
+        text_field_selector(2, "Image Stack", "", "Browse", choose_stack, self)
         text_field_selector(3, "Mask Volume", "", "Browse", choose_mask, self)
         text_field_selector(4, "Project Name", p.proj_name, "Choose", choose_proj_name, self)
 
@@ -190,4 +191,54 @@ class ImportTab(QWidget):
         update_shannon(shannon_entry)
         update_ang_width(ang_width_entry)
 
+        self.finalize_button = QPushButton("View Orientation Distribution", self)
+        self.finalize_button.setToolTip("All entries must be complete.")
+        layout.addWidget(self.finalize_button, 7, 2, 1, 2)
+        self.finalize_button.clicked.connect(self.finalize)
+        self.finalize_button.show()
+
         self.show()
+
+    def finalize(self):
+        print('Processing orientations...')
+        self.finalize_button.setDisabled(True)
+
+        if (p.avg_vol_file and p.img_stack_file and p.align_param_file and p.sh and p.ang_width):
+            if os.path.exists(p.out_dir) or os.path.exists(f'params_{p.proj_name}.toml'):
+                box = QMessageBox(self)
+                box.setWindowTitle("ManifoldEM Conflict")
+                box.setText("<b>Directory Conflict</b>")
+                box.setIcon(QMessageBox.Warning)
+                box.setInformativeText("""The project already exists, from either a previous project
+                                        or from re-adjusting the hyper-parameters within the current run.<br /><br />\
+
+                                        Do you want to overwrite this data and proceed?""")
+                box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                reply = box.exec_()
+
+                if reply == QMessageBox.Yes:
+                    if os.path.exists(p.out_dir):
+                        shutil.rmtree(p.out_dir)
+                    if os.path.exists(f"params_{p.proj_name}.toml"):
+                        os.remove(f"params_{p.proj_name}.toml")
+                else:
+                    self.finalize_button.setDisabled(False)
+                    return
+
+            p.save()
+            p.create_dir()
+
+            process_orientations(p.align_param_file)
+            p.resProj = 1
+            self.parent.set_tab_state(True, "Distribution")
+            self.parent.switch_tab("Distribution")
+        else:
+            box = QMessageBox(self)
+            box.setWindowTitle("ManifoldEM Error")
+            box.setText("<b>Input Error</b>")
+            box.setIcon(QMessageBox.Information)
+            box.setInformativeText("All values must be complete and nonzero.")
+            box.setStandardButtons(QMessageBox.Ok)
+            box.setDefaultButton(QMessageBox.Ok)
+            box.exec_()
+            self.finalize_button.setDisabled(False)

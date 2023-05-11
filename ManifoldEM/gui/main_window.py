@@ -10,9 +10,25 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxL
 from typing import List, Union
 
 class MainWindow(QMainWindow):
+    tab_indices = {
+        'Import': 0,
+        'Distribution': 1,
+        'Embedding': 2,
+        'Eigenvectors': 3,
+        'Compilation': 4,
+        'Energetics': 5,
+    }
+
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('ManifoldEM')
+
+        max_screen_size = QDesktopWidget().screenGeometry(-1)
+        self.setMinimumSize(500, 300)
+        self.setMaximumSize(max_screen_size.width(), max_screen_size.height())
+        self.resize(7 * max_screen_size.width() // 10, 7 * max_screen_size.height() // 10)
+
+
 
         self.tabs = QTabWidget(self)
         self.tabs.addTab(ImportTab(self), 'Import')
@@ -22,40 +38,38 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(CompilationTab(self), 'Compilation')
         self.tabs.addTab(EnergeticsTab(self), 'Energetics')
 
-        self.groupscroll = QHBoxLayout()
-        self.groupscrollbox = QGroupBox()
+        self.set_tab_state(False, ['Distribution', 'Embedding', 'Eigenvectors', 'Compilation', 'Energetics'])
 
-        self.MVB = QVBoxLayout()
-        self.MVB.addWidget(self.tabs)
-
+        groupscroll = QHBoxLayout()
+        groupscrollbox = QGroupBox()
+        tablist = QVBoxLayout()
         scroll = QScrollArea()
         widget = QWidget(self)
+
+        tablist.addWidget(self.tabs)
         widget.setLayout(QHBoxLayout())
-        widget.layout().addWidget(self.groupscrollbox)
+        widget.layout().addWidget(groupscrollbox)
         scroll.setWidget(widget)
         scroll.setWidgetResizable(True)
-        self.groupscrollbox.setLayout(self.MVB)
-        self.groupscroll.addWidget(scroll)
+        groupscrollbox.setLayout(tablist)
+        groupscroll.addWidget(scroll)
+
         self.setCentralWidget(scroll)
 
-        max_screen_size = QDesktopWidget().screenGeometry(-1)
-        self.setMinimumSize(500, 300)
-        self.setMaximumSize(max_screen_size.width(), max_screen_size.height())
-        self.resize(7 * max_screen_size.width() // 10, 7 * max_screen_size.height() // 10)
-
-        self.set_tab_state(False, ['Distribution', 'Embedding', 'Eigenvectors', 'Compilation', 'Energetics'])
         self.show()
 
 
-    def set_tab_state(self, state: bool, tab_names: Union[List[str], None] = None):
-        tab_indices = {
-            'Import': 0,
-            'Distribution': 1,
-            'Embedding': 2,
-            'Eigenvectors': 3,
-            'Compilation': 4,
-            'Energetics': 5,
-        }
+    def switch_tab(self, tab_name: str):
+        index = self.tab_indices.get(tab_name, None)
+        if index:
+            self.tabs.setCurrentIndex(index)
+        else:
+            print(f"Invalid tab name: {tab_name}")
+
+
+    def set_tab_state(self, state: bool, tab_names: Union[List[str], str, None] = None):
+        if isinstance(tab_names, str):
+            tab_names = [tab_names]
 
         if not tab_names:
             for index in range(self.tabs.count()):
@@ -63,7 +77,7 @@ class MainWindow(QMainWindow):
             return
 
         for tab_name in tab_names:
-            index = tab_indices.get(tab_name, None)
+            index = self.tab_indices.get(tab_name, None)
             if index:
                 self.tabs.setTabEnabled(index, state)
             else:

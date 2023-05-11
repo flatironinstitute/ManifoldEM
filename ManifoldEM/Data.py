@@ -202,24 +202,11 @@ def op(align_param_file):
     p.load()
     visual = False
 
-    if not p.relion_data:  # assumes SPIDER data
-        # read the angles
-        q = get_q(align_param_file, p.phiCol, p.thetaCol, p.psiCol, flip=True)
-        # double the number of data points by augmentation
-        q = util.augment(q)
-        # read defocus
-        df = get_df(align_param_file, p.dfCol)
-        # double the number of data points by augmentation
-        df = np.concatenate((df, df))
-        sh = get_shift(align_param_file, p.shx_col, p.shy_col)
-        size = len(df)
-    else:
-        sh, q, U, V = get_from_relion(align_param_file, flip=True)
-        df = (U + V) / 2
-        # double the number of data points by augmentation
-        q = util.augment(q)
-        df = np.concatenate((df, df))
-        size = len(df)
+    sh, q, U, V = get_from_relion(align_param_file, flip=True)
+    df = (U + V) / 2
+    # double the number of data points by augmentation
+    q = util.augment(q)
+    df = np.concatenate((df, df))
 
     CG1, CG, nG, S2, S20_th, S20, NC = S2tessellation.op(q, p.ang_width, p.PDsizeThL, visual, p.PDsizeThH)
     # CG1: list of lists, each of which is a list of image indices within one PD
