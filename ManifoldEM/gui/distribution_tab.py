@@ -14,7 +14,9 @@ from mayavi import mlab
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
 from scipy import stats
 
+import pandas
 import mrcfile
+
 
 from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, on_trait_change
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
@@ -34,6 +36,69 @@ class ThresholdView(QMainWindow):
 
     def initUI(self):
         pass
+
+def threshold_pds():
+    print('\tlow threshold: %s' % p.PDsizeThL)
+    print('\thigh threshold: %s' % p.PDsizeThH)
+    print('\tthresholding PDs...')
+    with open(p.tess_file, 'rb') as f:
+        data = pickle.load(f)
+
+    # all tessellated bins:
+    totalPrDs = int(np.shape(data['CG1'])[0])
+    mid = data['CG1'].shape[0] // 2
+    NC1 = data['NC'][:int(mid)]
+    NC2 = data['NC'][int(mid):]
+
+    all_PrDs = []
+    all_occ = []
+    thresh_PrDs = []
+    thresh_occ = []
+    if len(NC1) >= len(NC2):  #first half of S2
+        pd_all = 1
+        pd = 1
+        for i in NC1:
+            all_PrDs.append(pd_all)
+            all_occ.append(i)
+            if i >= p.PDsizeThL:
+                thresh_PrDs.append(pd)
+                if i > p.PDsizeThH:
+                    thresh_occ.append(p.PDsizeThH)
+                else:
+                    thresh_occ.append(i)
+                pd += 1
+            pd_all += 1
+    else:  #second half of S2
+        pd_all = 1
+        pd = 1
+        for i in NC2:
+            all_PrDs.append(pd_all)
+            all_occ.append(i)
+            if i >= p.PDsizeThL:
+                thresh_PrDs.append(pd)
+                if i > p.PDsizeThH:
+                    thresh_occ.append(p.PDsizeThH)
+                else:
+                    thresh_occ.append(i)
+                pd += 1
+            pd_all += 1
+
+    # read points from tesselated sphere:
+    PrD_map1_eul = pandas.read_csv(p.ref_ang_file1, delimiter='\t')
+
+    all_phi = PrD_map1_eul['phi']
+    all_theta = PrD_map1_eul['theta']
+
+    # ad hoc ratios to make sure S2 volume doesn't freeze-out due to too many particles to plot:
+    ratio1 = float(sum(all_occ)) / 2000
+    ratio2 = float(sum(all_occ)) / 5000
+    S2_density_all = [5, 10, 25, 50, 100, 250, 500, 1000, 10000, 100000]
+    S2_density_all = list(filter(lambda a: a < int(sum(all_occ)), S2_density_all))
+    S2_density_all = list(filter(lambda a: a > int(ratio2), S2_density_all))
+
+    return [int(el) for el in S2_density_all]
+
+
 
 class S2View(HasTraits):
     scene1 = Instance(MlabSceneModel, ())
@@ -66,19 +131,16 @@ class S2View(HasTraits):
 
             return
 
-
         self.df_vol = None
 
 
-    def get_volume_data():
-        if self.df_vol:
-            return
-
-        with mrcfile.open(p.avg_vol_file, mode='r+') as mrc:
-            mrc.header.mapc = 1
-            mrc.header.mapr = 2
-            mrc.header.maps = 3
-            self.vol_data = mrc.data
+    def get_volume_data(self):
+        if self.df_vol is None:
+            with mrcfile.open(p.avg_vol_file, mode='r+') as mrc:
+                mrc.header.mapc = 1
+                mrc.header.mapr = 2
+                mrc.header.maps = 3
+                self.df_vol = mrc.data
 
     def _phi_default(self):
         return '%s%s' % (0, u"\u00b0")
@@ -94,11 +156,6 @@ class S2View(HasTraits):
         self.S2_scale = float(p.visualization_params['S2_scale'])
         self.S2_density = int(p.visualization_params['S2_density'])
 
-    def update_S2_density_all(self):
-        self.S2_density_all = []
-        for i in P1.S2_density_all:
-            self.S2_density_all.append(int(i))
-
     @on_trait_change('display_angle')
     def view_anglesP2(self):
         viewS2 = self.scene1.mlab.view(figure=self.fig1)
@@ -109,6 +166,8 @@ class S2View(HasTraits):
     @on_trait_change('S2_scale, S2_density')  #S2 Orientation Sphere
     def update_scene1(self):
         self.get_volume_data()
+        self.update_S2_params()
+
         # store current camera info:
         view = self.scene1.mlab.view()
         roll = self.scene1.mlab.roll()
@@ -192,6 +251,8 @@ class S2View(HasTraits):
     @on_trait_change('isosurface_level')  #Electrostatic Potential Map
     def update_scene2(self):
         self.get_volume_data()
+        self.update_S2_params()
+
         # store current camera info:
         view = mlab.view()
         roll = mlab.roll()
@@ -205,7 +266,7 @@ class S2View(HasTraits):
         mlab.clf(figure=self.fig2)
 
         if p.relion_data:
-            mirror = P1.df_vol[..., ::-1]
+            mirror = self.df_vol[..., ::-1]
             cplot = mlab.contour3d(mirror,
                                    contours=self.isosurface_level,
                                    color=(0.9, 0.9, 0.9),
@@ -213,13 +274,13 @@ class S2View(HasTraits):
             cplot.actor.actor.orientation = np.array([0., -90., 0.])
 
         else:
-            cplot = mlab.contour3d(P1.df_vol,
+            cplot = mlab.contour3d(self.df_vol,
                                    contours=self.isosurface_level,
                                    color=(0.9, 0.9, 0.9),
                                    figure=self.fig2)
 
-        cplot.actor.actor.origin = np.array([len(P1.df_vol) / 2, len(P1.df_vol) / 2, len(P1.df_vol) / 2])
-        cplot.actor.actor.position = np.array([-len(P1.df_vol) / 2, -len(P1.df_vol) / 2, -len(P1.df_vol) / 2])
+        cplot.actor.actor.origin = np.array([len(self.df_vol) / 2, len(self.df_vol) / 2, len(self.df_vol) / 2])
+        cplot.actor.actor.position = np.array([-len(self.df_vol) / 2, -len(self.df_vol) / 2, -len(self.df_vol) / 2])
 
         cplot.actor.property.backface_culling = True
         cplot.compute_normals = False
@@ -237,7 +298,7 @@ class S2View(HasTraits):
         ####################
 
         # reposition camera to previous:
-        mlab.view(view[0], view[1], len(P1.df_vol) * 2, view[3])  #zoom out based on MRC volume dimensions
+        mlab.view(view[0], view[1], len(self.df_vol) * 2, view[3])  #zoom out based on MRC volume dimensions
         mlab.roll(roll)
 
         def press_callback(vtk_obj, event):  # left mouse down callback
@@ -364,8 +425,8 @@ class DistributionTab(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
 
-        viz = S2View()
-        ui_element = viz.edit_traits(parent=self, kind='subpanel').control
+        self.viz = S2View()
+        ui_element = self.viz.edit_traits(parent=self, kind='subpanel').control
         layout.addWidget(ui_element, 0, 0, 1, 6)
 
         # next page:
@@ -390,6 +451,13 @@ class DistributionTab(QWidget):
         self.button_binPart.setToolTip('Proceed to embedding.')
         layout.addWidget(self.button_binPart, 2, 2, 1, 2)
         self.button_binPart.show()
-
-
         self.show()
+
+    def activate(self):
+        with open(p.tess_file, 'rb') as f:
+            data = pickle.load(f)
+            self.viz.S2_data = data['S2']
+
+        self.viz.S2_density_all = threshold_pds()
+        self.viz.update_scene2()
+        self.viz.update_scene1()

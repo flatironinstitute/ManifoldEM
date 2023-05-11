@@ -28,11 +28,10 @@ class MainWindow(QMainWindow):
         self.setMaximumSize(max_screen_size.width(), max_screen_size.height())
         self.resize(7 * max_screen_size.width() // 10, 7 * max_screen_size.height() // 10)
 
-
-
+        self.distribution_tab = DistributionTab(self)
         self.tabs = QTabWidget(self)
         self.tabs.addTab(ImportTab(self), 'Import')
-        self.tabs.addTab(DistributionTab(self), 'Distribution')
+        self.tabs.addTab(self.distribution_tab, 'Distribution')
         self.tabs.addTab(EmbeddingTab(self), 'Embedding')
         self.tabs.addTab(EigenvectorsTab(self), 'Eigenvectors')
         self.tabs.addTab(CompilationTab(self), 'Compilation')
@@ -61,6 +60,8 @@ class MainWindow(QMainWindow):
 
     def switch_tab(self, tab_name: str):
         index = self.tab_indices.get(tab_name, None)
+        if tab_name == 'Distribution':
+            self.distribution_tab.activate()
         if index:
             self.tabs.setCurrentIndex(index)
         else:
