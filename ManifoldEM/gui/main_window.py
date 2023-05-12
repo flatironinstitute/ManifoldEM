@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxL
 
 from typing import List, Union
 
+
 class MainWindow(QMainWindow):
     tab_indices = {
         'Import': 0,
@@ -25,8 +26,10 @@ class MainWindow(QMainWindow):
 
         max_screen_size = QDesktopWidget().screenGeometry(-1)
         self.setMinimumSize(500, 300)
-        self.setMaximumSize(max_screen_size.width(), max_screen_size.height())
-        self.resize(7 * max_screen_size.width() // 10, 7 * max_screen_size.height() // 10)
+        w, h = max_screen_size.width(), max_screen_size.height()
+        if w < h:
+            h = (9 * w) // 16
+        self.resize((7 * w) // 10, (7 * h) // 10)
 
         self.distribution_tab = DistributionTab(self)
         self.tabs = QTabWidget(self)
