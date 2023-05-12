@@ -14,23 +14,15 @@ class DistributionTab(QWidget):
         self.ui_element = self.viz.edit_traits(parent=self, kind='subpanel').control
         layout.addWidget(self.ui_element, 0, 0, 1, 6)
 
-        # next page:
-        self.label_Hline = QLabel("")  #aesthetic line left
-        self.label_Hline.setMargin(20)
-        self.label_Hline.setFrameStyle(QFrame.HLine | QFrame.Sunken)
-        layout.addWidget(self.label_Hline, 2, 0, 1, 2, QtCore.Qt.AlignVCenter)
-        self.label_Hline.show()
+        def new_hline(xoffset):
+            Hline = QLabel("")
+            Hline.setMargin(20)
+            Hline.setFrameStyle(QFrame.HLine | QFrame.Sunken)
+            layout.addWidget(Hline, 2, xoffset, 1, 2, QtCore.Qt.AlignVCenter)
+            Hline.show()
 
-        self.label_Hline = QLabel("")  #aesthetic line right
-        self.label_Hline.setMargin(20)
-        self.label_Hline.setFrameStyle(QFrame.HLine | QFrame.Sunken)
-        layout.addWidget(self.label_Hline, 2, 4, 1, 2, QtCore.Qt.AlignVCenter)
-        self.label_Hline.show()
-
-        # if Graphics is False:
-        #     self.button_threshPD = QPushButton('PD Thresholding')
-        #     layout.addWidget(self.button_threshPD, 1, 2, 1, 2)
-        #     self.button_threshPD.show()  #FELIX
+        new_hline(0)  # left of button
+        new_hline(4)  # right of button
 
         self.button_binPart = QPushButton('Bin Particles')
         self.button_binPart.setToolTip('Proceed to embedding.')
