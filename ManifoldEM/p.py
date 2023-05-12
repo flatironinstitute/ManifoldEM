@@ -58,8 +58,6 @@ class Params(sys.__class__):
     # tessellation binning:
     PDsizeThL: int = 100   # minimum required snapshots in a tessellation for it be admitted
     PDsizeThH: int = 2000  # maximum number of snapshots that will be considered within each tessellation
-    S2rescale: float = 1.0 # proper scale ratio between S2 sphere and .mrc volume for visualizations
-    S2iso: int = 3         # proper isosurface level of .mrv volume for vizualiaztion (as chosen by user)
     numberofJobs: int = 0  # total number of bins to consider for manifold embedding
 
 
@@ -103,6 +101,12 @@ class Params(sys.__class__):
     findBadPsiTau: bool = True
     tau_occ_thresh: float = 0.35
     use_pruned_graph: bool = False
+
+    visualization_params: dict = {
+        'S2_scale': 1.0,
+        'S2_density': 1000,
+        'S2_isosurface_level': 3,
+    }
 
     @property
     def ang_width(self) -> float:
