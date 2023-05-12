@@ -37,9 +37,9 @@ class ThresholdView(QMainWindow):
         pass
 
 def threshold_pds():
-    print('\tlow threshold: %s' % p.PDsizeThL)
-    print('\thigh threshold: %s' % p.PDsizeThH)
-    print('\tthresholding PDs...')
+    print('thresholding PDs...')
+    print('low threshold: %s' % p.PDsizeThL)
+    print('high threshold: %s' % p.PDsizeThH)
     with open(p.tess_file, 'rb') as f:
         data = pickle.load(f)
 
@@ -184,17 +184,6 @@ class S2View(HasTraits):
         except:
             splot = mlab.points3d(x1, y1, z1, scale_mode='none', scale_factor=0.05, figure=self.fig1)
 
-        #####################
-        # align-to-grid data:
-        phi, theta = np.mgrid[0:np.pi:11j, 0:2 * np.pi:11j]
-        x = np.sin(phi) * np.cos(theta)
-        y = np.sin(phi) * np.sin(theta)
-        z = np.cos(phi)
-        testPlot = mlab.mesh(x, y, z, representation='wireframe', color=(0, 0, 0))
-        testPlot.actor.actor.scale = np.array([50, 50, 50])
-        testPlot.actor.property.opacity = 0
-        #####################
-
         splot.actor.actor.scale = self.S2_scale * len(self.df_vol) / np.sqrt(2.0) * np.ones(3)
         splot.actor.property.backface_culling = True
         splot.mlab_source.reset
@@ -206,18 +195,17 @@ class S2View(HasTraits):
         self.scene1.mlab.view(*view)
         self.scene1.mlab.roll(roll)
 
-        def press_callback(vtk_obj, event):  # left mouse down callback
+        def press_callback(vtk_obj, event):
             self.click_on = 1
 
-        def hold_callback(vtk_obj, event):  # camera rotate callback
-            if self.click_on > 0:
+        def hold_callback(vtk_obj, event):
+            if self.click_on:
                 viewS2 = self.scene1.mlab.view(figure=self.fig1)
-                self.phi = '%s%s' % (round(viewS2[0], 2), u"\u00b0")
-                self.theta = '%s%s' % (round(viewS2[1], 2), u"\u00b0")
+                self.phi = f"{round(viewS2[0], 2)}\u00b0"
+                self.theta = f"{round(viewS2[1], 2)}\u00b0"
 
-        def release_callback(vtk_obj, event):  # left mouse release callback
-            if self.click_on == 1:
-                self.click_on = 0
+        def release_callback(vtk_obj, event):
+            self.click_on = 0
 
         self.fig1.scene.scene.interactor.add_observer('LeftButtonPressEvent', press_callback)
         self.fig1.scene.scene.interactor.add_observer('InteractionEvent', hold_callback)
@@ -259,17 +247,6 @@ class S2View(HasTraits):
         cplot.actor.property.backface_culling = True
         cplot.compute_normals = False
         cplot.mlab_source.reset
-
-        #####################
-        # align-to-grid data:
-        phi, theta = np.mgrid[0:np.pi:11j, 0:2 * np.pi:11j]
-        x = np.sin(phi) * np.cos(theta)
-        y = np.sin(phi) * np.sin(theta)
-        z = np.cos(phi)
-        testPlot = mlab.mesh(x, y, z, representation='wireframe', color=(0, 0, 0))
-        testPlot.actor.actor.scale = np.array([50, 50, 50])
-        testPlot.actor.property.opacity = 0
-        ####################
 
         # reposition camera to previous:
         mlab.view(view[0], view[1], len(self.df_vol) * 2, view[3])  #zoom out based on MRC volume dimensions
