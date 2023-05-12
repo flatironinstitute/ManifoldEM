@@ -13,6 +13,23 @@ from ManifoldEM import p
 from .threshold_view import ThresholdView
 from .utils import threshold_pds
 
+
+def press_callback(parent, vtk_obj, event):  # left mouse down callback
+    parent.click_on = 1
+
+
+def hold_callback(parent, scene, fig, vtk_obj, event):  # camera rotate callback
+    if parent.click_on > 0:
+        viewS2 = scene.mlab.view(figure=fig)
+        parent.phi = f"{round(viewS2[0], 2)}\u00b0"
+        parent.theta = f"{round(viewS2[1], 2)}\u00b0"
+
+
+def release_callback(parent, vtk_obj, event):  # left mouse release callback
+    if parent.click_on == 1:
+        parent.click_on = 0
+
+
 class S2View(HasTraits):
     scene1 = Instance(MlabSceneModel, ())
     scene2 = Instance(MlabSceneModel, ())
@@ -107,21 +124,12 @@ class S2View(HasTraits):
         self.scene1.mlab.view(*view)
         self.scene1.mlab.roll(roll)
 
-        def press_callback(vtk_obj, event):
-            self.click_on = 1
-
-        def hold_callback(vtk_obj, event):
-            if self.click_on:
-                viewS2 = self.scene1.mlab.view(figure=self.fig1)
-                self.phi = f"{round(viewS2[0], 2)}\u00b0"
-                self.theta = f"{round(viewS2[1], 2)}\u00b0"
-
-        def release_callback(vtk_obj, event):
-            self.click_on = 0
-
-        self.fig1.scene.scene.interactor.add_observer('LeftButtonPressEvent', press_callback)
-        self.fig1.scene.scene.interactor.add_observer('InteractionEvent', hold_callback)
-        self.fig1.scene.scene.interactor.add_observer('EndInteractionEvent', release_callback)
+        self.fig1.scene.scene.interactor.add_observer('LeftButtonPressEvent',
+                                                      lambda x, y: press_callback(self, x, y))
+        self.fig1.scene.scene.interactor.add_observer('InteractionEvent',
+                                                      lambda x, y: hold_callback(self, self.scene1, self.fig1, x, y))
+        self.fig1.scene.scene.interactor.add_observer('EndInteractionEvent',
+                                                      lambda x, y: release_callback(self, x, y))
 
         self.sync_params()
 
@@ -164,22 +172,12 @@ class S2View(HasTraits):
         mlab.view(view[0], view[1], len(self.df_vol) * 2, view[3])  #zoom out based on MRC volume dimensions
         mlab.roll(roll)
 
-        def press_callback(vtk_obj, event):  # left mouse down callback
-            self.click_on = 1
-
-        def hold_callback(vtk_obj, event):  # camera rotate callback
-            if self.click_on > 0:
-                viewS2 = self.scene2.mlab.view(figure=self.fig2)
-                self.phi = '%s%s' % (round(viewS2[0], 2), u"\u00b0")
-                self.theta = '%s%s' % (round(viewS2[1], 2), u"\u00b0")
-
-        def release_callback(vtk_obj, event):  # left mouse release callback
-            if self.click_on == 1:
-                self.click_on = 0
-
-        self.fig2.scene.scene.interactor.add_observer('LeftButtonPressEvent', press_callback)
-        self.fig2.scene.scene.interactor.add_observer('InteractionEvent', hold_callback)
-        self.fig2.scene.scene.interactor.add_observer('EndInteractionEvent', release_callback)
+        self.fig2.scene.scene.interactor.add_observer('LeftButtonPressEvent',
+                                                      lambda x, y: press_callback(self, x, y))
+        self.fig2.scene.scene.interactor.add_observer('InteractionEvent',
+                                                      lambda x, y: hold_callback(self, self.scene2, self.fig2, x, y))
+        self.fig2.scene.scene.interactor.add_observer('EndInteractionEvent',
+                                                      lambda x, y: release_callback(self, x, y))
 
         self.sync_params()
 
