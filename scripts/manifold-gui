@@ -8,6 +8,8 @@ if 'MKL_NUM_THREADS' not in os.environ:
 import sys
 import time
 
+from argparse import ArgumentParser
+
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication
@@ -15,7 +17,36 @@ from PyQt5.QtWidgets import QApplication
 from ManifoldEM import p
 from ManifoldEM.gui import MainWindow
 
-p.proj_name = time.strftime("%Y%m%d_%H%M%S")
+parser = ArgumentParser(
+    prog="manifold-gui",
+    description="GUI interface for ManifoldEM package",
+)
+
+parser.add_argument('-p', "--project-name", type=str, help="Name of project to create", default=time.strftime("%Y%m%d_%H%M%S"))
+parser.add_argument('-v', "--avg-volume", type=str, default="")
+parser.add_argument('-a', "--alignment", type=str, default="")
+parser.add_argument('-i', "--image-stack", type=str, default="")
+parser.add_argument('-m', "--mask-volume", type=str, default="")
+parser.add_argument('-s', "--pixel-size", type=float, default=1.0)
+parser.add_argument('-d', "--diameter", type=float, default=150.0)
+parser.add_argument('-r', "--resolution", type=float, default=1.0)
+parser.add_argument('-x', "--aperture-index", type=int, default=1)
+
+def init(args):
+    p.proj_name = args.project_name
+
+    p.avg_vol_file = args.avg_volume
+    p.align_param_file = args.alignment
+    p.img_stack_file = args.image_stack
+    p.mask_vol_file = args.mask_volume
+
+    p.pix_size = args.pixel_size
+    p.obj_diam = args.diameter
+    p.resol_est = args.resolution
+    p.ap_index = args.aperture_index
+
+    p.create_dir()
+
 
 if __name__ == '__main__':
     print(r"""
@@ -26,6 +57,10 @@ if __name__ == '__main__':
 |_|  |_|\__,_|_| |_|_|_|  \___/|_|\__,_|_____|_|  |_|
 
 """)
+    args = parser.parse_args(sys.argv[1:])
+    if init(args):
+        sys.exit(1)
+
     app = QApplication([])
     app.setStyle('fusion')
     app.setFont(QFont('Arial', 12))

@@ -171,17 +171,17 @@ class ImportTab(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
 
-        text_field_selector(0, "Average Volume", "", "Browse", choose_avg_vol, self)
-        text_field_selector(1, "Alignment File", "", "Browse", choose_align, self)
-        text_field_selector(2, "Image Stack", "", "Browse", choose_stack, self)
-        text_field_selector(3, "Mask Volume", "", "Browse", choose_mask, self)
+        text_field_selector(0, "Average Volume", p.avg_vol_file, "Browse", choose_avg_vol, self)
+        text_field_selector(1, "Alignment File", p.align_param_file, "Browse", choose_align, self)
+        text_field_selector(2, "Image Stack", p.img_stack_file, "Browse", choose_stack, self)
+        text_field_selector(3, "Mask Volume", p.mask_vol_file, "Browse", choose_mask, self)
         text_field_selector(4, "Project Name", p.proj_name, "Choose", choose_proj_name, self)
 
-        pixel_selector = num_selector((0, 5), "Pixel Size", " \u00c5", 1.0, (0.001, 1000.0), 3, False, choose_pixel, self)
-        diam_selector = num_selector((1, 5), "Object Diameter", " \u00c5", 150.0, (0.01, 10000.0), 2, False, choose_diameter, self)
+        pixel_selector = num_selector((0, 5), "Pixel Size", " \u00c5", p.pix_size, (0.001, 1000.0), 3, False, choose_pixel, self)
+        diam_selector = num_selector((1, 5), "Object Diameter", " \u00c5", p.obj_diam, (0.01, 10000.0), 2, False, choose_diameter, self)
         shannon_entry = num_selector((2, 5), "Shannon Angle", " rad", p.sh, None, 3, True, None, self)
-        resolution_selector = num_selector((0, 6), "Resolution", " \u00c5", 3.0, (0.01, 1000.0), 2, False, choose_resolution, self)
-        aperture_selector = num_selector((1, 6), "Aperture Index", "", 1, (1, 1000), 0, False, choose_aperture, self)
+        resolution_selector = num_selector((0, 6), "Resolution", " \u00c5", p.resol_est, (0.01, 1000.0), 2, False, choose_resolution, self)
+        aperture_selector = num_selector((1, 6), "Aperture Index", "", p.ap_index, (1, 1000), 0, False, choose_aperture, self)
         ang_width_entry = num_selector((2, 6), "Angle Width", " rad", p.ang_width, None, 3, True, None, self)
 
         for selector in (pixel_selector, diam_selector, resolution_selector, aperture_selector):

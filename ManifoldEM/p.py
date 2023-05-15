@@ -53,7 +53,6 @@ class Params(sys.__class__):
     obj_diam: float = 0.0  # diameter of macromolecule [Angstroms]
     resol_est: float = 0.0 # estimated resolution [Angstroms]
     ap_index: int = 1      # aperture index {1,2,3...}; increases tessellated bin size
-    sh: float = 0.0        # Shannon angle (pix_size / obj_diam)
 
     # tessellation binning:
     PDsizeThL: int = 100   # minimum required snapshots in a tessellation for it be admitted
@@ -107,6 +106,10 @@ class Params(sys.__class__):
         'S2_density': 1000,
         'S2_isosurface_level': 3,
     }
+
+    @property
+    def proj_file(self) -> str:
+        return f'params_{self.proj_name}.toml'
 
     @property
     def ang_width(self) -> float:

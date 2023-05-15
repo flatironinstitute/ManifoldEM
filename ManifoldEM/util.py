@@ -1,5 +1,6 @@
 import mrcfile
 import numpy as np
+import os
 import sys
 import pickle
 import traceback

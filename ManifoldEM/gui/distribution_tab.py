@@ -89,7 +89,6 @@ def threshold_pds():
     all_theta = PrD_map1_eul['theta']
 
     # ad hoc ratios to make sure S2 volume doesn't freeze-out due to too many particles to plot:
-    ratio1 = float(sum(all_occ)) / 2000
     ratio2 = float(sum(all_occ)) / 5000
     S2_density_all = [5, 10, 25, 50, 100, 250, 500, 1000, 10000, 100000]
     S2_density_all = list(filter(lambda a: a < int(sum(all_occ)), S2_density_all))
@@ -118,7 +117,7 @@ class S2View(HasTraits):
 
     def __init__(self):
         HasTraits.__init__(self)
-        self.df_vol = None
+        self.df_vol = np.empty(0)
 
     def load_data(self):
         self.update_S2_params()
@@ -130,11 +129,8 @@ class S2View(HasTraits):
         self.get_volume_data()
 
     def get_volume_data(self):
-        if self.df_vol is None:
-            with mrcfile.open(p.avg_vol_file, mode='r+') as mrc:
-                mrc.header.mapc = 1
-                mrc.header.mapr = 2
-                mrc.header.maps = 3
+        if self.df_vol.size == 0:
+            with mrcfile.open(p.avg_vol_file, mode='r') as mrc:
                 self.df_vol = mrc.data
 
     def update_S2_params(self):

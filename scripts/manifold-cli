@@ -89,10 +89,10 @@ def init(args):
         if os.path.isdir(p.out_dir):
             shutil.rmtree(p.out_dir)
 
-    p.avg_vol_file = args.avg_volume
-    p.align_param_file = args.alignment
-    p.img_stack_file = args.image_stack
-    p.mask_vol_file = args.mask_volume
+    p.avg_vol_file = os.path.expanduser(args.avg_volume)
+    p.align_param_file = os.path.expanduser(args.alignment)
+    p.img_stack_file = os.path.expanduser(args.image_stack)
+    p.mask_vol_file = os.path.expanduser(args.mask_volume)
 
     p.pix_size = args.pixel_size
     p.obj_diam = args.diameter
