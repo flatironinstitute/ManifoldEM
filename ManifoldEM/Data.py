@@ -13,7 +13,8 @@ import csv
 
 import numpy as np
 
-from ManifoldEM import S2tessellation, myio, FindCCGraph, util, p, star
+from ManifoldEM import S2tessellation, myio, FindCCGraph, util, star
+from ManifoldEM.params import p
 from ManifoldEM.quaternion import qMult_bsx
 
 

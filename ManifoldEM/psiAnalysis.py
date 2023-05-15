@@ -1,3 +1,10 @@
+"""
+Copyright (c) UWM, Ali Dashti 2016 (matlab version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Copyright (c) Hstau Liao 2018 (python version)
+Copyright (c) Evan Seitz 2019 (python version)
+"""
+
 import multiprocessing
 
 import numpy as np
@@ -5,17 +12,12 @@ import numpy as np
 from functools import partial
 from scipy.fftpack import fft2, ifft2
 
-from ManifoldEM import p, myio, DMembeddingII
+from ManifoldEM import myio, DMembeddingII
+from ManifoldEM.params import p
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 from ManifoldEM.util import NullEmitter
 import tqdm
-'''
-Copyright (c) UWM, Ali Dashti 2016 (matlab version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Hstau Liao 2018 (python version)
-Copyright (c) Evan Seitz 2019 (python version)
-'''
 
 
 def _corr(a, b, n, m):

@@ -12,7 +12,7 @@ import matplotlib.colorbar as mcolorbar
 from cv2 import calcOpticalFlowFarneback
 from scipy.ndimage import uniform_filter
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 from ManifoldEM.CC import hornschunck_simple
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu

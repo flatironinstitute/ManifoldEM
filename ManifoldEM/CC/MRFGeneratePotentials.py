@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)

@@ -3,7 +3,8 @@ import sys
 
 import numpy as np
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 
 from scipy.sparse import csr_matrix, tril
 from scipy.sparse.csgraph import connected_components

@@ -9,7 +9,7 @@ from typing import Tuple, Union
 import shutil
 import tempfile
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 from ManifoldEM.Data import op as process_orientations
 
 def choose_pixel(entry: QDoubleSpinBox):

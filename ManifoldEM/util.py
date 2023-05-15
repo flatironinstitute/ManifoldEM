@@ -7,7 +7,7 @@ import traceback
 
 from PIL import Image
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)

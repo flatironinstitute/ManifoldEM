@@ -1,15 +1,14 @@
-import os
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-from ManifoldEM import p, DMembeddingII, myio
-'''
+"""
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)    
-'''
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from ManifoldEM import DMembeddingII, myio
 
 
 def get_psiPath(psi, rad, plotNum):

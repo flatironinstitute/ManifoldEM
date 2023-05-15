@@ -6,7 +6,8 @@ import numpy as np
 from numpy import linalg as LA
 from functools import partial
 
-from ManifoldEM import p, myio
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
 from ManifoldEM.util import NullEmitter
 from fasthog import hog_from_gradient as histogram_from_gradients

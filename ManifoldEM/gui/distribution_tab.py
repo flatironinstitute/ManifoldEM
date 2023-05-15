@@ -8,7 +8,7 @@ from typing import Tuple, Union
 import pickle
 
 import numpy as np
-from ManifoldEM import p
+from ManifoldEM.params import p
 
 from mayavi import mlab
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor

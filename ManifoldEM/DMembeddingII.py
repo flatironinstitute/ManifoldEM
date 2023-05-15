@@ -4,7 +4,7 @@ from collections import namedtuple
 from scipy.sparse import csr_matrix, csc_matrix
 from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 from ManifoldEM.core import fergusonE
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)

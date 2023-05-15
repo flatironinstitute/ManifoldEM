@@ -4,7 +4,8 @@ import time
 
 import numpy as np
 
-from ManifoldEM import p, myio
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.util import debug_print
 ''' %Version V 1.2
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)

@@ -4,7 +4,7 @@ import numpy as np
 
 from functools import partial
 
-from ManifoldEM import p, myio, ComputeEnergy1D
+from ManifoldEM.params import p, myio, ComputeEnergy1D
 from ManifoldEM.psiAnalysis import psi_analysis_single
 from ManifoldEM.util import NullEmitter
 '''

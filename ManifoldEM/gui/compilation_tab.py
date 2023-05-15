@@ -6,7 +6,7 @@ from numbers import Number
 from typing import Tuple, Union
 
 import numpy as np
-from ManifoldEM import p
+from ManifoldEM.params import p
 
 
 class CompilationTab(QWidget):

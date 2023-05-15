@@ -8,7 +8,8 @@ import shutil
 
 from argparse import ArgumentParser
 
-from ManifoldEM import p, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
+from ManifoldEM import Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
+from ManifoldEM.params import p
 from ManifoldEM.util import calc_ang_width, calc_shannon, get_image_width_from_stack
 
 parser = ArgumentParser(
