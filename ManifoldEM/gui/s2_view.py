@@ -4,15 +4,36 @@ import pickle
 import numpy as np
 from scipy import stats
 
-from mayavi import mlab
-from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
+import subprocess
+has_gl = not bool(subprocess.run('glxinfo', capture_output=True).returncode)
+if has_gl:
+    print("GL context found, using Mayavi frontend")
+    from mayavi import mlab
+    from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
+    from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
+else:
+    print("No GL context available, falling back on matplotlib for visualization")
+    class _Dummy:
+        def __init__(self, *args, **kwargs):
+            pass
+    mlab = _Dummy
+    MlabSceneModel = _Dummy
+    MayaviScene = _Dummy
+    SceneEditor = _Dummy
+    View = _Dummy
+    Item = _Dummy
+    Group = _Dummy
+    HGroup = _Dummy
+    VGroup = _Dummy
+    TextEditor = _Dummy
+
 from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, observe
-from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 
 from ManifoldEM.params import p
 from .threshold_view import ThresholdView
 from .utils import threshold_pds
 
+from PyQt5.QtWidgets import QWidget
 
 def press_callback(parent, vtk_obj, event):  # left mouse down callback
     parent.click_on = 1
@@ -29,8 +50,28 @@ def release_callback(parent, vtk_obj, event):  # left mouse release callback
     if parent.click_on == 1:
         parent.click_on = 0
 
+class S2ViewBase:
+    def load_data(self):
+        self.update_S2_params()
+        with open(p.tess_file, 'rb') as f:
+            data = pickle.load(f)
+            self.S2_data = data['S2']
 
-class S2View(HasTraits):
+        self.S2_density_all = threshold_pds()
+        self.get_volume_data()
+
+    def get_volume_data(self):
+        if self.df_vol is None:
+            with mrcfile.open(p.avg_vol_file, mode='r') as mrc:
+                self.df_vol = mrc.data
+
+    def update_S2_params(self):
+        self.isosurface_level = int(p.visualization_params['S2_isosurface_level'])
+        self.S2_scale = float(p.visualization_params['S2_scale'])
+        self.S2_density = int(p.visualization_params['S2_density'])
+
+
+class S2ViewMayavi(HasTraits, S2ViewBase):
     scene1 = Instance(MlabSceneModel, ())
     scene2 = Instance(MlabSceneModel, ())
     S2_scale_all = List([.2, .4, .6, .8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0])
@@ -52,24 +93,8 @@ class S2View(HasTraits):
         HasTraits.__init__(self)
         self.df_vol = None
 
-    def load_data(self):
-        self.update_S2_params()
-        with open(p.tess_file, 'rb') as f:
-            data = pickle.load(f)
-            self.S2_data = data['S2']
-
-        self.S2_density_all = threshold_pds()
-        self.get_volume_data()
-
-    def get_volume_data(self):
-        if self.df_vol is None:
-            with mrcfile.open(p.avg_vol_file, mode='r') as mrc:
-                self.df_vol = mrc.data
-
-    def update_S2_params(self):
-        self.isosurface_level = int(p.visualization_params['S2_isosurface_level'])
-        self.S2_scale = float(p.visualization_params['S2_scale'])
-        self.S2_density = int(p.visualization_params['S2_density'])
+    def get_widget(self):
+        return self.edit_traits(parent=self, kind='subpanel').control
 
     def sync_params(self):
         p.visualization_params['S2_scale'] = self.S2_scale
@@ -268,3 +293,21 @@ class S2View(HasTraits):
         resizable=True,
     )
 
+class S2ViewMatplotlib(QWidget, S2ViewBase):
+    def __init__(self, parent=None):
+        super(S2ViewMatplotlib, self).__init__(parent)
+        self.df_vol = None
+
+    def get_widget(self):
+        return self
+
+    def update_scene1(self, event):
+        pass
+
+    def update_scene2(self, event):
+        pass
+
+if has_gl:
+    S2View = S2ViewMayavi
+else:
+    S2View = S2ViewMatplotlib

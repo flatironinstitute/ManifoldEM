@@ -13,9 +13,9 @@ class DistributionTab(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
 
-        self.viz = S2View()
-        self.ui_element = self.viz.edit_traits(parent=self, kind='subpanel').control
-        layout.addWidget(self.ui_element, 0, 0, 1, 6)
+        self.s2_viz = S2View()
+        s2_widget = self.s2_viz.get_widget()
+        layout.addWidget(s2_widget, 0, 0, 1, 6)
 
         def new_hline(xoffset):
             Hline = QLabel("")
@@ -35,9 +35,9 @@ class DistributionTab(QWidget):
         self.show()
 
     def activate(self):
-        self.viz.load_data()
-        self.viz.update_scene1(None)
-        self.viz.update_scene2(None)
+        self.s2_viz.load_data()
+        self.s2_viz.update_scene1(None)
+        self.s2_viz.update_scene2(None)
 
     def finalize(self):
         p.resProj = 1
