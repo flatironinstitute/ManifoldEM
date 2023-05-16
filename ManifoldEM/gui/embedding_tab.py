@@ -109,10 +109,9 @@ class EmbeddingTab(QWidget):
         self.nlsa_progress.setValue(val)
         if val == self.nlsa_progress.maximum():
             self.button_nlsa.setText('NLSA Movie Complete')
-            # self.button_next.setDisabled(False)
+            self.button_to_eigenvectors.setEnabled(True)
             p.resProj = 5
             p.save()
-            # self.start_task2()
 
 
     def __init__(self, parent=None):
@@ -267,11 +266,11 @@ class EmbeddingTab(QWidget):
 
         create_hline((10, 1, 1, 6))
 
-        button_to_eigenvectors = QPushButton('View Eigenvectors', self)
-        button_to_eigenvectors.clicked.connect(self.finalize)
-        layout.addWidget(button_to_eigenvectors, 11, 3, 1, 2)
-        button_to_eigenvectors.setDisabled(True)
-        button_to_eigenvectors.show()
+        self.button_to_eigenvectors = QPushButton('View Eigenvectors', self)
+        self.button_to_eigenvectors.clicked.connect(self.finalize)
+        layout.addWidget(self.button_to_eigenvectors, 11, 3, 1, 2)
+        self.button_to_eigenvectors.setDisabled(True)
+        self.button_to_eigenvectors.show()
 
         # extend spacing:
         self.label_space = QLabel("")
@@ -282,10 +281,10 @@ class EmbeddingTab(QWidget):
         self.show()
 
 
-    def finalize():
+    def finalize(self):
         p.save()
-        self.parent.set_tab_state(True, "Eigenvectors")
-        self.parent.switch_tab("Eigenvectors")
+        self.main_window.set_tab_state(True, "Eigenvectors")
+        self.main_window.switch_tab("Eigenvectors")
 
 
     def activate(self):
