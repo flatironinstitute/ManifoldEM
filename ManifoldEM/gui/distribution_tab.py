@@ -1,11 +1,14 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGridLayout, QWidget
 
+from ManifoldEM.params import p
 from .s2_view import S2View
 
 class DistributionTab(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super(DistributionTab, self).__init__(parent)
+        self.main_window = parent
+
         layout = QGridLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
@@ -26,6 +29,7 @@ class DistributionTab(QWidget):
 
         self.button_binPart = QPushButton('Bin Particles')
         self.button_binPart.setToolTip('Proceed to embedding.')
+        self.button_binPart.clicked.connect(self.finalize)
         layout.addWidget(self.button_binPart, 2, 2, 1, 2)
         self.button_binPart.show()
         self.show()
@@ -34,3 +38,9 @@ class DistributionTab(QWidget):
         self.viz.load_data()
         self.viz.update_scene1(None)
         self.viz.update_scene2(None)
+
+    def finalize(self):
+        p.resProj = 1
+        p.save()
+        self.main_window.set_tab_state(True, "Embedding")
+        self.main_window.switch_tab("Embedding")

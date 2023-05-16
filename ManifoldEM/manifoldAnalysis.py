@@ -3,7 +3,8 @@ import multiprocessing
 
 from functools import partial
 
-from ManifoldEM import manifoldTrimmingAuto, p
+from ManifoldEM import manifoldTrimmingAuto
+from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 
 import tqdm

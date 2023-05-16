@@ -7,7 +7,8 @@ import numpy as np
 
 from functools import partial
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
 '''

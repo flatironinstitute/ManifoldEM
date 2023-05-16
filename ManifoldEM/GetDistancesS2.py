@@ -4,7 +4,8 @@ import numpy as np
 
 from functools import partial
 
-from ManifoldEM import myio, p, getDistanceCTF_local_Conj9combinedS2
+from ManifoldEM import myio, getDistanceCTF_local_Conj9combinedS2
+from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 import tqdm
 '''
