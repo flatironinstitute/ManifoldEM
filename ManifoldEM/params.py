@@ -2,14 +2,12 @@
 
 This was implemented originally as basically a global namespace (implemented via globals on the
 module). To maintain that structure, but provide better functionality (like class @properties
-and sanity checking), we use a weird scheme where the module itself is a class instance of
-Params.
+and sanity checking), we use Params() as a singleton class, named 'p' for legacy reasons.
 
 Copyright (c) Columbia University Evan Seitz 2019
 Copyright (c) Columbia University Hstau Liao 2019
 Copyright (c) Columbia University Suvrajit Maji 2019
 Copyright (c) Flatiron Institute Robert Blackwell 2023
-
 """
 import os
 import toml
@@ -264,6 +262,16 @@ class Params():
     @property
     def bin_dir(self) -> str:
         return os.path.join(self.out_dir, 'bin')
+
+
+    @property
+    def user_dimensions(self) -> int:
+        "Placeholder parameter for when we support 2d later"
+        return 1
+
+
+    def get_topos_path(self, prd: int, index: int) -> str:
+        return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
 
 
     def get_EL_file(self, prd_index: int):
