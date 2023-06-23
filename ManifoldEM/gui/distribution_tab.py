@@ -40,7 +40,7 @@ class DistributionTab(QWidget):
         self.s2_viz.update_scene2(None)
 
     def finalize(self):
-        p.resProj = 1
+        p.resProj = 2
         p.save()
         self.main_window.set_tab_state(True, "Embedding")
         self.main_window.switch_tab("Embedding")

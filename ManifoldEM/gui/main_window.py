@@ -5,6 +5,8 @@ from .eigenvectors_tab import EigenvectorsTab
 from .compilation_tab import CompilationTab
 from .energetics_tab import EnergeticsTab
 
+from ManifoldEM.params import p
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QScrollArea, QDesktopWidget)
 
@@ -63,6 +65,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(scroll)
 
         self.show()
+
+        if p.resProj >= 1:
+            self.set_tab_state(True, "Distribution")
+            self.switch_tab("Distribution")
+        if p.resProj >= 2:
+            self.set_tab_state(True, "Embedding")
+            self.switch_tab("Embedding")
+        if p.resProj >= 3:
+            self.set_tab_state(True, "Eigenvectors")
+            self.switch_tab("Eigenvectors")
+        if p.resProj >= 4:
+            self.set_tab_state(True, "Compilation")
+            self.switch_tab("Compilation")
 
 
     def switch_tab(self, tab_name: str):

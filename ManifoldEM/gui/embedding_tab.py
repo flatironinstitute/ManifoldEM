@@ -282,6 +282,7 @@ class EmbeddingTab(QWidget):
 
 
     def finalize(self):
+        p.resProj = 3
         p.save()
         self.main_window.set_tab_state(True, "Eigenvectors")
         self.main_window.switch_tab("Eigenvectors")

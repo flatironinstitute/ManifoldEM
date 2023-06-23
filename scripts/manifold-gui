@@ -22,7 +22,9 @@ parser = ArgumentParser(
     description="GUI interface for ManifoldEM package",
 )
 
-parser.add_argument('-p', "--project-name", type=str, help="Name of project to create", default=time.strftime("%Y%m%d_%H%M%S"))
+parser.add_argument('-p', "--project-name", type=str,
+                    help="Name of project to create",
+                    default=time.strftime("%Y%m%d_%H%M%S"))
 parser.add_argument('-v', "--avg-volume", type=str, default="")
 parser.add_argument('-a', "--alignment", type=str, default="")
 parser.add_argument('-i', "--image-stack", type=str, default="")
@@ -31,8 +33,14 @@ parser.add_argument('-s', "--pixel-size", type=float, default=1.0)
 parser.add_argument('-d', "--diameter", type=float, default=150.0)
 parser.add_argument('-r', "--resolution", type=float, default=1.0)
 parser.add_argument('-x', "--aperture-index", type=int, default=1)
+parser.add_argument('-R', "--restore", type=str, default="")
+
 
 def init(args):
+    if args.restore:
+        p.load(args.restore)
+        return
+
     p.proj_name = args.project_name
 
     p.avg_vol_file = args.avg_volume

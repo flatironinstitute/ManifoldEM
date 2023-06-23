@@ -19,15 +19,11 @@ from pprint import pprint
 
 # resProj structure:
 #     0: default; new project
-#     1: user has confirmed Data.py entries
-#     2: GetDistances.py complete
-#     3: manifoldAnalysis.py complete
-#     4: psiAnalysis.py complete
-#     5: NLSAmovie.py complete
-#     6: PD anchors chosen/saved, "Compile" button clicked
-#     7: FindReactionCoord.py complete
-#     8: EL1D.py complete
-#     9: PrepareOutputS2.py complete
+#     1: import tab complete
+#     2: distribution tab complete
+#     3: embedding tab complete
+#     4: eigenvectors tab complete
+#     5: compilation tab complete
 class Params():
     def __new__(cls):
         if not hasattr(cls, 'instance'):
