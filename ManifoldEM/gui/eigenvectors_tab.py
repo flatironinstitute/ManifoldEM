@@ -118,405 +118,405 @@ class EigenvectorsTab(QWidget):
             self.PrD_hist = self.user_PrD
 
 
-        self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(PrD_high = 2)
-        self.ui2 = self.viz2.edit_traits(parent=self, kind='subpanel').control
-        layoutL.addWidget(self.ui2, 0, 0, 6, 7)
+    #     self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(PrD_high = 2)
+    #     self.ui2 = self.viz2.edit_traits(parent=self, kind='subpanel').control
+    #     layoutL.addWidget(self.ui2, 0, 0, 6, 7)
 
-        self.label_PrD = QLabel('Projection Direction:')
-        self.label_PrD.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        layoutL.addWidget(self.label_PrD, 6, 0, 1, 1)
-        self.label_PrD.show()
+    #     self.label_PrD = QLabel('Projection Direction:')
+    #     self.label_PrD.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+    #     layoutL.addWidget(self.label_PrD, 6, 0, 1, 1)
+    #     self.label_PrD.show()
 
-        self.entry_PrD = QSpinBox(self)
-        self.entry_PrD.setMinimum(1)
-        self.entry_PrD.setMaximum(P3.PrD_total)
-        self.entry_PrD.setSuffix('  /  %s' % (P3.PrD_total))
-        self.entry_PrD.valueChanged.connect(update_PrD)
-        self.entry_PrD.valueChanged.connect(update_topos)
-        self.entry_PrD.setToolTip('Change the projection direction of the current view above.')
-        layoutL.addWidget(self.entry_PrD, 6, 1, 1, 2)
-        self.entry_PrD.show()
+    #     self.entry_PrD = QSpinBox(self)
+    #     self.entry_PrD.setMinimum(1)
+    #     self.entry_PrD.setMaximum(P3.PrD_total)
+    #     self.entry_PrD.setSuffix('  /  %s' % (P3.PrD_total))
+    #     self.entry_PrD.valueChanged.connect(update_PrD)
+    #     self.entry_PrD.valueChanged.connect(update_topos)
+    #     self.entry_PrD.setToolTip('Change the projection direction of the current view above.')
+    #     layoutL.addWidget(self.entry_PrD, 6, 1, 1, 2)
+    #     self.entry_PrD.show()
 
-        self.entry_pop = QDoubleSpinBox(self)
-        self.entry_pop.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        self.entry_pop.setToolTip('Total number of particles within current PD.')
-        self.entry_pop.setDisabled(True)
-        self.entry_pop.setDecimals(0)
-        self.entry_pop.setMaximum(99999999)
-        self.entry_pop.setSuffix(' images')
-        layoutL.addWidget(self.entry_pop, 6, 3, 1, 2)
-        self.entry_pop.show()
+    #     self.entry_pop = QDoubleSpinBox(self)
+    #     self.entry_pop.setButtonSymbols(QAbstractSpinBox.NoButtons)
+    #     self.entry_pop.setToolTip('Total number of particles within current PD.')
+    #     self.entry_pop.setDisabled(True)
+    #     self.entry_pop.setDecimals(0)
+    #     self.entry_pop.setMaximum(99999999)
+    #     self.entry_pop.setSuffix(' images')
+    #     layoutL.addWidget(self.entry_pop, 6, 3, 1, 2)
+    #     self.entry_pop.show()
 
-        # conformational coordinates:
-        minSize = 1
+    #     # conformational coordinates:
+    #     minSize = 1
 
-        def eigSpectrum():
-            global EigValMain_window
-            try:
-                EigValMain_window.close()
-            except:
-                pass
-            EigValMain_window = EigValMain()
-            EigValMain_window.setMinimumSize(10, 10)
-            EigValMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
-            EigValMain_window.show()
+    #     def eigSpectrum():
+    #         global EigValMain_window
+    #         try:
+    #             EigValMain_window.close()
+    #         except:
+    #             pass
+    #         EigValMain_window = EigValMain()
+    #         EigValMain_window.setMinimumSize(10, 10)
+    #         EigValMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
+    #         EigValMain_window.show()
 
-        def classAvg():
-            global ClassAvgMain_window
-            try:
-                ClassAvgMain_window.close()
-            except:
-                pass
-            ClassAvgMain_window = ClassAvgMain()
-            ClassAvgMain_window.setMinimumSize(10, 10)
-            ClassAvgMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
-            ClassAvgMain_window.show()
+    #     def classAvg():
+    #         global ClassAvgMain_window
+    #         try:
+    #             ClassAvgMain_window.close()
+    #         except:
+    #             pass
+    #         ClassAvgMain_window = ClassAvgMain()
+    #         ClassAvgMain_window.setMinimumSize(10, 10)
+    #         ClassAvgMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
+    #         ClassAvgMain_window.show()
 
 
-        self.label_pic = []
-        self.button_pic = []
-        for i in range(8):
-            label = QLabel();
-            picpath = p.get_topos_path(self.user_PrD, i + 1)
-            label.setPixmap(QPixmap(picpath))
-            label.setMinimumSize(minSize, minSize)
-            label.setScaledContents(True)
-            label.setAlignment(QtCore.Qt.AlignCenter)
-            label.show()
+    #     self.label_pic = []
+    #     self.button_pic = []
+    #     for i in range(8):
+    #         label = QLabel();
+    #         picpath = p.get_topos_path(self.user_PrD, i + 1)
+    #         label.setPixmap(QPixmap(picpath))
+    #         label.setMinimumSize(minSize, minSize)
+    #         label.setScaledContents(True)
+    #         label.setAlignment(QtCore.Qt.AlignCenter)
+    #         label.show()
 
-            button = QPushButton('View %s%s' % (u"\u03A8", u"\u2081"), self)
-            button.clicked.connect(lambda: self.CC_vid1(1))
-            button.setToolTip('View 2d movie and related outputs.')
-            button.show()
+    #         button = QPushButton('View %s%s' % (u"\u03A8", u"\u2081"), self)
+    #         button.clicked.connect(lambda: self.CC_vid1(1))
+    #         button.setToolTip('View 2d movie and related outputs.')
+    #         button.show()
 
-            self.label_pic.append(label)
-            self.button_pic.append(button)
+    #         self.label_pic.append(label)
+    #         self.button_pic.append(button)
 
-        for i in range(4):
-            layoutR.addWidget(self.label_pic[i], 1, 8 + i, 1, 1)
-            layoutR.addWidget(self.button_pic[i], 2, 8 + i, 1, 1)
+    #     for i in range(4):
+    #         layoutR.addWidget(self.label_pic[i], 1, 8 + i, 1, 1)
+    #         layoutR.addWidget(self.button_pic[i], 2, 8 + i, 1, 1)
 
-        self.label_Hline = QLabel("")
-        self.label_Hline.setMargin(0)
-        self.label_Hline.setFrameStyle(QFrame.HLine | QFrame.Sunken)
-        layoutR.addWidget(self.label_Hline, 3, 8, 1, 4)
-        self.label_Hline.show()
+    #     self.label_Hline = QLabel("")
+    #     self.label_Hline.setMargin(0)
+    #     self.label_Hline.setFrameStyle(QFrame.HLine | QFrame.Sunken)
+    #     layoutR.addWidget(self.label_Hline, 3, 8, 1, 4)
+    #     self.label_Hline.show()
 
-        for i in range(4, 8):
-            layoutR.addWidget(self.label_pic[i], 4, 4 + i, 1, 1)
-            layoutR.addWidget(self.button_pic[i], 5, 4 + i, 1, 1)
+    #     for i in range(4, 8):
+    #         layoutR.addWidget(self.label_pic[i], 4, 4 + i, 1, 1)
+    #         layoutR.addWidget(self.button_pic[i], 5, 4 + i, 1, 1)
         
-        button_bandwidth = QPushButton('Kernel Bandwidth')
-        button_bandwidth.setDisabled(False)
-        button_bandwidth.clicked.connect(self.bandwidth)
-        layoutR.addWidget(button_bandwidth, 6, 8, 1, 1)
-        button_bandwidth.show()
+    #     button_bandwidth = QPushButton('Kernel Bandwidth')
+    #     button_bandwidth.setDisabled(False)
+    #     button_bandwidth.clicked.connect(self.bandwidth)
+    #     layoutR.addWidget(button_bandwidth, 6, 8, 1, 1)
+    #     button_bandwidth.show()
 
-        button_eigSpec = QPushButton('Eigenvalue Spectrum')
-        button_eigSpec.clicked.connect(eigSpectrum)
-        layoutR.addWidget(button_eigSpec, 6, 9, 1, 1)
-        button_eigSpec.show()
+    #     button_eigSpec = QPushButton('Eigenvalue Spectrum')
+    #     button_eigSpec.clicked.connect(eigSpectrum)
+    #     layoutR.addWidget(button_eigSpec, 6, 9, 1, 1)
+    #     button_eigSpec.show()
 
-        button_viewAvg = QPushButton('2D Class Average')
-        button_viewAvg.clicked.connect(classAvg)
-        layoutR.addWidget(self.button_viewAvg, 6, 10, 1, 1)
-        button_viewAvg.show()
+    #     button_viewAvg = QPushButton('2D Class Average')
+    #     button_viewAvg.clicked.connect(classAvg)
+    #     layoutR.addWidget(self.button_viewAvg, 6, 10, 1, 1)
+    #     button_viewAvg.show()
 
-        button_compareMov = QPushButton('Compare Movies')
-        button_compareMov.clicked.connect(self.CC_vid2)
-        layoutR.addWidget(button_compareMov, 6, 11, 1, 1)
-        button_compareMov.show()
-
-
-        # confirm conformational coordinates:
-        def anchorCheck():
-            # first save PDs chosen for removal to file:
-            self.trash_list = np.array([self.trashAll[i].isChecked() for i in range(1, P3.PrD_total + 1)], dtype=bool)
-
-            #### ZULU ####
-            #{SECTION EVENTUALLY NEEDED FOR RE-DOING GRAPH IF TRASH LIST DIVIDED ANY ISLANDS INTO SUB-ISLANDS}
-
-            #if len(self.trash_list) > 0:
-            #trash_reviewed = T or F variable
-            ##############
-
-            trashDir = os.path.join(p.CC_dir, 'user_removals.txt')
-            np.savetxt(trashDir, self.trash_list, fmt='%i', delimiter='\t')
-            p.set_trash_list(self.trash_list)
-
-            # save anchors to file:
-            anch_sum = sum(map(lambda anchor: int(anchor.isChecked()), self.anchorsAll.values()))
-
-            if anch_sum < anchorsMin:
-                box = QMessageBox(self)
-                box.setWindowTitle('%s Error' % progname)
-                box.setText('<b>Input Error</b>')
-                box.setIcon(QMessageBox.Information)
-                box.setInformativeText('A minimum of %s PD anchors must be selected.' % anchorsMin)
-                box.setStandardButtons(QMessageBox.Ok)
-                box.setDefaultButton(QMessageBox.Ok)
-                box.exec_()
-                return
-
-            PrDs = []
-            CC1s = []
-            S1s = []
-            CC2s = []
-            S2s = []
-            colors = []
-            self.anch_list = []
-
-            idx = 0
-            for i in range(1, P3.PrD_total + 1):
-                if self.anchorsAll[i].isChecked():
-                    PrDs.append(int(i))
-                    # CC1s:
-                    CC1s.append(int(self.reactCoord1All[i].value()))
-                    # S1s:
-                    if self.senses1All[i].currentText() == 'S1: FWD':
-                        S1s.append(int(1))
-                    else:
-                        S1s.append(int(-1))
-                    # CC2s:
-                    CC2s.append(int(self.reactCoord2All[i].value()))
-                    # S2s:
-                    if self.senses2All[i].currentText() == 'S2: FWD':
-                        S2s.append(int(1))
-                    else:
-                        S2s.append(int(-1))
-                    # colors:
-                    colors.append(P3.col[int(i - 1)])
-                    idx += 1
-
-            if P3.user_dimensions == 1:
-                self.anch_list = zip(PrDs, CC1s, S1s, colors)
-            elif P3.user_dimensions == 2:
-                self.anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
-
-            keepers = np.array(P3.col)[~p.get_trash_list()]
-            box = QMessageBox(self)
-            # check if at least one anchor is selected for each color:
-            if set(keepers) == set(colors):
-                box.setWindowTitle('%s' % progname)
-                box.setIcon(QMessageBox.Question)
-                box.setText('<b>Confirm Conformational Coordinates</b>')
-
-                msg = 'Performing this action will initiate Belief Propagation for the current \
-                        PD anchors and generate the corresponding energy landscape and 3D volumes.\
-                        <br /><br />\
-                        Do you want to proceed?'
-            else:
-                box.setWindowTitle('%s Warning' % progname)
-                box.setIcon(QMessageBox.Warning)
-                box.setText('<b>Input Warning</b>')
-
-                n_total, n_selected = len(set(keepers)), len(set(colors))
-                msg = 'It is highly recommended that at least one anchor node is selected\
-                        for each connected component (as seen via clusters of colored PDs on S2).\
-                        <br /><br />\
-                        Currently, only %s of %s connected components are satisfied in this manner,\
-                        and thus, %s will be ignored during Belief Propagation.\
-                        <br /><br />\
-                        Do you want to proceed?' % (n_selected, n_total, n_total - n_selected)
+    #     button_compareMov = QPushButton('Compare Movies')
+    #     button_compareMov.clicked.connect(self.CC_vid2)
+    #     layoutR.addWidget(button_compareMov, 6, 11, 1, 1)
+    #     button_compareMov.show()
 
 
-            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            box.setInformativeText(msg)
+    #     # confirm conformational coordinates:
+    #     def anchorCheck():
+    #         # first save PDs chosen for removal to file:
+    #         self.trash_list = np.array([self.trashAll[i].isChecked() for i in range(1, P3.PrD_total + 1)], dtype=bool)
 
-            if box.exec_() == QMessageBox.No:
-                return
+    #         #### ZULU ####
+    #         #{SECTION EVENTUALLY NEEDED FOR RE-DOING GRAPH IF TRASH LIST DIVIDED ANY ISLANDS INTO SUB-ISLANDS}
 
-            self.anch_list, anch_zip = itertools.tee(self.anch_list)
-            p.anch_list = list(anch_zip)  #PrD,CC1,S1 for 1D; PrD,CC1,S1,CC2,S2 for 2D
-            anchInputs = os.path.join(p.CC_dir, 'user_anchors.txt')
-            np.savetxt(anchInputs, p.anch_list, fmt='%i', delimiter='\t')
-            gotoP5(self)
-            if self.recompute == 0:
-                self.btn_finOut.setText('Recompile Results')
-                self.recompute = 1
-                p.resProj = 6  # update progress
-                p.save()  # send new GUI data to user parameters file
-                return
+    #         #if len(self.trash_list) > 0:
+    #         #trash_reviewed = T or F variable
+    #         ##############
 
-            msg = 'Final outputs have already been computed for a previous\
-                    selection of anchor nodes. To recompute final outputs\
-                    with new anchor node settings, previous outputs must be\
-                    overwritten.\
-                    <br /><br />\
-                    Do you want to proceed?'
+    #         trashDir = os.path.join(p.CC_dir, 'user_removals.txt')
+    #         np.savetxt(trashDir, self.trash_list, fmt='%i', delimiter='\t')
+    #         p.set_trash_list(self.trash_list)
 
-            box = QMessageBox(self)
-            box.setWindowTitle('%s Warning' % progname)
-            box.setText('<b>Overwrite Warning</b>')
-            box.setIcon(QMessageBox.Warning)
-            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            box.setInformativeText(msg)
-            if box.exec_() == QMessageBox.No:
-                return
+    #         # save anchors to file:
+    #         anch_sum = sum(map(lambda anchor: int(anchor.isChecked()), self.anchorsAll.values()))
 
-            P5.progress5.setValue(0)
-            P5.progress6.setValue(0)
-            Erg1dMain.progress7.setValue(0)
-            P5.button_CC.setText('Find Conformational Coordinates')
-            P5.button_erg.setText('Energy Landscape')
-            Erg1dMain.button_traj.setText('Compute 3D Trajectories')
-            Erg1dMain.reprepare = 0
-            P5.entry_opt.setDisabled(False)
-            P5.entry_proc.setDisabled(False)
-            P5.entry_temp.setDisabled(False)
-            P5.button_CC.setDisabled(False)
-            P5.button_erg.setDisabled(True)
-            Erg1dMain.button_traj.setDisabled(True)
-            P5.button_toP6.setDisabled(True)
-            tabs.setTabEnabled(5, False)
+    #         if anch_sum < anchorsMin:
+    #             box = QMessageBox(self)
+    #             box.setWindowTitle('%s Error' % progname)
+    #             box.setText('<b>Input Error</b>')
+    #             box.setIcon(QMessageBox.Information)
+    #             box.setInformativeText('A minimum of %s PD anchors must be selected.' % anchorsMin)
+    #             box.setStandardButtons(QMessageBox.Ok)
+    #             box.setDefaultButton(QMessageBox.Ok)
+    #             box.exec_()
+    #             return
 
-            p.resProj = 6  #revert progress back to before ever running FindConformationalCoords.py
-            p.save()  #send new GUI data to user parameters file
+    #         PrDs = []
+    #         CC1s = []
+    #         S1s = []
+    #         CC2s = []
+    #         S2s = []
+    #         colors = []
+    #         self.anch_list = []
 
-            # =============================================
-            # Hard-remove pre-existing folders:
-            shutil.rmtree(p.CC_meas_dir)
-            shutil.rmtree(p.CC_OF_dir)
-            shutil.rmtree(p.EL_dir)
-            prepOutDir = os.path.join(p.out_dir, 'bin')
-            shutil.rmtree(prepOutDir)
-            shutil.rmtree(p.traj_dir)
+    #         idx = 0
+    #         for i in range(1, P3.PrD_total + 1):
+    #             if self.anchorsAll[i].isChecked():
+    #                 PrDs.append(int(i))
+    #                 # CC1s:
+    #                 CC1s.append(int(self.reactCoord1All[i].value()))
+    #                 # S1s:
+    #                 if self.senses1All[i].currentText() == 'S1: FWD':
+    #                     S1s.append(int(1))
+    #                 else:
+    #                     S1s.append(int(-1))
+    #                 # CC2s:
+    #                 CC2s.append(int(self.reactCoord2All[i].value()))
+    #                 # S2s:
+    #                 if self.senses2All[i].currentText() == 'S2: FWD':
+    #                     S2s.append(int(1))
+    #                 else:
+    #                     S2s.append(int(-1))
+    #                 # colors:
+    #                 colors.append(P3.col[int(i - 1)])
+    #                 idx += 1
 
-            os.makedirs(p.CC_meas_dir)
-            os.makedirs(p.CC_OF_dir)
-            os.makedirs(p.EL_dir)
-            os.makedirs(p.OM_dir)
-            os.makedirs(prepOutDir)
-            os.makedirs(p.traj_dir)
-            os.makedirs(p.CC_meas_prog)  #progress bar folder
-            os.makedirs(p.EL_prog)  #progress bar folder
-            # =============================================
+    #         if P3.user_dimensions == 1:
+    #             self.anch_list = zip(PrDs, CC1s, S1s, colors)
+    #         elif P3.user_dimensions == 2:
+    #             self.anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
+
+    #         keepers = np.array(P3.col)[~p.get_trash_list()]
+    #         box = QMessageBox(self)
+    #         # check if at least one anchor is selected for each color:
+    #         if set(keepers) == set(colors):
+    #             box.setWindowTitle('%s' % progname)
+    #             box.setIcon(QMessageBox.Question)
+    #             box.setText('<b>Confirm Conformational Coordinates</b>')
+
+    #             msg = 'Performing this action will initiate Belief Propagation for the current \
+    #                     PD anchors and generate the corresponding energy landscape and 3D volumes.\
+    #                     <br /><br />\
+    #                     Do you want to proceed?'
+    #         else:
+    #             box.setWindowTitle('%s Warning' % progname)
+    #             box.setIcon(QMessageBox.Warning)
+    #             box.setText('<b>Input Warning</b>')
+
+    #             n_total, n_selected = len(set(keepers)), len(set(colors))
+    #             msg = 'It is highly recommended that at least one anchor node is selected\
+    #                     for each connected component (as seen via clusters of colored PDs on S2).\
+    #                     <br /><br />\
+    #                     Currently, only %s of %s connected components are satisfied in this manner,\
+    #                     and thus, %s will be ignored during Belief Propagation.\
+    #                     <br /><br />\
+    #                     Do you want to proceed?' % (n_selected, n_total, n_total - n_selected)
 
 
-        self.label_edgeAnchor = QLabel('')
-        self.label_edgeAnchor.setMargin(5)
-        self.label_edgeAnchor.setFrameStyle(QFrame.Panel | QFrame.Sunken)
-        layoutB.addWidget(self.label_edgeAnchor, 7, 0, 3, 7)
-        self.label_edgeAnchor.show()
+    #         box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    #         box.setInformativeText(msg)
 
-        self.label_anchor = QLabel('Set PD Anchors')
-        self.label_anchor.setFont(font_header)
-        self.label_anchor.setMargin(5)
-        self.label_anchor.setFrameStyle(QFrame.Box | QFrame.Sunken)
-        self.label_anchor.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-        layoutB.addWidget(self.label_anchor, 7, 0, 1, 7)
-        self.label_anchor.show()
+    #         if box.exec_() == QMessageBox.No:
+    #             return
 
-        self.label_edgeCC = QLabel('')
-        self.label_edgeCC.setMargin(5)
-        self.label_edgeCC.setFrameStyle(QFrame.Panel | QFrame.Sunken)
-        layoutB.addWidget(self.label_edgeCC, 7, 8, 3, 4)
-        self.label_edgeCC.show()
+    #         self.anch_list, anch_zip = itertools.tee(self.anch_list)
+    #         p.anch_list = list(anch_zip)  #PrD,CC1,S1 for 1D; PrD,CC1,S1,CC2,S2 for 2D
+    #         anchInputs = os.path.join(p.CC_dir, 'user_anchors.txt')
+    #         np.savetxt(anchInputs, p.anch_list, fmt='%i', delimiter='\t')
+    #         gotoP5(self)
+    #         if self.recompute == 0:
+    #             self.btn_finOut.setText('Recompile Results')
+    #             self.recompute = 1
+    #             p.resProj = 6  # update progress
+    #             p.save()  # send new GUI data to user parameters file
+    #             return
 
-        self.label_reactCoord = QLabel('Confirm Conformational Coordinates')
-        self.label_reactCoord.setFont(font_header)
-        self.label_reactCoord.setMargin(5)
-        self.label_reactCoord.setFrameStyle(QFrame.Box | QFrame.Sunken)
-        self.label_reactCoord.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-        layoutB.addWidget(self.label_reactCoord, 7, 8, 1, 4)
-        self.label_reactCoord.show()
+    #         msg = 'Final outputs have already been computed for a previous\
+    #                 selection of anchor nodes. To recompute final outputs\
+    #                 with new anchor node settings, previous outputs must be\
+    #                 overwritten.\
+    #                 <br /><br />\
+    #                 Do you want to proceed?'
 
-        self.btn_PDsele = QPushButton('   PD Selections   ', self)
-        self.btn_PDsele.setToolTip('Review current PD selections.')
-        self.btn_PDsele.clicked.connect(self.PDSeleViz)
-        self.btn_PDsele.setDisabled(False)
-        layoutB.addWidget(self.btn_PDsele, 8, 9, 1, 1, QtCore.Qt.AlignCenter)
-        self.btn_PDsele.show()
+    #         box = QMessageBox(self)
+    #         box.setWindowTitle('%s Warning' % progname)
+    #         box.setText('<b>Overwrite Warning</b>')
+    #         box.setIcon(QMessageBox.Warning)
+    #         box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    #         box.setInformativeText(msg)
+    #         if box.exec_() == QMessageBox.No:
+    #             return
 
-        self.btn_finOut = QPushButton('   Compile Results   ', self)
-        self.btn_finOut.setToolTip('Proceed to next section.')
-        self.btn_finOut.clicked.connect(anchorCheck)
-        self.btn_finOut.setDisabled(False)
-        layoutB.addWidget(self.btn_finOut, 8, 10, 1, 1, QtCore.Qt.AlignLeft)
-        self.btn_finOut.show()
+    #         P5.progress5.setValue(0)
+    #         P5.progress6.setValue(0)
+    #         Erg1dMain.progress7.setValue(0)
+    #         P5.button_CC.setText('Find Conformational Coordinates')
+    #         P5.button_erg.setText('Energy Landscape')
+    #         Erg1dMain.button_traj.setText('Compute 3D Trajectories')
+    #         Erg1dMain.reprepare = 0
+    #         P5.entry_opt.setDisabled(False)
+    #         P5.entry_proc.setDisabled(False)
+    #         P5.entry_temp.setDisabled(False)
+    #         P5.button_CC.setDisabled(False)
+    #         P5.button_erg.setDisabled(True)
+    #         Erg1dMain.button_traj.setDisabled(True)
+    #         P5.button_toP6.setDisabled(True)
+    #         tabs.setTabEnabled(5, False)
 
-        # layout dividers:
-        self.splitter1 = QSplitter(QtCore.Qt.Horizontal)
-        self.splitter1.addWidget(self.widgetsL)
-        self.splitter1.addWidget(self.widgetsR)
-        self.splitter1.setStretchFactor(1, 1)
+    #         p.resProj = 6  #revert progress back to before ever running FindConformationalCoords.py
+    #         p.save()  #send new GUI data to user parameters file
 
-        self.splitter2 = QSplitter(QtCore.Qt.Vertical)
-        self.splitter2.addWidget(self.splitter1)
-        self.splitter2.addWidget(self.widgetsB)
+    #         # =============================================
+    #         # Hard-remove pre-existing folders:
+    #         shutil.rmtree(p.CC_meas_dir)
+    #         shutil.rmtree(p.CC_OF_dir)
+    #         shutil.rmtree(p.EL_dir)
+    #         prepOutDir = os.path.join(p.out_dir, 'bin')
+    #         shutil.rmtree(prepOutDir)
+    #         shutil.rmtree(p.traj_dir)
 
-        layout.addWidget(self.splitter2)
+    #         os.makedirs(p.CC_meas_dir)
+    #         os.makedirs(p.CC_OF_dir)
+    #         os.makedirs(p.EL_dir)
+    #         os.makedirs(p.OM_dir)
+    #         os.makedirs(prepOutDir)
+    #         os.makedirs(p.traj_dir)
+    #         os.makedirs(p.CC_meas_prog)  #progress bar folder
+    #         os.makedirs(p.EL_prog)  #progress bar folder
+    #         # =============================================
 
-    def PDSeleViz(self):
-        global PDSele_window
-        try:
-            PDSele_window.close()
-        except:
-            pass
-        PDSele_window = PDSeleMain()
-        PDSele_window.setMinimumSize(10, 10)
-        PDSele_window.setWindowTitle('Projection Direction Selections')
-        PDSele_window.show()
 
-    def on_button(self, n):
-        print('Button {0} clicked'.format(n))
+    #     self.label_edgeAnchor = QLabel('')
+    #     self.label_edgeAnchor.setMargin(5)
+    #     self.label_edgeAnchor.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+    #     layoutB.addWidget(self.label_edgeAnchor, 7, 0, 3, 7)
+    #     self.label_edgeAnchor.show()
 
-    def bandwidth(self):
-        global BandwidthMain_window
-        try:
-            BandwidthMain_window.close()
-        except:
-            pass
-        BandwidthMain_window = BandwidthMain()
-        BandwidthMain_window.setMinimumSize(10, 10)
-        BandwidthMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
-        BandwidthMain_window.show()
+    #     self.label_anchor = QLabel('Set PD Anchors')
+    #     self.label_anchor.setFont(font_header)
+    #     self.label_anchor.setMargin(5)
+    #     self.label_anchor.setFrameStyle(QFrame.Box | QFrame.Sunken)
+    #     self.label_anchor.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
+    #     layoutB.addWidget(self.label_anchor, 7, 0, 1, 7)
+    #     self.label_anchor.show()
 
-    def CC_vid1(self, n):
-        self.gif_path = os.path.join(p.out_dir, 'topos', f'PrD_{self.user_PrD}', f'psi_{n}.gif')
-        global PrD_window
-        try:
-            PrD_window.close()
-        except:
-            pass
+    #     self.label_edgeCC = QLabel('')
+    #     self.label_edgeCC.setMargin(5)
+    #     self.label_edgeCC.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+    #     layoutB.addWidget(self.label_edgeCC, 7, 8, 3, 4)
+    #     self.label_edgeCC.show()
 
-        Manifold2dCanvas.coordsX = []
-        Manifold2dCanvas.coordsY = []
-        Manifold2dCanvas.eig_current = n
-        eig_n_others = []
-        eig_v_others = []
-        index = 0
-        for i in EigValCanvas.eig_v:  #find next highest eigenvalue
-            index += 1
-            if index != n:
-                eig_n_others.append(EigValCanvas.eig_n[index - 1])
-                eig_v_others.append(EigValCanvas.eig_v[index - 1])
+    #     self.label_reactCoord = QLabel('Confirm Conformational Coordinates')
+    #     self.label_reactCoord.setFont(font_header)
+    #     self.label_reactCoord.setMargin(5)
+    #     self.label_reactCoord.setFrameStyle(QFrame.Box | QFrame.Sunken)
+    #     self.label_reactCoord.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
+    #     layoutB.addWidget(self.label_reactCoord, 7, 8, 1, 4)
+    #     self.label_reactCoord.show()
 
-        Manifold2dCanvas.eig_compare1 = eig_n_others[0]  #max eigenvalue (other than one selected)
-        Manifold2dCanvas.eig_compare2 = eig_n_others[1]  #next highest eigenvalue from the above
+    #     self.btn_PDsele = QPushButton('   PD Selections   ', self)
+    #     self.btn_PDsele.setToolTip('Review current PD selections.')
+    #     self.btn_PDsele.clicked.connect(self.PDSeleViz)
+    #     self.btn_PDsele.setDisabled(False)
+    #     layoutB.addWidget(self.btn_PDsele, 8, 9, 1, 1, QtCore.Qt.AlignCenter)
+    #     self.btn_PDsele.show()
 
-        p.eig_current = Manifold2dCanvas.eig_current
-        p.eig_compare1 = Manifold2dCanvas.eig_compare1
+    #     self.btn_finOut = QPushButton('   Compile Results   ', self)
+    #     self.btn_finOut.setToolTip('Proceed to next section.')
+    #     self.btn_finOut.clicked.connect(anchorCheck)
+    #     self.btn_finOut.setDisabled(False)
+    #     layoutB.addWidget(self.btn_finOut, 8, 10, 1, 1, QtCore.Qt.AlignLeft)
+    #     self.btn_finOut.show()
 
-        VidCanvas.run = 0
-        VidCanvas.img_paths = []
-        VidCanvas.imgs = []
-        VidCanvas.frames = 0
-        PrD_window = PrD_Viz()
-        PrD_window.setWindowTitle('PD %s: Psi %s' % (self.user_PrD, n))
-        PrD_window.show()
+    #     # layout dividers:
+    #     self.splitter1 = QSplitter(QtCore.Qt.Horizontal)
+    #     self.splitter1.addWidget(self.widgetsL)
+    #     self.splitter1.addWidget(self.widgetsR)
+    #     self.splitter1.setStretchFactor(1, 1)
 
-    def CC_vid2(self):
-        global PrD2_window
-        try:
-            PrD2_window.close()
-        except:
-            pass
+    #     self.splitter2 = QSplitter(QtCore.Qt.Vertical)
+    #     self.splitter2.addWidget(self.splitter1)
+    #     self.splitter2.addWidget(self.widgetsB)
 
-        Vid2Canvas.run = 0
-        Vid2Canvas.gif_path1 = ''
-        Vid2Canvas.gif_path2 = ''
-        PrD2_window = PrD2_Viz()
+    #     layout.addWidget(self.splitter2)
 
-        PrD2_window.setWindowTitle('Compare NLSA Movies')
-        PrD2_window.show()
+    # def PDSeleViz(self):
+    #     global PDSele_window
+    #     try:
+    #         PDSele_window.close()
+    #     except:
+    #         pass
+    #     PDSele_window = PDSeleMain()
+    #     PDSele_window.setMinimumSize(10, 10)
+    #     PDSele_window.setWindowTitle('Projection Direction Selections')
+    #     PDSele_window.show()
+
+    # def on_button(self, n):
+    #     print('Button {0} clicked'.format(n))
+
+    # def bandwidth(self):
+    #     global BandwidthMain_window
+    #     try:
+    #         BandwidthMain_window.close()
+    #     except:
+    #         pass
+    #     BandwidthMain_window = BandwidthMain()
+    #     BandwidthMain_window.setMinimumSize(10, 10)
+    #     BandwidthMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
+    #     BandwidthMain_window.show()
+
+    # def CC_vid1(self, n):
+    #     self.gif_path = os.path.join(p.out_dir, 'topos', f'PrD_{self.user_PrD}', f'psi_{n}.gif')
+    #     global PrD_window
+    #     try:
+    #         PrD_window.close()
+    #     except:
+    #         pass
+
+    #     Manifold2dCanvas.coordsX = []
+    #     Manifold2dCanvas.coordsY = []
+    #     Manifold2dCanvas.eig_current = n
+    #     eig_n_others = []
+    #     eig_v_others = []
+    #     index = 0
+    #     for i in EigValCanvas.eig_v:  #find next highest eigenvalue
+    #         index += 1
+    #         if index != n:
+    #             eig_n_others.append(EigValCanvas.eig_n[index - 1])
+    #             eig_v_others.append(EigValCanvas.eig_v[index - 1])
+
+    #     Manifold2dCanvas.eig_compare1 = eig_n_others[0]  #max eigenvalue (other than one selected)
+    #     Manifold2dCanvas.eig_compare2 = eig_n_others[1]  #next highest eigenvalue from the above
+
+    #     p.eig_current = Manifold2dCanvas.eig_current
+    #     p.eig_compare1 = Manifold2dCanvas.eig_compare1
+
+    #     VidCanvas.run = 0
+    #     VidCanvas.img_paths = []
+    #     VidCanvas.imgs = []
+    #     VidCanvas.frames = 0
+    #     PrD_window = PrD_Viz()
+    #     PrD_window.setWindowTitle('PD %s: Psi %s' % (self.user_PrD, n))
+    #     PrD_window.show()
+
+    # def CC_vid2(self):
+    #     global PrD2_window
+    #     try:
+    #         PrD2_window.close()
+    #     except:
+    #         pass
+
+    #     Vid2Canvas.run = 0
+    #     Vid2Canvas.gif_path1 = ''
+    #     Vid2Canvas.gif_path2 = ''
+    #     PrD2_window = PrD2_Viz()
+
+    #     PrD2_window.setWindowTitle('Compare NLSA Movies')
+    #     PrD2_window.show()
