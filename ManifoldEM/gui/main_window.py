@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
         'Compilation': 4,
         'Energetics': 5,
     }
+    tab_names = {val: key for (key, val) in tab_indices.items()}
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -46,8 +47,6 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(CompilationTab(self), 'Compilation')
         self.tabs.addTab(EnergeticsTab(self), 'Energetics')
 
-        self.set_tab_state(False, ['Distribution', 'Embedding', 'Eigenvectors', 'Compilation', 'Energetics'])
-
         groupscroll = QHBoxLayout()
         groupscrollbox = QGroupBox()
         tablist = QVBoxLayout()
@@ -64,27 +63,20 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(scroll)
 
-        self.show()
+        self.set_tab_state(False, list(self.tab_indices.keys()))
+        for tabi in range(p.resProj + 1):
+            tab_name = self.tab_names[tabi]
+            self.set_tab_state(True, tab_name)
+            self.switch_tab(tab_name)
 
-        if p.resProj >= 1:
-            self.set_tab_state(True, "Distribution")
-            self.switch_tab("Distribution")
-        if p.resProj >= 2:
-            self.set_tab_state(True, "Embedding")
-            self.switch_tab("Embedding")
-        if p.resProj >= 3:
-            self.set_tab_state(True, "Eigenvectors")
-            self.switch_tab("Eigenvectors")
-        if p.resProj >= 4:
-            self.set_tab_state(True, "Compilation")
-            self.switch_tab("Compilation")
+        self.show()
 
 
     def switch_tab(self, tab_name: str):
         index = self.tab_indices.get(tab_name, None)
         if tab_name == 'Distribution':
             self.distribution_tab.activate()
-        if index:
+        if index is not None:
             self.tabs.setCurrentIndex(index)
         else:
             print(f"Invalid tab name: {tab_name}")
@@ -101,7 +93,7 @@ class MainWindow(QMainWindow):
 
         for tab_name in tab_names:
             index = self.tab_indices.get(tab_name, None)
-            if index:
+            if index is not None:
                 self.tabs.setTabEnabled(index, state)
             else:
                 print(f"Invalid tab name: {tab_name}")
