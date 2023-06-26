@@ -77,5 +77,5 @@ def op(input_data, posPath, tune, rad, visual, doSave):
                    logEps=logEps, logSumWij=logSumWij, popt=popt, R_squared=R_squared)
 
     with open(eig_file, "w") as file:
-        for i in range(len(lamb) - 1):
-            file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
+        for i in range(1, len(lamb)):
+            file.write("%d\t%.5f\n" % (i, lamb[i]))

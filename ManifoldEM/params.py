@@ -127,7 +127,7 @@ class Params():
 
     @property
     def out_dir(self) -> str:
-        return os.path.join(self.user_dir, f'outputs_{self.proj_name}')
+        return os.path.join(self.user_dir, self.proj_name)
 
 
     @property
