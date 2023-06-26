@@ -6,7 +6,8 @@ import shutil
 
 import numpy as np
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 

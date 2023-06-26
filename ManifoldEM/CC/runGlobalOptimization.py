@@ -2,7 +2,8 @@ import pickle
 
 import numpy as np
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.CC import MRFGeneratePotentials, MRFBeliefPropagation
 from ManifoldEM.CC.MRFBeliefPropagation import createBPalg
 

@@ -102,8 +102,6 @@ def init(args):
     p.S2rescale = 1.0
     p.relion_data = args.alignment.endswith('.star')
 
-    p.sh = calc_shannon(args.resolution, args.diameter)
-    p.ang_width = calc_ang_width(args.aperture_index, args.resolution, args.diameter)
     p.nPix = get_image_width_from_stack(p.img_stack_file)
 
     p.create_dir()

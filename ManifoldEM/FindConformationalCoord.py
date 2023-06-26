@@ -4,7 +4,8 @@ import time
 
 import numpy as np
 
-from ManifoldEM import myio, FindCCGraphPruned, p
+from ManifoldEM import myio, FindCCGraphPruned
+from ManifoldEM.params import p
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University

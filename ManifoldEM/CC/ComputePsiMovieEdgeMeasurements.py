@@ -11,7 +11,8 @@ from skimage import filters
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 
-from ManifoldEM import myio, p, FindCCGraphPruned
+from ManifoldEM import myio, FindCCGraphPruned
+from ManifoldEM.params import p
 from ManifoldEM.CC import ComputeOpticalFlowPrDAll, ComputeMeasureEdgeAll
 '''
 Copyright (c) Columbia University Suvrajit Maji 2019
