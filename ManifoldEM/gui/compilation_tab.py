@@ -239,3 +239,6 @@ class CompilationTab(QWidget):
         self.label_space.show()
 
         self.show()
+
+    def activate(self):
+        pass

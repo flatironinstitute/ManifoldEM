@@ -41,7 +41,6 @@ class EmbeddingTab(QWidget):
         if val == self.distance_progress.maximum():
             self.button_dist.setText('Distance Calculation Complete')
             self.button_eig.setDisabled(False)
-            p.resProj = 2
             p.save()
             self.calc_eigenvectors()
 
@@ -64,7 +63,6 @@ class EmbeddingTab(QWidget):
         if val == self.eigenvector_progress.maximum():
             self.button_eig.setText('Embedding Complete')
             self.button_psi.setDisabled(False)
-            p.resProj = 3
             p.save()
             self.calc_psi()
 
@@ -86,8 +84,6 @@ class EmbeddingTab(QWidget):
         self.psi_progress.setValue(val)
         if val == self.psi_progress.maximum():
             self.button_psi.setText('Spectral Analysis Complete')
-            # self.button_next.setDisabled(False)
-            p.resProj = 4
             p.save()
             self.calc_nlsa()
 

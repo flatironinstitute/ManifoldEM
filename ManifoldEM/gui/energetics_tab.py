@@ -17,3 +17,6 @@ class EnergeticsTab(QWidget):
         layout.setSpacing(10)
 
         self.show()
+
+    def activate(self):
+        pass

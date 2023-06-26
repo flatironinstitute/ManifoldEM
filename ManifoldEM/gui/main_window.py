@@ -4,6 +4,7 @@ from .embedding_tab import EmbeddingTab
 from .eigenvectors_tab import EigenvectorsTab
 from .compilation_tab import CompilationTab
 from .energetics_tab import EnergeticsTab
+from ..params import p
 
 from ManifoldEM.params import p
 
@@ -14,7 +15,7 @@ from typing import List, Union
 
 
 class MainWindow(QMainWindow):
-    tab_indices = {
+    tab_indices: dict[str, int] = {
         'Import': 0,
         'Distribution': 1,
         'Embedding': 2,
@@ -22,7 +23,7 @@ class MainWindow(QMainWindow):
         'Compilation': 4,
         'Energetics': 5,
     }
-    tab_names = {val: key for (key, val) in tab_indices.items()}
+    tab_names: dict[int, str] = {val: key for (key, val) in tab_indices.items()}
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -70,13 +71,16 @@ class MainWindow(QMainWindow):
             self.switch_tab(tab_name)
 
         self.show()
+        for i in range(p.resProj + 1):
+            self.set_tab_state(True, self.tab_names[i])
+            self.switch_tab(self.tab_names[i])
 
 
     def switch_tab(self, tab_name: str):
         index = self.tab_indices.get(tab_name, None)
-        if tab_name == 'Distribution':
-            self.distribution_tab.activate()
+
         if index is not None:
+            self.tabs.widget(index).activate()
             self.tabs.setCurrentIndex(index)
         else:
             print(f"Invalid tab name: {tab_name}")

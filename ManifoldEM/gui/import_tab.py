@@ -244,3 +244,6 @@ class ImportTab(QWidget):
             box.setDefaultButton(QMessageBox.Ok)
             box.exec_()
             self.finalize_button.setDisabled(False)
+
+    def activate(self):
+        pass

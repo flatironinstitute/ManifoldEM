@@ -118,6 +118,9 @@ class EigenvectorsTab(QWidget):
             self.PrD_hist = self.user_PrD
 
 
+    def activate(self):
+        pass
+
     #     self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(PrD_high = 2)
     #     self.ui2 = self.viz2.edit_traits(parent=self, kind='subpanel').control
     #     layoutL.addWidget(self.ui2, 0, 0, 6, 7)
