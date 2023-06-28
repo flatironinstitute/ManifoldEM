@@ -30,8 +30,8 @@ else:
 from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, observe
 
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
 from .threshold_view import ThresholdView
-from .utils import threshold_pds
 
 from PyQt5.QtWidgets import QWidget
 
@@ -50,14 +50,20 @@ def release_callback(parent, vtk_obj, event):  # left mouse release callback
     if parent.click_on == 1:
         parent.click_on = 0
 
+
 class S2ViewBase:
     def load_data(self):
         self.update_S2_params()
-        with open(p.tess_file, 'rb') as f:
-            data = pickle.load(f)
-            self.S2_data = data['S2']
+        prds = data_store.get_prds()
+        self.S2_data = prds.pos_full
 
-        self.S2_density_all = threshold_pds()
+        # ad hoc ratios to make sure S2 volume doesn't freeze-out due to too many particles to plot:
+        tot_prds = np.sum(prds.occupancy_count[0:len(prds.occupancy_count) // 2])
+        ratio = tot_prds // 5000
+        self.S2_density_all = [5, 10, 25, 50, 100, 250, 500, 1000, 10000, 100000]
+        self.S2_density_all = list(filter(lambda a: a < tot_prds, self.S2_density_all))
+        self.S2_density_all = list(filter(lambda a: a > ratio, self.S2_density_all))
+
         self.get_volume_data()
 
     def get_volume_data(self):

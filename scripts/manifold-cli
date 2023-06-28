@@ -108,38 +108,34 @@ def init(args):
 
 
 def threshold(args):
-    Data.op(p.align_param_file)
-    p.resProj = 1
+    p.PDsizeThL = args.low
+    p.PDsizeThH = args.high
+    p.resProj = 2
 
 
 def calc_distance(args):
     GetDistancesS2.op()
-    p.resProj = 2
 
 
 def manifold_analysis(args):
     manifoldAnalysis.op()
-    p.resProj = 3
 
 
 def psi_analysis(args):
     psiAnalysis.op()
-    p.resProj = 4
 
 
 def nlsa_movie(args):
     NLSAmovie.op()
-    p.resProj = 5
+    p.resProj = 3
 
 
 def find_conformational_coordinates(args):
     FindConformationalCoord.op()
-    p.resProj = 7
 
 
 def energy_landscape(args):
     EL1D.op()
-    p.resProj = 8
 
 
 _funcs = {

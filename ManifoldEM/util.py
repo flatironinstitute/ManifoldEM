@@ -48,7 +48,10 @@ def calc_ang_width(aperture: int, resolution: float, diameter: float) -> float:
 
 def debug_trace():
     from PyQt5.QtCore import pyqtRemoveInputHook
-    from pdb import set_trace
+    try:
+        from ipdb import set_trace
+    except:
+        from pdb import set_trace
     pyqtRemoveInputHook()
     set_trace()
 

@@ -5,6 +5,7 @@ import numpy as np
 from functools import partial
 
 from ManifoldEM import myio, getDistanceCTF_local_Conj9combinedS2
+from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 import tqdm
@@ -16,9 +17,9 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
 
-def _construct_input_data(CG, q, df, N):
+def _construct_input_data(CG, q, df):
     ll = []
-    for prD in range(N):
+    for prD in range(len(CG)):
         ind = CG[prD]
         q1 = q[:, ind]
         df1 = df[ind]
@@ -33,8 +34,7 @@ def op(*argv):
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    data = myio.fin1(p.tess_file)
-    (CG, df, q, sh) = data['CG'], data['df'], data['q'], data['sh']
+    prds = data_store.get_prds()
 
     filterPar = dict(type='Butter', Qc=0.5, N=8)
     options = dict(verbose=False,
@@ -44,13 +44,13 @@ def op(*argv):
                    relion_data=p.relion_data,
                    thres=p.PDsizeThH)
 
-    input_data = _construct_input_data(CG, q, df, p.numberofJobs)
+    input_data = _construct_input_data(prds.thresholded_image_indices, prds.quats_full, prds.defocus)
     n_jobs = len(input_data)
     local_distance_func = partial(getDistanceCTF_local_Conj9combinedS2.op,
                                   filterPar=filterPar,
                                   imgFileName=p.img_stack_file,
-                                  sh=sh,
-                                  nStot=len(df),
+                                  sh=prds.microscope_origin,
+                                  nStot=len(prds.defocus),
                                   options=options)
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()

@@ -151,8 +151,8 @@ class Params():
 
 
     @property
-    def tess_file(self) -> str:
-        return os.path.join(self.out_dir, 'selecGCs')
+    def pd_file(self) -> str:
+        return os.path.join(self.out_dir, 'pd_data')
 
 
     @property
@@ -208,11 +208,6 @@ class Params():
     @property
     def CC_file(self) -> str:
         return os.path.join(self.CC_dir,  'CC_file')
-
-
-    @property
-    def CC_graph_file(self) -> str:
-        return os.path.join(self.CC_dir, 'graphCC')
 
 
     @property

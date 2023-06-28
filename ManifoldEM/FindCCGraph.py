@@ -250,15 +250,8 @@ def CalcPairwiseDistS2(X, *argv):
     return (pwDotProd, pwDist)
 
 
-def op():
-    data = myio.fin1(p.tess_file)
-    CG = data['CG']
-    nG = data['nG']
-    S20_th = data['S20']
-
+def op(CG, nG, S20_th):
     numPDs = len(CG)
-
-
     print("Number of PDs:", numPDs)
 
     #Number of Projection directions
@@ -280,7 +273,6 @@ def op():
         # Updated graph info
         G = CreateGraphStruct(maxState, pwDist, epsilon)
         G.update(nPsiModes=p.num_psis)
-
     else:
         G = CreateGraphStruct(maxState, [0], 0)
 
@@ -288,5 +280,4 @@ def op():
     # proceed to the pairwise measurements only after we are fine with the connected components
     Gsub, G = getSubGraph(G)
 
-    myio.fout1(p.CC_graph_file, G=G, Gsub=Gsub)
     return G, Gsub

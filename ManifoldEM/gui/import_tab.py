@@ -10,7 +10,6 @@ import shutil
 import tempfile
 
 from ManifoldEM.params import p
-from ManifoldEM.Data import op as process_orientations
 from ManifoldEM.util import get_image_width_from_stack
 
 def choose_pixel(entry: QDoubleSpinBox):
@@ -201,7 +200,6 @@ class ImportTab(QWidget):
         self.show()
 
     def finalize(self):
-        print('Processing orientations...')
         self.finalize_button.setDisabled(True)
 
         if (p.avg_vol_file and p.img_stack_file and p.align_param_file and p.sh and p.ang_width):
@@ -210,10 +208,9 @@ class ImportTab(QWidget):
                 box.setWindowTitle("ManifoldEM Conflict")
                 box.setText("<b>Directory Conflict</b>")
                 box.setIcon(QMessageBox.Warning)
-                box.setInformativeText("""The project already exists, from either a previous project
-                                        or from re-adjusting the hyper-parameters within the current run.<br /><br />\
-
-                                        Do you want to overwrite this data and proceed?""")
+                box.setInformativeText("This project already exists, from either a previous project "
+                                       "or from re-adjusting the hyper-parameters within the current run.\n\n"
+                                       "Do you want to overwrite this data and proceed?")
                 box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
                 reply = box.exec_()
 
@@ -230,7 +227,6 @@ class ImportTab(QWidget):
             p.save()
             p.create_dir()
 
-            process_orientations(p.align_param_file)
             p.resProj = 1
             self.parent.set_tab_state(True, "Distribution")
             self.parent.switch_tab("Distribution")

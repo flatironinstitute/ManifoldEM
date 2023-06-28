@@ -49,6 +49,7 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
 
         ######################
         # write topos
+        # TODO: This shouldn't require imshow. We can almost certainly just write the images directly
         topo = Topo_mean[psinum]
         dim = int(np.sqrt(topo.shape[0]))
 
