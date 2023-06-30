@@ -95,7 +95,7 @@ class EmbeddingTab(QWidget):
         self.entry_psi.setDisabled(True)
         self.entry_dim.setDisabled(True)
         self.button_nlsa.setDisabled(True)
-        self.button_nlsa.setText('Spectral Analysis Initiated')
+        self.button_nlsa.setText('NLSA Movie Initiated')
         task = threading.Thread(target=nlsa_movie, args=(self.nlsa_progress_changed, ))
         task.daemon = True
         task.start()
