@@ -61,15 +61,9 @@ class Mayavi_Rho(HasTraits):
     def get_widget(self):
         return self.edit_traits(parent=self, kind='subpanel').control
 
-    def view_angles(self, dialog):
-        viewRho = self.scene3.mlab.view(figure=Mayavi_Rho.fig3)
-        azimuth = viewRho[0]  #phi: 0-360
-        elevation = viewRho[1]  #theta: 0-180
-        zoom = viewRho[2]
-        if dialog is True:
-            print_anglesP4(azimuth, elevation)
-        else:
-            return zoom
+    def view_angles(self):
+        zoom = self.scene3.mlab.view(figure=Mayavi_Rho.fig3)[2]
+        return zoom
 
     def update_view(self, azimuth, elevation, distance):
         self.scene3.mlab.view(azimuth=azimuth,
@@ -205,7 +199,7 @@ class Mayavi_Rho(HasTraits):
             if self.click_on == 1:
                 self.click_on = 0
                 # =============================================================
-                # magnetize to nearest PrD:
+                # magnetize to nearest prd:
                 # =============================================================
                 # CONVENTIONS:
                 # =============================================================
@@ -224,7 +218,7 @@ class Mayavi_Rho(HasTraits):
                 # read points from tesselated sphere:
                 data = pandas.read_csv(p.ref_ang_file, delimiter='\t')
 
-                prds = data['PrD']
+                prds = data['prd']
                 thetas = data['theta']
                 phis = data['phi']
                 psis = data['psi']
@@ -262,7 +256,7 @@ class Mayavi_Rho(HasTraits):
                     roll=float(phis[indexes[-1]]) + 270,
                     #reset_roll=False, #ZULU: still need to correct volume in-plane rotation to match image's
                     figure=Mayavi_Rho.fig3)
-                P4.entry_PrD.setValue(indexes[-1] + 1)  #update PrD and thus topos
+                P4.entry_prd.setValue(indexes[-1] + 1)  #update prd and thus topos
                 self.phi = '%s%s' % (round(float(phis[indexes[-1]]), 2), u"\u00b0")
                 self.theta = '%s%s' % (round(float(thetas[indexes[-1]]), 2), u"\u00b0")
 
@@ -366,20 +360,19 @@ class EigenvectorsTab(QWidget):
         layoutR.addWidget(label_topos, 0, 8, 1, 4)
         label_topos.show()
 
-        # mayavi PrD widget:
+        # mayavi prd widget:
         def update_prd():
-            # change angle of 3d plot to correspond with PrD spinbox value:
+            # change angle of 3d plot to correspond with prd spinbox value:
             self.user_prd_index = self.entry_prd.value()
             prds = data_store.get_prds()
             phi = prds.phi_thresholded[self.user_prd_index - 1]
             theta = prds.theta_thresholded[self.user_prd_index - 1]
             self.viz2.update_view(azimuth=phi,
                                   elevation=theta,
-                                  distance=self.viz2.view_angles(dialog=False))
+                                  distance=self.viz2.view_angles())
 
             self.viz2.update_euler(phi, theta)
-
-            population = len(P1.CG[(self.user_PrD) - 1])
+            population = len(data_store.get_prds().pd_image_indices[(self.user_prd_index) - 1])
             self.entry_pop.setValue(population)
 
 
@@ -389,18 +382,18 @@ class EigenvectorsTab(QWidget):
             # =================================================================
             # create blank image if topos file doesn't exist
             # =================================================================
-            picImg = Image.open(p.get_topos_path(self.user_PrD, 1))
+            picImg = Image.open(p.get_topos_path(self.user_prd_index, 1))
             picSize = picImg.size
             blank = np.zeros([picSize[0], picSize[1], 3], dtype=np.uint8)
             blank.fill(0)
             blank = QImage(blank, blank.shape[1], blank.shape[0], blank.shape[1] * 3, QImage.Format_RGB888)
             blankpix = QPixmap(blank)
             # =================================================================
-            self.user_PrD = self.entry_PrD.value()
+            self.user_prd_index = self.entry_prd.value()
 
             topos_sum = 0
             for index in range(8):
-                pic_path = p.get_topos_path(self.user_PrD, index + 1)  # topos are 1 indexed
+                pic_path = p.get_topos_path(self.user_prd_index, index + 1)  # topos are 1 indexed
                 if os.path.isfile(pic_path):
                     self.label_pic[index].setPixmap(QPixmap(pic_path))
                     self.button_pic[index].setDisabled(False)
@@ -409,48 +402,48 @@ class EigenvectorsTab(QWidget):
                     self.label_pic[index].setPixmap(QPixmap(blankpix))
                     self.button_pic[index].setDisabled(True)
 
-            self.reactCoord1All[self.user_PrD].setMaximum(topos_sum)
-            self.reactCoord2All[self.user_PrD].setMaximum(topos_sum)
-            EigValCanvas().EigValRead()  #read in eigenvalue spectrum for current PrD
+            self.reactCoord1All[self.user_prd_index].setMaximum(topos_sum)
+            self.reactCoord2All[self.user_prd_index].setMaximum(topos_sum)
+            EigValCanvas().EigValRead()  #read in eigenvalue spectrum for current prd
 
             # =================================================================
             # Update trash section widgets:
             # =================================================================
-            layoutL.removeWidget(self.trashAll[self.PrD_hist])
-            self.trashAll[self.PrD_hist].close()
-            layoutL.addWidget(self.trashAll[self.user_PrD], 6, 5, 1, 2, QtCore.Qt.AlignCenter)
-            self.trashAll[self.user_PrD].show()
+            layoutL.removeWidget(self.trashAll[self.prd_hist])
+            self.trashAll[self.prd_hist].close()
+            layoutL.addWidget(self.trashAll[self.user_prd_index], 6, 5, 1, 2, QtCore.Qt.AlignCenter)
+            self.trashAll[self.user_prd_index].show()
 
             # =================================================================
             # Update anchor section widgets:
             # =================================================================
             if p.user_dimensions == 1:
-                layoutB.removeWidget(self.reactCoord1All[self.PrD_hist])
-                self.reactCoord1All[self.PrD_hist].close()
-                layoutB.addWidget(self.reactCoord1All[self.user_PrD], 8, 2, 1, 1)
-                self.reactCoord1All[self.user_PrD].show()
+                layoutB.removeWidget(self.reactCoord1All[self.prd_hist])
+                self.reactCoord1All[self.prd_hist].close()
+                layoutB.addWidget(self.reactCoord1All[self.user_prd_index], 8, 2, 1, 1)
+                self.reactCoord1All[self.user_prd_index].show()
 
-                layoutB.removeWidget(self.senses1All[self.PrD_hist])
-                self.senses1All[self.PrD_hist].close()
-                layoutB.addWidget(self.senses1All[self.user_PrD], 8, 3, 1, 1)
-                self.senses1All[self.user_PrD].show()
+                layoutB.removeWidget(self.senses1All[self.prd_hist])
+                self.senses1All[self.prd_hist].close()
+                layoutB.addWidget(self.senses1All[self.user_prd_index], 8, 3, 1, 1)
+                self.senses1All[self.user_prd_index].show()
 
-                layoutB.removeWidget(self.anchorsAll[self.PrD_hist])
-                self.anchorsAll[self.PrD_hist].close()
-                layoutB.addWidget(self.anchorsAll[self.user_PrD], 8, 4, 1, 1)
-                self.anchorsAll[self.user_PrD].show()
+                layoutB.removeWidget(self.anchorsAll[self.prd_hist])
+                self.anchorsAll[self.prd_hist].close()
+                layoutB.addWidget(self.anchorsAll[self.user_prd_index], 8, 4, 1, 1)
+                self.anchorsAll[self.user_prd_index].show()
 
-            # add current PrD to history list:
-            self.PrD_hist = self.user_PrD
+            # add current prd to history list:
+            self.prd_hist = self.user_prd_index
 
 
-        self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(PrD_high = 2)
+        self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(prd_high = 2)
         layoutL.addWidget(self.viz2.get_widget(), 0, 0, 6, 7)
 
-        self.label_PrD = QLabel('Projection Direction:')
-        self.label_PrD.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        layoutL.addWidget(self.label_PrD, 6, 0, 1, 1)
-        self.label_PrD.show()
+        self.label_prd = QLabel('Projection Direction:')
+        self.label_prd.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        layoutL.addWidget(self.label_prd, 6, 0, 1, 1)
+        self.label_prd.show()
 
         self.entry_prd = QSpinBox(self)
         self.entry_prd.setMinimum(1)
@@ -463,15 +456,15 @@ class EigenvectorsTab(QWidget):
         self.entry_prd.show()
 
 
-        entry_pop = QDoubleSpinBox(self)
-        entry_pop.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        entry_pop.setToolTip('Total number of particles within current PD.')
-        entry_pop.setDisabled(True)
-        entry_pop.setDecimals(0)
-        entry_pop.setMaximum(99999999)
-        entry_pop.setSuffix(' images')
-        layoutL.addWidget(entry_pop, 6, 3, 1, 2)
-        entry_pop.show()
+        self.entry_pop = QDoubleSpinBox(self)
+        self.entry_pop.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.entry_pop.setToolTip('Total number of particles within current PD.')
+        self.entry_pop.setDisabled(True)
+        self.entry_pop.setDecimals(0)
+        self.entry_pop.setMaximum(99999999)
+        self.entry_pop.setSuffix(' images')
+        layoutL.addWidget(self.entry_pop, 6, 3, 1, 2)
+        self.entry_pop.show()
 
 
     #     # conformational coordinates:
@@ -485,7 +478,7 @@ class EigenvectorsTab(QWidget):
     #             pass
     #         EigValMain_window = EigValMain()
     #         EigValMain_window.setMinimumSize(10, 10)
-    #         EigValMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
+    #         EigValMain_window.setWindowTitle('Projection Direction %s' % (self.user_prd_index))
     #         EigValMain_window.show()
 
     #     def classAvg():
@@ -496,7 +489,7 @@ class EigenvectorsTab(QWidget):
     #             pass
     #         ClassAvgMain_window = ClassAvgMain()
     #         ClassAvgMain_window.setMinimumSize(10, 10)
-    #         ClassAvgMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
+    #         ClassAvgMain_window.setWindowTitle('Projection Direction %s' % (self.user_prd_index))
     #         ClassAvgMain_window.show()
 
 
@@ -504,7 +497,7 @@ class EigenvectorsTab(QWidget):
     #     self.button_pic = []
     #     for i in range(8):
     #         label = QLabel();
-    #         picpath = p.get_topos_path(self.user_PrD, i + 1)
+    #         picpath = p.get_topos_path(self.user_prd_index, i + 1)
     #         label.setPixmap(QPixmap(picpath))
     #         label.setMinimumSize(minSize, minSize)
     #         label.setScaledContents(True)
@@ -558,7 +551,7 @@ class EigenvectorsTab(QWidget):
     #     # confirm conformational coordinates:
     #     def anchorCheck():
     #         # first save PDs chosen for removal to file:
-    #         self.trash_list = np.array([self.trashAll[i].isChecked() for i in range(1, P3.PrD_total + 1)], dtype=bool)
+    #         self.trash_list = np.array([self.trashAll[i].isChecked() for i in range(1, P3.prd_total + 1)], dtype=bool)
 
     #         #### ZULU ####
     #         #{SECTION EVENTUALLY NEEDED FOR RE-DOING GRAPH IF TRASH LIST DIVIDED ANY ISLANDS INTO SUB-ISLANDS}
@@ -585,7 +578,7 @@ class EigenvectorsTab(QWidget):
     #             box.exec_()
     #             return
 
-    #         PrDs = []
+    #         prds = []
     #         CC1s = []
     #         S1s = []
     #         CC2s = []
@@ -594,9 +587,9 @@ class EigenvectorsTab(QWidget):
     #         self.anch_list = []
 
     #         idx = 0
-    #         for i in range(1, P3.PrD_total + 1):
+    #         for i in range(1, P3.prd_total + 1):
     #             if self.anchorsAll[i].isChecked():
-    #                 PrDs.append(int(i))
+    #                 prds.append(int(i))
     #                 # CC1s:
     #                 CC1s.append(int(self.reactCoord1All[i].value()))
     #                 # S1s:
@@ -616,9 +609,9 @@ class EigenvectorsTab(QWidget):
     #                 idx += 1
 
     #         if P3.user_dimensions == 1:
-    #             self.anch_list = zip(PrDs, CC1s, S1s, colors)
+    #             self.anch_list = zip(prds, CC1s, S1s, colors)
     #         elif P3.user_dimensions == 2:
-    #             self.anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
+    #             self.anch_list = zip(prds, CC1s, S1s, CC2s, S2s, colors)
 
     #         keepers = np.array(P3.col)[~p.get_trash_list()]
     #         box = QMessageBox(self)
@@ -654,7 +647,7 @@ class EigenvectorsTab(QWidget):
     #             return
 
     #         self.anch_list, anch_zip = itertools.tee(self.anch_list)
-    #         p.anch_list = list(anch_zip)  #PrD,CC1,S1 for 1D; PrD,CC1,S1,CC2,S2 for 2D
+    #         p.anch_list = list(anch_zip)  #prd,CC1,S1 for 1D; prd,CC1,S1,CC2,S2 for 2D
     #         anchInputs = os.path.join(p.CC_dir, 'user_anchors.txt')
     #         np.savetxt(anchInputs, p.anch_list, fmt='%i', delimiter='\t')
     #         gotoP5(self)
@@ -797,14 +790,14 @@ class EigenvectorsTab(QWidget):
     #         pass
     #     BandwidthMain_window = BandwidthMain()
     #     BandwidthMain_window.setMinimumSize(10, 10)
-    #     BandwidthMain_window.setWindowTitle('Projection Direction %s' % (self.user_PrD))
+    #     BandwidthMain_window.setWindowTitle('Projection Direction %s' % (self.user_prd_index))
     #     BandwidthMain_window.show()
 
     # def CC_vid1(self, n):
-    #     self.gif_path = os.path.join(p.out_dir, 'topos', f'PrD_{self.user_PrD}', f'psi_{n}.gif')
-    #     global PrD_window
+    #     self.gif_path = os.path.join(p.out_dir, 'topos', f'prd_{self.user_prd_index}', f'psi_{n}.gif')
+    #     global prd_window
     #     try:
-    #         PrD_window.close()
+    #         prd_window.close()
     #     except:
     #         pass
 
@@ -830,24 +823,24 @@ class EigenvectorsTab(QWidget):
     #     VidCanvas.img_paths = []
     #     VidCanvas.imgs = []
     #     VidCanvas.frames = 0
-    #     PrD_window = PrD_Viz()
-    #     PrD_window.setWindowTitle('PD %s: Psi %s' % (self.user_PrD, n))
-    #     PrD_window.show()
+    #     prd_window = prd_Viz()
+    #     prd_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, n))
+    #     prd_window.show()
 
     # def CC_vid2(self):
-    #     global PrD2_window
+    #     global prd2_window
     #     try:
-    #         PrD2_window.close()
+    #         prd2_window.close()
     #     except:
     #         pass
 
     #     Vid2Canvas.run = 0
     #     Vid2Canvas.gif_path1 = ''
     #     Vid2Canvas.gif_path2 = ''
-    #     PrD2_window = PrD2_Viz()
+    #     prd2_window = prd2_Viz()
 
-    #     PrD2_window.setWindowTitle('Compare NLSA Movies')
-    #     PrD2_window.show()
+    #     prd2_window.setWindowTitle('Compare NLSA Movies')
+    #     prd2_window.show()
 
     def activate(self):
         prds = data_store.get_prds()

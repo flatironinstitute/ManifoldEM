@@ -21,8 +21,6 @@ class _ProjectionDirections:
         self.microscope_origin: Tuple[NDArray[np.float64], NDArray[np.float64]] = (np.empty(0), np.empty(0))
 
         self.pos_full: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
-        self.theta_full: NDArray[np.float64] = np.empty(0)
-        self.phi_full: NDArray[np.float64] = np.empty(0)
         self.quats_full: NDArray[Shape["4", Any], np.float64] = np.empty(shape=(4,0))
 
         self.pd_image_indices: NDArray[List[int]] = np.empty(0, dtype=object)
@@ -75,8 +73,6 @@ class _ProjectionDirections:
             self.microscope_origin = sh
 
             self.pos_full = S2
-            self.phi_full = np.arctan2(self.pos_full[1, :], self.pos_full[0, :]) * 180. / np.pi
-            self.theta_full = np.arccos(self.pos_full[2, :]) * 180. / np.pi
             self.quats_full = q
 
             self.pd_image_indices = CG1
@@ -86,9 +82,9 @@ class _ProjectionDirections:
             self.anchor_ids = np.empty(0, dtype=np.int64)
             self.trash_ids = np.empty(0, dtype=np.int64)
 
-            self.pos_thresholded = self.pos_full[:, self.thres_ids]
-            self.phi_thresholded = self.phi_full[self.thres_ids]
-            self.theta_thresholded = self.theta_full[self.thres_ids]
+            self.pos_thresholded = self.bin_centers[:, self.thres_ids]
+            self.phi_thresholded = np.arctan2(self.pos_thresholded[1, :], self.pos_thresholded[0, :]) * 180. / np.pi
+            self.theta_thresholded = np.arccos(self.pos_thresholded[2, :]) * 180. / np.pi
 
             from .FindCCGraph import op as FindCCGraph
             self.neighbor_graph, self.neighbor_subgraph = \
