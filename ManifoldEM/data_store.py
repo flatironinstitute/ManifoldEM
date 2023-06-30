@@ -35,6 +35,10 @@ class _ProjectionDirections:
         self.neighbor_graph: Dict[str, Any] = {}
         self.neighbor_subgraph: List[Dict[str, Any]] = []
 
+        self.pos_thresholded: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
+        self.theta_thresholded: NDArray[np.float64] = np.empty(0)
+        self.phi_thresholded: NDArray[np.float64] = np.empty(0)
+        self.cluster_ids: NDArray[int] = np.empty(0)
 
     def load(self, pd_file):
         with open(pd_file, 'rb') as f:
@@ -82,9 +86,22 @@ class _ProjectionDirections:
             self.anchor_ids = np.empty(0, dtype=np.int64)
             self.trash_ids = np.empty(0, dtype=np.int64)
 
+            self.pos_thresholded = self.pos_full[:, self.thres_ids]
+            self.phi_thresholded = self.phi_full[self.thres_ids]
+            self.theta_thresholded = self.theta_full[self.thres_ids]
+
             from .FindCCGraph import op as FindCCGraph
             self.neighbor_graph, self.neighbor_subgraph = \
                 FindCCGraph(self.thresholded_image_indices, self.n_bins, self.bin_centers[:, self.thres_ids])
+
+            def get_cluster_ids(G):
+                nodesColor = np.zeros(G['nNodes'], dtype='int')
+                for i, nodesCC in enumerate(G['NodesConnComp']):
+                    nodesColor[nodesCC] = i
+
+                return nodesColor
+
+            self.cluster_ids = get_cluster_ids(self.neighbor_graph)
 
             p.numberofJobs = len(self.thres_ids)
 
@@ -100,7 +117,12 @@ class _ProjectionDirections:
     @property
     def n_bins(self):
         return self.bin_centers.shape[1]
-    
+
+
+    @property
+    def n_thresholded(self):
+        return len(self.thres_ids)
+
 
 class _DataStore:
     _projection_directions = _ProjectionDirections()

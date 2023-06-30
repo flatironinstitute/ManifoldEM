@@ -3,13 +3,15 @@ import pandas
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QWidget, QLabel, QFrame, QPushButton, QMessageBox, QSpinBox,
-                             QDoubleSpinBox, QGridLayout, QWidget, QSplitter)
+                             QDoubleSpinBox, QGridLayout, QWidget, QSplitter, QAbstractSpinBox)
 from PyQt5.QtGui import QImage, QPixmap
 
 from PIL import Image
 import numpy as np
 
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
+
 from traits.api import HasTraits, Instance, on_trait_change, Str, Float, Range, Enum
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 
@@ -17,15 +19,17 @@ from mayavi import mlab
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
 
 
-class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
+class Mayavi_Rho(HasTraits):
+    """View of electrostatic potential map"""
+
     if False:
         def update_scene3(self):
             pass
 
-        def update_viewP4(self, azimuth, elevation, distance):
+        def update_view(self, azimuth, elevation, distance):
             pass
 
-        def view_anglesP4(self, dialog):
+        def view_angles(self, dialog):
             pass
 
         def update_euler(self):
@@ -34,7 +38,7 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
         pass
 
     scene3 = Instance(MlabSceneModel, ())
-    PrD_high = 2
+    prd_index_high = 2
     isosurface = Range(2, 9, 3, mode='enum')
     volume_alpha = Enum(1.0, .8, .6, .4, .2, 0.0)
     S2_scale = Float
@@ -54,7 +58,10 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
     def _S2_scale_default(self):
         return float(1)
 
-    def view_anglesP4(self, dialog):
+    def get_widget(self):
+        return self.edit_traits(parent=self, kind='subpanel').control
+
+    def view_angles(self, dialog):
         viewRho = self.scene3.mlab.view(figure=Mayavi_Rho.fig3)
         azimuth = viewRho[0]  #phi: 0-360
         elevation = viewRho[1]  #theta: 0-180
@@ -64,39 +71,50 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
         else:
             return zoom
 
-    def update_viewP4(self, azimuth, elevation, distance):
+    def update_view(self, azimuth, elevation, distance):
         self.scene3.mlab.view(azimuth=azimuth,
                               elevation=elevation,
                               distance=distance,
                               reset_roll=False,
                               figure=Mayavi_Rho.fig3)
 
-    def update_euler(self):
-        self.phi = '%s%s' % (round(float(P3.phi[(P4.user_PrD) - 1]), 2), u"\u00b0")
-        self.theta = '%s%s' % (round(float(P3.theta[(P4.user_PrD) - 1]), 2), u"\u00b0")
+    def update_euler(self, phi, theta):
+        self.phi = '%s%s' % (round(phi, 2), u"\u00b0")
+        self.theta = '%s%s' % (round(theta, 2), u"\u00b0")
+
+
+    # def __init__(self):
+    #     super(Mayavi_Rho, self).__init__()
+
+    #     Mayavi_Rho.fig3 = mlab.figure(3)
+    #     self.scene3.background = (0.0, 0.0, 0.0)
 
 
     @on_trait_change('S2_scale,volume_alpha,isosurface')
-    def update_scene3(self):
+    def update_scene3(self, init=False):
         # store current camera info:
         view = self.scene3.mlab.view()
         roll = self.scene3.mlab.roll()
-
         Mayavi_Rho.fig3 = mlab.figure(3)
         self.scene3.background = (0.0, 0.0, 0.0)
 
-        if P3.dictGen == False:  #if P3 dictionaries not yet created (happens once on P3)
+        if init:
             mlab.clf(figure=Mayavi_Rho.fig3)
 
             # =================================================================
             # Volume (contour):
             # =================================================================
-            mirror = P1.df_vol[..., ::-1]
-            cplot = mlab.contour3d(mirror, contours=self.isosurface, color=(0.5, 0.5, 0.5), figure=Mayavi_Rho.fig3)
-            cplot.actor.actor.orientation = np.array([0., -90., 0.])  #ZULU?
+            import mrcfile
+            with mrcfile.open(p.avg_vol_file, mode='r') as mrc:
+                df_vol = mrc.data
 
-            cplot.actor.actor.origin = np.array([len(P1.df_vol) / 2, len(P1.df_vol) / 2, len(P1.df_vol) / 2])
-            cplot.actor.actor.position = np.array([-len(P1.df_vol) / 2, -len(P1.df_vol) / 2, -len(P1.df_vol) / 2])
+            mirror = df_vol[..., ::-1]
+
+            cplot = mlab.contour3d(mirror, contours=self.isosurface, color=(0.5, 0.5, 0.5), figure=Mayavi_Rho.fig3)
+            cplot.actor.actor.orientation = np.array([0., -90., 0.])
+
+            cplot.actor.actor.origin = np.array([len(df_vol) / 2, len(df_vol) / 2, len(df_vol) / 2])
+            cplot.actor.actor.position = np.array([-len(df_vol) / 2, -len(df_vol) / 2, -len(df_vol) / 2])
 
             cplot.actor.property.backface_culling = True
             cplot.compute_normals = False
@@ -110,86 +128,65 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
             y = np.sin(phi) * np.sin(theta)
             z = np.cos(phi)
             testPlot = mlab.mesh(x, y, z, representation='wireframe', color=(1, 1, 1))
-            testPlot.actor.actor.scale = np.multiply(
-                self.S2_scale,
-                np.array([
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2))
-                ]))
+            testPlot.actor.actor.scale = self.S2_scale * len(df_vol) / np.sqrt(2.0) * np.ones(3)
             testPlot.actor.property.opacity = 0
 
             # =================================================================
             # S2 Distribution (scatter):
             # =================================================================
-            splot = mlab.points3d(P1.x2,
-                                  P1.y2,
-                                  P1.z2,
-                                  P3.col,
+            prds = data_store.get_prds()
+            s2_positions = prds.pos_thresholded
+
+            splot = mlab.points3d(s2_positions[0, :],
+                                  s2_positions[1, :],
+                                  s2_positions[2, :],
+                                  prds.cluster_ids,
                                   scale_mode='none',
                                   scale_factor=0.05,
                                   figure=Mayavi_Rho.fig3)
             splot.actor.property.backface_culling = True
 
-            splot.actor.actor.scale = np.multiply(
-                self.S2_scale,
-                np.array([
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2))
-                ]))
+            splot.actor.actor.scale = self.S2_scale * len(df_vol) / np.sqrt(2.0) * np.ones(3)
             splot.actor.actor.origin = np.array([0, 0, 0])
             splot.actor.actor.position = np.array([0, 0, 0])
 
-            # =================================================================
-            # S2 Anchors (sparse scatter):
-            # =================================================================
-            aplot = mlab.points3d(P1.x3,
-                                  P1.y3,
-                                  P1.z3,
-                                  scale_mode='none',
-                                  scale_factor=0.06,
-                                  figure=Mayavi_Rho.fig3)
+            # # =================================================================
+            # # S2 Anchors (sparse scatter):
+            # # =================================================================
+            # aplot = mlab.points3d(P1.x3,
+            #                       P1.y3,
+            #                       P1.z3,
+            #                       scale_mode='none',
+            #                       scale_factor=0.06,
+            #                       figure=Mayavi_Rho.fig3)
 
-            aplot.actor.property.backface_culling = True
-            aplot.glyph.color_mode = 'no_coloring'
-            aplot.actor.property.color = (1.0, 1.0, 1.0)
-            aplot.actor.actor.scale = np.multiply(
-                self.S2_scale,
-                np.array([
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2))
-                ]))
-            aplot.actor.actor.origin = np.array([0, 0, 0])
-            aplot.actor.actor.position = np.array([0, 0, 0])
+            # aplot.actor.property.backface_culling = True
+            # aplot.glyph.color_mode = 'no_coloring'
+            # aplot.actor.property.color = (1.0, 1.0, 1.0)
+            # aplot.actor.actor.scale = self.S2_scale * len(df_vol) / np.sqrt(2.0) * np.ones(3)
+            # aplot.actor.actor.origin = np.array([0, 0, 0])
+            # aplot.actor.actor.position = np.array([0, 0, 0])
 
-            self.anchorsUpdate = aplot.mlab_source
+            # self.anchorsUpdate = aplot.mlab_source
 
-            # =================================================================
-            # S2 Trash (sparse scatter):
-            # =================================================================
-            tplot = mlab.points3d(P1.x4,
-                                  P1.y4,
-                                  P1.z4,
-                                  scale_mode='none',
-                                  scale_factor=0.06,
-                                  figure=Mayavi_Rho.fig3)
+            # # =================================================================
+            # # S2 Trash (sparse scatter):
+            # # =================================================================
+            # tplot = mlab.points3d(P1.x4,
+            #                       P1.y4,
+            #                       P1.z4,
+            #                       scale_mode='none',
+            #                       scale_factor=0.06,
+            #                       figure=Mayavi_Rho.fig3)
 
-            tplot.actor.property.backface_culling = True
-            tplot.glyph.color_mode = 'no_coloring'
-            tplot.actor.property.color = (0.0, 0.0, 0.0)
-            tplot.actor.actor.scale = np.multiply(
-                self.S2_scale,
-                np.array([
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2)),
-                    len(P1.df_vol) / float(np.sqrt(2))
-                ]))
-            tplot.actor.actor.origin = np.array([0, 0, 0])
-            tplot.actor.actor.position = np.array([0, 0, 0])
+            # tplot.actor.property.backface_culling = True
+            # tplot.glyph.color_mode = 'no_coloring'
+            # tplot.actor.property.color = (0.0, 0.0, 0.0)
+            # tplot.actor.actor.scale = self.S2_scale * len(df_vol) / np.sqrt(2.0) * np.ones(3)
+            # tplot.actor.actor.origin = np.array([0, 0, 0])
+            # tplot.actor.actor.position = np.array([0, 0, 0])
 
-            self.trashUpdate = tplot.mlab_source
+            # self.trashUpdate = tplot.mlab_source
 
         else:  #only update anchors
             self.anchorsUpdate.reset(x=P1.x3, y=P1.y3, z=P1.z3)
@@ -337,6 +334,9 @@ class Mayavi_Rho(HasTraits):  #electrostatic potential map, P4
 class EigenvectorsTab(QWidget):
     def __init__(self, parent=None):
         super(EigenvectorsTab, self).__init__(parent)
+        self.main_window = parent
+        self.user_prd_index = 1
+
         layout = QGridLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
@@ -367,15 +367,17 @@ class EigenvectorsTab(QWidget):
         label_topos.show()
 
         # mayavi PrD widget:
-        def update_PrD():
+        def update_prd():
             # change angle of 3d plot to correspond with PrD spinbox value:
-            self.user_PrD = self.entry_PrD.value()
-            self.viz2.update_viewP4(azimuth=float(P3.phi[(self.user_PrD) - 1]),
-                                    elevation=float(P3.theta[(self.user_PrD) - 1]),
-                                    distance=self.viz2.view_anglesP4(dialog=False))
+            self.user_prd_index = self.entry_prd.value()
+            prds = data_store.get_prds()
+            phi = prds.phi_thresholded[self.user_prd_index - 1]
+            theta = prds.theta_thresholded[self.user_prd_index - 1]
+            self.viz2.update_view(azimuth=phi,
+                                  elevation=theta,
+                                  distance=self.viz2.view_angles(dialog=False))
 
-            if MainWindow.restoreComplete == 1:
-                self.viz2.update_euler()
+            self.viz2.update_euler(phi, theta)
 
             population = len(P1.CG[(self.user_PrD) - 1])
             self.entry_pop.setValue(population)
@@ -443,32 +445,34 @@ class EigenvectorsTab(QWidget):
 
 
         self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(PrD_high = 2)
-        layoutL.addWidget(self.viz2.edit_traits(parent=self, kind='subpanel').control, 0, 0, 6, 7)
+        layoutL.addWidget(self.viz2.get_widget(), 0, 0, 6, 7)
 
         self.label_PrD = QLabel('Projection Direction:')
         self.label_PrD.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         layoutL.addWidget(self.label_PrD, 6, 0, 1, 1)
         self.label_PrD.show()
 
-        # self.entry_PrD = QSpinBox(self)
-        # self.entry_PrD.setMinimum(1)
-        # self.entry_PrD.setMaximum(P3.PrD_total)
-        # self.entry_PrD.setSuffix('  /  %s' % (P3.PrD_total))
-        # self.entry_PrD.valueChanged.connect(update_PrD)
-        # self.entry_PrD.valueChanged.connect(update_topos)
-        # self.entry_PrD.setToolTip('Change the projection direction of the current view above.')
-        # layoutL.addWidget(self.entry_PrD, 6, 1, 1, 2)
-        # self.entry_PrD.show()
+        self.entry_prd = QSpinBox(self)
+        self.entry_prd.setMinimum(1)
+        self.entry_prd.setMaximum(1)
+        self.entry_prd.setSuffix(f"  /  1")
+        self.entry_prd.valueChanged.connect(update_prd)
+        self.entry_prd.valueChanged.connect(update_topos)
+        self.entry_prd.setToolTip('Change the projection direction of the current view above.')
+        layoutL.addWidget(self.entry_prd, 6, 1, 1, 2)
+        self.entry_prd.show()
 
-        # self.entry_pop = QDoubleSpinBox(self)
-        # self.entry_pop.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        # self.entry_pop.setToolTip('Total number of particles within current PD.')
-        # self.entry_pop.setDisabled(True)
-        # self.entry_pop.setDecimals(0)
-        # self.entry_pop.setMaximum(99999999)
-        # self.entry_pop.setSuffix(' images')
-        # layoutL.addWidget(self.entry_pop, 6, 3, 1, 2)
-        # self.entry_pop.show()
+
+        entry_pop = QDoubleSpinBox(self)
+        entry_pop.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        entry_pop.setToolTip('Total number of particles within current PD.')
+        entry_pop.setDisabled(True)
+        entry_pop.setDecimals(0)
+        entry_pop.setMaximum(99999999)
+        entry_pop.setSuffix(' images')
+        layoutL.addWidget(entry_pop, 6, 3, 1, 2)
+        entry_pop.show()
+
 
     #     # conformational coordinates:
     #     minSize = 1
@@ -528,7 +532,7 @@ class EigenvectorsTab(QWidget):
     #     for i in range(4, 8):
     #         layoutR.addWidget(self.label_pic[i], 4, 4 + i, 1, 1)
     #         layoutR.addWidget(self.button_pic[i], 5, 4 + i, 1, 1)
-        
+
     #     button_bandwidth = QPushButton('Kernel Bandwidth')
     #     button_bandwidth.setDisabled(False)
     #     button_bandwidth.clicked.connect(self.bandwidth)
@@ -758,17 +762,18 @@ class EigenvectorsTab(QWidget):
     #     layoutB.addWidget(self.btn_finOut, 8, 10, 1, 1, QtCore.Qt.AlignLeft)
     #     self.btn_finOut.show()
 
-    #     # layout dividers:
-    #     self.splitter1 = QSplitter(QtCore.Qt.Horizontal)
-    #     self.splitter1.addWidget(self.widgetsL)
-    #     self.splitter1.addWidget(self.widgetsR)
-    #     self.splitter1.setStretchFactor(1, 1)
+        # layout dividers:
+        splitter1 = QSplitter(QtCore.Qt.Horizontal)
+        splitter1.addWidget(self.widgetsL)
+        splitter1.addWidget(self.widgetsR)
+        splitter1.setStretchFactor(1, 1)
 
-    #     self.splitter2 = QSplitter(QtCore.Qt.Vertical)
-    #     self.splitter2.addWidget(self.splitter1)
-    #     self.splitter2.addWidget(self.widgetsB)
+        splitter2 = QSplitter(QtCore.Qt.Vertical)
+        splitter2.addWidget(splitter1)
+        splitter2.addWidget(self.widgetsB)
 
-    #     layout.addWidget(self.splitter2)
+        layout.addWidget(splitter2)
+
 
     # def PDSeleViz(self):
     #     global PDSele_window
@@ -845,4 +850,8 @@ class EigenvectorsTab(QWidget):
     #     PrD2_window.show()
 
     def activate(self):
-        pass
+        prds = data_store.get_prds()
+        self.entry_prd.setMaximum(prds.n_thresholded)
+        self.entry_prd.setSuffix(f"  /  {prds.n_thresholded}")
+
+        self.viz2.update_scene3(init=True)
