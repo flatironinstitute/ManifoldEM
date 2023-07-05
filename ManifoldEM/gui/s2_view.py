@@ -54,16 +54,6 @@ def release_callback(parent, vtk_obj, event):  # left mouse release callback
 class S2ViewBase:
     def load_data(self):
         self.update_S2_params()
-        prds = data_store.get_prds()
-        self.S2_data = prds.pos_full
-
-        # ad hoc ratios to make sure S2 volume doesn't freeze-out due to too many particles to plot:
-        tot_prds = np.sum(prds.occupancy_count[0:len(prds.occupancy_count) // 2])
-        ratio = tot_prds // 5000
-        self.S2_density_all = [5, 10, 25, 50, 100, 250, 500, 1000, 10000, 100000]
-        self.S2_density_all = list(filter(lambda a: a < tot_prds, self.S2_density_all))
-        self.S2_density_all = list(filter(lambda a: a > ratio, self.S2_density_all))
-
         self.get_volume_data()
 
     def get_volume_data(self):
@@ -117,6 +107,9 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
     @observe('S2_scale, S2_density')  #S2 Orientation Sphere
     def update_scene1(self, event):
+        if self.df_vol is None:
+            self.load_data()
+
         # store current camera info:
         view = self.scene1.mlab.view()
         roll = self.scene1.mlab.roll()
@@ -126,9 +119,10 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
         mlab.clf(figure=self.fig1)
 
-        x1 = self.S2_data[0, ::self.S2_density]
-        y1 = self.S2_data[1, ::self.S2_density]
-        z1 = self.S2_data[2, ::self.S2_density]
+        S2_data = data_store.get_prds().pos_full
+        x1 = S2_data[0, ::self.S2_density]
+        y1 = S2_data[1, ::self.S2_density]
+        z1 = S2_data[2, ::self.S2_density]
         values = np.array([x1, y1, z1])
         try:
             kde = stats.gaussian_kde(values)
