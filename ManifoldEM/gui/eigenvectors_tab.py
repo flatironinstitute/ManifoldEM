@@ -77,11 +77,9 @@ class Mayavi_Rho(HasTraits):
         self.theta = '%s%s' % (round(theta, 2), u"\u00b0")
 
 
-    # def __init__(self):
-    #     super(Mayavi_Rho, self).__init__()
-
-    #     Mayavi_Rho.fig3 = mlab.figure(3)
-    #     self.scene3.background = (0.0, 0.0, 0.0)
+    def __init__(self, parent):
+        super(Mayavi_Rho, self).__init__()
+        self.parent = parent
 
 
     @on_trait_change('S2_scale,volume_alpha,isosurface')
@@ -209,56 +207,32 @@ class Mayavi_Rho(HasTraits):
                 angles = self.scene3.mlab.view(figure=Mayavi_Rho.fig3)
                 phi0 = angles[0] * np.pi / 180
                 theta0 = angles[1] * np.pi / 180
+                prds = data_store.get_prds()
+                thetas, phis = prds.theta_thresholded, prds.phi_thresholded
 
-                r0 = 1
-                x0 = (r0 * np.sin(theta0) * np.cos(phi0))
-                y0 = (r0 * np.sin(theta0) * np.sin(phi0))
-                z0 = (r0 * np.cos(theta0))
+                r0 = np.array([
+                    np.sin(theta0) * np.cos(phi0),
+                    np.sin(theta0) * np.sin(phi0),
+                    np.cos(theta0)
+                ])
 
-                # read points from tesselated sphere:
-                data = pandas.read_csv(p.ref_ang_file, delimiter='\t')
+                dr = prds.pos_thresholded.T - r0
+                dr = np.linalg.norm(dr, axis=1)
+                idx = np.argmin(dr)
 
-                prds = data['prd']
-                thetas = data['theta']
-                phis = data['phi']
-                psis = data['psi']
-                xs = data['x']
-                ys = data['y']
-                zs = data['z']
-
-                xyz = np.column_stack((xs, ys, zs))
-                angs = np.column_stack((thetas, phis))
-                dists = []  #distances between current and all tesselated points
-                indexes = []
-                idx = 0
-                # find nearest neighbor (pythagorean):
-                for i, j, k in xyz:
-                    x1 = float(i)
-                    y1 = float(j)
-                    z1 = float(k)
-
-                    d = np.sqrt((x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2)
-
-                    if not dists:
-                        dists.append(d)
-                        indexes.append(idx)
-                    if dists:
-                        if d < np.amin(dists):
-                            dists.append(d)
-                            indexes.append(idx)
-                    idx += 1
                 # update view:
-                current = self.scene3.mlab.view(figure=Mayavi_Rho.fig3)  #grab current distance
+                distance = self.scene3.mlab.view(figure=Mayavi_Rho.fig3)[2]
                 self.scene3.mlab.view(
-                    azimuth=float(phis[indexes[-1]]),
-                    elevation=float(thetas[indexes[-1]]),
-                    distance=current[2],
-                    roll=float(phis[indexes[-1]]) + 270,
+                    azimuth=phis[idx],
+                    elevation=thetas[idx],
+                    distance=cam_distance,
+                    roll=phis[idx] + 270,
                     #reset_roll=False, #ZULU: still need to correct volume in-plane rotation to match image's
                     figure=Mayavi_Rho.fig3)
-                P4.entry_prd.setValue(indexes[-1] + 1)  #update prd and thus topos
-                self.phi = '%s%s' % (round(float(phis[indexes[-1]]), 2), u"\u00b0")
-                self.theta = '%s%s' % (round(float(thetas[indexes[-1]]), 2), u"\u00b0")
+
+                self.parent.entry_prd.setValue(idx + 1)  #update prd and thus topos
+                self.phi = '%s%s' % (round(phis[idx], 2), u"\u00b0")
+                self.theta = '%s%s' % (round(thetas[idx], 2), u"\u00b0")
 
         Mayavi_Rho.fig3.scene.scene.interactor.add_observer('LeftButtonPressEvent', press_callback)
         Mayavi_Rho.fig3.scene.scene.interactor.add_observer('EndInteractionEvent', release_callback)
@@ -377,6 +351,7 @@ class EigenvectorsTab(QWidget):
 
 
         def update_topos():  #refresh screen for new topos and anchors
+            return
             # =================================================================
             # link topos directories and update with photos/videos:
             # =================================================================
@@ -437,7 +412,7 @@ class EigenvectorsTab(QWidget):
             self.prd_hist = self.user_prd_index
 
 
-        self.viz2 = Mayavi_Rho()  #self.viz2 = Mayavi_Rho(prd_high = 2)
+        self.viz2 = Mayavi_Rho(self)
         layoutL.addWidget(self.viz2.get_widget(), 0, 0, 6, 7)
 
         self.label_prd = QLabel('Projection Direction:')
