@@ -36,7 +36,7 @@ class _ProjectionDirections:
         self.pos_thresholded: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
         self.theta_thresholded: NDArray[np.float64] = np.empty(0)
         self.phi_thresholded: NDArray[np.float64] = np.empty(0)
-        self.cluster_ids: NDArray[int] = np.empty(0)
+        self.cluster_ids: NDArray[int] = np.empty(0, dtype=int)
 
     def load(self, pd_file):
         with open(pd_file, 'rb') as f:
