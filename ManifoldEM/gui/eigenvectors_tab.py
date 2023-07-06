@@ -143,7 +143,7 @@ class Mayavi_Rho(HasTraits):
         def view_angles(self, dialog):
             pass
 
-        def update_euler(self):
+        def update_euler_view(self):
             pass
 
         pass
@@ -152,8 +152,6 @@ class Mayavi_Rho(HasTraits):
     prd_index_high = 2
     isosurface = Range(2, 9, 3, mode='enum')
     volume_alpha = Enum(1.0, .8, .6, .4, .2, 0.0)
-    anchors_update = []
-    trash_update = []
     phi = Str
     theta = Str
     click_on = 0
@@ -182,7 +180,7 @@ class Mayavi_Rho(HasTraits):
                               reset_roll=False,
                               figure=Mayavi_Rho.fig3)
 
-    def update_euler(self, phi, theta):
+    def update_euler_view(self, phi, theta):
         self.phi = '%s%s' % (round(phi, 2), u"\u00b0")
         self.theta = '%s%s' % (round(theta, 2), u"\u00b0")
 
@@ -274,7 +272,7 @@ class Mayavi_Rho(HasTraits):
             # =================================================================
             # S2 Trash (sparse scatter):
             # =================================================================
-            trash_pos = s2_positions[:, prds.trash_ids]
+            trash_pos = s2_positions[:, list(prds.trash_ids)]
             tplot = mlab.points3d(trash_pos[0, :],
                                   trash_pos[1, :],
                                   trash_pos[2, :],
@@ -292,10 +290,10 @@ class Mayavi_Rho(HasTraits):
             self.trash_update = tplot.mlab_source
 
         else:  #only update anchors
-            trash_pos = s2_positions[:, prds.trash_ids]
-            anchor_pos = s2_positions[:, prds.anchor_ids]
-            self.anchors_update.reset(x=anchor_pos[:, 0], y=anchor_pos[:, 1], z=anchor_pos[:, 2])
-            self.trash_update.reset(x=trash_pos[:, 0], y=trash_pos[:, 1], z=trash_pos[:, 2])
+            anchor_pos = s2_positions[:, list(prds.anchors.keys())]
+            trash_pos = s2_positions[:, list(prds.trash_ids)]
+            self.anchors_update.reset(x=anchor_pos[0, :], y=anchor_pos[1, :], z=anchor_pos[2, :])
+            self.trash_update.reset(x=trash_pos[0, :], y=trash_pos[1, :], z=trash_pos[2, :])
 
         # =====================================================================
         # reposition camera to previous:
@@ -333,7 +331,7 @@ class Mayavi_Rho(HasTraits):
 
                 # # update view:
                 phi, theta = prds.phi_thresholded[idx], prds.theta_thresholded[idx]
-                self.update_euler(phi, theta)
+                self.update_euler_view(phi, theta)
                 self.parent.entry_prd.setValue(idx + 1)  #update prd and thus topos
 
 
@@ -474,21 +472,28 @@ class EigenvectorsTab(QWidget):
         self.entry_pop.setSuffix(' images')
         self.layoutL.addWidget(self.entry_pop, 6, 3, 1, 2)
 
+        self.trash_selector = QCheckBox('Remove PD', self)
+        self.trash_selector.setChecked(False)
+        self.trash_selector.setToolTip('Check to remove the current PD from the final reconstruction.')
+        self.trash_selector.stateChanged.connect(self.on_trash_change)
+        self.layoutL.addWidget(self.trash_selector, 6, 5, 1, 2, QtCore.Qt.AlignCenter)
+
+
         self.label_pic = []
         self.button_pic = []
         subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
         blank_pixmap = get_blank_pixmap(p.get_topos_path(1, 1))
-        for i in range(8):
+        for i in range(1, 9):
             label = QLabel()
-            picpath = p.get_topos_path(self.user_prd_index, i + 1)
+            picpath = p.get_topos_path(self.user_prd_index, i)
 
             label.setPixmap(QPixmap(picpath))
             label.setMinimumSize(1, 1)
             label.setScaledContents(True)
             label.setAlignment(QtCore.Qt.AlignCenter)
 
-            button = QPushButton('View %s%s' % ("\u03A8", str(i+1).translate(subscripts)), self)
-            button.clicked.connect(lambda: self.CC_vid1(i+1))
+            button = QPushButton(f'View Ψ{str(i).translate(subscripts)}', self)
+            button.clicked.connect(lambda: self.CC_vid1(i))
             button.setToolTip('View 2d movie and related outputs.')
 
             if not os.path.isfile(picpath):
@@ -543,7 +548,6 @@ class EigenvectorsTab(QWidget):
         self.CC_selector.setMinimum(1)
         self.CC_selector.setMaximum(p.num_psis)
         self.CC_selector.setPrefix('CC1: \u03A8')
-#        self.CC_selector.valueChanged.connect(lambda: self.unique_eigs())
         self.layoutB.addWidget(self.CC_selector, 8, 2, 1, 1)
 
         self.sense_selector = QComboBox(self)
@@ -669,6 +673,46 @@ class EigenvectorsTab(QWidget):
         prd2_window.show()
 
 
+    def update_pd_view(self):
+        # change angle of 3d plot to correspond with prd spinbox value and update phi/theta fields
+        prds = data_store.get_prds()
+        phi = prds.phi_thresholded[self.user_prd_index - 1]
+        theta = prds.theta_thresholded[self.user_prd_index - 1]
+        self.viz2.update_view(azimuth=phi,
+                              elevation=theta,
+                              distance=self.viz2.view_angles())
+        self.viz2.update_euler_view(phi, theta)
+
+        population = prds.occupancy[(self.user_prd_index) - 1]
+        self.entry_pop.setValue(population)
+
+        self.trash_selector.setChecked(self.user_prd_index - 1 in prds.trash_ids)
+
+
+    def update_anchor_view(self):
+        prds = data_store.get_prds()
+        anchor = prds.anchors.get(self.user_prd_index - 1, Anchor())
+        self.CC_selector.setValue(anchor.CC)
+        self.sense_selector.setCurrentIndex(anchor.sense.value)
+        self.anchor_selector.setChecked(self.user_prd_index - 1 in prds.anchors)
+
+        anchor_disable = self.user_prd_index - 1 in prds.trash_ids
+        self.CC_selector.setDisabled(anchor_disable)
+        self.sense_selector.setDisabled(anchor_disable)
+        self.anchor_selector.setDisabled(anchor_disable)
+
+
+    def on_trash_change(self):
+        prds = data_store.get_prds()
+        if self.trash_selector.isChecked():
+            prds.trash_ids.add(self.user_prd_index - 1)
+            prds.remove_anchor(self.user_prd_index - 1)
+        else:
+            prds.trash_ids.discard(self.user_prd_index - 1)
+        self.update_anchor_view()
+        self.viz2.update_scene3()
+
+
     def on_anchor_change(self):
         if self.anchor_selector.isChecked():
             self.CC_selector.setDisabled(True)
@@ -679,26 +723,14 @@ class EigenvectorsTab(QWidget):
             self.CC_selector.setDisabled(False)
             self.sense_selector.setDisabled(False)
             data_store.get_prds().remove_anchor(self.user_prd_index - 1)
+        self.viz2.update_scene3()
 
 
     def on_prd_change(self):
-        # change angle of 3d plot to correspond with prd spinbox value:
         self.user_prd_index = self.entry_prd.value()
-        prds = data_store.get_prds()
-        phi = prds.phi_thresholded[self.user_prd_index - 1]
-        theta = prds.theta_thresholded[self.user_prd_index - 1]
-        self.viz2.update_view(azimuth=phi,
-                              elevation=theta,
-                              distance=self.viz2.view_angles())
 
-        self.viz2.update_euler(phi, theta)
-        population = prds.occupancy[(self.user_prd_index) - 1]
-        self.entry_pop.setValue(population)
-
-        anchor = prds.anchors.get(self.user_prd_index - 1, Anchor())
-        self.CC_selector.setValue(anchor.CC)
-        self.sense_selector.setCurrentIndex(anchor.sense.value)
-        self.anchor_selector.setChecked(self.user_prd_index - 1 in prds.anchors)
+        self.update_pd_view()
+        self.update_anchor_view()
 
 
     def activate(self):

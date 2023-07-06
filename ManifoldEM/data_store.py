@@ -4,7 +4,7 @@ from enum import Enum
 import numpy as np
 import pickle
 
-from typing import List, Any, Tuple, Dict
+from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape
 
 from ManifoldEM.params import p
@@ -38,7 +38,7 @@ class _ProjectionDirections:
         self.occupancy_full: NDArray[int] = np.empty(0, dtype=int)
 
         self.anchors: Dict[int, Anchor] = {}
-        self.trash_ids: List[int] = []
+        self.trash_ids: Set[int] = set()
 
         self.neighbor_graph: Dict[str, Any] = {}
         self.neighbor_subgraph: List[Dict[str, Any]] = []
@@ -64,7 +64,12 @@ class _ProjectionDirections:
             self.load(p.pd_file)
 
         # If uninitialized or things have changed, actually update
-        if self.pos_full.size == 0 or self.thres_low != p.PDsizeThL or self.thres_high != p.PDsizeThH:
+        force_rebuild = bool(os.environ.get('MANIFOLD_REBUILD_DS', 0))
+        if force_rebuild or self.pos_full.size == 0 or self.thres_low != p.PDsizeThL or self.thres_high != p.PDsizeThH:
+            if force_rebuild:
+                print("Rebuilding data store")
+                os.environ.pop('MANIFOLD_REBUILD_DS')
+
             print("Calculating projection direction information")
             sh, q, U, V = get_from_relion(p.align_param_file, flip=True)
             df = (U + V) / 2
@@ -90,7 +95,7 @@ class _ProjectionDirections:
             self.occupancy_full = NC
 
             self.anchors = {}
-            self.trash_ids = []
+            self.trash_ids = set()
 
             self.pos_thresholded = self.bin_centers[:, self.thres_ids]
             self.phi_thresholded = np.arctan2(self.pos_thresholded[1, :], self.pos_thresholded[0, :]) * 180. / np.pi
