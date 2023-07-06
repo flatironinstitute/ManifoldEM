@@ -87,7 +87,6 @@ class Params():
     getOpticalFlow: bool = True                # default True to compute optical flow vectors
     getAllEdgeMeasures: bool = True            # default True to compute edge measures
     anch_list: list[list[int]] = []            # user-defined PD anchors for Belief Propagation
-    trash_list: list[bool] = []                # user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
     opt_movie: dict = {'printFig': 0,
                        'OFvisual': 0,
                        'visual_CC': 0,
@@ -279,14 +278,6 @@ class Params():
 
     def get_dist_file(self, prd_index: int):
         return f'{self.dist_file}prD_{prd_index}'
-
-
-    def set_trash_list(self, trash_list):
-        setattr(self, 'trash_list', [bool(a) for a in trash_list])
-
-
-    def get_trash_list(self):
-        return np.array(self.trash_list, dtype=bool)
 
 
     def todict(self):

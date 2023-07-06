@@ -581,7 +581,7 @@ class EigenvectorsTab(QWidget):
 
         self.btn_finOut = QPushButton('   Compile Results   ', self)
         self.btn_finOut.setToolTip('Proceed to next section.')
-        # self.btn_finOut.clicked.connect(anchorCheck)
+        self.btn_finOut.clicked.connect(self.finalize)
         self.btn_finOut.setDisabled(False)
         self.layoutB.addWidget(self.btn_finOut, 8, 10, 1, 1, QtCore.Qt.AlignLeft)
 
@@ -740,3 +740,57 @@ class EigenvectorsTab(QWidget):
 
         self.viz2.update_scene3(init=True)
         self.on_prd_change()
+
+
+    def finalize(self):
+        # save anchors to file:
+        prds = data_store.get_prds()
+
+        min_allowed_anchors = 1
+        if len(prds.anchors) < min_allowed_anchors:
+            box = QMessageBox(self)
+            box.setWindowTitle("ManifoldEM Error")
+            box.setText('<b>Input Error</b>')
+            box.setIcon(QMessageBox.Information)
+            box.setInformativeText(f'A minimum of {min_allowed_anchors} PD anchors must be selected.')
+            box.setStandardButtons(QMessageBox.Ok)
+            box.setDefaultButton(QMessageBox.Ok)
+            box.exec_()
+            return
+
+        anchor_indices = list(prds.anchors.keys())
+        anchor_colors = set(prds.cluster_ids[anchor_indices])
+        all_colors = set(prds.cluster_ids)
+        box = QMessageBox(self)
+        # check if at least one anchor is selected for each color:
+        if anchor_colors == all_colors:
+            box.setWindowTitle("ManifoldEM")
+            box.setIcon(QMessageBox.Question)
+            box.setText('<b>Confirm Conformational Coordinates</b>')
+
+            msg = "Performing this action will initiate Belief Propagation for the current"\
+                   "PD anchors and generate the corresponding energy landscape and 3D volumes.\n"\
+                   "Do you want to proceed?"
+        else:
+            box.setWindowTitle("ManifoldEM Warning")
+            box.setIcon(QMessageBox.Warning)
+            box.setText('<b>Input Warning</b>')
+
+            n_selected, n_total = len(anchor_colors), len(all_colors)
+            msg = "It is highly recommended that at least one anchor node is selected for each connected "\
+                "component (as seen via clusters of colored PDs on S2).\n"\
+                f"Currently, only {n_selected} of {n_total} connected components are satisfied in this manner,"\
+                f"and thus, {n_total - n_selected} will be ignored during Belief Propagation.\n"\
+                "Do you want to proceed?"
+
+        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        box.setInformativeText(msg)
+
+        if box.exec_() == QMessageBox.No:
+            return
+
+        p.resProj = 4
+        data_store.get_prds().save()
+        p.save()
+        self.main_window.set_tab_state(True, "Compilation")
+        self.main_window.switch_tab("Compilation")
