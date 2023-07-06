@@ -861,7 +861,7 @@ class EigenvectorsTab(QWidget):
                               distance=self.viz2.view_angles())
 
         self.viz2.update_euler(phi, theta)
-        population = len(prds.pd_image_indices[(self.user_prd_index) - 1])
+        population = prds.occupancy[(self.user_prd_index) - 1]
         self.entry_pop.setValue(population)
 
     def activate(self):

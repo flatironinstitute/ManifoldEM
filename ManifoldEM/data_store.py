@@ -23,9 +23,9 @@ class _ProjectionDirections:
         self.pos_full: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
         self.quats_full: NDArray[Shape["4", Any], np.float64] = np.empty(shape=(4,0))
 
-        self.pd_image_indices: NDArray[List[int]] = np.empty(0, dtype=object)
+        self.image_indices_full: NDArray[List[int]] = np.empty(0, dtype=object)
         self.thres_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
-        self.occupancy_count: NDArray[int] = np.empty(0, dtype=int)
+        self.occupancy_full: NDArray[int] = np.empty(0, dtype=int)
 
         self.anchor_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
         self.trash_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
@@ -75,9 +75,9 @@ class _ProjectionDirections:
             self.pos_full = S2
             self.quats_full = q
 
-            self.pd_image_indices = CG1
+            self.image_indices_full = CG1
             self.thres_ids = NIND
-            self.occupancy_count = NC
+            self.occupancy_full = NC
 
             self.anchor_ids = np.empty(0, dtype=np.int64)
             self.trash_ids = np.empty(0, dtype=np.int64)
@@ -107,7 +107,12 @@ class _ProjectionDirections:
 
     @property
     def thresholded_image_indices(self):
-        return self.pd_image_indices[self.thres_ids].copy()
+        return self.image_indices_full[self.thres_ids]
+
+
+    @property
+    def occupancy(self):
+        return self.occupancy_full[self.thres_ids]
 
 
     @property
