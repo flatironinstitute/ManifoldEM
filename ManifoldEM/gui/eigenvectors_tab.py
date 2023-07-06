@@ -22,6 +22,15 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from ManifoldEM.util import debug_trace
 
+def get_blank_pixmap(path: str):
+    pic = Image.open(path)
+    size = pic.size
+    blank = np.zeros([size[0], size[1], 3], dtype=np.uint8)
+    blank.fill(0)
+    blank = QImage(blank, blank.shape[1], blank.shape[0], blank.shape[1] * 3, QImage.Format_RGB888)
+    return QPixmap(blank)
+
+
 class EigValCanvas(FigureCanvas):
     # all eigenvecs/vals:
     eig_n = []
@@ -429,52 +438,15 @@ class EigenvectorsTab(QWidget):
 
 
         def update_topos():  #refresh screen for new topos and anchors
-            return
-            self.user_prd_index = self.entry_prd.value()
-
-            topos_sum = p.num_psis
             for index in range(p.num_psis):
                 pic_path = p.get_topos_path(self.user_prd_index, index + 1)  # topos are 1 indexed
                 if os.path.isfile(pic_path):
                     self.label_pic[index].setPixmap(QPixmap(pic_path))
                     self.button_pic[index].setDisabled(False)
                 else:
-                    self.label_pic[index].setPixmap(QPixmap(blankpix))
-                    self.button_pic[index].setDisabled(True)
+                    print(f"Topos not found at '{pic_path}'!")
 
-            self.reactCoord1All[self.user_prd_index].setMaximum(topos_sum)
-            self.reactCoord2All[self.user_prd_index].setMaximum(topos_sum)
-            EigValCanvas().EigValRead()  #read in eigenvalue spectrum for current prd
-
-            # =================================================================
-            # Update trash section widgets:
-            # =================================================================
-            self.layoutL.removeWidget(self.trashAll[self.prd_hist])
-            self.trashAll[self.prd_hist].close()
-            self.layoutL.addWidget(self.trashAll[self.user_prd_index], 6, 5, 1, 2, QtCore.Qt.AlignCenter)
-            self.trashAll[self.user_prd_index].show()
-
-            # =================================================================
-            # Update anchor section widgets:
-            # =================================================================
-            if p.user_dimensions == 1:
-                self.layoutB.removeWidget(self.reactCoord1All[self.prd_hist])
-                self.reactCoord1All[self.prd_hist].close()
-                self.layoutB.addWidget(self.reactCoord1All[self.user_prd_index], 8, 2, 1, 1)
-                self.reactCoord1All[self.user_prd_index].show()
-
-                self.layoutB.removeWidget(self.senses1All[self.prd_hist])
-                self.senses1All[self.prd_hist].close()
-                self.layoutB.addWidget(self.senses1All[self.user_prd_index], 8, 3, 1, 1)
-                self.senses1All[self.user_prd_index].show()
-
-                self.layoutB.removeWidget(self.anchorsAll[self.prd_hist])
-                self.anchorsAll[self.prd_hist].close()
-                self.layoutB.addWidget(self.anchorsAll[self.user_prd_index], 8, 4, 1, 1)
-                self.anchorsAll[self.user_prd_index].show()
-
-            # add current prd to history list:
-            self.prd_hist = self.user_prd_index
+            # EigValCanvas().EigValRead()  #read in eigenvalue spectrum for current prd
 
 
         self.viz2 = Mayavi_Rho(self)
@@ -505,18 +477,23 @@ class EigenvectorsTab(QWidget):
         self.label_pic = []
         self.button_pic = []
         subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-        minSize = 1
+        blank_pixmap = get_blank_pixmap(p.get_topos_path(1, 1))
         for i in range(8):
             label = QLabel()
             picpath = p.get_topos_path(self.user_prd_index, i + 1)
+
             label.setPixmap(QPixmap(picpath))
-            label.setMinimumSize(minSize, minSize)
+            label.setMinimumSize(1, 1)
             label.setScaledContents(True)
             label.setAlignment(QtCore.Qt.AlignCenter)
 
             button = QPushButton('View %s%s' % ("\u03A8", str(i+1).translate(subscripts)), self)
             button.clicked.connect(lambda: self.CC_vid1(i+1))
             button.setToolTip('View 2d movie and related outputs.')
+
+            if not os.path.isfile(picpath):
+                label.setPixmap(blank_pixmap)
+                button.setDisabled(True)
 
             self.label_pic.append(label)
             self.button_pic.append(button)
