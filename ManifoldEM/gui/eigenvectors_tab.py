@@ -2,7 +2,7 @@ import os
 import pandas
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QWidget, QLabel, QFrame, QPushButton, QMessageBox, QSpinBox,
+from PyQt5.QtWidgets import (QWidget, QLabel, QFrame, QPushButton, QMessageBox, QSpinBox, QComboBox, QCheckBox,
                              QDoubleSpinBox, QGridLayout, QWidget, QSplitter, QAbstractSpinBox)
 from PyQt5.QtGui import QImage, QPixmap
 
@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 
 from ManifoldEM.params import p
-from ManifoldEM.data_store import data_store
+from ManifoldEM.data_store import data_store, Anchor, Sense
 
 from traits.api import HasTraits, Instance, on_trait_change, Str, Float, Range, Enum
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
@@ -19,6 +19,8 @@ from mayavi import mlab
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+from ManifoldEM.util import debug_trace
 
 class EigValCanvas(FigureCanvas):
     # all eigenvecs/vals:
@@ -428,27 +430,14 @@ class EigenvectorsTab(QWidget):
 
         def update_topos():  #refresh screen for new topos and anchors
             return
-            # =================================================================
-            # link topos directories and update with photos/videos:
-            # =================================================================
-            # create blank image if topos file doesn't exist
-            # =================================================================
-            picImg = Image.open(p.get_topos_path(self.user_prd_index, 1))
-            picSize = picImg.size
-            blank = np.zeros([picSize[0], picSize[1], 3], dtype=np.uint8)
-            blank.fill(0)
-            blank = QImage(blank, blank.shape[1], blank.shape[0], blank.shape[1] * 3, QImage.Format_RGB888)
-            blankpix = QPixmap(blank)
-            # =================================================================
             self.user_prd_index = self.entry_prd.value()
 
-            topos_sum = 0
-            for index in range(8):
+            topos_sum = p.num_psis
+            for index in range(p.num_psis):
                 pic_path = p.get_topos_path(self.user_prd_index, index + 1)  # topos are 1 indexed
                 if os.path.isfile(pic_path):
                     self.label_pic[index].setPixmap(QPixmap(pic_path))
                     self.button_pic[index].setDisabled(False)
-                    topos_sum += 1
                 else:
                     self.label_pic[index].setPixmap(QPixmap(blankpix))
                     self.button_pic[index].setDisabled(True)
@@ -499,7 +488,7 @@ class EigenvectorsTab(QWidget):
         self.entry_prd.setMinimum(1)
         self.entry_prd.setMaximum(1)
         self.entry_prd.setSuffix(f"  /  1")
-        self.entry_prd.valueChanged.connect(self.update_prd)
+        self.entry_prd.valueChanged.connect(self.on_prd_change)
         self.entry_prd.valueChanged.connect(update_topos)
         self.entry_prd.setToolTip('Change the projection direction of the current view above.')
         self.layoutL.addWidget(self.entry_prd, 6, 1, 1, 2)
@@ -739,6 +728,25 @@ class EigenvectorsTab(QWidget):
         self.label_anchor.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
         self.layoutB.addWidget(self.label_anchor, 7, 0, 1, 7)
 
+        self.CC_selector = QSpinBox(self)
+        self.CC_selector.setMinimum(1)
+        self.CC_selector.setMaximum(p.num_psis)
+        self.CC_selector.setPrefix('CC1: \u03A8')
+#        self.CC_selector.valueChanged.connect(lambda: self.unique_eigs())
+        self.layoutB.addWidget(self.CC_selector, 8, 2, 1, 1)
+
+        self.sense_selector = QComboBox(self)
+        self.sense_selector.addItem('S1: FWD')
+        self.sense_selector.addItem('S1: REV')
+        self.sense_selector.setToolTip('CC1: Confirm sense for selected topos.')
+        self.layoutB.addWidget(self.sense_selector, 8, 3, 1, 1)
+
+        self.anchor_selector = QCheckBox('Set Anchor', self)
+        self.anchor_selector.setChecked(False)
+        self.anchor_selector.setToolTip('Check to make the current PD an anchor node.')
+        self.anchor_selector.stateChanged.connect(self.on_anchor_change)
+        self.layoutB.addWidget(self.anchor_selector, 8, 4, 1, 1)
+
         self.label_edgeCC = QLabel('')
         self.label_edgeCC.setMargin(5)
         self.label_edgeCC.setFrameStyle(QFrame.Panel | QFrame.Sunken)
@@ -849,8 +857,20 @@ class EigenvectorsTab(QWidget):
         prd2_window.setWindowTitle('Compare NLSA Movies')
         prd2_window.show()
 
-    # mayavi prd widget:
-    def update_prd(self):
+
+    def on_anchor_change(self):
+        if self.anchor_selector.isChecked():
+            self.CC_selector.setDisabled(True)
+            self.sense_selector.setDisabled(True)
+            anchor = Anchor(self.CC_selector.value(), Sense(self.sense_selector.currentIndex()))
+            data_store.get_prds().insert_anchor(self.user_prd_index - 1, anchor)
+        else:
+            self.CC_selector.setDisabled(False)
+            self.sense_selector.setDisabled(False)
+            data_store.get_prds().remove_anchor(self.user_prd_index - 1)
+
+
+    def on_prd_change(self):
         # change angle of 3d plot to correspond with prd spinbox value:
         self.user_prd_index = self.entry_prd.value()
         prds = data_store.get_prds()
@@ -864,10 +884,16 @@ class EigenvectorsTab(QWidget):
         population = prds.occupancy[(self.user_prd_index) - 1]
         self.entry_pop.setValue(population)
 
+        anchor = prds.anchors.get(self.user_prd_index - 1, Anchor())
+        self.CC_selector.setValue(anchor.CC)
+        self.sense_selector.setCurrentIndex(anchor.sense.value)
+        self.anchor_selector.setChecked(self.user_prd_index - 1 in prds.anchors)
+
+
     def activate(self):
         prds = data_store.get_prds()
         self.entry_prd.setMaximum(prds.n_thresholded)
         self.entry_prd.setSuffix(f"  /  {prds.n_thresholded}")
 
         self.viz2.update_scene3(init=True)
-        self.update_prd()
+        self.on_prd_change()

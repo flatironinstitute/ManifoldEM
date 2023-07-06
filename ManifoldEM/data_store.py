@@ -1,5 +1,6 @@
 import os
 
+from enum import Enum
 import numpy as np
 import pickle
 
@@ -10,6 +11,15 @@ from ManifoldEM.params import p
 from ManifoldEM.Data import get_from_relion
 from ManifoldEM.util import augment
 from ManifoldEM.S2tessellation import op as tesselate
+
+class Sense(Enum):
+    FWD = 0
+    REV = 1
+
+class Anchor:
+    def __init__(self, CC: int = 1, sense: Sense = Sense.FWD):
+        self.CC: int = CC
+        self.sense: Sense = sense
 
 class _ProjectionDirections:
     def __init__(self):
@@ -27,8 +37,8 @@ class _ProjectionDirections:
         self.thres_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
         self.occupancy_full: NDArray[int] = np.empty(0, dtype=int)
 
-        self.anchor_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
-        self.trash_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
+        self.anchors: Dict[int, Anchor] = {}
+        self.trash_ids: List[int] = []
 
         self.neighbor_graph: Dict[str, Any] = {}
         self.neighbor_subgraph: List[Dict[str, Any]] = []
@@ -79,8 +89,8 @@ class _ProjectionDirections:
             self.thres_ids = NIND
             self.occupancy_full = NC
 
-            self.anchor_ids = np.empty(0, dtype=np.int64)
-            self.trash_ids = np.empty(0, dtype=np.int64)
+            self.anchors = {}
+            self.trash_ids = []
 
             self.pos_thresholded = self.bin_centers[:, self.thres_ids]
             self.phi_thresholded = np.arctan2(self.pos_thresholded[1, :], self.pos_thresholded[0, :]) * 180. / np.pi
@@ -104,6 +114,12 @@ class _ProjectionDirections:
             p.save()
             self.save()
 
+    def insert_anchor(self, id: int, anchor: Anchor):
+        self.anchors[id] = anchor
+
+    def remove_anchor(self, id: int):
+        if id in self.anchors:
+            self.anchors.pop(id)
 
     @property
     def thresholded_image_indices(self):
