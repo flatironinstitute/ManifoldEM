@@ -2,11 +2,12 @@ import logging
 import sys
 
 import numpy as np
+from typing import Set, Any, Dict, Tuple, Union, List
+from nptyping import NDArray, Shape
 
-from ManifoldEM import myio
 from ManifoldEM.params import p
 
-from scipy.sparse import csr_matrix, tril
+from scipy.sparse import csr_matrix, tril, lil_matrix
 from scipy.sparse.csgraph import connected_components
 
 _logger = logging.getLogger(__name__)
@@ -34,8 +35,11 @@ G = CreateGraphStruct(Xp, AdjMat, nStates, pwDist, numNbr, epsilon)
 Python version Hstau Liao copyright 2018
 '''
 
-
-def CreateGraphStruct(nStates, pwDist, epsilon, *argv):
+# FIXME: just... fix it.
+def CreateGraphStruct(nStates: int,
+                      pwDist: Union[List[float], NDArray[Shape["*"], float]],
+                      epsilon: Union[float, None],
+                      *argv: Any) -> Dict[str, Any]:
     if type(pwDist) is list:
         pwDist = np.array(pwDist)
 
@@ -148,7 +152,7 @@ function [Gsub,G] = getSubGraph(G,nodes)
 '''
 
 
-def getSubGraph(G, *nodes):
+def getSubGraph(G, *nodes) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     print("\nPerforming connected component analysis.")
     A = G['AdjMat']
     S, C = connected_components(A)
@@ -248,6 +252,47 @@ def CalcPairwiseDistS2(X, *argv):
     Dsq[Dsq < 1e-6] = 0.0
     pwDist = np.sqrt(Dsq)
     return (pwDotProd, pwDist)
+
+
+def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    n_nodes_tot = G['nNodes']
+    n_nodes_left = n_nodes_tot - len(trash_ids)
+    print(f"Number of isolated nodes in the graph after pruning: {len(trash_ids)}")
+
+    max_state = 2 * num_psis
+    if n_nodes_left > 1:
+        epsilon = G['epsilon']  # save it later after update
+        G.update(nPsiModes=num_psis)
+
+        print('Number of Graph Edges before prunning:', G['nEdges'])
+        # prune edges corresponding to the bad nodes with actually removing those bad nodes by disconnecting the edges
+        # in and out of those specified nodes
+        new_adj_mat = lil_matrix(G['AdjMat'])
+        new_adj_mat[trash_ids, :] = 0
+        new_adj_mat[:, trash_ids] = 0
+
+        new_adj_mat = csr_matrix(new_adj_mat)
+        G.update(AdjMat=new_adj_mat)
+
+        # Updated graph info
+        G = CreateGraphStruct(G['maxState'], [], None, new_adj_mat)  # june 2020
+
+        # re-insert the epsilon
+        G['epsilon'] = epsilon
+
+        print('Number of Graph Edges after pruning:', G['nEdges'])
+        # If the min distance /epsilon values are different during initial and pruned graph creation
+        # the actual number of edges may or may not decrease after pruning, the nodes that were pruned will become
+        # isolated
+    else:
+        print('Single PrD. Empty graph structure created with one node.')
+        G = CreateGraphStruct(max_state, [0], 0)
+
+    # Determine if there are multiple connected components / subgraph
+    # proceed to the pairwise measurements only after we are fine with the connected components
+    Gsub, G = getSubGraph(G)
+
+    return G, Gsub
 
 
 def op(CG, nG, S20_th):
