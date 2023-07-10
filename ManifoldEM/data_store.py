@@ -132,15 +132,26 @@ class _ProjectionDirections:
             self.anchors.pop(id)
 
 
+    def deduplicate(self, arr):
+        mid = arr.shape[-1] // 2
+        if 2 * mid == arr.shape[-1]:
+            return arr[:mid]
+        else:
+            return arr[mid:]
+
     @property
     def occupancy_no_duplication(self):
-        mid = len(self.occupancy_full) // 2
-        # FIXME: for some reason the original code grabs the second set of bins
-        # it's bigger (which it can only be 1 bigger...)
-        if 2 * mid == len(self.occupancy_full):
-            return self.occupancy_full[:mid]
+        return self.deduplicate(self.occupancy_full)
+
+
+    @property
+    def bin_centers_no_duplication(self):
+        mid = self.bin_centers.shape[1] // 2
+        if 2 * mid == self.bin_centers.shape[1]:
+            return self.bin_centers[:, :mid]
         else:
-            return self.occupancy_full[mid:]
+            return self.bin_centers[:, mid:]
+
 
     @property
     def anchor_ids(self):

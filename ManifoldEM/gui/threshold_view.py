@@ -4,10 +4,11 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QMessageBox, QTabWidget, QDialog, QLabel,
                              QDoubleSpinBox, QAbstractSpinBox, QPushButton, QGridLayout, QLayout)
 
+import matplotlib.cm as colormap
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, FixedLocator
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store
@@ -51,13 +52,13 @@ class ThresholdView(QMainWindow):
 
 
     def initUI(self):
-        self.thresh_tab1 = ThreshAllCanvas(self)
-        # thresh_tab2 = ThreshFinalCanvas(self)
+        self.thresh_all_tab = ThreshAllCanvas(self)
+        self.thresh_polar_tab = ThreshFinalCanvas(self)
         # thresh_tab3 = OccHistCanvas(self)
         global thresh_tabs
         thresh_tabs = QTabWidget(self)
-        thresh_tabs.addTab(self.thresh_tab1, 'Edit Thresholds')
-        # thresh_tabs.addTab(thresh_tab2, 'Thresholded PDs')
+        thresh_tabs.addTab(self.thresh_all_tab, 'Edit Thresholds')
+        thresh_tabs.addTab(self.thresh_polar_tab, 'Thresholded PDs')
         # thresh_tabs.addTab(thresh_tab3, 'Occupancy Distribution')
 
         style = """QTabWidget::tab-bar{
@@ -72,64 +73,16 @@ class ThresholdView(QMainWindow):
 
     def onTabChange(self, i):
         if i == 1:  #signals when view switched to tab 2
-            # re-threshold bins:
-            temp_PrDs = []
-            temp_occ = []
-            temp_phi = []
-            temp_theta = []
+            prds = data_store.get_prds()
+            prd_mask = (prds.occupancy_no_duplication >= self.thresh_low) & \
+                (prds.occupancy_no_duplication <= self.thresh_high)
 
-            for i in range(0, len(P1.all_PrDs)):
-                if P1.all_occ[i] >= ThreshAllCanvas.thresh_low:
-                    temp_PrDs.append(i + 1)
-                    temp_occ.append(P1.all_occ[i])
-                    # subtract 180 is needed for scatter's label switch:
-                    temp_phi.append((float(P1.all_phi[i]) - 180) * np.pi / 180)  #needed in Radians
-                    temp_theta.append(float(P1.all_theta[i]))
+            bin_centers = prds.bin_centers_no_duplication[:, prd_mask]
+            phis = np.arctan2(bin_centers[1, :], bin_centers[0, :]) - np.pi
+            thetas = np.arccos(bin_centers[2, :]) * 180. / np.pi
+            occupancies = prds.occupancy_no_duplication[prd_mask]
 
-            #def format_coord(x,y):
-            #return 'Phi={:1.2f}, Theta={:1.2f}'.format(((x*180)/np.pi)-180,y)
-
-            # replot ThreshFinalCanvas:
-            try:
-                # Crashes in the cbar remove sometimes, so only _try_ to cleanup
-                ThreshFinalCanvas.axes.clear()
-                #ThreshFinalCanvas.axes.format_coord = format_coord
-                ThreshFinalCanvas.cbar.remove()
-            except:
-                pass
-            # thetas = [0,45,90,135,180,225,270,315] #in same order as labels below (ref only)
-            theta_labels = [
-                '%s180%s' % (u"\u00B1", u"\u00b0"),
-                '-135%s' % (u"\u00b0"),
-                '-90%s' % (u"\u00b0"),
-                '-45%s' % (u"\u00b0"),
-                '0%s' % (u"\u00b0"),
-                '45%s' % (u"\u00b0"),
-                '90%s' % (u"\u00b0"),
-                '135%s' % (u"\u00b0")
-            ]
-            ThreshFinalCanvas.axes.set_ylim(0, 180)
-            ThreshFinalCanvas.axes.set_yticks(np.arange(0, 180, 20))
-            ThreshFinalCanvas.axes.set_xticklabels(theta_labels)
-            for tick in ThreshFinalCanvas.axes.xaxis.get_major_ticks():
-                tick.label1.set_fontsize(6)
-            for tick in ThreshFinalCanvas.axes.yaxis.get_major_ticks():
-                tick.label1.set_fontsize(6)
-            ThreshFinalCanvas.axes.grid(alpha=0.2)
-            thresh = ThreshFinalCanvas.axes.scatter(temp_phi,
-                                                    temp_theta,
-                                                    edgecolor='k',
-                                                    linewidth=.5,
-                                                    c=temp_occ,
-                                                    s=5,
-                                                    cmap=cm.jet,
-                                                    vmin=0.,
-                                                    vmax=float(np.amax(P1.all_occ)))
-            thresh.set_alpha(0.75)
-            ThreshFinalCanvas.cbar = ThreshFinalCanvas.figure.colorbar(thresh, pad=0.13)
-            ThreshFinalCanvas.cbar.ax.tick_params(labelsize=6)
-            ThreshFinalCanvas.cbar.ax.set_title(label='Occupancy', size=6)
-            ThreshFinalCanvas.canvas.draw()
+            self.thresh_polar_tab.plot(phis, thetas, occupancies)
 
         if i == 2:
             OccHistCanvas.numBins = int(OccHistCanvas.entry_bins.value())
@@ -150,10 +103,10 @@ class ThresholdView(QMainWindow):
 
             # replot OccHistCanvas:
             OccHistCanvas.axes.clear()
-            counts, bins, bars = OccHistCanvas.axes.hist(temp_occ, bins=int(OccHistCanvas.numBins), align='right',\
+            counts, bin_centers, bars = OccHistCanvas.axes.hist(temp_occ, bins=int(OccHistCanvas.numBins), align='right',\
                                                             edgecolor='w', linewidth=1, color='#1f77b4') #C0
 
-            OccHistCanvas.axes.set_xticks(bins)
+            OccHistCanvas.axes.set_xticks(bin_centers)
             OccHistCanvas.axes.set_title('PD Occupancy Distribution', fontsize=6)
             OccHistCanvas.axes.set_xlabel('PD Occupancy', fontsize=5)
             OccHistCanvas.axes.set_ylabel('Number of PDs', fontsize=5)
@@ -170,7 +123,7 @@ class ThresholdView(QMainWindow):
             OccHistCanvas.figure.canvas.draw()
 
     def closeEvent(self, ce):  #safety message if user clicks to exit via window button
-        if not self.thresh_tab1.confirmed:
+        if not self.thresh_all_tab.confirmed:
             msg = 'Changes to the thresholding parameters have not been confirmed\
                     on the Edit Thresholds tab (via <i>Update Thresholds</i>).\
                     <br /><br />\
@@ -184,7 +137,7 @@ class ThresholdView(QMainWindow):
             box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             reply = box.exec_()
             if reply == QMessageBox.Yes:
-                self.thresh_tab1.confirmed = 1
+                self.thresh_all_tab.confirmed = 1
                 self.thresh_low = p.PDsizeThL
                 self.thresh_high = p.PDsizeThH
                 self.close()
@@ -314,7 +267,6 @@ class ThreshAllCanvas(QDialog):
         x = np.arange(self.xlimLo, self.xlimHi + 1)
         self.lineL.set_data(x, [self.thresh_container.thresh_low])
         self.lineH.set_data(x, [self.thresh_container.thresh_high])
-        # self.axes.set_ylim(ymin=0, ymax=self.thresh_high + 20)
         self.canvas.draw()
 
 
@@ -323,7 +275,6 @@ class ThreshAllCanvas(QDialog):
             p.PDsizeThL = self.thresh_container.thresh_low
             p.PDsizeThH = self.thresh_container.thresh_high
             p.save()  #send new GUI data to parameters file
-            data_store.get_prds().update()
 
             print('')
             print('New thresholds set:')
@@ -348,40 +299,64 @@ class ThreshFinalCanvas(QDialog):
         super(ThreshFinalCanvas, self).__init__(parent)
 
         # create canvas and plot data:
-        ThreshFinalCanvas.figure = Figure(dpi=200)
-        ThreshFinalCanvas.canvas = FigureCanvas(ThreshFinalCanvas.figure)
-        #ThreshFinalCanvas.toolbar = NavigationToolbar(ThreshFinalCanvas.canvas, self)
-        ThreshFinalCanvas.axes = ThreshFinalCanvas.figure.add_subplot(1, 1, 1, polar=True)
-        thresh = ThreshFinalCanvas.axes.scatter([0], [0], edgecolor='k', linewidth=.5, c=[0], s=5,
-                                                cmap=cm.hsv)  #empty for init
-        ThreshFinalCanvas.cbar = ThreshFinalCanvas.figure.colorbar(thresh, pad=0.1)
-        #ThreshFinalCanvas.axes.autoscale()
+        self.figure = Figure(dpi=200)
+        self.canvas = FigureCanvas(self.figure)
+        #self.toolbar = NavigationToolbar(self.canvas, self)
+        self.axes = self.figure.add_subplot(1, 1, 1, polar=True)
+        self.sp = self.axes.scatter([0], [0], edgecolor='k', linewidth=.5, c=[0], s=5,
+                                    cmap=colormap.jet)  #empty for init
+        self.cbar = self.figure.colorbar(self.sp, pad=0.1)
+        #self.axes.autoscale()
 
         # thetas = [0,45,90,135,180,225,270,315] #in same order as labels below (ref only)
-        theta_labels = [
-            '%s180%s' % (u"\u00B1", u"\u00b0"),
-            '-135%s' % (u"\u00b0"),
-            '-90%s' % (u"\u00b0"),
-            '-45%s' % (u"\u00b0"),
-            '0%s' % (u"\u00b0"),
-            '45%s' % (u"\u00b0"),
-            '90%s' % (u"\u00b0"),
-            '135%s' % (u"\u00b0")
-        ]
-        ThreshFinalCanvas.axes.set_ylim(0, 180)
-        ThreshFinalCanvas.axes.set_yticks(np.arange(0, 180, 20))
-        ThreshFinalCanvas.axes.set_xticklabels(theta_labels)
-        for tick in ThreshFinalCanvas.axes.xaxis.get_major_ticks():
+        theta_labels = ['±180°', '-135°', '-90°', '-45°', '0°', '45°', '90°', '135°']
+        self.axes.set_ylim(0, 180)
+        self.axes.set_yticks(np.arange(0, 180, 20))
+        self.axes.xaxis.set_major_locator(FixedLocator(self.axes.get_xticks().tolist()))
+        self.axes.set_xticklabels(theta_labels)
+        for tick in self.axes.xaxis.get_major_ticks():
             tick.label1.set_fontsize(6)
-        for tick in ThreshFinalCanvas.axes.yaxis.get_major_ticks():
+        for tick in self.axes.yaxis.get_major_ticks():
             tick.label1.set_fontsize(6)
-        ThreshFinalCanvas.axes.grid(alpha=0.2)
+        self.axes.grid(alpha=0.2)
 
-        ThreshFinalCanvas.layout = QtGui.QGridLayout()
+        self.layout = QGridLayout()
         #layout.setSizeConstraint(QtGui.QLayout.SetMinimumSize)
-        #ThreshFinalCanvas.layout.addWidget(ThreshFinalCanvas.toolbar, 0, 0, 1, 8, QtCore.Qt.AlignVCenter)
-        ThreshFinalCanvas.layout.addWidget(ThreshFinalCanvas.canvas, 1, 0, 1, 8, QtCore.Qt.AlignVCenter)
-        self.setLayout(ThreshFinalCanvas.layout)
+        #self.layout.addWidget(self.toolbar, 0, 0, 1, 8, QtCore.Qt.AlignVCenter)
+        self.layout.addWidget(self.canvas, 1, 0, 1, 8, QtCore.Qt.AlignVCenter)
+        self.setLayout(self.layout)
+
+    def plot(self, phis, thetas, occupancies):
+        self.cbar.remove()
+        self.axes.clear()
+
+        theta_labels = ['±180°', '-135°', '-90°', '-45°', '0°', '45°', '90°', '135°']
+        self.axes.set_ylim(0, 180)
+        self.axes.set_yticks(np.arange(0, 180, 20))
+        xticks = self.axes.get_xticks().tolist()
+        self.axes.xaxis.set_major_locator(FixedLocator(xticks))
+        self.axes.set_xticklabels(theta_labels)
+
+        for tick in self.axes.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(6)
+        for tick in self.axes.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(6)
+
+        self.axes.grid(alpha=0.2)
+        thresh = self.axes.scatter(phis,
+                                   thetas,
+                                   edgecolor='k',
+                                   linewidth=.5,
+                                   c=occupancies,
+                                   s=5,
+                                   cmap=colormap.jet,
+                                   vmin=0.,
+                                   vmax=np.amax(occupancies))
+        thresh.set_alpha(0.75)
+        self.cbar = self.figure.colorbar(thresh, pad=0.13)
+        self.cbar.ax.tick_params(labelsize=6)
+        self.cbar.ax.set_title(label='Occupancy', size=6)
+        self.canvas.draw()
 
 
 class OccHistCanvas(QDialog):
