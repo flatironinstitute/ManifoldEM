@@ -20,11 +20,14 @@ from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-from ManifoldEM.util import debug_trace
 
 def get_blank_pixmap(path: str):
-    pic = Image.open(path)
-    size = pic.size
+    if os.path.isfile(path):
+        pic = Image.open(path)
+        size = pic.size
+    else:
+        size = (192, 192)
+
     blank = np.zeros([size[0], size[1], 3], dtype=np.uint8)
     blank.fill(0)
     blank = QImage(blank, blank.shape[1], blank.shape[0], blank.shape[1] * 3, QImage.Format_RGB888)

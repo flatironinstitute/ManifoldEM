@@ -37,7 +37,7 @@ Python version Hstau Liao copyright 2018
 
 # FIXME: just... fix it.
 def CreateGraphStruct(nStates: int,
-                      pwDist: Union[List[float], NDArray[Shape["*"], float]],
+                      pwDist: Union[List[float], NDArray[Shape["*"], np.float64]],
                       epsilon: Union[float, None],
                       *argv: Any) -> Dict[str, Any]:
     if type(pwDist) is list:
