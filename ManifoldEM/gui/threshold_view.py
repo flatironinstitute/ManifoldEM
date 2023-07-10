@@ -54,12 +54,12 @@ class ThresholdView(QMainWindow):
     def initUI(self):
         self.thresh_all_tab = ThreshAllCanvas(self)
         self.thresh_polar_tab = ThreshFinalCanvas(self)
-        # thresh_tab3 = OccHistCanvas(self)
+        self.unique_occupancy_tab = OccHistCanvas(self)
         global thresh_tabs
         thresh_tabs = QTabWidget(self)
         thresh_tabs.addTab(self.thresh_all_tab, 'Edit Thresholds')
         thresh_tabs.addTab(self.thresh_polar_tab, 'Thresholded PDs')
-        # thresh_tabs.addTab(thresh_tab3, 'Occupancy Distribution')
+        thresh_tabs.addTab(self.unique_occupancy_tab, 'Occupancy Distribution')
 
         style = """QTabWidget::tab-bar{
                 alignment: center;
@@ -72,55 +72,26 @@ class ThresholdView(QMainWindow):
         thresh_tabs.currentChanged.connect(self.onTabChange)  #signal for tab changed via direct click
 
     def onTabChange(self, i):
-        if i == 1:  #signals when view switched to tab 2
-            prds = data_store.get_prds()
-            prd_mask = (prds.occupancy_no_duplication >= self.thresh_low) & \
-                (prds.occupancy_no_duplication <= self.thresh_high)
+        prds = data_store.get_prds()
+        prd_mask = (prds.occupancy_no_duplication >= self.thresh_low) & \
+            (prds.occupancy_no_duplication <= self.thresh_high)
+        occupancies = prds.occupancy_no_duplication[prd_mask]
 
+        if i == 1:  #signals when view switched to tab 2
             bin_centers = prds.bin_centers_no_duplication[:, prd_mask]
             phis = np.arctan2(bin_centers[1, :], bin_centers[0, :]) - np.pi
             thetas = np.arccos(bin_centers[2, :]) * 180. / np.pi
-            occupancies = prds.occupancy_no_duplication[prd_mask]
 
             self.thresh_polar_tab.plot(phis, thetas, occupancies)
 
         if i == 2:
-            OccHistCanvas.numBins = int(OccHistCanvas.entry_bins.value())
-            # re-threshold bins:
-            temp_PrDs = []
-            temp_occ = []
-            for i in range(0, len(P1.all_PrDs)):
-                if P1.all_occ[i] >= ThreshAllCanvas.thresh_low:
-                    temp_PrDs.append(i + 1)
-                    if P1.all_occ[i] > p.PDsizeThH:
-                        temp_occ.append(p.PDsizeThH)
-                    else:
-                        temp_occ.append(P1.all_occ[i])
+            n_unique = len(set(occupancies))
+            self.unique_occupancy_tab.entry_bins.valueChanged.disconnect()
+            self.unique_occupancy_tab.entry_bins.valueChanged.connect(lambda: self.unique_occupancy_tab.change_bins(occupancies))
+            self.unique_occupancy_tab.entry_bins.setValue(n_unique // 2)
+            self.unique_occupancy_tab.entry_bins.setMaximum(n_unique)
+            self.unique_occupancy_tab.entry_bins.setSuffix(f' / {n_unique}')
 
-            OccHistCanvas.entry_bins.setValue(int(len(set(temp_occ)) / 2.))
-            OccHistCanvas.entry_bins.setMaximum(len(set(temp_occ)))
-            OccHistCanvas.entry_bins.setSuffix(' / %s' % len(set(temp_occ)))  #number of unique occupancies
-
-            # replot OccHistCanvas:
-            OccHistCanvas.axes.clear()
-            counts, bin_centers, bars = OccHistCanvas.axes.hist(temp_occ, bins=int(OccHistCanvas.numBins), align='right',\
-                                                            edgecolor='w', linewidth=1, color='#1f77b4') #C0
-
-            OccHistCanvas.axes.set_xticks(bin_centers)
-            OccHistCanvas.axes.set_title('PD Occupancy Distribution', fontsize=6)
-            OccHistCanvas.axes.set_xlabel('PD Occupancy', fontsize=5)
-            OccHistCanvas.axes.set_ylabel('Number of PDs', fontsize=5)
-            OccHistCanvas.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-            OccHistCanvas.axes.get_xaxis().get_major_formatter().set_scientific(False)
-            OccHistCanvas.axes.ticklabel_format(useOffset=False, style='plain')
-
-            for tick in OccHistCanvas.axes.xaxis.get_major_ticks():
-                tick.label1.set_fontsize(4)
-            for tick in OccHistCanvas.axes.yaxis.get_major_ticks():
-                tick.label1.set_fontsize(4)
-
-            OccHistCanvas.axes.autoscale()
-            OccHistCanvas.figure.canvas.draw()
 
     def closeEvent(self, ce):  #safety message if user clicks to exit via window button
         if not self.thresh_all_tab.confirmed:
@@ -360,70 +331,57 @@ class ThreshFinalCanvas(QDialog):
 
 
 class OccHistCanvas(QDialog):
-    numBins = 100
-
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super(OccHistCanvas, self).__init__(parent)
+        self.thresh_container = parent
 
         # create canvas and plot data:
-        OccHistCanvas.figure = Figure(dpi=200)
-        OccHistCanvas.canvas = FigureCanvas(OccHistCanvas.figure)
-        OccHistCanvas.toolbar = NavigationToolbar(OccHistCanvas.canvas, self)
-        OccHistCanvas.axes = OccHistCanvas.figure.add_subplot(1, 1, 1)
-        OccHistCanvas.axes.ticklabel_format(useOffset=False, style='plain')
-        OccHistCanvas.axes.get_xaxis().get_major_formatter().set_scientific(False)
+        self.figure = Figure(dpi=200)
+        self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.axes = self.figure.add_subplot(1, 1, 1)
+        self.axes.ticklabel_format(useOffset=False, style='plain')
+        self.axes.get_xaxis().get_major_formatter().set_scientific(False)
 
-        layout = QtGui.QGridLayout()
+        layout = QGridLayout()
 
-        OccHistCanvas.label_bins = QtGui.QLabel('Histogram bins:')
-        OccHistCanvas.label_bins.setFont(font_standard)
-        OccHistCanvas.label_bins.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.label_bins = QLabel('Histogram bins:')
+        self.label_bins.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        OccHistCanvas.entry_bins = QtGui.QDoubleSpinBox(self)
-        OccHistCanvas.entry_bins.setDecimals(0)
-        OccHistCanvas.entry_bins.setMinimum(2)
-        OccHistCanvas.entry_bins.setValue(int(len(set(P1.thresh_occ)) / 2.))
-        OccHistCanvas.entry_bins.setMaximum(len(set(P1.thresh_occ)))
-        OccHistCanvas.entry_bins.setSuffix(' / %s' % len(set(P1.thresh_occ)))  #number of unique occupancies
-        OccHistCanvas.entry_bins.valueChanged.connect(self.change_bins)
-        OccHistCanvas.entry_bins.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.entry_bins = QDoubleSpinBox(self)
+        self.entry_bins.setDecimals(0)
+        self.entry_bins.setMinimum(2)
+        self.entry_bins.setValue(2)
+        self.entry_bins.setMaximum(1000)
+        self.entry_bins.valueChanged.connect(self.change_bins)
+        self.entry_bins.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
 
-        layout.addWidget(OccHistCanvas.toolbar, 0, 0, 1, 8, QtCore.Qt.AlignVCenter)
-        layout.addWidget(OccHistCanvas.canvas, 1, 0, 1, 8, QtCore.Qt.AlignVCenter)
-        layout.addWidget(OccHistCanvas.label_bins, 2, 1, 1, 1)
-        layout.addWidget(OccHistCanvas.entry_bins, 2, 2, 1, 1)
+        layout.addWidget(self.toolbar, 0, 0, 1, 8, QtCore.Qt.AlignVCenter)
+        layout.addWidget(self.canvas, 1, 0, 1, 8, QtCore.Qt.AlignVCenter)
+        layout.addWidget(self.label_bins, 2, 1, 1, 1)
+        layout.addWidget(self.entry_bins, 2, 2, 1, 1)
         self.setLayout(layout)
 
-    def change_bins(self):
-        OccHistCanvas.numBins = int(OccHistCanvas.entry_bins.value())
-        # re-threshold bins:
-        temp_PrDs = []
-        temp_occ = []
-        for i in range(0, len(P1.all_PrDs)):
-            if P1.all_occ[i] >= ThreshAllCanvas.thresh_low:
-                temp_PrDs.append(i + 1)
-                if P1.all_occ[i] > p.PDsizeThH:
-                    temp_occ.append(p.PDsizeThH)
-                else:
-                    temp_occ.append(P1.all_occ[i])
+    def change_bins(self, occupancies):
+        numBins = int(self.entry_bins.value())
 
-        # replot OccHistCanvas:
-        OccHistCanvas.axes.clear()
-        counts, bins, bars = OccHistCanvas.axes.hist(temp_occ, bins=int(OccHistCanvas.numBins), align='left',\
-                                                     edgecolor='w', linewidth=1, color='#1f77b4') #C0
+        # replot self:
+        self.axes.clear()
+        counts, bins, bars = self.axes.hist(occupancies, bins=numBins, align='left',\
+                                            edgecolor='w', linewidth=1, color='#1f77b4') #C0
 
-        OccHistCanvas.axes.set_xticks(bins)  #[:-1]
-        OccHistCanvas.axes.set_title('PD Occupancy Distribution', fontsize=6)
-        OccHistCanvas.axes.set_xlabel('PD Occupancy', fontsize=5)
-        OccHistCanvas.axes.set_ylabel('Number of PDs', fontsize=5)
-        OccHistCanvas.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-        OccHistCanvas.axes.get_xaxis().get_major_formatter().set_scientific(False)
-        OccHistCanvas.axes.ticklabel_format(useOffset=False, style='plain')
+        self.axes.set_xticks(bins)  #[:-1]
+        self.axes.set_title('PD Occupancy Distribution', fontsize=6)
+        self.axes.set_xlabel('PD Occupancy', fontsize=5)
+        self.axes.set_ylabel('Number of PDs', fontsize=5)
+        self.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+        self.axes.get_xaxis().get_major_formatter().set_scientific(False)
+        self.axes.ticklabel_format(useOffset=False, style='plain')
 
-        for tick in OccHistCanvas.axes.xaxis.get_major_ticks():
+        for tick in self.axes.xaxis.get_major_ticks():
             tick.label1.set_fontsize(4)
-        for tick in OccHistCanvas.axes.yaxis.get_major_ticks():
+        for tick in self.axes.yaxis.get_major_ticks():
             tick.label1.set_fontsize(4)
 
-        OccHistCanvas.axes.autoscale()
-        OccHistCanvas.figure.canvas.draw()
+        self.axes.autoscale()
+        self.figure.canvas.draw()

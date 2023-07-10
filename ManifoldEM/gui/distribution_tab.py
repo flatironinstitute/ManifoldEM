@@ -2,6 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGridLayout, QWidget
 
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
 from .s2_view import S2View
 
 class DistributionTab(QWidget):
@@ -42,5 +43,7 @@ class DistributionTab(QWidget):
     def finalize(self):
         p.resProj = 2
         p.save()
+        # not strictly necessary, but at least makes the "bin particles" text not a lie
+        data_store.get_prds().update()
         self.main_window.set_tab_state(True, "Embedding")
         self.main_window.switch_tab("Embedding")
