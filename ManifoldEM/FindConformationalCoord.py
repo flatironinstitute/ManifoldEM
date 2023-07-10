@@ -3,10 +3,14 @@ import sys
 import time
 
 import numpy as np
+from copy import deepcopy
 
-from ManifoldEM import myio, FindCCGraphPruned
+from ManifoldEM import myio
+from ManifoldEM.data_store import data_store
+from ManifoldEM.FindCCGraph import prune
 from ManifoldEM.params import p
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
+
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
     Created: Dec 2017. Modified:Aug 16,2019
@@ -26,53 +30,45 @@ def op(*argv):
     nodeBelFile2 = os.path.join(p.CC_dir, 'nodeAllStateBel_rc2.txt')
     force_remove(p.CC_file, nodeBelFile1, nodeBelFile2)
 
-    CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
-
     # if trash PDs were created manually
-    trash_list_PDs = np.nonzero(p.get_trash_list())[0]
-    numTrashPDs = len(trash_list_PDs)
+    prds = data_store.get_prds()
+    num_trash_nodes = len(prds.trash_ids)
 
-    if numTrashPDs > 0:
-        print('Number of trash PDs', numTrashPDs)
-        CC_graph_file = CC_graph_file_pruned
-        G, Gsub = FindCCGraphPruned.op(CC_graph_file)
+    # FIXME: This should be offloaded to the data_store (pref a graph class)
+    # Prune graph structure
+    if num_trash_nodes:
+        print('Number of trash PDs', num_trash_nodes)
+        prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned = \
+            prune(deepcopy(prds.neighbor_graph), prds.trash_ids, p.num_psis)
     else:
-        CC_graph_file = p.CC_graph_file
-        data = myio.fin1(CC_graph_file)
-        G = data['G']
-        Gsub = data['Gsub']
+        prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned = \
+            deepcopy(prds.neighbor_graph), deepcopy(prds.neighbor_subgraph)
+
+    G, Gsub = prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned
 
     numConnComp = len(G['NodesConnComp'])
 
-    # we need labels with 0 index to compare with the node labels in G, Gsub
-    anchorlist = [a[0] - 1 for a in p.anch_list]
+    anchorlist = prds.anchor_ids
     print(f'Number of anchor nodes: {len(anchorlist)}')
     print(f'Anchor list: {anchorlist}')
-
-    if any(a in anchorlist for a in G['Nodes']):
-        if len(anchorlist) + numTrashPDs == G['nNodes']:
+    if set(anchorlist).intersection(set(G['Nodes'])):
+        if len(anchorlist) + num_trash_nodes == G['nNodes']:
             print('\nAll nodes have been manually selected (as anchor nodes). '
                   'Conformational-coordinate propagation is not required. Exiting this program.\n')
 
             psinums = np.zeros((2, G['nNodes']), dtype='int')
             senses = np.zeros((2, G['nNodes']), dtype='int')
 
-            for a in p.anch_list:
-                psinums[0, a[0] - 1] = a[1] - 1
-                senses[0, a[0] - 1] = a[2]
+            for id, anchor in prds.anchors.items():
+                psinums[0, id] = anchor.CC - 1
+                senses[0, id] = anchor.sense
 
-            idx = 0
-            for is_trash_index in p.get_trash_list():
-                if is_trash_index:
-                    psinums[0, idx] = -1
-                    senses[0, idx] = 0
-
-                idx += 1
+            for trash_index in prds.trash_ids:
+                psinums[0, trash_index] = -1
+                senses[0, trash_index] = 0
 
             print('\nFind CC: Writing the output to disk...\n')
             myio.fout1(p.CC_file, psinums=psinums, senses=senses)
-
-            p.allAnchorPassed = 1
 
             return
     else:
@@ -94,19 +90,12 @@ def op(*argv):
             connCompNoAnchor.append(i)
             print('Anchor node(s) in connected component', i, ' NOT selected.')
             print('\nIf you proceed without atleast one anchor node for the connected component', i,
-                  ', all the corresponding nodes will not be assigned with reaction coordinate labels.'
-                  'cancel this program now or after 20 sec it will continue without the required anchors.\n')
+                  ', all the corresponding nodes will not be assigned with reaction coordinate labels.\n')
 
     G.update(ConnCompNoAnchor=connCompNoAnchor)
 
     nodeRange = np.sort([y for x in nodelCsel for y in x])
     edgeNumRange = np.sort([y for x in edgelCsel for y in x])
-
-    # adding these two params to the CC graph file *Hstau Aug 19
-    data = myio.fin1(CC_graph_file)
-    extra = dict(nodeRange=nodeRange, edgeNumRange=edgeNumRange, ConnCompNoAnchor=connCompNoAnchor)
-    data.update(extra)
-    myio.fout1(CC_graph_file, **data)
 
     # compute all pairwise edge measurements
     # Step 1: compute the optical flow vectors for all prds
@@ -114,15 +103,6 @@ def op(*argv):
     # Step 3: Extract the pairwise edge measurements to be used for node-potential and edge-potential calculations
     edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock = \
         ComputePsiMovieEdgeMeasurements.op(G, nodeRange, edgeNumRange, *argv)
-
-    # If graph G was updated by pruning or otherwise during OF or Edge measurement step, it writes pruned G, so read
-    # it here and pass to BP step
-    if os.path.exists(CC_graph_file_pruned):
-        data = myio.fin1(CC_graph_file_pruned)
-        G = data['G']
-        connCompNoAnchor = data['ConnCompNoAnchor']
-
-        G.update(ConnCompNoAnchor=connCompNoAnchor)
 
     # Setup and run the Optimization: Belief propagation
     print('\n4.Running Global optimization to estimate state probability of all nodes ...')

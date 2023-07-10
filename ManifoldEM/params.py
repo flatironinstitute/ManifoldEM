@@ -86,7 +86,6 @@ class Params():
     #  reaction coordinates parameters:
     getOpticalFlow: bool = True                # default True to compute optical flow vectors
     getAllEdgeMeasures: bool = True            # default True to compute edge measures
-    anch_list: list[list[int]] = []            # user-defined PD anchors for Belief Propagation
     opt_movie: dict = {'printFig': 0,
                        'OFvisual': 0,
                        'visual_CC': 0,

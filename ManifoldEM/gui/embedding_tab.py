@@ -3,8 +3,7 @@ import threading
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QLabel, QFrame, QLineEdit, QPushButton, QFileDialog, QMessageBox,
-                             QInputDialog, QDoubleSpinBox, QGridLayout, QWidget, QSpinBox, QProgressBar)
+from PyQt5.QtWidgets import (QLabel, QFrame, QPushButton, QGridLayout, QWidget, QSpinBox, QProgressBar)
 
 from numbers import Number
 from typing import Tuple, Union

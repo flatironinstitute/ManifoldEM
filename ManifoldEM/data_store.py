@@ -13,8 +13,8 @@ from ManifoldEM.util import augment
 from ManifoldEM.S2tessellation import op as tesselate
 
 class Sense(Enum):
-    FWD = 0
-    REV = 1
+    FWD = 1
+    REV = -1
 
 class Anchor:
     def __init__(self, CC: int = 1, sense: Sense = Sense.FWD):
@@ -42,6 +42,9 @@ class _ProjectionDirections:
 
         self.neighbor_graph: Dict[str, Any] = {}
         self.neighbor_subgraph: List[Dict[str, Any]] = []
+
+        self.neighbor_graph_pruned: Dict[str, Any] = {}
+        self.neighbor_subgraph_pruned: List[Dict[str, Any]] = []
 
         self.pos_thresholded: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
         self.theta_thresholded: NDArray[np.float64] = np.empty(0)
@@ -119,12 +122,20 @@ class _ProjectionDirections:
             p.save()
             self.save()
 
+
     def insert_anchor(self, id: int, anchor: Anchor):
         self.anchors[id] = anchor
+
 
     def remove_anchor(self, id: int):
         if id in self.anchors:
             self.anchors.pop(id)
+
+
+    @property
+    def anchor_ids(self):
+        return sorted(list(self.anchors.keys()))
+
 
     @property
     def thresholded_image_indices(self):

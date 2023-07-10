@@ -1,57 +1,42 @@
 import multiprocessing
+import threading
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QLabel, QFrame, QPushButton, QGridLayout, QWidget, QSpinBox,
-                             QComboBox, QProgressBar)
+from PyQt5.QtWidgets import (QLabel, QFrame, QPushButton, QGridLayout, QWidget, QSpinBox, QProgressBar)
 
-import numpy as np
 from ManifoldEM.params import p
-
+from ManifoldEM.FindConformationalCoord import op as FindConformationalCoord
 
 class CompilationTab(QWidget):
-    # #temporary values:
-    # user_temperature = 25  #Celsius
-    # user_optFlow = 0
+    #temporary values:
+    user_temperature = 25  #Celsius
 
-    # # threading:
-    # progress5Changed = QtCore.Signal(int)
+    # threading:
+    progress5Changed = QtCore.pyqtSignal(int)
     # progress6Changed = QtCore.Signal(int)
 
-    # ##########
-    # # Task 5:
-    # @QtCore.Slot()
-    # def start_task5(self):
-    #     tabs.setTabEnabled(0, False)
-    #     tabs.setTabEnabled(1, False)
-    #     tabs.setTabEnabled(2, False)
-    #     tabs.setTabEnabled(3, False)
+    ##########
+    # Task 5:
+    @QtCore.pyqtSlot()
+    def start_task5(self):
+        self.button_CC.setDisabled(True)
+        self.button_CC.setText('Finding Conformational Coordinates')
+        self.entry_temp.setDisabled(True)
+        self.entry_proc.setDisabled(True)
 
-    #     self.button_CC.setDisabled(True)
-    #     self.button_CC.setText('Finding Conformational Coordinates')
-    #     self.entry_temp.setDisabled(True)
-    #     self.entry_proc.setDisabled(True)
-    #     self.entry_opt.setDisabled(True)
+        p.save()  #send new GUI data to user parameters file
 
-    #     p.save()  #send new GUI data to user parameters file
+        task5 = threading.Thread(target=FindConformationalCoord, args=(self.progress5Changed, ))
+        task5.daemon = True
+        task5.start()
 
-    #     if self.user_optFlow == 1 and P4.recompute == 1:
-    #         # hard-remove pre-existing optical flow folders:
-    #         if os.path.isdir(p.CC_OF_dir):
-    #             shutil.rmtree(p.CC_OF_dir)
-
-    #     task5 = threading.Thread(target=FindConformationalCoord.op, args=(self.progress5Changed, ))
-    #     task5.daemon = True
-    #     task5.start()
-
-    # @QtCore.Slot(int)
-    # def on_progress5Changed(self, val):
-    #     self.progress5.setValue(val)
-    #     if val == 100:
-    #         p.resProj = 7
-    #         p.save()  #send new GUI data to user parameters file
-    #         gc.collect()
-    #         self.button_CC.setText('Conformational Coordinates Complete')
-    #         self.start_task6()
+    @QtCore.pyqtSlot(int)
+    def on_progress5Changed(self, val):
+        self.progress5.setValue(val)
+        if val == 100:
+            self.button_CC.setText('Conformational Coordinates Complete')
+            # self.start_task6()
 
     # ##########
     # # Task 6:
@@ -117,10 +102,6 @@ class CompilationTab(QWidget):
         def choose_temperature():
             p.temperature = self.entry_temp.value()
 
-        def choose_optFlow():
-            p.opt_movie["printFig"] = int(self.entry_opt.currentText() == 'Yes')
-
-
         # forced space top:
         self.label_spaceT = QLabel("")
         self.label_spaceT.setMargin(0)
@@ -146,14 +127,14 @@ class CompilationTab(QWidget):
         # nproc label + selector
         create_label((1, 1, 1, 1), "Processors", alignment=Qt.AlignCenter | Qt.AlignVCenter)
 
-        entry_proc = QSpinBox(self)
-        entry_proc.setMinimum(1)
-        entry_proc.setMaximum(multiprocessing.cpu_count())
-        entry_proc.valueChanged.connect(choose_processors)
-        entry_proc.setStyleSheet("QSpinBox { width : 100px }")
-        layout.addWidget(entry_proc, 1, 2, 1, 1, Qt.AlignLeft)
-        entry_proc.setToolTip('The number of processors to use in parallel.')
-        entry_proc.show()
+        self.entry_proc = QSpinBox(self)
+        self.entry_proc.setMinimum(1)
+        self.entry_proc.setMaximum(multiprocessing.cpu_count())
+        self.entry_proc.valueChanged.connect(choose_processors)
+        self.entry_proc.setStyleSheet("QSpinBox { width : 100px }")
+        layout.addWidget(self.entry_proc, 1, 2, 1, 1, Qt.AlignLeft)
+        self.entry_proc.setToolTip('The number of processors to use in parallel.')
+        self.entry_proc.show()
 
         # temperature label + selector
         create_label((1, 3, 1, 2))
@@ -162,36 +143,20 @@ class CompilationTab(QWidget):
                      style=QFrame.Box | QFrame.Sunken,
                      alignment=Qt.AlignCenter | Qt.AlignVCenter)
 
-        entry_temp = QSpinBox(self)
-        entry_temp.setMinimum(0)
-        entry_temp.setMaximum(100)
-        entry_temp.setValue(25)
-        entry_temp.setSuffix(' C')
-        entry_temp.valueChanged.connect(choose_temperature)
-        entry_temp.setStyleSheet("QSpinBox { width : 100px }")
-        entry_temp.setToolTip('The temperature of the sample prior to quenching.')
-        layout.addWidget(entry_temp, 1, 4, 1, 1, Qt.AlignLeft)
-        entry_temp.show()
-
-        # optical flow label + selector
-        create_label((1, 5, 1, 2))
-        create_label((1, 5, 1, 1), style=QFrame.Box | QFrame.Sunken)
-        create_label((1, 5, 1, 1),
-                     title="Export Optical Flow",
-                     style=QFrame.Box | QFrame.Sunken,
-                     alignment=Qt.AlignCenter | Qt.AlignVCenter)
-
-        entry_opt = QComboBox(self)
-        entry_opt.addItem('No')
-        entry_opt.addItem('Yes')
-        entry_opt.setToolTip('Export flow vector images to outputs directory.')
-        entry_opt.currentIndexChanged.connect(choose_optFlow)
-        layout.addWidget(entry_opt, 1, 6, 1, 1, Qt.AlignLeft)
-        entry_opt.show()
+        self.entry_temp = QSpinBox(self)
+        self.entry_temp.setMinimum(0)
+        self.entry_temp.setMaximum(100)
+        self.entry_temp.setValue(25)
+        self.entry_temp.setSuffix(' C')
+        self.entry_temp.valueChanged.connect(choose_temperature)
+        self.entry_temp.setStyleSheet("QSpinBox { width : 100px }")
+        self.entry_temp.setToolTip('The temperature of the sample prior to quenching.')
+        layout.addWidget(self.entry_temp, 1, 4, 1, 1, Qt.AlignLeft)
+        self.entry_temp.show()
 
         # conformational coordinates progress:
         self.button_CC = QPushButton('Find Conformational Coordinates', self)
-#        self.button_CC.clicked.connect(self.start_task5)
+        self.button_CC.clicked.connect(self.start_task5)
         layout.addWidget(self.button_CC, 3, 1, 1, 2)
         self.button_CC.setDisabled(False)
         self.button_CC.show()
@@ -241,4 +206,4 @@ class CompilationTab(QWidget):
         self.show()
 
     def activate(self):
-        pass
+        self.entry_proc.setValue(p.ncpu)
