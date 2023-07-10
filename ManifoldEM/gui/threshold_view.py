@@ -15,8 +15,9 @@ from ManifoldEM.data_store import data_store
 class ThresholdView(QMainWindow):
     def __init__(self):
         super(ThresholdView, self).__init__()
-        self.left = 10
-        self.top = 10
+        self.thresh_low = p.PDsizeThL
+        self.thresh_high = p.PDsizeThH
+
         self.initUI()
 
         # Sub-Help Menu:
@@ -184,20 +185,19 @@ class ThresholdView(QMainWindow):
             reply = box.exec_()
             if reply == QMessageBox.Yes:
                 self.thresh_tab1.confirmed = 1
-                self.thresh_tab1.thresh_low = p.PDsizeThL
-                self.thresh_tab1.thresh_high = p.PDsizeThH
+                self.thresh_low = p.PDsizeThL
+                self.thresh_high = p.PDsizeThH
                 self.close()
             else:
                 ce.ignore()
 
 
 class ThreshAllCanvas(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super(ThreshAllCanvas, self).__init__(parent)
-        self.left = 10
-        self.top = 10
-        self.thresh_low = p.PDsizeThL
-        self.thresh_high = p.PDsizeThH
+        self.thresh_container = parent
+
+        self.confirmed = False
 
         # create canvas and plot data:
         self.figure = Figure(dpi=200)
@@ -246,16 +246,23 @@ class ThreshAllCanvas(QDialog):
 
         # threshold inputs:
         def choose_thresholds():
-            self.thresh_low = int(self.entry_low.value())
-            self.thresh_high = int(self.entry_high.value())
+            self.thresh_container.thresh_low = int(self.entry_low.value())
+            self.thresh_container.thresh_high = int(self.entry_high.value())
             self.confirmed = False
-            self.replot()
+
+            prds = data_store.get_prds()
+            self.in_thres_count = np.sum((prds.occupancy_no_duplication >= self.thresh_container.thresh_low) &
+                                         (prds.occupancy_no_duplication <= self.thresh_container.thresh_high))
+
+            self.entry_prd.setValue(self.in_thres_count)
+
+            # self.replot()
 
         label_low = QLabel('Low Threshold:')
         label_high = QLabel('High Threshold:')
 
-        self.in_thres_count = np.sum((prds.occupancy_no_duplication >= self.thresh_low) &
-                                     (prds.occupancy_no_duplication <= self.thresh_high))
+        self.in_thres_count = np.sum((prds.occupancy_no_duplication >= self.thresh_container.thresh_low) &
+                                     (prds.occupancy_no_duplication <= self.thresh_container.thresh_high))
         self.entry_prd = QDoubleSpinBox(self)
         self.entry_prd.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.entry_prd.setDecimals(0)
@@ -263,9 +270,11 @@ class ThreshAllCanvas(QDialog):
         self.entry_prd.setDisabled(True)
         self.entry_prd.setValue(self.in_thres_count)
 
+        self.button_replot = QPushButton('Update plot')
+        self.button_replot.clicked.connect(self.replot)
+
         self.btn_update = QPushButton('Update Thresholds')
         self.btn_update.clicked.connect(self.confirmThresh)
-
         self.btn_update.setDefault(False)
         self.btn_update.setAutoDefault(False)
 
@@ -296,28 +305,23 @@ class ThreshAllCanvas(QDialog):
         layout.addWidget(self.entry_high, 3, 3, 1, 1, QtCore.Qt.AlignVCenter)
         layout.addWidget(label_prd, 3, 4, 1, 1, QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         layout.addWidget(self.entry_prd, 3, 5, 1, 1, QtCore.Qt.AlignVCenter)
-        layout.addWidget(self.btn_update, 3, 6, 1, 1, QtCore.Qt.AlignVCenter)
+        layout.addWidget(self.button_replot, 3, 6, 1, 1, QtCore.Qt.AlignVCenter)
+        layout.addWidget(self.btn_update, 3, 7, 1, 1, QtCore.Qt.AlignVCenter)
         self.setLayout(layout)
 
 
     def replot(self):
         x = np.arange(self.xlimLo, self.xlimHi + 1)
-        self.lineL.set_data(x, [self.thresh_low])
-        self.lineH.set_data(x, [self.thresh_high])
+        self.lineL.set_data(x, [self.thresh_container.thresh_low])
+        self.lineH.set_data(x, [self.thresh_container.thresh_high])
         # self.axes.set_ylim(ymin=0, ymax=self.thresh_high + 20)
         self.canvas.draw()
-
-        prds = data_store.get_prds()
-        self.in_thres_count = np.sum((prds.occupancy_no_duplication >= self.thresh_low) &
-                                     (prds.occupancy_no_duplication <= self.thresh_high))
-
-        self.entry_prd.setValue(self.in_thres_count)
 
 
     def confirmThresh(self):
         if self.in_thres_count > 2:
-            p.PDsizeThL = self.thresh_low
-            p.PDsizeThH = self.thresh_high
+            p.PDsizeThL = self.thresh_container.thresh_low
+            p.PDsizeThH = self.thresh_container.thresh_high
             p.save()  #send new GUI data to parameters file
             data_store.get_prds().update()
 
@@ -342,8 +346,6 @@ class ThreshAllCanvas(QDialog):
 class ThreshFinalCanvas(QDialog):
     def __init__(self, parent=None):
         super(ThreshFinalCanvas, self).__init__(parent)
-        self.left = 10
-        self.top = 10
 
         # create canvas and plot data:
         ThreshFinalCanvas.figure = Figure(dpi=200)
@@ -387,8 +389,6 @@ class OccHistCanvas(QDialog):
 
     def __init__(self, parent=None):
         super(OccHistCanvas, self).__init__(parent)
-        self.left = 10
-        self.top = 10
 
         # create canvas and plot data:
         OccHistCanvas.figure = Figure(dpi=200)
