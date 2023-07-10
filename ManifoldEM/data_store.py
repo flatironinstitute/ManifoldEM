@@ -133,6 +133,16 @@ class _ProjectionDirections:
 
 
     @property
+    def occupancy_no_duplication(self):
+        mid = len(self.occupancy_full) // 2
+        # FIXME: for some reason the original code grabs the second set of bins
+        # it's bigger (which it can only be 1 bigger...)
+        if 2 * mid == len(self.occupancy_full):
+            return self.occupancy_full[:mid]
+        else:
+            return self.occupancy_full[mid:]
+
+    @property
     def anchor_ids(self):
         return sorted(list(self.anchors.keys()))
 
