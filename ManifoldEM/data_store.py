@@ -5,12 +5,13 @@ import numpy as np
 import pickle
 
 from typing import List, Any, Tuple, Dict, Set
-from nptyping import NDArray, Shape
+from nptyping import NDArray, Shape, Int, Int64, Float64
 
 from ManifoldEM.params import p
 from ManifoldEM.Data import get_from_relion
 from ManifoldEM.util import augment
 from ManifoldEM.S2tessellation import op as tesselate
+from ManifoldEM.FindCCGraph import op as FindCCGraph
 
 
 class Sense(Enum):
@@ -34,21 +35,23 @@ class Anchor:
         self.CC: int = CC
         self.sense: Sense = sense
 
+
 class _ProjectionDirections:
     def __init__(self):
         self.thres_low: int = p.PDsizeThL
         self.thres_high: int = p.PDsizeThH
-        self.bin_centers: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3, 0))
+        self.bin_centers: NDArray[Shape["3,*", Any], Float64] = np.empty(shape=(3, 0))
 
-        self.defocus: NDArray[np.float64] = np.empty(0)
-        self.microscope_origin: Tuple[NDArray[np.float64], NDArray[np.float64]] = (np.empty(0), np.empty(0))
+        self.defocus: NDArray[Shape["*"], Float64] = np.empty(0)
+        self.microscope_origin: Tuple[NDArray[Shape["*"], Float64],
+                                      NDArray[Shape["*"], Float64]] = (np.empty(0), np.empty(0))
 
-        self.pos_full: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
-        self.quats_full: NDArray[Shape["4", Any], np.float64] = np.empty(shape=(4,0))
+        self.pos_full: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3,0))
+        self.quats_full: NDArray[Shape["4", Any], Float64] = np.empty(shape=(4,0))
 
-        self.image_indices_full: NDArray[List[int]] = np.empty(0, dtype=object)
-        self.thres_ids: NDArray[np.int64] = np.empty(0, dtype=np.int64)
-        self.occupancy_full: NDArray[int] = np.empty(0, dtype=int)
+        self.image_indices_full: NDArray[Shape["*"], List[Int]] = np.empty(0, dtype=object)
+        self.thres_ids: NDArray[Shape["*"], Int64] = np.empty(0, dtype=np.int64)
+        self.occupancy_full: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
 
         self.anchors: Dict[int, Anchor] = {}
         self.trash_ids: Set[int] = set()
@@ -59,10 +62,10 @@ class _ProjectionDirections:
         self.neighbor_graph_pruned: Dict[str, Any] = {}
         self.neighbor_subgraph_pruned: List[Dict[str, Any]] = []
 
-        self.pos_thresholded: NDArray[Shape["3", Any], np.float64] = np.empty(shape=(3,0))
-        self.theta_thresholded: NDArray[np.float64] = np.empty(0)
-        self.phi_thresholded: NDArray[np.float64] = np.empty(0)
-        self.cluster_ids: NDArray[int] = np.empty(0, dtype=int)
+        self.pos_thresholded: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3,0))
+        self.theta_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
+        self.phi_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
+        self.cluster_ids: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
 
     def load(self, pd_file):
         with open(pd_file, 'rb') as f:
@@ -117,7 +120,6 @@ class _ProjectionDirections:
             self.phi_thresholded = np.arctan2(self.pos_thresholded[1, :], self.pos_thresholded[0, :]) * 180. / np.pi
             self.theta_thresholded = np.arccos(self.pos_thresholded[2, :]) * 180. / np.pi
 
-            from .FindCCGraph import op as FindCCGraph
             self.neighbor_graph, self.neighbor_subgraph = \
                 FindCCGraph(self.thresholded_image_indices, self.n_bins, self.bin_centers[:, self.thres_ids])
 

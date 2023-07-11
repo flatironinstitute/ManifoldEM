@@ -55,7 +55,6 @@ class ThresholdView(QMainWindow):
         self.thresh_all_tab = ThreshAllCanvas(self)
         self.thresh_polar_tab = ThreshFinalCanvas(self)
         self.unique_occupancy_tab = OccHistCanvas(self)
-        global thresh_tabs
         thresh_tabs = QTabWidget(self)
         thresh_tabs.addTab(self.thresh_all_tab, 'Edit Thresholds')
         thresh_tabs.addTab(self.thresh_polar_tab, 'Thresholded PDs')
