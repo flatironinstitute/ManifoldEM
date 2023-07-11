@@ -4,6 +4,8 @@ if 'OMP_NUM_THREADS' not in os.environ:
     os.environ['OMP_NUM_THREADS'] = '1'
 if 'MKL_NUM_THREADS' not in os.environ:
     os.environ['MKL_NUM_THREADS'] = '1'
+# Workaround for mayavi + qt5 (tvtk actually?)
+os.environ['ETS_TOOLKIT'] = 'qt4'
 
 import sys
 import time
