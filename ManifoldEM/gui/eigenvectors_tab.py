@@ -10,7 +10,8 @@ import numpy as np
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store, Anchor, Sense
-from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow
+from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow
+
 
 def get_blank_pixmap(path: str):
     if os.path.isfile(path):
@@ -25,19 +26,6 @@ def get_blank_pixmap(path: str):
     return QPixmap(blank)
 
 
-# conformational coordinates:
-def eigSpectrum(parent):
-    global EigValMain_window
-    try:
-        EigValMain_window.close()
-    except:
-        pass
-    EigValMain_window = EigValMain()
-    EigValMain_window.setMinimumSize(10, 10)
-    EigValMain_window.setWindowTitle('Projection Direction %s' % (parent.user_prd_index))
-    EigValMain_window.show()
-
-
 class EigenvectorsTab(QWidget):
     def __init__(self, parent):
         super(EigenvectorsTab, self).__init__(parent)
@@ -45,6 +33,7 @@ class EigenvectorsTab(QWidget):
         self.user_prd_index = 1
         self.avg_window = None
         self.bandwidth_window = None
+        self.eigspec_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -162,7 +151,7 @@ class EigenvectorsTab(QWidget):
         self.layoutR.addWidget(button_bandwidth, 6, 8, 1, 1)
 
         button_eigSpec = QPushButton('Eigenvalue Spectrum')
-        button_eigSpec.clicked.connect(lambda: eigSpectrum(self))
+        button_eigSpec.clicked.connect(self.view_eigspec)
         self.layoutR.addWidget(button_eigSpec, 6, 9, 1, 1)
 
         button_viewAvg = QPushButton('2D Class Average')
@@ -256,6 +245,16 @@ class EigenvectorsTab(QWidget):
         self.bandwidth_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
         self.bandwidth_window.plot(self.user_prd_index - 1)
         self.bandwidth_window.show()
+
+
+    def view_eigspec(self):
+        if self.eigspec_window is None:
+            self.eigspec_window = EigenSpectrumWindow()
+            self.eigspec_window.setMinimumSize(10, 10)
+
+        self.eigspec_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
+        self.eigspec_window.plot(self.user_prd_index)
+        self.eigspec_window.show()
 
 
     def PDSeleViz(self):
