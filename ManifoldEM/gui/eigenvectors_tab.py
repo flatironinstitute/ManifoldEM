@@ -404,7 +404,7 @@ class Mayavi_Rho(HasTraits):
 
 
 class EigenvectorsTab(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super(EigenvectorsTab, self).__init__(parent)
         self.main_window = parent
         self.user_prd_index = 1
@@ -696,7 +696,7 @@ class EigenvectorsTab(QWidget):
         prds = data_store.get_prds()
         anchor = prds.anchors.get(self.user_prd_index - 1, Anchor())
         self.CC_selector.setValue(anchor.CC)
-        self.sense_selector.setCurrentIndex(anchor.sense.value)
+        self.sense_selector.setCurrentIndex(anchor.sense.to_index())
         self.anchor_selector.setChecked(self.user_prd_index - 1 in prds.anchors)
 
         anchor_disable = self.user_prd_index - 1 in prds.trash_ids
@@ -720,7 +720,8 @@ class EigenvectorsTab(QWidget):
         if self.anchor_selector.isChecked():
             self.CC_selector.setDisabled(True)
             self.sense_selector.setDisabled(True)
-            anchor = Anchor(self.CC_selector.value(), Sense(self.sense_selector.currentIndex()))
+            sense_idx = self.sense_selector.currentIndex()
+            anchor = Anchor(self.CC_selector.value(), Sense.from_index(sense_idx))
             data_store.get_prds().insert_anchor(self.user_prd_index - 1, anchor)
         else:
             self.CC_selector.setDisabled(False)

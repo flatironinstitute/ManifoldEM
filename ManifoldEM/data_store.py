@@ -12,9 +12,22 @@ from ManifoldEM.Data import get_from_relion
 from ManifoldEM.util import augment
 from ManifoldEM.S2tessellation import op as tesselate
 
+
 class Sense(Enum):
     FWD = 1
     REV = -1
+
+    @staticmethod
+    def from_index(idx: int) -> 'Sense':
+        if idx == 0:
+            return Sense.FWD
+        if idx == 1:
+            return Sense.REV
+        raise ValueError("Invalid index")
+
+    def to_index(self) -> int:
+        return 0 if self == Sense.FWD else 1
+
 
 class Anchor:
     def __init__(self, CC: int = 1, sense: Sense = Sense.FWD):
