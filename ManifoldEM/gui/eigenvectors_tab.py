@@ -241,8 +241,8 @@ class EigenvectorsTab(QWidget):
         if self.avg_window is None:
             self.avg_window = AverageViewWindow(self.user_prd_index)
             self.avg_window.setMinimumSize(10, 10)
-            self.avg_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
 
+        self.avg_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
         self.avg_window.plot(self.user_prd_index)
         self.avg_window.show()
 
