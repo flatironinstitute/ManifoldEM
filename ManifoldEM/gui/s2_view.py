@@ -1,6 +1,6 @@
-import mrcfile
-import pickle
+from typing import Union
 
+import mrcfile
 import numpy as np
 from scipy import stats
 
@@ -27,6 +27,7 @@ else:
     VGroup = _Dummy
     TextEditor = _Dummy
 
+
 from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, observe
 
 from ManifoldEM.params import p
@@ -34,6 +35,7 @@ from ManifoldEM.data_store import data_store
 from .threshold_view import ThresholdView
 
 from PyQt5.QtWidgets import QWidget
+
 
 def press_callback(parent, vtk_obj, event):  # left mouse down callback
     parent.click_on = 1
@@ -88,6 +90,7 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
     def __init__(self):
         HasTraits.__init__(self)
         self.df_vol = None
+        self.thresholding_window: Union[None, ThresholdView] = None
 
     def get_widget(self):
         return self.edit_traits(parent=self, kind='subpanel').control
@@ -98,12 +101,6 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
         p.visualization_params['S2_isosurface_level'] = self.isosurface_level
         p.save()
 
-    @observe('display_angle')
-    def view_anglesP2(self, event):
-        viewS2 = self.scene1.mlab.view(figure=self.fig1)
-        azimuth = viewS2[0]  # phi: 0-360
-        elevation = viewS2[1]  # theta: 0-180
-        print_anglesP2(azimuth, elevation)
 
     @observe('S2_scale, S2_density')  #S2 Orientation Sphere
     def update_scene1(self, event):
@@ -206,17 +203,15 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
         self.sync_params()
 
+
     @observe('display_thresh')
-    def GCsViewer(self, event):
-        global GCs_window
-        try:
-            GCs_window.close()
-        except:
-            pass
-        GCs_window = ThresholdView()
-        GCs_window.setMinimumSize(10, 10)
-        GCs_window.setWindowTitle('Projection Direction Thresholding')
-        GCs_window.show()
+    def thresh_view(self, event):
+        if self.thresholding_window is None:
+           self.thresholding_window = ThresholdView()
+           self.thresholding_window.setMinimumSize(10, 10)
+           self.thresholding_window.setWindowTitle('Projection Direction Thresholding')
+        self.thresholding_window.show()
+
 
     view = View(
         VGroup(
