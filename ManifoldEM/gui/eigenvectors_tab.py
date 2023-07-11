@@ -10,8 +10,7 @@ import numpy as np
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store, Anchor, Sense
-from .eigen_views import Mayavi_Rho
-
+from .eigen_views import Mayavi_Rho, AverageViewWindow
 
 def get_blank_pixmap(path: str):
     if os.path.isfile(path):
@@ -38,23 +37,13 @@ def eigSpectrum(parent):
     EigValMain_window.setWindowTitle('Projection Direction %s' % (parent.user_prd_index))
     EigValMain_window.show()
 
-def classAvg(parent):
-    global ClassAvgMain_window
-    try:
-        ClassAvgMain_window.close()
-    except:
-        pass
-    ClassAvgMain_window = ClassAvgMain()
-    ClassAvgMain_window.setMinimumSize(10, 10)
-    ClassAvgMain_window.setWindowTitle('Projection Direction %s' % (parent.user_prd_index))
-    ClassAvgMain_window.show()
-
 
 class EigenvectorsTab(QWidget):
     def __init__(self, parent):
         super(EigenvectorsTab, self).__init__(parent)
         self.main_window = parent
         self.user_prd_index = 1
+        self.avg_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -176,7 +165,7 @@ class EigenvectorsTab(QWidget):
         self.layoutR.addWidget(button_eigSpec, 6, 9, 1, 1)
 
         button_viewAvg = QPushButton('2D Class Average')
-        button_viewAvg.clicked.connect(lambda: classAvg(self))
+        button_viewAvg.clicked.connect(self.view_class_avg)
         self.layoutR.addWidget(button_viewAvg, 6, 10, 1, 1)
 
         button_compareMov = QPushButton('Compare Movies')
@@ -246,6 +235,16 @@ class EigenvectorsTab(QWidget):
         splitter2.addWidget(self.widgetsB)
 
         self.layout_main.addWidget(splitter2)
+
+
+    def view_class_avg(self):
+        if self.avg_window is None:
+            self.avg_window = AverageViewWindow(self.user_prd_index)
+            self.avg_window.setMinimumSize(10, 10)
+            self.avg_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
+
+        self.avg_window.plot(self.user_prd_index)
+        self.avg_window.show()
 
 
     def PDSeleViz(self):
