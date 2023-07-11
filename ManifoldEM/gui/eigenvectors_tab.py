@@ -10,7 +10,7 @@ import numpy as np
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store, Anchor, Sense
-from .eigen_views import Mayavi_Rho, AverageViewWindow
+from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow
 
 def get_blank_pixmap(path: str):
     if os.path.isfile(path):
@@ -44,6 +44,7 @@ class EigenvectorsTab(QWidget):
         self.main_window = parent
         self.user_prd_index = 1
         self.avg_window = None
+        self.bandwidth_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -157,7 +158,7 @@ class EigenvectorsTab(QWidget):
 
         button_bandwidth = QPushButton('Kernel Bandwidth')
         button_bandwidth.setDisabled(False)
-        button_bandwidth.clicked.connect(self.bandwidth)
+        button_bandwidth.clicked.connect(self.view_bandwidth)
         self.layoutR.addWidget(button_bandwidth, 6, 8, 1, 1)
 
         button_eigSpec = QPushButton('Eigenvalue Spectrum')
@@ -165,7 +166,7 @@ class EigenvectorsTab(QWidget):
         self.layoutR.addWidget(button_eigSpec, 6, 9, 1, 1)
 
         button_viewAvg = QPushButton('2D Class Average')
-        button_viewAvg.clicked.connect(self.view_class_avg)
+        button_viewAvg.clicked.connect(self.view_avg)
         self.layoutR.addWidget(button_viewAvg, 6, 10, 1, 1)
 
         button_compareMov = QPushButton('Compare Movies')
@@ -237,7 +238,7 @@ class EigenvectorsTab(QWidget):
         self.layout_main.addWidget(splitter2)
 
 
-    def view_class_avg(self):
+    def view_avg(self):
         if self.avg_window is None:
             self.avg_window = AverageViewWindow(self.user_prd_index)
             self.avg_window.setMinimumSize(10, 10)
@@ -245,6 +246,16 @@ class EigenvectorsTab(QWidget):
         self.avg_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
         self.avg_window.plot(self.user_prd_index)
         self.avg_window.show()
+
+
+    def view_bandwidth(self):
+        if self.bandwidth_window is None:
+            self.bandwidth_window = BandwidthViewWindow()
+            self.bandwidth_window.setMinimumSize(10, 10)
+
+        self.bandwidth_window.setWindowTitle(f'Projection Direction {self.user_prd_index}')
+        self.bandwidth_window.plot(self.user_prd_index - 1)
+        self.bandwidth_window.show()
 
 
     def PDSeleViz(self):
@@ -258,19 +269,10 @@ class EigenvectorsTab(QWidget):
         PDSele_window.setWindowTitle('Projection Direction Selections')
         PDSele_window.show()
 
+
     def on_button(self, n):
         print('Button {0} clicked'.format(n))
 
-    def bandwidth(self):
-        global BandwidthMain_window
-        try:
-            BandwidthMain_window.close()
-        except:
-            pass
-        BandwidthMain_window = BandwidthMain()
-        BandwidthMain_window.setMinimumSize(10, 10)
-        BandwidthMain_window.setWindowTitle('Projection Direction %s' % (self.user_prd_index))
-        BandwidthMain_window.show()
 
     def CC_vid1(self, n):
         self.gif_path = os.path.join(p.out_dir, 'topos', f'prd_{self.user_prd_index}', f'psi_{n}.gif')
