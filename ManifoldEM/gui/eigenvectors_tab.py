@@ -111,12 +111,9 @@ class EigenvectorsTab(QWidget):
         self.label_pic = []
         self.button_pic = []
         subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-        blank_pixmap = get_blank_pixmap(p.get_topos_path(1, 1))
         for i in range(1, 9):
             label = QLabel()
-            picpath = p.get_topos_path(self.user_prd_index, i)
 
-            label.setPixmap(QPixmap(picpath))
             label.setMinimumSize(1, 1)
             label.setScaledContents(True)
             label.setAlignment(QtCore.Qt.AlignCenter)
@@ -124,10 +121,6 @@ class EigenvectorsTab(QWidget):
             button = QPushButton(f'View Ψ{str(i).translate(subscripts)}', self)
             button.clicked.connect(lambda: self.CC_vid1(i))
             button.setToolTip('View 2d movie and related outputs.')
-
-            if not os.path.isfile(picpath):
-                label.setPixmap(blank_pixmap)
-                button.setDisabled(True)
 
             self.label_pic.append(label)
             self.button_pic.append(button)
@@ -384,6 +377,20 @@ class EigenvectorsTab(QWidget):
         self.update_anchor_view()
 
 
+    def update_psi_view(self):
+        blank_pixmap = get_blank_pixmap(p.get_topos_path(1, 1))
+
+        for i, (label, button) in enumerate(zip(self.label_pic, self.button_pic)):
+            picpath = p.get_topos_path(self.user_prd_index, i + 1)
+            label.setPixmap(QPixmap(picpath))
+
+            if not os.path.isfile(picpath):
+                label.setPixmap(blank_pixmap)
+                button.setDisabled(True)
+            else:
+                button.setDisabled(False)
+
+
     def activate(self):
         prds = data_store.get_prds()
         self.entry_prd.setMaximum(prds.n_thresholded)
@@ -391,6 +398,7 @@ class EigenvectorsTab(QWidget):
 
         self.viz2.update_scene3(init=True)
         self.on_prd_change()
+        self.update_psi_view()
 
 
     def finalize(self):
