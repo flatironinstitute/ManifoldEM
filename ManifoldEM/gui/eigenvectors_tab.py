@@ -10,7 +10,7 @@ import numpy as np
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store, Anchor, Sense
-from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow
+from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow, Vid2Canvas
 
 
 def get_blank_pixmap(path: str):
@@ -34,6 +34,7 @@ class EigenvectorsTab(QWidget):
         self.avg_window = None
         self.bandwidth_window = None
         self.eigspec_window = None
+        self.vid2_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -152,7 +153,7 @@ class EigenvectorsTab(QWidget):
         self.layoutR.addWidget(button_viewAvg, 6, 10, 1, 1)
 
         button_compareMov = QPushButton('Compare Movies')
-        button_compareMov.clicked.connect(self.CC_vid2)
+        button_compareMov.clicked.connect(self.view_vid2)
         self.layoutR.addWidget(button_compareMov, 6, 11, 1, 1)
 
         self.label_edgeAnchor = QLabel('')
@@ -250,6 +251,15 @@ class EigenvectorsTab(QWidget):
         self.eigspec_window.show()
 
 
+    def view_vid2(self):
+        if self.vid2_window is None:
+            self.vid2_window = Vid2Canvas()
+            self.vid2_window.setMinimumSize(10, 10)
+
+        self.vid2_window.setWindowTitle('Compare NLSA Movies')
+        self.vid2_window.show()
+
+
     def PDSeleViz(self):
         global PDSele_window
         try:
@@ -299,21 +309,6 @@ class EigenvectorsTab(QWidget):
         prd_window = prd_Viz()
         prd_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, n))
         prd_window.show()
-
-    def CC_vid2(self):
-        global prd2_window
-        try:
-            prd2_window.close()
-        except:
-            pass
-
-        Vid2Canvas.run = 0
-        Vid2Canvas.gif_path1 = ''
-        Vid2Canvas.gif_path2 = ''
-        prd2_window = prd2_Viz()
-
-        prd2_window.setWindowTitle('Compare NLSA Movies')
-        prd2_window.show()
 
 
     def update_pd_view(self):
