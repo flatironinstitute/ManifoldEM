@@ -34,7 +34,7 @@ class EigenvectorsTab(QWidget):
         self.avg_window = None
         self.bandwidth_window = None
         self.eigspec_window = None
-        self.vid2_window = None
+        self.nlsa_compare_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -153,7 +153,7 @@ class EigenvectorsTab(QWidget):
         self.layoutR.addWidget(button_viewAvg, 6, 10, 1, 1)
 
         button_compareMov = QPushButton('Compare Movies')
-        button_compareMov.clicked.connect(self.view_vid2)
+        button_compareMov.clicked.connect(self.view_nlsa_compare)
         self.layoutR.addWidget(button_compareMov, 6, 11, 1, 1)
 
         self.label_edgeAnchor = QLabel('')
@@ -251,13 +251,13 @@ class EigenvectorsTab(QWidget):
         self.eigspec_window.show()
 
 
-    def view_vid2(self):
-        if self.vid2_window is None:
-            self.vid2_window = Vid2Canvas()
-            self.vid2_window.setMinimumSize(10, 10)
+    def view_nlsa_compare(self):
+        if self.nlsa_compare_window is None:
+            self.nlsa_compare_window = Vid2Canvas()
+            self.nlsa_compare_window.setMinimumSize(10, 10)
 
-        self.vid2_window.setWindowTitle('Compare NLSA Movies')
-        self.vid2_window.show()
+        self.nlsa_compare_window.setWindowTitle('Compare NLSA Movies')
+        self.nlsa_compare_window.show()
 
 
     def PDSeleViz(self):
