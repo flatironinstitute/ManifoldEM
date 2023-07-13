@@ -15,11 +15,9 @@ from ManifoldEM.params import p
 
 
 class _PDSelectorWindow(QMainWindow):
-
-    def __init__(self):
-        super(_PDSelectorWindow, self).__init__()
-        self.left = 10
-        self.top = 10
+    def __init__(self, parent=None, eigenvector_view=None):
+        super(_PDSelectorWindow, self).__init__(parent)
+        self.eigenvector_view = eigenvector_view
         self.initUI()
 
         # Sub-Help Menu:
@@ -45,7 +43,7 @@ class _PDSelectorWindow(QMainWindow):
 
 
     def initUI(self):
-        self.sele_tab1 = PDEditorCanvas(self)
+        self.sele_tab1 = PDEditorCanvas(self, eigenvector_view=self.eigenvector_view)
         self.sele_tab2 = PDViewerCanvas(self)
         self.sele_tabs = QTabWidget(self)
         self.sele_tabs.addTab(self.sele_tab1, 'PD Editor')
@@ -115,10 +113,9 @@ class _PDSelectorWindow(QMainWindow):
 
 
 class PDEditorCanvas(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, eigenvector_view=None):
         super(PDEditorCanvas, self).__init__(parent)
-        self.left = 10
-        self.top = 10
+        self.eigenvector_view = eigenvector_view
 
         self.progBar1 = QProgressBar(self)  #minimum=0,maximum=1,value=0)
         self.progBar1.setRange(0, 100)
@@ -173,7 +170,7 @@ class PDEditorCanvas(QDialog):
         self.btn_anchList = QPushButton('List Anchors')
         self.btn_anchList.clicked.connect(self.view_anchor_table)
         self.btn_anchReset = QPushButton('Reset Anchors')
-        self.btn_anchReset.clicked.connect(self.anchorReset)
+        self.btn_anchReset.clicked.connect(self.anchor_reset)
         self.btn_anchSave = QPushButton('Save Anchors')
         self.btn_anchSave.clicked.connect(self.anchorSave)
         self.btn_anchLoad = QPushButton('Load Anchors')
@@ -261,41 +258,29 @@ class PDEditorCanvas(QDialog):
 
 
     # reset assignments of all PD anchors:
-    def anchorReset(self):
+    def anchor_reset(self):
         box = QMessageBox(self)
         self.setWindowTitle('Reset PD Anchors')
         box.setText('<b>Reset Warning</b>')
         box.setIcon(QMessageBox.Warning)
-        msg = 'Performing this action will deselect all active anchors.\
-                The user-defined values set within each (if any) will still remain.\
-                <br /><br />\
-                Do you want to proceed?'
+        msg = "Performing this action will deselect all active anchors. "\
+              "The user-defined values set within each (if any) will be lost.\n"\
+              "Would you like to proceed?"
 
         box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         box.setInformativeText(msg)
         reply = box.exec_()
 
         if reply == QMessageBox.Yes:
-            for i in range(1, P3.PrD_total + 1):
-                if P4.anchorsAll[i].isChecked():
-                    P4.anchorsAll[i].setChecked(False)
-                    P4.reactCoord1All[i].setDisabled(False)
-                    P4.senses1All[i].setDisabled(False)
-                    if P3.user_dimensions == 2:
-                        P4.reactCoord2All[i].setDisabled(False)
-                        P4.senses2All[i].setDisabled(False)
+            prds = data_store.get_prds()
+            prds.anchors.clear()
 
-            self.progBar1.setVisible(False)
-            self.progBar1.setValue(0)
-
-            P1.x3 = []
-            P1.y3 = []
-            P1.z3 = []
-            P1.a3 = []
-            P4.viz2.update_scene3()
+            if self.eigenvector_view is not None:
+                self.eigenvector_view.on_prd_change()
 
         elif reply == QMessageBox.No:
             pass
+
 
     def anchorSave(self):
         temp_anch_list = []

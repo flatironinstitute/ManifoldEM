@@ -249,7 +249,7 @@ class EigenvectorsTab(QWidget):
 
     def view_pd_selector(self):
         if self.pd_selector_window is None:
-            self.pd_selector_window = PDSelectorWindow()
+            self.pd_selector_window = PDSelectorWindow(eigenvector_view=self)
             self.pd_selector_window.setMinimumSize(10, 10)
 
         self.pd_selector_window.setWindowTitle('Projection Direction Selections')
