@@ -172,9 +172,9 @@ class PDEditorCanvas(QDialog):
         self.btn_anchReset = QPushButton('Reset Anchors')
         self.btn_anchReset.clicked.connect(self.anchor_reset)
         self.btn_anchSave = QPushButton('Save Anchors')
-        self.btn_anchSave.clicked.connect(self.anchorSave)
+        self.btn_anchSave.clicked.connect(self.anchor_save)
         self.btn_anchLoad = QPushButton('Load Anchors')
-        self.btn_anchLoad.clicked.connect(self.anchorLoad)
+        self.btn_anchLoad.clicked.connect(self.anchor_load)
 
         self.btn_trashList = QPushButton('List Removals')
         self.btn_trashList.clicked.connect(self.trashList)
@@ -278,263 +278,34 @@ class PDEditorCanvas(QDialog):
             if self.eigenvector_view is not None:
                 self.eigenvector_view.on_prd_change()
 
-        elif reply == QMessageBox.No:
-            pass
+
+    def anchor_save(self):
+        data_store.get_prds().save()
+
+        box = QMessageBox(self)
+        box.setWindowTitle('ManifoldEM Save Current Anchors')
+        box.setIcon(QMessageBox.Information)
+        box.setText('<b>Saving Complete</b>')
+        msg = 'Current anchor selections have been saved.'
+        box.setStandardButtons(QMessageBox.Ok)
+        box.setInformativeText(msg)
+        box.exec_()
 
 
-    def anchorSave(self):
-        temp_anch_list = []
-        anch_sum = 0
-        for i in range(1, P3.PrD_total + 1):
-            if P4.anchorsAll[i].isChecked():
-                anch_sum += 1
-        if anch_sum == 0:
-            box = QMessageBox(self)
-            box.setWindowTitle('ManifoldEM Warning')
-            box.setIcon(QMessageBox.Warning)
-            box.setText('<b>Input Warning</b>')
-            msg = 'At least one anchor must first be selected before saving.'
-            box.setStandardButtons(QMessageBox.Ok)
-            box.setInformativeText(msg)
-            reply = box.exec_()
-        elif anch_sum > 0:
-            box = QMessageBox(self)
-            self.setWindowTitle('ManifoldEM Save Data')
-            box.setText('<b>Save Current Anchors</b>')
-            box.setIcon(QMessageBox.Information)
-            msg = 'Performing this action will save a list of all active anchors\
-                    to the <i>outputs/CC</i> directory for future reference.\
-                    <br /><br />\
-                    Do you want to proceed?'
+    def anchor_load(self):
+        data_store.get_prds().load()
 
-            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            box.setInformativeText(msg)
-            reply = box.exec_()
+        box = QMessageBox(self)
+        box.setWindowTitle('ManifoldEM Load Previous Anchors')
+        box.setIcon(QMessageBox.Information)
+        box.setText('<b>Loading Complete</b>')
+        msg = 'Previous anchor selections have been loaded on the <i>Eigenvectors</i> tab.'
+        box.setStandardButtons(QMessageBox.Ok)
+        box.setInformativeText(msg)
 
-            if reply == QMessageBox.Yes:
+        if self.eigenvector_view is not None:
+            self.eigenvector_view.on_prd_change()
 
-                PrDs = []
-                CC1s = []
-                S1s = []
-                CC2s = []
-                S2s = []
-                colors = []
-                P4.anch_list = []
-
-                idx = 0
-                for i in range(1, P3.PrD_total + 1):
-                    if P4.anchorsAll[i].isChecked():
-                        PrDs.append(int(i))
-                        # CC1s:
-                        CC1s.append(int(P4.reactCoord1All[i].value()))
-                        # S1s:
-                        if P4.senses1All[i].currentText() == 'S1: FWD':
-                            S1s.append(int(1))
-                        else:
-                            S1s.append(int(-1))
-                        # CC2s:
-                        CC2s.append(int(P4.reactCoord2All[i].value()))
-                        # S2s:
-                        if P4.senses2All[i].currentText() == 'S2: FWD':
-                            S2s.append(int(1))
-                        else:
-                            S2s.append(int(-1))
-                        # colors:
-                        colors.append(P3.col[int(i - 1)])
-                        idx += 1
-
-                if P3.user_dimensions == 1:
-                    temp_anch_list = zip(PrDs, CC1s, S1s, colors)
-                elif P3.user_dimensions == 2:
-                    temp_anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
-
-                timestr = time.strftime("%Y%m%d-%H%M%S")
-                tempAnchInputs = os.path.join(p.CC_dir, f'temp_anchors_{timestr}.txt')
-
-                np.savetxt(tempAnchInputs, list(temp_anch_list), fmt='%i', delimiter='\t')
-
-                box = QMessageBox(self)
-                box.setWindowTitle('ManifoldEM Save Current Anchors')
-                box.setIcon(QMessageBox.Information)
-                box.setText('<b>Saving Complete</b>')
-                msg = 'Current anchor selections have been saved to the <i>outputs/CC</i> directory.'
-                box.setStandardButtons(QMessageBox.Ok)
-                box.setInformativeText(msg)
-                reply = box.exec_()
-
-            elif reply == QMessageBox.No:
-                pass
-
-    def anchorLoad(self):
-        self.btn_anchList.setDisabled(True)
-        self.btn_anchReset.setDisabled(True)
-        self.btn_anchSave.setDisabled(True)
-        self.btn_anchLoad.setDisabled(True)
-        self.btn_trashList.setDisabled(True)
-        self.btn_trashReset.setDisabled(True)
-        self.btn_trashSave.setDisabled(True)
-        self.btn_trashLoad.setDisabled(True)
-        self.btn_occList.setDisabled(True)
-        self.btn_rebedList.setDisabled(True)
-
-        anch_sum = 0
-        for i in range(1, P3.PrD_total + 1):
-            if P4.anchorsAll[i].isChecked():
-                anch_sum += 1
-        if anch_sum == 0:
-            self.fname = QFileDialog.getOpenFileName(self, 'Choose Data File', '',
-                                                                    ('Data Files (*.txt)'))[0]
-            if self.fname:
-                try:
-                    if P3.user_dimensions == 1:
-                        data = []
-                        with open(self.fname) as values:
-                            for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                                data.append(column)
-                        PrDs = data[0]
-                        CC1s = data[1]
-                        S1s = data[2]
-
-                        data_all = np.column_stack((PrDs, CC1s, S1s))
-                        PrD = []
-                        CC1 = []
-                        S1 = []
-                        Color = []
-                        idx = 0
-                        for i, j, k in data_all:
-                            PrD.append(int(i))
-                            CC1.append(int(j))
-                            S1.append(int(k))
-                            idx += 1
-
-                        P4.anch_list = zip(PrD, CC1, S1)
-                        P4.anch_list, anch_zip = itertools.tee(P4.anch_list)
-                        p.anch_list = list(anch_zip)  #PrD,CC1,S1 for 1D; PrD,CC1,S1,CC2,S2 for 2D
-
-                        idx = 0
-                        prog = 0
-                        self.progBar1.setValue(prog)
-                        self.progBar1.setVisible(True)
-
-                        for i in PrD:
-                            P4.entry_PrD.setValue(int(i))
-                            P4.user_PrD = i
-                            P4.PrD_hist = i
-                            if P4.trashAll[i].isChecked() == False:  #avoids conflict
-                                P4.anchorsAll[i].setChecked(True)
-                            P4.reactCoord1All[i].setValue(CC1[idx])
-                            if S1[idx] == 1:
-                                P4.senses1All[i].setCurrentIndex(0)
-                            elif S1[idx] == -1:
-                                P4.senses1All[i].setCurrentIndex(1)
-                            prog += (1. / len(PrD)) * 100
-                            self.progBar1.setValue(prog)
-                            idx += 1
-
-                        P4.entry_PrD.setValue(1)
-
-                    elif P3.user_dimensions == 2:
-                        fname = os.path.join(p.CC_dir, 'user_anchors.txt')
-                        data = []
-                        with open(fname) as values:
-                            for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                                data.append(column)
-                        PrDs = data[0]
-                        CC1s = data[1]
-                        S1s = data[2]
-                        CC2s = data[3]
-                        S2s = data[4]
-
-                        data_all = np.column_stack((PrDs, CC1s, S1s, CC2s, S2s))
-                        PrD = []
-                        CC1 = []
-                        S1 = []
-                        CC2 = []
-                        S2 = []
-                        idx = 0
-                        for i, j, k, l, m in data_all:
-                            PrD.append(int(i))
-                            CC1.append(int(j))
-                            S1.append(int(k))
-                            CC2.append(int(l))
-                            S2.append(int(m))
-
-                        P4.anch_list = zip(PrD, CC1, S1, CC2, S2)
-                        P4.anch_list, anch_zip = itertools.tee(P4.anch_list)
-                        p.anch_list = list(anch_zip)  #PrD,CC1,S1 for 1D; PrD,CC1,S1,CC2,S2 for 2D
-
-                        idx = 0
-                        prog = 0
-                        self.progBar1.setValue(prog)
-                        self.progBar1.setVisible(True)
-                        for i in PrD:
-                            P4.user_PrD = i
-                            P4.PrD_hist = i
-                            if P4.trashAll[i].isChecked() == False:  #avoids conflict
-                                P4.anchorsAll[i].setChecked(True)
-                            P4.reactCoord1All[i].setValue(CC1[idx])
-                            P4.reactCoord2All[i].setValue(CC2[idx])
-                            if S1[idx] == 1:
-                                P4.senses1All[i].setCurrentIndex(0)
-                            elif S1[idx] == -1:
-                                P4.senses1All[i].setCurrentIndex(1)
-                            if S2[idx] == 1:
-                                P4.senses2All[i].setCurrentIndex(0)
-                            elif S2[idx] == -1:
-                                P4.senses2All[i].setCurrentIndex(1)
-                            prog += (1. / len(PrD)) * 100
-                            self.progBar1.setValue(prog)
-                            idx += 1
-                        P4.entry_PrD.setValue(1)
-
-                    self.progBar1.setValue(100)
-
-                    box = QMessageBox(self)
-                    box.setWindowTitle('ManifoldEM Load Previous Anchors')
-                    box.setIcon(QMessageBox.Information)
-                    box.setText('<b>Loading Complete</b>')
-                    msg = 'Previous anchor selections have been loaded on the <i>Eigenvectors</i> tab.'
-                    box.setStandardButtons(QMessageBox.Ok)
-                    box.setInformativeText(msg)
-                    reply = box.exec_()
-
-                except:
-                    box = QMessageBox(self)
-                    box.setWindowTitle('ManifoldEM Error')
-                    box.setText('<b>Input Error</b>')
-                    box.setIcon(QMessageBox.Warning)
-                    box.setInformativeText('Incorrect file structure detected.')
-                    box.setStandardButtons(QMessageBox.Ok)
-                    box.setDefaultButton(QMessageBox.Ok)
-                    ret = box.exec_()
-
-                    self.progBar1.setVisible(False)
-                    self.progBar1.setValue(0)
-            else:
-                pass
-
-        elif anch_sum > 0:
-            box = QMessageBox(self)
-            box.setWindowTitle('ManifoldEM Warning')
-            box.setIcon(QMessageBox.Warning)
-            box.setText('<b>Input Warning</b>')
-            msg = 'To load anchors from a previous session, first clear all currently selected\
-                    anchors via the <i>Reset Anchors</i> button.'
-
-            box.setStandardButtons(QMessageBox.Ok)
-            box.setInformativeText(msg)
-            reply = box.exec_()
-
-        self.btn_anchList.setDisabled(False)
-        self.btn_anchReset.setDisabled(False)
-        self.btn_anchSave.setDisabled(False)
-        self.btn_anchLoad.setDisabled(False)
-        self.btn_trashList.setDisabled(False)
-        self.btn_trashReset.setDisabled(False)
-        self.btn_trashSave.setDisabled(False)
-        self.btn_trashLoad.setDisabled(False)
-        self.btn_occList.setDisabled(False)
-        self.btn_rebedList.setDisabled(False)
 
     def trashList(self):
         PrDs = []

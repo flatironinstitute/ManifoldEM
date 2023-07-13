@@ -68,7 +68,10 @@ class _ProjectionDirections:
         self.cluster_ids: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
 
 
-    def load(self, pd_file):
+    def load(self, pd_file=None):
+        if pd_file is None:
+            pd_file = p.pd_file
+
         with open(pd_file, 'rb') as f:
             self.__dict__.update(pickle.load(f))
 
