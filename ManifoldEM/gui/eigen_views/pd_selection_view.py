@@ -73,7 +73,7 @@ class _PDSelectorWindow(QMainWindow):
 
             phi_anch = phi_all0[anchor_ids]
             theta_anch = theta_all0[anchor_ids]
-            
+
             phi_trash = phi_all0[trash_ids]
             theta_trash = theta_all0[trash_ids]
 
@@ -171,7 +171,7 @@ class PDEditorCanvas(QDialog):
         label_rebed.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
 
         self.btn_anchList = QPushButton('List Anchors')
-        self.btn_anchList.clicked.connect(self.anchorList)
+        self.btn_anchList.clicked.connect(self.view_anchor_table)
         self.btn_anchReset = QPushButton('Reset Anchors')
         self.btn_anchReset.clicked.connect(self.anchorReset)
         self.btn_anchSave = QPushButton('Save Anchors')
@@ -191,7 +191,7 @@ class PDEditorCanvas(QDialog):
         self.btn_occList = QPushButton('List Occupancies')
         self.btn_occList.clicked.connect(self.occListGen)
         self.btn_rebedList = QPushButton('List Re-embeddings')
-        self.btn_rebedList.clicked.connect(self.rebedListGen)
+        self.btn_rebedList.clicked.connect(self.view_reembeddings_table)
 
         # forced space bottom:
         label_spaceBtm = QLabel("")
@@ -227,19 +227,10 @@ class PDEditorCanvas(QDialog):
 
         self.setLayout(layout)
 
-    def anchorList(self):
-        PrDs = []
-        CC1s = []
-        S1s = []
-        CC2s = []
-        S2s = []
-        colors = []
-        P4.anch_list = []
 
-        idx_sum = 0
-        for i in range(1, P3.PrD_total + 1):
-            if P4.anchorsAll[i].isChecked():
-                idx_sum += 1
+    def view_anchor_table(self):
+        prds = data_store.get_prds()
+        idx_sum = len(prds.anchor_ids)
 
         if idx_sum == 0:
             box = QMessageBox(self)
@@ -252,40 +243,22 @@ class PDEditorCanvas(QDialog):
                                     on the left side of the <i>Eigenvectors</i> tab.')
             box.setStandardButtons(QMessageBox.Ok)
             box.setDefaultButton(QMessageBox.Ok)
-            ret = box.exec_()
+            box.exec_()
+            return
 
+        prds = data_store.get_prds()
+        if p.dim == 1:
+            headers = ['PD', 'CC', 'Sense', 'Color']
+            values = [(id + 1, anchor.CC, anchor.sense.value, prds.cluster_ids[id]) for (id, anchor) in prds.anchors.items()]
         else:
-            idx = 0
-            for i in range(1, P3.PrD_total + 1):
-                if P4.anchorsAll[i].isChecked():
-                    PrDs.append(int(i))
-                    # CC1s:
-                    CC1s.append(int(P4.reactCoord1All[i].value()))
-                    # S1s:
-                    if P4.senses1All[i].currentText() == 'S1: FWD':
-                        S1s.append(int(1))
-                    else:
-                        S1s.append(int(-1))
-                    # CC2s:
-                    CC2s.append(int(P4.reactCoord2All[i].value()))
-                    # S2s:
-                    if P4.senses2All[i].currentText() == 'S2: FWD':
-                        S2s.append(int(1))
-                    else:
-                        S2s.append(int(-1))
-                    # colors:
-                    colors.append(P3.col[int(i - 1)])
-                    idx += 1
+            raise ValueError("Invalid dimension")
 
-            if P3.user_dimensions == 1:
-                P4.anch_list = zip(PrDs, CC1s, S1s, colors)
-            elif P3.user_dimensions == 2:
-                P4.anch_list = zip(PrDs, CC1s, S1s, CC2s, S2s, colors)
+        self.anchor_table = TableView(headers, values, title='Review PD Anchors')
 
-            self.table = anchTable(data=P4.anch_list)
-            sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
-            self.table.show()
+        sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
+        self.anchor_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
+        self.anchor_table.show()
+
 
     # reset assignments of all PD anchors:
     def anchorReset(self):
@@ -609,10 +582,10 @@ class PDEditorCanvas(QDialog):
                 PrDs.append(int(i))
 
             sorted_trash = sorted(zip(PrDs, trashed), key=lambda x: x[1], reverse=True)
-            self.table = trashTable(data=sorted_trash)
+            self.anchor_table = trashTable(data=sorted_trash)
             sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
-            self.table.show()
+            self.anchor_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
+            self.anchor_table.show()
 
     # reset assignments of all PD removals:
     def trashReset(self):
@@ -803,7 +776,7 @@ class PDEditorCanvas(QDialog):
         self.PrD_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
         self.PrD_table.show()
 
-    def rebedListGen(self):
+    def view_reembeddings_table(self):
         # read points from re-embedding file:
         fname = os.path.join(p.euler_dir, 'PrD_embeds.txt')
         data = []
@@ -825,7 +798,7 @@ class PDEditorCanvas(QDialog):
 
         if len(rebeds) > 0:
             sorted_rebeds = sorted(zip(total, rebeds), key=lambda x: x[1], reverse=True)
-            self.rebed_table = RebedTable(data=sorted_rebeds)
+            self.rebed_table = TableView(['PD', 'Re-embedded'], sorted_rebeds, title='PD Re-embeddings')
             sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
             self.rebed_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
             self.rebed_table.show()
@@ -844,7 +817,6 @@ class PDEditorCanvas(QDialog):
 
 
 class PDViewerCanvas(QDialog):
-
     def __init__(self, parent=None):
         super(PDViewerCanvas, self).__init__(parent)
         self.left = 10
@@ -859,7 +831,7 @@ class PDViewerCanvas(QDialog):
                                                cmap=cm.hsv)  #empty for init
 
         # thetas = [0,45,90,135,180,225,270,315] #in same order as labels below (ref only)
-        theta_labels = ['±180°', '-135°', '-90°', '-45°', '0°', '45°', '90°', '135°']        
+        theta_labels = ['±180°', '-135°', '-90°', '-45°', '0°', '45°', '90°', '135°']
 
         PDViewerCanvas.axes.set_ylim(0, 180)
         PDViewerCanvas.axes.set_yticks(np.arange(0, 180, 20))
@@ -879,15 +851,17 @@ class PDViewerCanvas(QDialog):
         self.setLayout(layout)
 
 
-class RebedTable(QTableWidget):
-    def __init__(self, parent=None, *args, **kwds):
+class TableView(QTableWidget):
+    def __init__(self, headers, data, title='', parent=None):
         QTableWidget.__init__(self, parent)
-        self.library_values = kwds['data']
-        self.BuildTable(self.library_values)
+        self.setWindowTitle(title)
+        self.BuildTable(headers, data)
+
 
     def AddToTable(self, values):
         for k, v in enumerate(values):
             self.AddItem(k, v)
+
 
     def AddItem(self, row, data):
         for column, value in enumerate(data):
@@ -895,12 +869,11 @@ class RebedTable(QTableWidget):
             item = QTableWidgetItem(str(value))
             self.setItem(row, column, item)
 
-    def BuildTable(self, values):
+
+    def BuildTable(self, headers, values):
         self.setSortingEnabled(False)
-        headers = ['PD', 'Re-embedded']
         self.setRowCount(len(values))
         self.setColumnCount(len(headers))
         self.setHorizontalHeaderLabels(headers)
-        self.setWindowTitle('PD Re-embeddings')
         self.AddToTable(values)
         self.resizeColumnsToContents()

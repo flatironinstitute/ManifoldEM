@@ -67,6 +67,7 @@ class _ProjectionDirections:
         self.phi_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
         self.cluster_ids: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
 
+
     def load(self, pd_file):
         with open(pd_file, 'rb') as f:
             self.__dict__.update(pickle.load(f))
