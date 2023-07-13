@@ -64,19 +64,6 @@ class EigenvectorsTab(QWidget):
         label_topos.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
         self.layoutR.addWidget(label_topos, 0, 8, 1, 4)
 
-
-        def update_topos():  #refresh screen for new topos and anchors
-            for index in range(p.num_psis):
-                pic_path = p.get_topos_path(self.user_prd_index, index + 1)  # topos are 1 indexed
-                if os.path.isfile(pic_path):
-                    self.label_pic[index].setPixmap(QPixmap(pic_path))
-                    self.button_pic[index].setDisabled(False)
-                else:
-                    print(f"Topos not found at '{pic_path}'!")
-
-            # EigValCanvas().EigValRead()  #read in eigenvalue spectrum for current prd
-
-
         self.viz2 = Mayavi_Rho(self)
         self.layoutL.addWidget(self.viz2.get_widget(), 0, 0, 6, 7)
 
@@ -89,7 +76,6 @@ class EigenvectorsTab(QWidget):
         self.entry_prd.setMaximum(1)
         self.entry_prd.setSuffix(f"  /  1")
         self.entry_prd.valueChanged.connect(self.on_prd_change)
-        self.entry_prd.valueChanged.connect(update_topos)
         self.entry_prd.setToolTip('Change the projection direction of the current view above.')
         self.layoutL.addWidget(self.entry_prd, 6, 1, 1, 2)
 
@@ -370,6 +356,7 @@ class EigenvectorsTab(QWidget):
 
         self.update_pd_view()
         self.update_anchor_view()
+        self.update_psi_view()
 
 
     def update_psi_view(self):
