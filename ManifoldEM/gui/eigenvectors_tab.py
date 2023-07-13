@@ -10,7 +10,7 @@ import numpy as np
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store, Anchor, Sense
-from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow, Vid2Canvas
+from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow, Vid2Canvas, PDSelectorWindow
 
 
 def get_blank_pixmap(path: str):
@@ -35,6 +35,7 @@ class EigenvectorsTab(QWidget):
         self.bandwidth_window = None
         self.eigspec_window = None
         self.nlsa_compare_window = None
+        self.pd_selector_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -184,7 +185,7 @@ class EigenvectorsTab(QWidget):
 
         self.btn_PDsele = QPushButton('   PD Selections   ', self)
         self.btn_PDsele.setToolTip('Review current PD selections.')
-        self.btn_PDsele.clicked.connect(self.PDSeleViz)
+        self.btn_PDsele.clicked.connect(self.view_pd_selector)
         self.btn_PDsele.setDisabled(False)
         self.layoutB.addWidget(self.btn_PDsele, 8, 9, 1, 1, QtCore.Qt.AlignCenter)
 
@@ -246,16 +247,13 @@ class EigenvectorsTab(QWidget):
         self.nlsa_compare_window.show()
 
 
-    def PDSeleViz(self):
-        global PDSele_window
-        try:
-            PDSele_window.close()
-        except:
-            pass
-        PDSele_window = PDSeleMain()
-        PDSele_window.setMinimumSize(10, 10)
-        PDSele_window.setWindowTitle('Projection Direction Selections')
-        PDSele_window.show()
+    def view_pd_selector(self):
+        if self.pd_selector_window is None:
+            self.pd_selector_window = PDSelectorWindow()
+            self.pd_selector_window.setMinimumSize(10, 10)
+
+        self.pd_selector_window.setWindowTitle('Projection Direction Selections')
+        self.pd_selector_window.show()
 
 
     def on_button(self, n):
