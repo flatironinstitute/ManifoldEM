@@ -8,12 +8,12 @@ from matplotlib.figure import Figure
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QMessageBox, QDialog, QLabel, QFrame, QPushButton, QTabWidget,
-                             QLayout, QGridLayout, QProgressBar, QDesktopWidget, QTableWidget, QTableWidgetItem)
+                             QLayout, QGridLayout, QDesktopWidget, QTableWidget, QTableWidgetItem)
 
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
 
-
+# FIXME Loads/saves for prds/trash overwrite other progress
 class _PDSelectorWindow(QMainWindow):
     def __init__(self, parent=None, eigenvector_view=None):
         super(_PDSelectorWindow, self).__init__(parent)
@@ -117,16 +117,6 @@ class PDEditorCanvas(QDialog):
         super(PDEditorCanvas, self).__init__(parent)
         self.eigenvector_view = eigenvector_view
 
-        self.progBar1 = QProgressBar(self)  #minimum=0,maximum=1,value=0)
-        self.progBar1.setRange(0, 100)
-        self.progBar1.setVisible(False)
-        self.progBar1.setValue(0)
-
-        self.progBar2 = QProgressBar(self)  #minimum=0,maximum=1,value=0)
-        self.progBar2.setRange(0, 100)
-        self.progBar2.setVisible(False)
-        self.progBar2.setValue(0)
-
         label_edgeLarge1 = QLabel('')
         label_edgeLarge1.setMargin(20)
         label_edgeLarge1.setLineWidth(1)
@@ -177,13 +167,13 @@ class PDEditorCanvas(QDialog):
         self.btn_anchLoad.clicked.connect(self.anchor_load)
 
         self.btn_trashList = QPushButton('List Removals')
-        self.btn_trashList.clicked.connect(self.trashList)
+        self.btn_trashList.clicked.connect(self.view_trash_table)
         self.btn_trashReset = QPushButton('Reset Removals')
-        self.btn_trashReset.clicked.connect(self.trashReset)
+        self.btn_trashReset.clicked.connect(self.trash_reset)
         self.btn_trashSave = QPushButton('Save Removals')
-        self.btn_trashSave.clicked.connect(self.trashSave)
+        self.btn_trashSave.clicked.connect(self.trash_save)
         self.btn_trashLoad = QPushButton('Load Removals')
-        self.btn_trashLoad.clicked.connect(self.trashLoad)
+        self.btn_trashLoad.clicked.connect(self.trash_load)
 
         self.btn_occList = QPushButton('List Occupancies')
         self.btn_occList.clicked.connect(self.occListGen)
@@ -204,7 +194,6 @@ class PDEditorCanvas(QDialog):
         layout.addWidget(self.btn_anchReset, 0, 2, 1, 1, QtCore.Qt.AlignVCenter)
         layout.addWidget(self.btn_anchSave, 0, 3, 1, 1, QtCore.Qt.AlignVCenter)
         layout.addWidget(self.btn_anchLoad, 0, 4, 1, 1, QtCore.Qt.AlignVCenter)
-        layout.addWidget(self.progBar1, 1, 0, 1, 6)
 
         layout.addWidget(label_edgeLarge2, 2, 0, 1, 6, QtCore.Qt.AlignVCenter)
         layout.addWidget(label_trash, 2, 0, 1, 1, QtCore.Qt.AlignVCenter)
@@ -212,7 +201,6 @@ class PDEditorCanvas(QDialog):
         layout.addWidget(self.btn_trashReset, 2, 2, 1, 1, QtCore.Qt.AlignVCenter)
         layout.addWidget(self.btn_trashSave, 2, 3, 1, 1, QtCore.Qt.AlignVCenter)
         layout.addWidget(self.btn_trashLoad, 2, 4, 1, 1, QtCore.Qt.AlignVCenter)
-        layout.addWidget(self.progBar2, 3, 0, 1, 6)
 
         layout.addWidget(label_edgeLarge3, 4, 0, 1, 3, QtCore.Qt.AlignVCenter)
         layout.addWidget(label_occ, 4, 0, 1, 1, QtCore.Qt.AlignVCenter)
@@ -307,16 +295,10 @@ class PDEditorCanvas(QDialog):
             self.eigenvector_view.on_prd_change()
 
 
-    def trashList(self):
-        PrDs = []
-        trashed = []
+    def view_trash_table(self):
+        prds = data_store.get_prds()
 
-        trash_sum = 0
-        for i in range(1, P3.PrD_total + 1):
-            if P4.trashAll[i].isChecked():
-                trash_sum += 1
-
-        if trash_sum == 0:
+        if not len(prds.trash_ids):
             box = QMessageBox(self)
             box.setWindowTitle('ManifoldEM Error')
             box.setText('<b>Input Error</b>')
@@ -327,24 +309,18 @@ class PDEditorCanvas(QDialog):
                                     on the left side of the <i>Eigenvectors</i> tab.')
             box.setStandardButtons(QMessageBox.Ok)
             box.setDefaultButton(QMessageBox.Ok)
-            ret = box.exec_()
+            box.exec_()
+            return
 
-        else:
-            for i in range(1, P3.PrD_total + 1):
-                if P4.trashAll[i].isChecked():
-                    trashed.append('True')
-                else:
-                    trashed.append('False')
-                PrDs.append(int(i))
+        headers = ['PD']
+        values = sorted([(a + 1,) for a in prds.trash_ids])
+        self.trash_table = TableView(headers, values, title='PD Removals')
+        sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
+        self.trash_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
+        self.trash_table.show()
 
-            sorted_trash = sorted(zip(PrDs, trashed), key=lambda x: x[1], reverse=True)
-            self.anchor_table = trashTable(data=sorted_trash)
-            sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.anchor_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
-            self.anchor_table.show()
 
-    # reset assignments of all PD removals:
-    def trashReset(self):
+    def trash_reset(self):
         box = QMessageBox(self)
         self.setWindowTitle('Reset PD Removals')
         box.setText('<b>Reset Warning</b>')
@@ -355,175 +331,44 @@ class PDEditorCanvas(QDialog):
 
         box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         box.setInformativeText(msg)
-        reply = box.exec_()
 
-        if reply == QMessageBox.Yes:
-            for i in range(1, P3.PrD_total + 1):
-                if P4.trashAll[i].isChecked():
-                    P4.trashAll[i].setChecked(False)
-                    P4.anchorsAll[i].setDisabled(False)
+        if box.exec_() == QMessageBox.No:
+            return
 
-            self.progBar2.setVisible(False)
-            self.progBar2.setValue(0)
+        data_store.get_prds().trash_ids.clear()
 
-            P1.x4 = []
-            P1.y4 = []
-            P1.z4 = []
-            P1.a4 = []
-            P4.viz2.update_scene3()
-
-        elif reply == QMessageBox.No:
-            pass
-
-    def trashSave(self):
-        trash_sum = 0
-        for i in range(1, P3.PrD_total + 1):
-            if P4.trashAll[i].isChecked():
-                trash_sum += 1
-        if trash_sum == 0:
-            box = QMessageBox(self)
-            box.setWindowTitle('ManifoldEM Warning')
-            box.setIcon(QMessageBox.Warning)
-            box.setText('<b>Input Warning</b>')
-            msg = 'At least one PD must first be selected for removal before saving.'
-            box.setStandardButtons(QMessageBox.Ok)
-            box.setInformativeText(msg)
-            reply = box.exec_()
-        elif trash_sum > 0:
-            box = QMessageBox(self)
-            self.setWindowTitle('ManifoldEM Save Data')
-            box.setText('<b>Save Current Removals</b>')
-            box.setIcon(QMessageBox.Information)
-            msg = 'Performing this action will save a list of all PDs set for removal\
-                    to the <i>outputs/CC</i> directory for future reference.\
-                    <br /><br />\
-                    Do you want to proceed?'
-
-            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            box.setInformativeText(msg)
-            reply = box.exec_()
-
-            if reply == QMessageBox.Yes:
-
-                trashList = []
-
-                for i in range(1, P3.PrD_total + 1):
-                    if P4.trashAll[i].isChecked():
-                        trashList.append(int(1))
-                    else:
-                        trashList.append(int(0))
-
-                timestr = time.strftime("%Y%m%d-%H%M%S")
-                trashDir = os.path.join(p.CC_dir, f'temp_removals_{timestr}.txt')
-                np.savetxt(trashDir, trashList, fmt='%i', delimiter='\t')
-
-                box = QMessageBox(self)
-                box.setWindowTitle('ManifoldEM Save Current Removals')
-                box.setIcon(QMessageBox.Information)
-                box.setText('<b>Saving Complete</b>')
-                msg = 'Current removal selections have been saved to the <i>outputs/CC</i> directory.'
-                box.setStandardButtons(QMessageBox.Ok)
-                box.setInformativeText(msg)
-                reply = box.exec_()
-
-            elif reply == QMessageBox.No:
-                pass
+        if self.eigenvector_view is not None:
+            self.eigenvector_view.on_prd_change()
 
 
-    def trashLoad(self):
-        self.btn_anchList.setDisabled(True)
-        self.btn_anchReset.setDisabled(True)
-        self.btn_anchSave.setDisabled(True)
-        self.btn_anchLoad.setDisabled(True)
-        self.btn_trashList.setDisabled(True)
-        self.btn_trashReset.setDisabled(True)
-        self.btn_trashSave.setDisabled(True)
-        self.btn_trashLoad.setDisabled(True)
-        self.btn_occList.setDisabled(True)
-        self.btn_rebedList.setDisabled(True)
+    def trash_save(self):
+        data_store.get_prds().save()
 
-        P4.trash_list = []
-        trash_sum = 0
-        for i in range(1, P3.PrD_total + 1):
-            if P4.trashAll[i].isChecked():
-                trash_sum += 1
-        if trash_sum == 0:
-            fname = QFileDialog.getOpenFileName(self, 'Choose Data File', '', ('Data Files (*.txt)'))[0]
-            if fname:
-                try:
-                    data = []
-                    with open(fname) as values:
-                        for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                            data.append(column)
-                    P4.trash_list = data[0]
-                    p.set_trash_list(P4.trash_list)
+        box = QMessageBox(self)
+        box.setWindowTitle('ManifoldEM Save Current Removed PDs')
+        box.setIcon(QMessageBox.Information)
+        box.setText('<b>Saving Complete</b>')
+        msg = 'Current PD removals have been saved.'
+        box.setStandardButtons(QMessageBox.Ok)
+        box.setInformativeText(msg)
+        box.exec_()
 
-                    trashLen = 0
-                    for i in P4.trash_list:
-                        if int(i) == int(1):
-                            trashLen += 1
 
-                    idx = 1  #PD index
-                    prog = 0
-                    self.progBar2.setValue(prog)
-                    self.progBar2.setVisible(True)
-                    for i in P4.trash_list:
-                        if int(i) == int(1):  #if PD set to True (remove)
-                            P4.entry_PrD.setValue(idx)
-                            P4.user_PrD = idx
-                            P4.PrD_hist = idx
-                            P4.trashAll[idx].setChecked(True)
-                            P4.anchorsAll[idx].setChecked(False)
-                        prog += (1. / trashLen) * 100
-                        self.progBar2.setValue(prog)
-                        idx += 1
+    def trash_load(self):
+        data_store.get_prds().load()
 
-                    P4.entry_PrD.setValue(1)
-                    self.progBar2.setValue(100)
+        box = QMessageBox(self)
+        box.setWindowTitle('ManifoldEM Load previous trash')
+        box.setIcon(QMessageBox.Information)
+        box.setText('<b>Loading Complete</b>')
+        msg = 'Previous removal selections have been loaded on the <i>Eigenvectors</i> tab.'
+        box.setStandardButtons(QMessageBox.Ok)
+        box.setInformativeText(msg)
+        box.exec_()
 
-                    box = QMessageBox(self)
-                    box.setWindowTitle('ManifoldEM Load Previous Removals')
-                    box.setIcon(QMessageBox.Information)
-                    box.setText('<b>Loading Complete</b>')
-                    msg = 'Previous removal selections have been loaded on the <i>Eigenvectors</i> tab.'
-                    box.setStandardButtons(QMessageBox.Ok)
-                    box.setInformativeText(msg)
-                    reply = box.exec_()
+        if self.eigenvector_view is not None:
+            self.eigenvector_view.on_prd_change()
 
-                except:  #IndexError:
-                    box = QMessageBox(self)
-                    box.setWindowTitle('ManifoldEM Error')
-                    box.setText('<b>Input Error</b>')
-                    box.setIcon(QMessageBox.Warning)
-                    box.setInformativeText('Incorrect file structure detected.')
-                    box.setStandardButtons(QMessageBox.Ok)
-                    box.setDefaultButton(QMessageBox.Ok)
-                    ret = box.exec_()
-            else:
-                pass
-
-        elif trash_sum > 0:
-            box = QMessageBox(self)
-            box.setWindowTitle('ManifoldEM Warning')
-            box.setIcon(QMessageBox.Warning)
-            box.setText('<b>Input Warning</b>')
-            msg = 'To load PD removals from a previous session, first clear all currently selected\
-                    PD removals via the <i>Reset Removals</i> button.'
-
-            box.setStandardButtons(QMessageBox.Ok)
-            box.setInformativeText(msg)
-            reply = box.exec_()
-
-        self.btn_anchList.setDisabled(False)
-        self.btn_anchReset.setDisabled(False)
-        self.btn_anchSave.setDisabled(False)
-        self.btn_anchLoad.setDisabled(False)
-        self.btn_trashList.setDisabled(False)
-        self.btn_trashReset.setDisabled(False)
-        self.btn_trashSave.setDisabled(False)
-        self.btn_trashLoad.setDisabled(False)
-        self.btn_occList.setDisabled(False)
-        self.btn_rebedList.setDisabled(False)
 
     def occListGen(self):
         sorted_PrDs = sorted(zip(P1.thresh_PrDs, P1.thresh_occ), key=lambda x: x[1], reverse=True)
@@ -531,6 +376,7 @@ class PDEditorCanvas(QDialog):
         sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
         self.PrD_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
         self.PrD_table.show()
+
 
     def view_reembeddings_table(self):
         # read points from re-embedding file:
