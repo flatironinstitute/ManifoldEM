@@ -176,7 +176,7 @@ class PDEditorCanvas(QDialog):
         self.btn_trashLoad.clicked.connect(self.trash_load)
 
         self.btn_occList = QPushButton('List Occupancies')
-        self.btn_occList.clicked.connect(self.occListGen)
+        self.btn_occList.clicked.connect(self.view_occupancy_table)
         self.btn_rebedList = QPushButton('List Re-embeddings')
         self.btn_rebedList.clicked.connect(self.view_reembeddings_table)
 
@@ -370,12 +370,16 @@ class PDEditorCanvas(QDialog):
             self.eigenvector_view.on_prd_change()
 
 
-    def occListGen(self):
-        sorted_PrDs = sorted(zip(P1.thresh_PrDs, P1.thresh_occ), key=lambda x: x[1], reverse=True)
-        self.PrD_table = occTable(data=sorted_PrDs)
+    def view_occupancy_table(self):
+        prds = data_store.get_prds()
+
+        headers = ['PD', 'Occ']
+        values = sorted(zip(range(1, prds.n_thresholded + 1), prds.occupancy), key=lambda x: x[1], reverse=True)
+
+        self.occupancy_table = TableView(headers, values)
         sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
-        self.PrD_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
-        self.PrD_table.show()
+        self.occupancy_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
+        self.occupancy_table.show()
 
 
     def view_reembeddings_table(self):
