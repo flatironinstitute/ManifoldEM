@@ -383,43 +383,7 @@ class PDEditorCanvas(QDialog):
 
 
     def view_reembeddings_table(self):
-        # read points from re-embedding file:
-        fname = os.path.join(p.euler_dir, 'PrD_embeds.txt')
-        data = []
-        with open(fname) as values:
-            for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
-                data.append(column)
-
-        rebeds0 = data[0]
-        rebeds = []
-        total = []
-        idx = 1
-        for i in rebeds0:
-            if int(i) == 0:
-                rebeds.append('True')
-            else:
-                rebeds.append('False')
-            total.append(idx)
-            idx += 1
-
-        if len(rebeds) > 0:
-            sorted_rebeds = sorted(zip(total, rebeds), key=lambda x: x[1], reverse=True)
-            self.rebed_table = TableView(['PD', 'Re-embedded'], sorted_rebeds, title='PD Re-embeddings')
-            sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
-            self.rebed_table.move((sizeObject.width() // 2) - 100, (sizeObject.height() // 2) - 300)
-            self.rebed_table.show()
-        else:
-            box = QMessageBox(self)
-            box.setWindowTitle('ManifoldEM Error')
-            box.setText('<b>Input Error</b>')
-            box.setIcon(QMessageBox.Information)
-            box.setInformativeText('No manifold re-embeddings have been performed.\
-                                    <br /><br />\
-                                    Manifolds for each PD can be individually re-embedded\
-                                    within the <i>View Chosen Topos</i> window.')
-            box.setStandardButtons(QMessageBox.Ok)
-            box.setDefaultButton(QMessageBox.Ok)
-            box.exec_()
+        print("FIXME: re-embeddings view not implemented")
 
 
 class PDViewerCanvas(QDialog):
