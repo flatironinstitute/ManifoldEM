@@ -109,7 +109,7 @@ class EigenvectorsTab(QWidget):
             label.setAlignment(QtCore.Qt.AlignCenter)
 
             button = QPushButton(f'View Ψ{str(i).translate(subscripts)}', self)
-            button.clicked.connect(lambda *, i=i: self.CC_vid1(i))
+            button.clicked.connect(lambda *, i=i: self.view_cc_details(i))
             button.setToolTip('View 2d movie and related outputs.')
 
             self.label_pic.append(label)
@@ -262,8 +262,8 @@ class EigenvectorsTab(QWidget):
         print('Button {0} clicked'.format(n))
 
 
-    def CC_vid1(self, n):
-        self.cc_details_window = CCDetailsView(self.user_prd_index, n)
+    def view_cc_details(self, psi_index):
+        self.cc_details_window = CCDetailsView(self.user_prd_index, psi_index)
 
         # Manifold2dCanvas.coordsX = []
         # Manifold2dCanvas.coordsY = []
@@ -287,7 +287,9 @@ class EigenvectorsTab(QWidget):
         # VidCanvas.img_paths = []
         # VidCanvas.imgs = []
         # VidCanvas.frames = 0
-        self.cc_details_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, n))
+        self.cc_details_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, psi_index))
+        self.cc_details_window.connect_signals(data_change_callback=self.on_prd_change)
+
         self.cc_details_window.show()
 
 

@@ -55,6 +55,7 @@ class _ProjectionDirections:
 
         self.anchors: Dict[int, Anchor] = {}
         self.trash_ids: Set[int] = set()
+        self.reembed_ids: Set[int] = set()
 
         self.neighbor_graph: Dict[str, Any] = {}
         self.neighbor_subgraph: List[Dict[str, Any]] = []
