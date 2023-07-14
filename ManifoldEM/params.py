@@ -263,6 +263,10 @@ class Params():
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
 
 
+    def get_psi_gif(self, prd: int, index: int) -> str:
+        return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'psi_{index}.gif')
+
+
     def get_EL_file(self, prd_index: int):
         return f'{self.EL_file}prD_{prd_index}'
 

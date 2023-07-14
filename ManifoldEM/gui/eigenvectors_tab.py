@@ -10,7 +10,8 @@ import numpy as np
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store, Anchor, Sense
-from .eigen_views import Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow, Vid2Canvas, PDSelectorWindow
+from .eigen_views import (Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow,
+                          Vid2Canvas, PDSelectorWindow, CCDetailsView)
 
 
 def get_blank_pixmap(path: str):
@@ -36,6 +37,7 @@ class EigenvectorsTab(QWidget):
         self.eigspec_window = None
         self.nlsa_compare_window = None
         self.pd_selector_window = None
+        self.cc_details_window = None
 
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(20, 20, 20, 20)
@@ -107,7 +109,7 @@ class EigenvectorsTab(QWidget):
             label.setAlignment(QtCore.Qt.AlignCenter)
 
             button = QPushButton(f'View Ψ{str(i).translate(subscripts)}', self)
-            button.clicked.connect(lambda: self.CC_vid1(i))
+            button.clicked.connect(lambda *, i=i: self.CC_vid1(i))
             button.setToolTip('View 2d movie and related outputs.')
 
             self.label_pic.append(label)
@@ -261,38 +263,32 @@ class EigenvectorsTab(QWidget):
 
 
     def CC_vid1(self, n):
-        self.gif_path = os.path.join(p.out_dir, 'topos', f'prd_{self.user_prd_index}', f'psi_{n}.gif')
-        global prd_window
-        try:
-            prd_window.close()
-        except:
-            pass
+        self.cc_details_window = CCDetailsView(self.user_prd_index, n)
 
-        Manifold2dCanvas.coordsX = []
-        Manifold2dCanvas.coordsY = []
-        Manifold2dCanvas.eig_current = n
-        eig_n_others = []
-        eig_v_others = []
-        index = 0
-        for i in EigValCanvas.eig_v:  #find next highest eigenvalue
-            index += 1
-            if index != n:
-                eig_n_others.append(EigValCanvas.eig_n[index - 1])
-                eig_v_others.append(EigValCanvas.eig_v[index - 1])
+        # Manifold2dCanvas.coordsX = []
+        # Manifold2dCanvas.coordsY = []
+        # Manifold2dCanvas.eig_current = n
+        # eig_n_others = []
+        # eig_v_others = []
+        # index = 0
+        # for i in EigValCanvas.eig_v:  #find next highest eigenvalue
+        #     index += 1
+        #     if index != n:
+        #         eig_n_others.append(EigValCanvas.eig_n[index - 1])
+        #         eig_v_others.append(EigValCanvas.eig_v[index - 1])
 
-        Manifold2dCanvas.eig_compare1 = eig_n_others[0]  #max eigenvalue (other than one selected)
-        Manifold2dCanvas.eig_compare2 = eig_n_others[1]  #next highest eigenvalue from the above
+        # Manifold2dCanvas.eig_compare1 = eig_n_others[0]  #max eigenvalue (other than one selected)
+        # Manifold2dCanvas.eig_compare2 = eig_n_others[1]  #next highest eigenvalue from the above
 
-        p.eig_current = Manifold2dCanvas.eig_current
-        p.eig_compare1 = Manifold2dCanvas.eig_compare1
+        # p.eig_current = Manifold2dCanvas.eig_current
+        # p.eig_compare1 = Manifold2dCanvas.eig_compare1
 
-        VidCanvas.run = 0
-        VidCanvas.img_paths = []
-        VidCanvas.imgs = []
-        VidCanvas.frames = 0
-        prd_window = prd_Viz()
-        prd_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, n))
-        prd_window.show()
+        # VidCanvas.run = 0
+        # VidCanvas.img_paths = []
+        # VidCanvas.imgs = []
+        # VidCanvas.frames = 0
+        self.cc_details_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, n))
+        self.cc_details_window.show()
 
 
     def update_pd_view(self):
