@@ -1,15 +1,21 @@
 import imageio
+import pickle
+from matplotlib import color_sequences
 
 import numpy as np
 
+from matplotlib.path import Path as PlotPath
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PIL import Image
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QDialog, QTabWidget, QLabel, QFrame, QPushButton, QSlider,
-                             QLayout, QGridLayout, QSpinBox, QComboBox, QCheckBox)
+                             QLayout, QGridLayout, QSpinBox, QComboBox, QCheckBox, QProgressBar)
 
+from . import ClusterAvgMain
+
+from ManifoldEM.core import clusterAvg
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
 
@@ -93,6 +99,12 @@ class VidCanvas(QDialog):
         layout.addWidget(self.button_forward_one, 3, 4, 1, 1)
         layout.addWidget(self.slider, 4, 0, 1, 5)
         self.setLayout(layout)
+
+
+    def closeEvent(self, ce):
+        self.frame_id = 0
+        self.run = 0  #needed to pause scrollbar before it is deleted
+        self.canvas.stop_event_loop()
 
 
     def scroll(self, frame):
@@ -227,6 +239,27 @@ class Manifold2dCanvas(QDialog):
         super(Manifold2dCanvas, self).__init__(parent)
 
         self.prd_index = prd_index
+        self.eigChoice1 = 0
+        self.eigChoice2 = 1
+        self.eigChoice3 = 2
+
+        # for eigenvector specific plots:
+        self.eig_current = 1
+        self.eig_compare1 = 2
+        self.eig_compare2 = 3
+        self.coordsX = []  #user X coordinate picks
+        self.coordsY = []  #user Y coordinate picks
+        self.connected = 0  #binary: 0=unconnected, 1=connected
+        self.pts_orig = []
+        self.pts_origX = []
+        self.pts_origY = []
+        self.pts_new = []
+        self.pts_newX = []
+        self.pts_newY = []
+        self.x = []
+        self.y = []
+        self.imgAvg = []
+        
 
         self.figure = Figure(dpi=200)
         self.ax = self.figure.add_subplot(111)
@@ -234,7 +267,8 @@ class Manifold2dCanvas(QDialog):
         self.canvas = FigureCanvas(self.figure)
 
         psi_file = p.get_psi_file(prd_index - 1)  #current embedding
-        data = myio.fin1(psi_file)
+        with open(psi_file, 'rb') as f:
+            data = pickle.load(f)
         x = data['psi'][:, self.eigChoice1]
         y = data['psi'][:, self.eigChoice2]
 
@@ -317,18 +351,7 @@ class Manifold2dCanvas(QDialog):
 
 
     def reset(self):
-        if len(self.ax.lines) != 0:
-            if self.connected == 0:
-                for i in range(1, (len(self.coordsX) * 2)):
-                    del (self.ax.lines[-1])  #delete all vertices and edges
-
-            elif self.connected == 1:
-                for i in range(1, (len(self.coordsX) * 2) + 1):
-                    del (self.ax.lines[-1])  #delete all vertices and edges
-                self.connected = 0
-        else:
-            self.connected = 0
-
+        self.connected = 0
         self.btn_connect.setDisabled(True)
         self.btn_remove.setDisabled(True)
         self.btn_view.setDisabled(True)
@@ -354,14 +377,19 @@ class Manifold2dCanvas(QDialog):
 
 
     def connect(self):
-        if len(self.coordsX) > 2:
-            ax = self.figure.axes[0]
-            ax.plot([self.coordsX[0], self.coordsX[-1]], [self.coordsY[0], self.coordsY[-1]],
-                    color='#7f7f7f',
-                    linestyle='solid',
-                    linewidth=.5,
-                    zorder=1)  #C7
-            self.canvas.draw()
+        if len(self.coordsX) <= 2:
+            print("Not enough points to connect")
+            return
+
+        self.coordsX.append(self.coordsX[0])
+        self.coordsY.append(self.coordsY[0])
+        ax = self.figure.axes[0]
+        ax.plot([self.coordsX[-2], self.coordsX[-1]], [self.coordsY[-2], self.coordsY[-1]],
+                color='#7f7f7f',
+                linestyle='solid',
+                linewidth=.5,
+                zorder=1)  #C7
+        self.canvas.draw()
         self.connected = 1
         self.btn_connect.setDisabled(True)
         self.btn_remove.setDisabled(False)
@@ -374,16 +402,7 @@ class Manifold2dCanvas(QDialog):
         self.pts_newX = []
         self.pts_newY = []
 
-        codes = []
-        for i in range(len(self.coordsX)):
-            if i == 0:
-                codes.extend([pltPath.Path.MOVETO])
-            elif i == len(self.coordsX):
-                codes.extend([pltPath.Path.CLOSEPOLY])
-            else:
-                codes.extend([pltPath.Path.LINETO])
-
-        path = pltPath.Path(list(map(list, zip(self.coordsX, self.coordsY))), codes)
+        path = PlotPath(list(map(list, zip(self.coordsX, self.coordsY))), codes=None, closed=True, readonly=True)
         inside = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(),
                                       radius=1e-9)
 
@@ -538,52 +557,19 @@ class Manifold2dCanvas(QDialog):
 
 
     def view(self):  #view average of all images in encircled region
-        self.pts_encircled = []
-        self.pts_encircledX = []
-        self.pts_encircledY = []
-
-        codes = []
-        for i in range(len(self.coordsX)):
-            if i == 0:
-                codes.extend([pltPath.Path.MOVETO])
-            elif i == len(self.coordsX) - 1:
-                codes.extend([pltPath.Path.CLOSEPOLY])
-            else:
-                codes.extend([pltPath.Path.LINETO])
-
-        path = pltPath.Path(list(map(list, zip(self.coordsX, self.coordsY))), codes)
-        inside = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(),
+        path = PlotPath(list(map(list, zip(self.coordsX, self.coordsY))), closed=True, codes=None, readonly=True)
+        inside_mask = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(),
                                       radius=1e-9)
 
-        idx_encircled = []
-        index = 0
-        index_enc = 0
-        for i in inside:
-            index += 1
-            if i == True:
-                index_enc += 1
-                self.pts_encircledX.append(self.pts_origX[index - 1])
-                self.pts_encircledY.append(self.pts_origY[index - 1])
-                self.pts_encircled = zip(self.pts_encircledX, self.pts_encircledY)
-                idx_encircled.append(index - 1)
+        idx_encircled = list(np.nonzero(inside_mask)[0])
+        print('Encircled Points:', len(idx_encircled))
 
-        print('Encircled Points:', index_enc)
+        imgAvg = clusterAvg(idx_encircled, self.prd_index - 1)
 
-        self.imgAvg = clusterAvg(idx_encircled, self.prd_index - 1)
-        self.ClusterAvg()
-
-
-    def ClusterAvg(self):
-        global ClusterAvgMain_window
-        try:
-            ClusterAvgMain_window.close()
-        except:
-            pass
-        #self.setWindowModality(QtCore.Qt.ApplicationModal) #freezes out parent window
-        ClusterAvgMain_window = ClusterAvgMain()
-        ClusterAvgMain_window.setMinimumSize(10, 10)
-        ClusterAvgMain_window.setWindowTitle(f'Projection Direction {self.prd_index}')
-        ClusterAvgMain_window.show()
+        self.cluster_avg_window = ClusterAvgMain(imgAvg)
+        self.cluster_avg_window.setMinimumSize(10, 10)
+        self.cluster_avg_window.setWindowTitle(f'Projection Direction {self.prd_index}')
+        self.cluster_avg_window.show()
 
 
     def onclick(self, event):
@@ -667,24 +653,23 @@ class _CCDetailsView(QMainWindow):
 
 
     def initUI(self):
-        # Manifold2dCanvas.eigChoice1 = 0
-        # Manifold2dCanvas.eigChoice2 = 1
-        # Manifold2dCanvas.eigChoice3 = 2
         gif_path = p.get_psi_gif(self.prd_index, self.psi_index)
         self.vid_tab1 = VidCanvas(gif_path, parent=self)
-        # self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
-        # vid_tab3 = Manifold3dCanvas(self)
-        # vid_tab4 = ChronosCanvas(self)
-        # vid_tab5 = PsiCanvas(self)
-        # vid_tab6 = TauCanvas(self)
+        self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
+        self.vid_tab3 = VidCanvas(gif_path, parent=self) # Manifold3dCanvas(self)
+        self.vid_tab4 = VidCanvas(gif_path, parent=self) # ChronosCanvas(self)
+        self.vid_tab5 = VidCanvas(gif_path, parent=self) # PsiCanvas(self)
+        self.vid_tab6 = VidCanvas(gif_path, parent=self) # TauCanvas(self)
+
         self.vid_tabs = QTabWidget(self)
         self.vid_tabs.addTab(self.vid_tab1, 'Movie Player')
-        # self.vid_tabs.addTab(vid_tab2, '2D Embedding')
-        # vid_tabs.addTab(vid_tab3, '3D Embedding')
-        # vid_tabs.addTab(vid_tab4, 'Chronos')
-        # vid_tabs.addTab(vid_tab5, 'Psi Analysis')
-        # vid_tabs.addTab(vid_tab6, 'Tau Analysis')
-        #vid_tabs.setTabEnabled(1, False)
+        self.vid_tabs.addTab(self.vid_tab2, '2D Embedding')
+
+        self.vid_tabs.addTab(self.vid_tab3, '3D Embedding')
+        self.vid_tabs.addTab(self.vid_tab4, 'Chronos')
+        self.vid_tabs.addTab(self.vid_tab5, 'Psi Analysis')
+        self.vid_tabs.addTab(self.vid_tab6, 'Tau Analysis')
+
         self.vid_tabs.currentChanged.connect(self.onTabChange)  #signal for tabs changed via direct click
 
         style = """QTabWidget::tab-bar{
@@ -700,9 +685,6 @@ class _CCDetailsView(QMainWindow):
         self.vid_tab1.frame_id = 0
         self.vid_tab1.run = 0  #needed to pause scrollbar before it is deleted
         self.vid_tab1.canvas.stop_event_loop()
-
-        if int(0) < Manifold2dCanvas.progress1.value() < int(100):  #no escaping mid-thread
-            ce.ignore()
 
 
     def onTabChange(self, i):
