@@ -55,6 +55,56 @@ def _backup_restore(prd_index, backup=True):
         shutil.copy(srcfile, dstfile)
 
 
+class ChronosCanvas(QDialog):
+    def __init__(self, prd_index: int, psi_index: int, parent):
+        super(ChronosCanvas, self).__init__(parent)
+
+        self.prd_index = prd_index
+        self.psi_index = psi_index
+
+        # chronos from psi analsis:
+        chr_fname = os.path.join(p.psi2_dir, 'S2_prD_%s_psi_%s' % (self.prd_index - 1, self.psi_index - 1))
+        with open(chr_fname, 'rb') as f:
+            chr_data = pickle.load(f)
+
+        chronos = chr_data['VX']
+
+        # create canvas and plot data:
+        figure = Figure(dpi=200)
+        figure.set_tight_layout(True)
+        canvas = FigureCanvas(figure)
+
+        fst = 6  # title font size
+        lft = -25  # lower xlim
+        fsa = 4  # axis font size
+        sides = ['top', 'bottom', 'left', 'right']
+
+        for i in range(8):
+            ax = figure.add_subplot(2, 4, i + 1)
+            ax.plot(chronos[i], color="#1f77b4", linewidth=.5)
+            ax.set_title(f'Chronos {i + 1}', fontsize=fst)
+            ax.set_xlim(left=lft, right=len(chronos[i]) - lft)
+            ax.set_xticks(np.arange(0, len(chronos[0]) + 1, len(chronos[0]) / 2))
+            ax.grid(linestyle='-', linewidth='0.5', color='lightgray', alpha=0.2)
+
+            for tick in ax.xaxis.get_major_ticks():
+                tick.label1.set_fontsize(fsa)
+
+            ax.tick_params(direction='in', length=2, width=.25)
+
+            for side in sides:
+                ax.spines[side].set_linewidth(1)
+
+
+        canvas.draw()
+
+        layout = QGridLayout()
+        layout.setSizeConstraint(QLayout.SetMinimumSize)
+        layout.addWidget(canvas, 1, 0, 4, 4)
+
+        self.setLayout(layout)
+
+
 class VidCanvas(QDialog):
 
     def get_frame_count(self):
@@ -661,7 +711,7 @@ class Manifold2dCanvas(QDialog):
             box.setInformativeText(msg)
             box.setStandardButtons(QMessageBox.Ok)
             box.setDefaultButton(QMessageBox.Ok)
-            ret = box.exec_()
+            box.exec_()
 
             # force-update main GUI window (topos images)
             self.data_changed.emit()
@@ -681,7 +731,7 @@ class _CCDetailsView(QMainWindow):
         self.vid_tab1 = VidCanvas(gif_path, parent=self)
         self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
         self.vid_tab3 = VidCanvas(gif_path, parent=self) # Manifold3dCanvas(self)
-        self.vid_tab4 = VidCanvas(gif_path, parent=self) # ChronosCanvas(self)
+        self.vid_tab4 = ChronosCanvas(self.prd_index, self.psi_index, self)
         self.vid_tab5 = VidCanvas(gif_path, parent=self) # PsiCanvas(self)
         self.vid_tab6 = VidCanvas(gif_path, parent=self) # TauCanvas(self)
 
@@ -705,12 +755,6 @@ class _CCDetailsView(QMainWindow):
         self.show()
 
 
-    def closeEvent(self, ce):  #when user clicks to exit via subwindow button
-        self.vid_tab1.frame_id = 0
-        self.vid_tab1.run = 0  #needed to pause scrollbar before it is deleted
-        self.vid_tab1.canvas.stop_event_loop()
-
-
     def onTabChange(self, i):
         if i != 0:  #needed to stop `Movie Player` if tab changed during playback
             self.vid_tab1.run = 0
@@ -721,6 +765,7 @@ class _CCDetailsView(QMainWindow):
             self.vid_tab1.button_pause.setDisabled(True)
 
 
+    # FIXME attach signals
     def connect_signals(self, data_change_callback):
         return
         self.vid_tab2.data_changed.connect(data_change_callback)
