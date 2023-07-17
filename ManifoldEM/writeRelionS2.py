@@ -5,7 +5,8 @@ import pandas
 
 import numpy as np
 
-from ManifoldEM import myio, util, quaternion, star, p
+from ManifoldEM import myio, util, quaternion, star
+from ManifoldEM.params import p
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

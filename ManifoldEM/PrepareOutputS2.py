@@ -4,7 +4,9 @@ import sys
 
 import numpy as np
 
-from ManifoldEM import writeRelionS2, p, myio
+from ManifoldEM import writeRelionS2, myio
+from ManifoldEM.data_store import data_store
+from ManifoldEM.params import p
 
 def op(*argv):
     """This script prepares the image stacks and orientations for 3D reconstruction."""
@@ -22,10 +24,10 @@ def op(*argv):
     # read reaction coordinates
 
     a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
-    range = np.delete(range1, a)
-    a = np.nonzero(p.get_trash_list())[0]  # unassigned states, python
-    range = np.delete(range, a)
-    xSelect = range
+    myrange = np.delete(range1, a)
+    a = list(data_store.get_prds().trash_ids)
+    myrange = np.delete(myrange, a)
+    xSelect = myrange
 
     # getFromFileS2
     xLost = []
