@@ -1038,8 +1038,8 @@ class _CCDetailsView(QMainWindow):
     def initUI(self):
         gif_path = p.get_psi_gif(self.prd_index, self.psi_index)
         self.vid_tab1 = VidCanvas(gif_path, parent=self)
-        self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
-        self.vid_tab3 = VidCanvas(gif_path, parent=self) # Manifold3dCanvas(self)
+        self.vid_tab2 = QDialog(self)  # Manifold2dCanvas(self.prd_index, self)
+        self.vid_tab3 = QDialog(self)  # Manifold3dCanvas(self)
         self.vid_tab4 = ChronosCanvas(self.prd_index, self.psi_index, self)
         self.vid_tab5 = PsiCanvas(self.prd_index, self.psi_index, self)
         self.vid_tab6 = TauCanvas(self.prd_index, self.psi_index, self)
