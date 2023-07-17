@@ -10,9 +10,10 @@ from matplotlib.path import Path as PlotPath
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QDialog, QTabWidget, QMessageBox, QPushButton, QSlider,
-                             QLayout, QGridLayout, QProgressBar)
+                             QLayout, QGridLayout, QProgressBar, QLabel, QComboBox, QCheckBox, QFrame)
 
 from . import ClusterAvgMain
 
@@ -53,6 +54,252 @@ def _backup_restore(prd_index, backup=True):
         srcfile = os.path.join(srcprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
         dstfile = os.path.join(dstprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
         shutil.copy(srcfile, dstfile)
+
+
+class PsiCanvas(QDialog):
+    def __init__(self, prd_index: int, psi_index: int, parent):
+        super(PsiCanvas, self).__init__(parent)
+
+        self.con_on = 0
+        self.rec_on = 1
+
+        # psis from psi analsis:
+        psi_fname = os.path.join(p.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        with open(psi_fname, 'rb') as f:
+            psi_data = pickle.load(f)
+
+        # PsiC:
+        self.psiC = psi_data['psiC1']
+        self.psiC1 = self.psiC[:, 0]
+        self.psiC2 = self.psiC[:, 1]
+        self.psiC3 = self.psiC[:, 2]
+        # Psirec 1:
+        self.psirec = psi_data['psirec']
+        self.psirec1 = self.psirec[:, 0]
+        self.psirec2 = self.psirec[:, 1]
+        self.psirec3 = self.psirec[:, 2]
+
+        # create canvas and plot data:
+        self.figure = Figure(dpi=200)
+        self.canvas = FigureCanvas(self.figure)
+        self.ax = self.figure.add_subplot(111, projection='3d')
+        self.ax.mouse_init()
+
+        self.ax.view_init(90, 90)
+
+        # Matplotlib Default Colors:
+        # ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
+        self.ax.scatter(self.psirec1,
+                        self.psirec2,
+                        self.psirec3,
+                        label='psi_rec',
+                        linewidths=.5,
+                        edgecolors='k',
+                        color='#1f77b4')  #C0
+        #self.ax.scatter(self.psiC1, self.psiC2, self.psiC3, label='psi_con', linewidths=.5, edgecolors='k', c='#2ca02c') #C2
+        self.ax.legend(loc='best', prop={'size': 6})
+
+        for tick in self.ax.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax.zaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+
+        self.ax.tick_params(axis='x', which='major', pad=-3)
+        self.ax.tick_params(axis='y', which='major', pad=-3)
+        self.ax.tick_params(axis='z', which='major', pad=-3)
+        self.ax.xaxis.labelpad = -8
+        self.ax.yaxis.labelpad = -8
+        self.ax.zaxis.labelpad = -8
+
+        self.ax.set_xlabel(r'$\mathrm{\Psi}$%s' % (1), fontsize=6)
+        self.ax.set_ylabel(r'$\mathrm{\Psi}$%s' % (2), fontsize=6)
+        self.ax.set_zlabel(r'$\mathrm{\Psi}$%s' % (3), fontsize=6)
+
+        self.canvas.draw()  #refresh canvas
+
+        # canvas buttons:
+        self.label_X = QLabel('X-axis:')
+        self.label_X.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.label_Y = QLabel('Y-axis:')
+        self.label_Y.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.label_Z = QLabel('Z-axis:')
+        self.label_Z.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.combo_X = QComboBox(self)
+        self.combo_X.setDisabled(False)
+
+        self.combo_Y = QComboBox(self)
+        self.combo_Y.setDisabled(False)
+
+        self.combo_Z = QComboBox(self)
+        self.combo_Z.setDisabled(False)
+
+        for psi in range(p.num_psiTrunc):
+            self.combo_X.addItem('Psi %s' % (int(psi + 1)))
+            self.combo_Y.addItem('Psi %s' % (int(psi + 1)))
+            self.combo_Z.addItem('Psi %s' % (int(psi + 1)))
+
+
+        self.combo_X.setCurrentIndex(0)
+        self.combo_Y.setCurrentIndex(1)
+        self.combo_Z.setCurrentIndex(2)
+        self.combo_X.model().item(1).setEnabled(False)
+        self.combo_X.model().item(2).setEnabled(False)
+        self.combo_Y.model().item(0).setEnabled(False)
+        self.combo_Y.model().item(2).setEnabled(False)
+        self.combo_Z.model().item(0).setEnabled(False)
+        self.combo_Z.model().item(1).setEnabled(False)
+
+        self.combo_X.currentIndexChanged.connect(self.choose_X)
+        self.combo_Y.currentIndexChanged.connect(self.choose_Y)
+        self.combo_Z.currentIndexChanged.connect(self.choose_Z)
+
+        self.label_Vline = QLabel('')  #separating line
+        self.label_Vline.setFrameStyle(QFrame.VLine | QFrame.Sunken)
+
+        self.check_psiC = QCheckBox('Concatenation')
+        self.check_psiC.clicked.connect(self.choose_con)
+        self.check_psiC.setChecked(False)
+
+        self.check_psiR = QCheckBox('Reconstruction')
+        self.check_psiR.clicked.connect(self.choose_rec)
+        self.check_psiR.setChecked(True)
+
+        layout = QGridLayout()
+        layout.setSizeConstraint(QLayout.SetMinimumSize)
+        #layout.addWidget(self.toolbar, 0,0,1,4)
+        layout.addWidget(self.canvas, 1, 0, 4, 4)
+
+        layout.addWidget(self.label_X, 5, 0, 1, 1)
+        layout.addWidget(self.label_Y, 6, 0, 1, 1)
+        layout.addWidget(self.label_Z, 7, 0, 1, 1)
+        layout.addWidget(self.combo_X, 5, 1, 1, 1)
+        layout.addWidget(self.combo_Y, 6, 1, 1, 1)
+        layout.addWidget(self.combo_Z, 7, 1, 1, 1)
+        layout.addWidget(self.label_Vline, 5, 2, 3, 1)
+        layout.addWidget(self.check_psiC, 5, 3, 1, 1)
+        layout.addWidget(self.check_psiR, 6, 3, 1, 1)
+
+        self.setLayout(layout)
+        self.canvas.draw()
+
+
+    def replot(self):
+        # redraw and resize figure:
+        self.ax.clear()
+
+        if self.rec_on == 1:
+            self.ax.scatter(self.psirec1,
+                            self.psirec2,
+                            self.psirec3,
+                            label='psi_rec',
+                            linewidths=.5,
+                            edgecolors='k',
+                            color='#1f77b4')  #C0
+        if self.con_on == 1:
+            self.ax.scatter(self.psiC1,
+                            self.psiC2,
+                            self.psiC3,
+                            label='psi_con',
+                            linewidths=.5,
+                            edgecolors='k',
+                            c='#2ca02c')  #C2
+
+        if self.rec_on == 1 or self.con_on == 1:
+            self.ax.legend(loc='best', prop={'size': 6})
+
+        for tick in self.ax.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax.zaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+
+        self.ax.tick_params(axis='x', which='major', pad=-3)
+        self.ax.tick_params(axis='y', which='major', pad=-3)
+        self.ax.tick_params(axis='z', which='major', pad=-3)
+        self.ax.xaxis.labelpad = -8
+        self.ax.yaxis.labelpad = -8
+        self.ax.zaxis.labelpad = -8
+        self.ax.set_xlabel(r'$\mathrm{\Psi}$%s' % (int(self.combo_X.currentIndex()) + 1), fontsize=6)
+        self.ax.set_ylabel(r'$\mathrm{\Psi}$%s' % (int(self.combo_Y.currentIndex()) + 1), fontsize=6)
+        self.ax.set_zlabel(r'$\mathrm{\Psi}$%s' % (int(self.combo_Z.currentIndex()) + 1), fontsize=6)
+
+        self.canvas.draw()
+
+
+    def choose_X(self):
+        x = int(self.combo_X.currentIndex())
+
+        self.psiC1 = self.psiC[:, x]
+        self.psirec1 = self.psirec[:, x]
+
+        for i in range(p.num_psiTrunc):
+            self.combo_Y.model().item(i).setEnabled(True)
+            self.combo_Z.model().item(i).setEnabled(True)
+
+        self.combo_Y.model().item(int(self.combo_X.currentIndex())).setEnabled(False)
+        self.combo_Y.model().item(int(self.combo_Z.currentIndex())).setEnabled(False)
+        self.combo_Z.model().item(int(self.combo_X.currentIndex())).setEnabled(False)
+        self.combo_Z.model().item(int(self.combo_Y.currentIndex())).setEnabled(False)
+
+        self.replot()
+
+
+    def choose_Y(self):
+        y = int(self.combo_Y.currentIndex())
+
+        self.psiC2 = self.psiC[:, y]
+        self.psirec2 = self.psirec[:, y]
+
+        for i in range(p.num_psiTrunc):
+            self.combo_X.model().item(i).setEnabled(True)
+            self.combo_Z.model().item(i).setEnabled(True)
+
+        self.combo_X.model().item(int(self.combo_Y.currentIndex())).setEnabled(False)
+        self.combo_X.model().item(int(self.combo_Z.currentIndex())).setEnabled(False)
+        self.combo_Z.model().item(int(self.combo_X.currentIndex())).setEnabled(False)
+        self.combo_Z.model().item(int(self.combo_Y.currentIndex())).setEnabled(False)
+
+        self.replot()
+
+
+    def choose_Z(self):
+        z = int(self.combo_Z.currentIndex())
+
+        self.psiC3 = self.psiC[:, z]
+        self.psirec3 = self.psirec[:, z]
+
+        for i in range(p.num_psiTrunc):
+            self.combo_X.model().item(i).setEnabled(True)
+            self.combo_Y.model().item(i).setEnabled(True)
+
+        self.combo_X.model().item(int(self.combo_Y.currentIndex())).setEnabled(False)
+        self.combo_X.model().item(int(self.combo_Z.currentIndex())).setEnabled(False)
+        self.combo_Y.model().item(int(self.combo_X.currentIndex())).setEnabled(False)
+        self.combo_Y.model().item(int(self.combo_Z.currentIndex())).setEnabled(False)
+
+        self.replot()
+
+
+    def choose_con(self):
+        if self.check_psiC.isChecked():
+            self.con_on = 1
+        else:
+            self.con_on = 0
+        self.replot()
+
+
+    def choose_rec(self):
+        if self.check_psiR.isChecked():
+            self.rec_on = 1
+        else:
+            self.rec_on = 0
+        self.replot()
 
 
 class ChronosCanvas(QDialog):
@@ -339,7 +586,7 @@ class Manifold2dCanvas(QDialog):
         self.pts_orig = []
         self.pts_origX = []
         self.pts_origY = []
-        
+
 
         self.figure = Figure(dpi=200)
         self.ax = self.figure.add_subplot(111)
@@ -732,13 +979,12 @@ class _CCDetailsView(QMainWindow):
         self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
         self.vid_tab3 = VidCanvas(gif_path, parent=self) # Manifold3dCanvas(self)
         self.vid_tab4 = ChronosCanvas(self.prd_index, self.psi_index, self)
-        self.vid_tab5 = VidCanvas(gif_path, parent=self) # PsiCanvas(self)
+        self.vid_tab5 = PsiCanvas(self.prd_index, self.psi_index, self)
         self.vid_tab6 = VidCanvas(gif_path, parent=self) # TauCanvas(self)
 
         self.vid_tabs = QTabWidget(self)
         self.vid_tabs.addTab(self.vid_tab1, 'Movie Player')
         self.vid_tabs.addTab(self.vid_tab2, '2D Embedding')
-
         self.vid_tabs.addTab(self.vid_tab3, '3D Embedding')
         self.vid_tabs.addTab(self.vid_tab4, 'Chronos')
         self.vid_tabs.addTab(self.vid_tab5, 'Psi Analysis')
