@@ -7,19 +7,20 @@ from PyQt5.QtWidgets import (QLabel, QFrame, QPushButton, QGridLayout, QWidget, 
 
 from ManifoldEM.params import p
 from ManifoldEM.FindConformationalCoord import op as FindConformationalCoord
+from ManifoldEM.EL1D import op as EL1D
 
 class CompilationTab(QWidget):
     #temporary values:
     user_temperature = 25  #Celsius
 
     # threading:
-    progress5Changed = QtCore.pyqtSignal(int)
-    # progress6Changed = QtCore.Signal(int)
+    find_cc_progress_changed = QtCore.pyqtSignal(int)
+    compute_landscape_progress_changed = QtCore.pyqtSignal(int)
 
     ##########
     # Task 5:
     @QtCore.pyqtSlot()
-    def start_task5(self):
+    def start_find_cc_task(self):
         self.button_CC.setDisabled(True)
         self.button_CC.setText('Finding Conformational Coordinates')
         self.entry_temp.setDisabled(True)
@@ -27,71 +28,60 @@ class CompilationTab(QWidget):
 
         p.save()  #send new GUI data to user parameters file
 
-        task5 = threading.Thread(target=FindConformationalCoord, args=(self.progress5Changed, ))
-        task5.daemon = True
-        task5.start()
+        task = threading.Thread(target=FindConformationalCoord, args=(self.find_cc_progress_changed, ))
+        task.daemon = True
+        task.start()
+
 
     @QtCore.pyqtSlot(int)
-    def on_progress5Changed(self, val):
-        self.progress5.setValue(val)
+    def on_find_cc_progress_changed(self, val):
+        self.progress_find_cc.setValue(val)
         if val == 100:
             self.button_CC.setText('Conformational Coordinates Complete')
-            # self.start_task6()
+            self.start_compute_landscape_task()
 
-    # ##########
-    # # Task 6:
-    # @QtCore.Slot()
-    # def start_task6(self):
-    #     tabs.setTabEnabled(0, False)
-    #     tabs.setTabEnabled(1, False)
-    #     tabs.setTabEnabled(2, False)
-    #     tabs.setTabEnabled(3, False)
 
-    #     self.button_erg.setDisabled(True)
-    #     self.button_erg.setText(' Computing Energy Landscape ')
-    #     self.entry_temp.setDisabled(True)
-    #     self.entry_proc.setDisabled(True)
+    ##########
+    # Task 6:
+    @QtCore.pyqtSlot()
+    def start_compute_landscape_task(self):
+        self.button_erg.setDisabled(True)
+        self.button_erg.setText(' Computing Energy Landscape ')
+        self.entry_temp.setDisabled(True)
+        self.entry_proc.setDisabled(True)
 
-    #     p.save()  #send new GUI data to user parameters file
+        task = threading.Thread(target=EL1D, args=(self.compute_landscape_progress_changed, ))
+        task.daemon = True
+        task.start()
 
-    #     task6 = threading.Thread(target=EL1D.op, args=(self.progress6Changed, ))
-    #     ''' ZULU
-    #     if P3.user_dimensions == 1:
-    #         task6 = threading.Thread(target=EL1D.op, args=(self.progress6Changed, ))
-    #     else:
-    #         task6 = threading.Thread(target=EL2D.op, args=(self.progress6Changed, ))
-    #         '''
-    #     task6.daemon = True
-    #     task6.start()
 
-    # @QtCore.Slot(int)
-    # def on_progress6Changed(self, val):  #ZULU
-    #     self.progress6.setValue(val)
-    #     if val == 100:
-    #         p.resProj = 8
-    #         p.save()  #send new GUI data to user parameters file
-    #         gc.collect()
-    #         self.button_erg.setText('Energy Landscape Complete')
+    @QtCore.pyqtSlot(int)
+    def on_compute_landscape_progress_changed(self, val):  #ZULU
+        self.progress6.setValue(val)
 
-    #         fnameOM = f'{p.OM_file}OM'
-    #         fnameEL = f'{p.OM_file}EL'
-    #         P4.Occ1d = np.fromfile(fnameOM, dtype=int)
-    #         P4.Erg1d = np.fromfile(fnameEL)
+        if val == 100:
+            p.resProj = 5
+            p.save()  #send new GUI data to user parameters file
+            self.button_erg.setText('Energy Landscape Complete')
 
-    #         Erg1dMain.entry_width.model().item(0).setEnabled(False)
-    #         Erg1dMain.button_traj.setDisabled(False)
-    #         P4.Erg1d = np.fromfile(fnameEL)
+            # fnameOM = f'{p.OM_file}OM'
+            # fnameEL = f'{p.OM_file}EL'
+            # P4.Occ1d = np.fromfile(fnameOM, dtype=int)
+            # P4.Erg1d = np.fromfile(fnameEL)
 
-    #         Erg1dMain.plot_erg1d.update_figure()  #updates 1d landscape plot
+            # Erg1dMain.entry_width.model().item(0).setEnabled(False)
+            # Erg1dMain.button_traj.setDisabled(False)
+            # P4.Erg1d = np.fromfile(fnameEL)
 
-    #         tabs.setTabEnabled(0, True)
-    #         tabs.setTabEnabled(1, True)
-    #         tabs.setTabEnabled(2, True)
-    #         tabs.setTabEnabled(3, True)
-    #         self.button_toP6.setDisabled(False)
+            # Erg1dMain.plot_erg1d.update_figure()  #updates 1d landscape plot
+
+            self.button_toP6.setDisabled(False)
+
 
     def __init__(self, parent=None):
         super(CompilationTab, self).__init__(parent)
+        self.main_window = parent
+
         layout = QGridLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
@@ -156,15 +146,15 @@ class CompilationTab(QWidget):
 
         # conformational coordinates progress:
         self.button_CC = QPushButton('Find Conformational Coordinates', self)
-        self.button_CC.clicked.connect(self.start_task5)
+        self.button_CC.clicked.connect(self.start_find_cc_task)
         layout.addWidget(self.button_CC, 3, 1, 1, 2)
         self.button_CC.setDisabled(False)
         self.button_CC.show()
 
-        self.progress5 = QProgressBar(minimum=0, maximum=100, value=0)
-        self.progress5Changed.connect(self.on_progress5Changed)
-        layout.addWidget(self.progress5, 3, 3, 1, 4)
-        self.progress5.show()
+        self.progress_find_cc = QProgressBar(minimum=0, maximum=100, value=0)
+        self.find_cc_progress_changed.connect(self.on_find_cc_progress_changed)
+        layout.addWidget(self.progress_find_cc, 3, 3, 1, 4)
+        self.progress_find_cc.show()
 
         # energy landscape progress:
         self.label_Hline1 = QLabel('')
@@ -180,7 +170,7 @@ class CompilationTab(QWidget):
         self.button_erg.show()
 
         self.progress6 = QProgressBar(minimum=0, maximum=100, value=0)
-#        self.progress6Changed.connect(self.on_progress6Changed)
+        self.compute_landscape_progress_changed.connect(self.on_compute_landscape_progress_changed)
         layout.addWidget(self.progress6, 5, 3, 1, 4)
         self.progress6.show()
 
@@ -192,7 +182,7 @@ class CompilationTab(QWidget):
         self.label_Hline2.show()
 
         self.button_toP6 = QPushButton('View Energy Landscape', self)
-#        self.button_toP6.clicked.connect(gotoP6)
+        self.button_toP6.clicked.connect(self.finalize)
         layout.addWidget(self.button_toP6, 7, 3, 1, 2)
         self.button_toP6.setDisabled(True)
         self.button_toP6.show()
@@ -205,5 +195,11 @@ class CompilationTab(QWidget):
 
         self.show()
 
+
     def activate(self):
         self.entry_proc.setValue(p.ncpu)
+
+
+    def finalize(self):
+        self.main_window.set_tab_state(True, "Energetics")
+        self.main_window.switch_tab("Energetics")
