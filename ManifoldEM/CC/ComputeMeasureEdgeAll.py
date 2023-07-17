@@ -102,7 +102,7 @@ def CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums, labels):
     distHOGAB = []
     distHOGAB_tblock = []
     isBadPsiAB_block = []
-    hp = np.ceil(np.float(hogDimA[0]) / hog_params['cell_size'][0]).astype(int)
+    hp = np.ceil(float(hogDimA[0]) / hog_params['cell_size'][0]).astype(int)
     num_hogel_th = np.ceil(0.2 * (hp**2) * hogDimA[2]).astype(int)
 
     if useNorm == 'l1':

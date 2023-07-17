@@ -162,7 +162,7 @@ class CompilationTab(QWidget):
         self.button_CC.show()
 
         self.progress5 = QProgressBar(minimum=0, maximum=100, value=0)
-#        self.progress5Changed.connect(self.on_progress5Changed)
+        self.progress5Changed.connect(self.on_progress5Changed)
         layout.addWidget(self.progress5, 3, 3, 1, 4)
         self.progress5.show()
 

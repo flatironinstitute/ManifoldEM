@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 
 from ManifoldEM import myio
+from ManifoldEM.data_store import data_store, Sense
 from ManifoldEM.params import p
 from ManifoldEM.CC import MRFGeneratePotentials, MRFBeliefPropagation
 from ManifoldEM.CC.MRFBeliefPropagation import createBPalg
@@ -198,53 +199,52 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     G.update(nPsiModes=p.num_psis)  # update the nPsiModes in case p.num_psis is changed in the later steps
     G.update(maxState=maxState)
 
-    anch_list = np.array(p.anch_list)
-    if cc == 1:
+    # if cc == 1:
+    #     # format: PrD,CC1,S1 for 1D
+    #     # p.anch_list = np.array([[1,1,1],[2,1,-1]])  #TEMP should PrD and CC1 start from 1 or 0?
 
-        # format: PrD,CC1,S1 for 1D
-        # p.anch_list = np.array([[1,1,1],[2,1,-1]])  #TEMP should PrD and CC1 start from 1 or 0?
+    #     IndStatePlusOne = anch_list[:, 2] == 1
+    #     IndStateMinusOne = anch_list[:, 2] == -1
+    #     anchorNodesPlusOne = anch_list[IndStatePlusOne, 0] - 1
+    #     anchorNodesMinusOne = anch_list[IndStateMinusOne, 0] - 1
+    #     anchorStatePlusOne = anch_list[IndStatePlusOne, 1] - 1
+    #     anchorStateMinusOne = anch_list[IndStateMinusOne, 1] + NumPsis - 1
 
-        IndStatePlusOne = anch_list[:, 2] == 1
-        IndStateMinusOne = anch_list[:, 2] == -1
-        anchorNodesPlusOne = anch_list[IndStatePlusOne, 0] - 1
-        anchorNodesMinusOne = anch_list[IndStateMinusOne, 0] - 1
-        anchorStatePlusOne = anch_list[IndStatePlusOne, 1] - 1
-        anchorStateMinusOne = anch_list[IndStateMinusOne, 1] + NumPsis - 1
+    # elif cc == 2:
+    #     if argv:
+    #         nodeStateBP_cc1 = argv[0]
 
-    elif cc == 2:
-        if argv:
-            nodeStateBP_cc1 = argv[0]
+    #     # format: PrD,CC1,S1,CC2,S2 for 2D
+    #     IndStatePlusOne = anch_list[:, 4] == 1
+    #     IndStateMinusOne = anch_list[:, 4] == -1
+    #     anchorNodesPlusOne = anch_list[IndStatePlusOne, 0] - 1
+    #     anchorNodesMinusOne = anch_list[IndStateMinusOne, 0] - 1
+    #     anchorStatePlusOne = anch_list[IndStatePlusOne, 3] - 1
+    #     anchorStateMinusOne = anch_list[IndStateMinusOne, 3] + NumPsis - 1
 
-        # format: PrD,CC1,S1,CC2,S2 for 2D
-        IndStatePlusOne = anch_list[:, 4] == 1
-        IndStateMinusOne = anch_list[:, 4] == -1
-        anchorNodesPlusOne = anch_list[IndStatePlusOne, 0] - 1
-        anchorNodesMinusOne = anch_list[IndStateMinusOne, 0] - 1
-        anchorStatePlusOne = anch_list[IndStatePlusOne, 3] - 1
-        anchorStateMinusOne = anch_list[IndStateMinusOne, 3] + NumPsis - 1
+    prds = data_store.get_prds()
+    anch_list = prds.anchors
+    fwd_anchor_ids = list(dict(filter(lambda keyval: keyval[1].sense == Sense.FWD, anch_list.items())).keys())
+    rev_anchor_ids = list(dict(filter(lambda keyval: keyval[1].sense == Sense.REV, anch_list.items())).keys())
+    anchor_nodes = fwd_anchor_ids + rev_anchor_ids
 
-    #anchorNodes = [anchorNodesPlusOne, anchorNodesMinusOne]
+    anchorNodeMeasuresPlusOne = np.zeros((maxState, len(fwd_anchor_ids)))
+    anchorNodeMeasuresMinusOne = np.zeros((maxState, len(rev_anchor_ids)))
 
-    anchorNodeMeasuresPlusOne = np.zeros((maxState, len(anchorNodesPlusOne)))
-    anchorNodeMeasuresMinusOne = np.zeros((maxState, len(anchorNodesMinusOne)))
+    print(f'anchorNodes: {anchor_nodes}')
 
-    anchorNodes = anchorNodesPlusOne.tolist() + anchorNodesMinusOne.tolist()
-    print('anchorNodes:', anchorNodes)
+    for index, anchor_id in enumerate(fwd_anchor_ids):
+        anchorNodeMeasuresPlusOne[anch_list[anchor_id].CC, index] = anchorNodePotValexp
 
-    for u in range(len(anchorNodesPlusOne)):
-        anchorNodeMeasuresPlusOne[anchorStatePlusOne[u], u] = anchorNodePotValexp
-
-    for v in range(len(anchorNodesMinusOne)):
-        anchorNodeMeasuresMinusOne[anchorStateMinusOne[v], v] = anchorNodePotValexp
+    for index, anchor_id in enumerate(rev_anchor_ids):
+        anchorNodeMeasuresMinusOne[anch_list[anchor_id].CC + NumPsis, index] = anchorNodePotValexp
 
     anchorNodeMeasures = np.hstack((anchorNodeMeasuresPlusOne, anchorNodeMeasuresMinusOne))
-    nodePot, edgePot = MRFGeneratePotentials.op(G, anchorNodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock)
-
+    nodePot, edgePot = MRFGeneratePotentials.op(G, anchor_nodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock)
 
     # Set potential value to small number <= 1e-16 for bad psi-movies
     badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
     badNodesPsisTau = readBadNodesPsisTau(badNodesPsisTaufile)
-
 
     # from bad taus (badNodesPsisTau) and split block movies (badNodesPsis)
     if (badNodesPsis.shape[0] == badNodesPsisTau.shape[0]) and (badNodesPsis.shape[1] == badNodesPsisTau.shape[1]):
@@ -252,9 +252,7 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     else:
         badNodesPsis2 = badNodesPsis
 
-
     # if badNodesPsis exists
-
     nodesAllBadPsis = []
     if badNodesPsis2.shape[0] > 0:
 
@@ -282,15 +280,15 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     np.savetxt('{}badNodePsis_bp.txt'.format(p.CC_dir), badNodesPsis2, fmt="%d", newline="\n")
     np.savetxt('{}nodesAllBadPsis_bp.txt'.format(p.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
 
-    if cc == 2:
-        for n in range(nodeStateBP_cc1.shape[0]):  # as nodeStateBP_cc1 is row vector so shape is (num_prds,)
-            k = nodeStateBP_cc1[n] - 1  # remember that nodeStateBP_cc1 has index starting with 1 from previous run
-            if k < NumPsis:
-                nodePot[k, n] = lowNodePotVal
-                nodePot[k + NumPsis, n] = lowNodePotVal
-            else:
-                nodePot[k, n] = lowNodePotVal
-                nodePot[k - NumPsis, n] = lowNodePotVal
+    # if cc == 2:
+    #     for n in range(nodeStateBP_cc1.shape[0]):  # as nodeStateBP_cc1 is row vector so shape is (num_prds,)
+    #         k = nodeStateBP_cc1[n] - 1  # remember that nodeStateBP_cc1 has index starting with 1 from previous run
+    #         if k < NumPsis:
+    #             nodePot[k, n] = lowNodePotVal
+    #             nodePot[k + NumPsis, n] = lowNodePotVal
+    #         else:
+    #             nodePot[k, n] = lowNodePotVal
+    #             nodePot[k - NumPsis, n] = lowNodePotVal
 
     print('nodePot.shape:', nodePot.shape, 'edgePot.shape', edgePot.shape)
     '''
@@ -317,20 +315,19 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
 
     #;%.98;%0.99; %0.99 use damping factor (< 1) when message oscillates and do not converge
 
-    G['anchorNodes'] = anchorNodes
+    G['anchorNodes'] = anchor_nodes
 
     #nodeOrderType = 'default' # sequential order
     nodeOrderType = 'multiAnchor'
 
-    graphNodeOrder = createNodeOrder(G, anchorNodes, nodeOrderType)
+    graphNodeOrder = createNodeOrder(G, anchor_nodes, nodeOrderType)
     G['graphNodeOrder'] = graphNodeOrder
 
 
     BPalg = createBPalg(G, options)
-    BPalg['anchorNodes'] = anchorNodes
+    BPalg['anchorNodes'] = anchor_nodes
 
     nodeBelief, edgeBelief, BPalg = MRFBeliefPropagation.op(BPalg, nodePot, edgePot)
-
 
     nodeBeliefR = nodeBelief
 
@@ -343,12 +340,9 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
         nodeBeliefR[badStates] = 0.0
 
 
-
     OptNodeLabels = np.argsort(-nodeBeliefR, axis=0)
     nodeStateBP = OptNodeLabels[0, :]  # %max-marginal
     OptNodeBel = nodeBeliefR[nodeStateBP, range(0, len(nodeStateBP))]
-
-
 
 
     #%%%%% Determine the Psi's and Senses %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -462,5 +456,6 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
 
             diffPsiPrds = np.setdiff1d(range(0, psiNumsAll.shape[1]), samePsiSensePrds)
             np.savetxt('diffPsiPrds.txt', diffPsiPrds + 1, fmt='%i\t', delimiter='\t')
+
 
     return (nodeStateBP, psinums_cc, senses_cc, OptNodeBel, nodeBelief)

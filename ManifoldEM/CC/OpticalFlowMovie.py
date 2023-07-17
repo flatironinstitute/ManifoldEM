@@ -451,8 +451,7 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
 
         if do_simpleAvg:  # perform averaging over blockSize frames
-
-            numAvgFrames = np.ceil(np.float(numFrames) / blockSize_avg).astype(int)
+            numAvgFrames = np.ceil(float(numFrames) / blockSize_avg).astype(int)
             AvgMov = np.zeros((numAvgFrames, dim, dim))
             for b in range(0, numAvgFrames):
                 frameStart = b * blockSize_avg
