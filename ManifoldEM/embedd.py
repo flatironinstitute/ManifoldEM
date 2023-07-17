@@ -2,7 +2,8 @@ import os
 
 import numpy as np
 
-from ManifoldEM import myio, DMembeddingII, p
+from ManifoldEM import myio, DMembeddingII
+from ManifoldEM.params import p
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2020 (python version) 

@@ -1,23 +1,58 @@
 import imageio
+import itertools
+import os
 import pickle
-from matplotlib import color_sequences
+import shutil
 
 import numpy as np
 
 from matplotlib.path import Path as PlotPath
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from PIL import Image
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QMainWindow, QDialog, QTabWidget, QLabel, QFrame, QPushButton, QSlider,
-                             QLayout, QGridLayout, QSpinBox, QComboBox, QCheckBox, QProgressBar)
+from PyQt5.QtWidgets import (QMainWindow, QDialog, QTabWidget, QMessageBox, QPushButton, QSlider,
+                             QLayout, QGridLayout, QProgressBar)
 
 from . import ClusterAvgMain
 
 from ManifoldEM.core import clusterAvg
+from ManifoldEM.embedd import op as embedd
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
+
+def _backup_restore(prd_index, backup=True):
+    os.makedirs(os.path.join(p.out_dir, 'backup', 'topos'), exist_ok=True)
+    os.makedirs(os.path.join(p.out_dir, 'backup', 'diff_maps'), exist_ok=True)
+    os.makedirs(os.path.join(p.out_dir, 'backup', 'psi_analysis'), exist_ok=True)
+
+    if backup:
+        srcprefix = os.path.join(p.out_dir)
+        dstprefix = os.path.join(p.out_dir, 'backup')
+    else:
+        srcprefix = os.path.join(p.out_dir, 'backup')
+        dstprefix = os.path.join(p.out_dir)
+
+    # topos
+    srcdir = os.path.join(srcprefix, 'topos', f'PrD_{prd_index + 1}')
+    dstdir = os.path.join(dstprefix, 'topos', f'PrD_{prd_index + 1}')
+    shutil.copytree(srcdir, dstdir)
+
+    # diff maps
+    srcfile = os.path.join(srcprefix, 'diff_maps', f'gC_trimmed_psi_prD_{prd_index}')
+    dstfile = os.path.join(dstprefix, 'diff_maps', f'gC_trimmed_psi_prD_{prd_index}')
+    shutil.copy(srcfile, dstfile)
+
+    # psi anaylsis
+    srcfile = os.path.join(srcprefix, 'diff_maps', f'gC_trimmed_psi_prD_{prd_index}')
+    dstfile = os.path.join(dstprefix, 'diff_maps', f'gC_trimmed_psi_prD_{prd_index}')
+    shutil.copy(srcfile, dstfile)
+
+    # psianalysis
+    for psi in range(p.num_psis):
+        srcfile = os.path.join(srcprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
+        dstfile = os.path.join(dstprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
+        shutil.copy(srcfile, dstfile)
 
 
 class VidCanvas(QDialog):
@@ -237,6 +272,7 @@ class Manifold2dCanvas(QDialog):
 
     def __init__(self, prd_index: int, parent):
         super(Manifold2dCanvas, self).__init__(parent)
+        self.parent_view = parent
 
         self.prd_index = prd_index
         self.eigChoice1 = 0
@@ -253,12 +289,6 @@ class Manifold2dCanvas(QDialog):
         self.pts_orig = []
         self.pts_origX = []
         self.pts_origY = []
-        self.pts_new = []
-        self.pts_newX = []
-        self.pts_newY = []
-        self.x = []
-        self.y = []
-        self.imgAvg = []
         
 
         self.figure = Figure(dpi=200)
@@ -398,29 +428,23 @@ class Manifold2dCanvas(QDialog):
 
     def remove(self):
         # reset cropped points if re-clicked:
-        self.pts_new = []
-        self.pts_newX = []
-        self.pts_newY = []
+        pts_newX = []
+        pts_newY = []
 
         path = PlotPath(list(map(list, zip(self.coordsX, self.coordsY))), codes=None, closed=True, readonly=True)
         inside = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(),
                                       radius=1e-9)
 
-        sums = 0  #number of points within polygon
-        index = 0
-        for i in inside:
-            index += 1
+        for index, i in enumerate(inside):
             if i == False:
-                self.pts_newX.append(self.pts_origX[index - 1])
-                self.pts_newY.append(self.pts_origY[index - 1])
-                self.pts_new = zip(self.pts_newX, self.pts_newY)
-            else:
-                sums += 1  #number of encircled points
+                pts_newX.append(self.pts_origX[index])
+                pts_newY.append(self.pts_origY[index])
+        self.pts_new = zip(pts_newX, pts_newY)
 
 
         # crop out points, redraw and resize figure:
         self.ax.clear()
-        self.ax.scatter(self.pts_newX, self.pts_newY, s=1, c='#1f77b4')
+        self.ax.scatter(pts_newX, pts_newY, s=1, c='#1f77b4')
         for tick in self.ax.xaxis.get_major_ticks():
             tick.label1.set_fontsize(4)
         for tick in self.ax.yaxis.get_major_ticks():
@@ -446,33 +470,33 @@ class Manifold2dCanvas(QDialog):
         box = QMessageBox(self)
         box.setWindowTitle('ManifoldEM')
         box.setText('<b>Update Manifold</b>')
-        box.setFont(font_standard)
         box.setIcon(QMessageBox.Question)
         box.setInformativeText(msg)
         box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        reply = box.exec_()
-        if reply == QMessageBox.Yes:
-            self.btn_reset.setDisabled(True)
-            self.btn_rebed.setDisabled(True)
-            self.parent.vid_tabs.setTabEnabled(0, False)
-            self.parent.vid_tabs.setTabEnabled(2, False)
-            self.parent.vid_tabs.setTabEnabled(3, False)
-            self.parent.vid_tabs.setTabEnabled(4, False)
-            self.parent.vid_tabs.setTabEnabled(5, False)
 
-            prds = data_store.get_prds()
-            if self.prd_index - 1 not in prds.reembed_ids:  #only make a copy of current if this is user's first re-embedding
-                backup.op(self.prd_index, 1)  #makes copy in Topos/PrD and DiffMaps
-                prds.reembed_ids.add(self.prd_index - 1)
-                
-            self.pts_orig, pts_orig_zip = itertools.tee(self.pts_orig)
-            self.pts_new, pts_new_zip = itertools.tee(self.pts_new)
+        if box.exec_() == QMessageBox.No:
+            return
 
-            embedd.op(list(pts_orig_zip), list(pts_new_zip), self.prd_index - 1)  #updates all manifold files for PD
+        self.btn_reset.setDisabled(True)
+        self.btn_rebed.setDisabled(True)
+        self.parent_view.vid_tabs.setTabEnabled(0, False)
+        self.parent_view.vid_tabs.setTabEnabled(2, False)
+        self.parent_view.vid_tabs.setTabEnabled(3, False)
+        self.parent_view.vid_tabs.setTabEnabled(4, False)
+        self.parent_view.vid_tabs.setTabEnabled(5, False)
 
-            self.start_task1()
-        else:
-            pass
+        prds = data_store.get_prds()
+        if self.prd_index - 1 not in prds.reembed_ids:  #only make a copy of current if this is user's first re-embedding
+            _backup_restore(self.prd_index - 1, backup=True)  #makes copy in Topos/PrD and DiffMaps
+            prds.reembed_ids.add(self.prd_index - 1)
+
+        self.pts_orig, pts_orig_zip = itertools.tee(self.pts_orig)
+        self.pts_new, pts_new_zip = itertools.tee(self.pts_new)
+
+        embedd(list(pts_orig_zip), list(pts_new_zip), self.prd_index - 1)  #updates all manifold files for PD
+
+        self.start_task1()
+
 
 
     def revert(self):
@@ -484,7 +508,6 @@ class Manifold2dCanvas(QDialog):
         box = QMessageBox(self)
         box.setWindowTitle('ManifoldEM')
         box.setText('<b>Revert Manifold</b>')
-        box.setFont(font_standard)
         box.setIcon(QMessageBox.Question)
         box.setInformativeText(msg)
         box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
@@ -496,18 +519,20 @@ class Manifold2dCanvas(QDialog):
         self.btn_rebed.setDisabled(True)
         self.btn_revert.setDisabled(True)
 
-        self.parent.vid_tabs.setTabEnabled(0, False)
-        self.parent.vid_tabs.setTabEnabled(2, False)
-        self.parent.vid_tabs.setTabEnabled(3, False)
-        self.parent.vid_tabs.setTabEnabled(4, False)
-        self.parent.vid_tabs.setTabEnabled(5, False)
+        self.parent_view.vid_tabs.setTabEnabled(0, False)
+        self.parent_view.vid_tabs.setTabEnabled(2, False)
+        self.parent_view.vid_tabs.setTabEnabled(3, False)
+        self.parent_view.vid_tabs.setTabEnabled(4, False)
+        self.parent_view.vid_tabs.setTabEnabled(5, False)
 
         prds = data_store.get_prds()
         prds.reembed_ids.discard(self.prd_index - 1)
-        backup.op(self.prd_index, -1)
+        _backup_restore(self.prd_index - 1, backup=False)
 
         psi_file = p.get_psi_file(self.prd_index - 1)  #current embedding
-        data = myio.fin1(psi_file)
+        with open(psi_file, 'rb') as f:
+            data = pickle.load(f)
+
         x = data['psi'][:, self.eigChoice1]
         y = data['psi'][:, self.eigChoice2]
 
@@ -535,18 +560,17 @@ class Manifold2dCanvas(QDialog):
         self.ax.autoscale()
         self.canvas.draw()
 
-        self.parent.vid_tabs.setTabEnabled(0, True)
-        self.parent.vid_tabs.setTabEnabled(2, True)
-        self.parent.vid_tabs.setTabEnabled(3, True)
-        self.parent.vid_tabs.setTabEnabled(4, True)
-        self.parent.vid_tabs.setTabEnabled(5, True)
+        self.parent_view.vid_tabs.setTabEnabled(0, True)
+        self.parent_view.vid_tabs.setTabEnabled(2, True)
+        self.parent_view.vid_tabs.setTabEnabled(3, True)
+        self.parent_view.vid_tabs.setTabEnabled(4, True)
+        self.parent_view.vid_tabs.setTabEnabled(5, True)
 
         msg = f'The manifold for PD {self.prd_index} has been successfully reverted.'
         box = QMessageBox(self)
         box.setWindowTitle('ManifoldEM Reversion')
         box.setText('<b>Revert Manifold</b>')
         box.setIcon(QMessageBox.Warning)
-        box.setFont(font_standard)
         box.setInformativeText(msg)
         box.setStandardButtons(QMessageBox.Ok)
         box.setDefaultButton(QMessageBox.Ok)
@@ -622,11 +646,11 @@ class Manifold2dCanvas(QDialog):
     def on_progress2Changed(self, val):
         self.progress1.setValue(val / 2 + 50)
         if (val / 2 + 50) == 100:
-            self.parent.vid_tabs.setTabEnabled(0, True)
-            self.parent.vid_tabs.setTabEnabled(2, True)
-            self.parent.vid_tabs.setTabEnabled(3, True)
-            self.parent.vid_tabs.setTabEnabled(4, True)
-            self.parent.vid_tabs.setTabEnabled(5, True)
+            self.parent_view.vid_tabs.setTabEnabled(0, True)
+            self.parent_view.vid_tabs.setTabEnabled(2, True)
+            self.parent_view.vid_tabs.setTabEnabled(3, True)
+            self.parent_view.vid_tabs.setTabEnabled(4, True)
+            self.parent_view.vid_tabs.setTabEnabled(5, True)
 
             msg = f'The manifold for PD {self.prd_index} has been successfully re-embedded.'
             box = QMessageBox(self)
