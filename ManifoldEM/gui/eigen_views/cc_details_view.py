@@ -56,6 +56,68 @@ def _backup_restore(prd_index, backup=True):
         shutil.copy(srcfile, dstfile)
 
 
+class TauCanvas(QDialog):
+
+    def __init__(self, prd_index:int, psi_index: int, parent=None):
+        super(TauCanvas, self).__init__(parent)
+
+        # tau from psi analsis:
+        tau_fname = os.path.join(p.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        with open(tau_fname, 'rb') as f:
+            tau_data = pickle.load(f)
+
+        tau = tau_data['tau']
+        taus_val = []
+        taus_num = []
+
+        # create canvas and plot data:
+        self.figure = Figure(dpi=200)
+        self.figure.set_tight_layout(True)
+
+        self.canvas = FigureCanvas(self.figure)
+        #self.toolbar = NavigationToolbar(self.canvas, self)
+        self.ax1 = self.figure.add_subplot(1, 2, 1)
+        self.ax2 = self.figure.add_subplot(1, 2, 2)
+
+        idx = 0
+        for i in tau:
+            taus_val.append(i)
+            taus_num.append(idx)
+            idx += 1
+
+        self.ax1.scatter(taus_val, taus_num, linewidths=.1, s=1, edgecolors='k', c=taus_num, cmap='jet')
+        self.ax2.hist(tau, bins=p.nClass, color='#1f77b4')  #C0
+
+        for tick in self.ax1.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax1.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax2.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+        for tick in self.ax2.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(4)
+
+        self.ax1.set_xlabel('NLSA States', fontsize=5)
+        self.ax1.set_ylabel('NLSA Image Indices', fontsize=5)
+
+        self.ax1.set_xlim(xmin=0, xmax=1)
+        self.ax1.set_ylim(ymin=0, ymax=np.shape(tau)[0])
+
+        self.ax2.set_xlabel('NLSA States', fontsize=5)
+        self.ax2.set_ylabel('NLSA Occupancy', fontsize=5)
+
+        self.ax1.grid(linestyle='-', linewidth='0.5', color='lightgray', alpha=0.2)
+        self.ax2.grid(linestyle='-', linewidth='0.5', color='lightgray', alpha=0.2)
+
+        self.canvas.draw()  #refresh canvas
+
+        layout = QGridLayout()
+        layout.setSizeConstraint(QLayout.SetMinimumSize)
+        layout.addWidget(self.canvas, 1, 0, 4, 4)
+
+        self.setLayout(layout)
+
+
 class PsiCanvas(QDialog):
     def __init__(self, prd_index: int, psi_index: int, parent):
         super(PsiCanvas, self).__init__(parent)
@@ -980,7 +1042,7 @@ class _CCDetailsView(QMainWindow):
         self.vid_tab3 = VidCanvas(gif_path, parent=self) # Manifold3dCanvas(self)
         self.vid_tab4 = ChronosCanvas(self.prd_index, self.psi_index, self)
         self.vid_tab5 = PsiCanvas(self.prd_index, self.psi_index, self)
-        self.vid_tab6 = VidCanvas(gif_path, parent=self) # TauCanvas(self)
+        self.vid_tab6 = TauCanvas(self.prd_index, self.psi_index, self)
 
         self.vid_tabs = QTabWidget(self)
         self.vid_tabs.addTab(self.vid_tab1, 'Movie Player')
