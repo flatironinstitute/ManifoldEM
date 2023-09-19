@@ -125,8 +125,6 @@ class Erg1dMain(QDialog):
         layout.addWidget(self.progress7, 11, 2, 1, 6)
         self.progress7.show()
 
-        update_selection()
-
 
     def choose_width(self):
         self.entry_width.model().item(0).setEnabled(True)
@@ -274,20 +272,18 @@ class EnergeticsTab(QMainWindow):
     def __init__(self, parent=None):
         super(EnergeticsTab, self).__init__(parent)
 
-        erg_tab1 = Erg1dMain(self)
+        self.erg_tab1 = Erg1dMain(self)
         erg_tab2 = QWidget(self)  # Erg2dMain(self)
         erg_tabs = QTabWidget(self)
-        erg_tabs.addTab(erg_tab1, '1D Energy Path')
+        erg_tabs.addTab(self.erg_tab1, '1D Energy Path')
         erg_tabs.addTab(erg_tab2, '2D Energy Landscape')
         erg_tabs.setTabEnabled(1, False)
         style = """QTabWidget::tab-bar{
                 alignment: center;
                 }"""
         self.setStyleSheet(style)
-
         self.setCentralWidget(erg_tabs)
 
 
-
     def activate(self):
-        pass
+        self.erg_tab1.update_selection()
