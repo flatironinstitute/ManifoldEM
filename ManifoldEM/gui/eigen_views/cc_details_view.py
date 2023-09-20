@@ -495,15 +495,17 @@ class VidCanvas(QDialog):
         self.setLayout(layout)
 
 
-    def closeEvent(self, ce):
-        self.frame_id = 0
-        self.run = 0  #needed to pause scrollbar before it is deleted
+    def stop_movie(self):
+        self.run = 0
         self.canvas.stop_event_loop()
+        self.button_play.setDisabled(False)
+        self.button_play.setFocus()
+        self.button_play_backward.setDisabled(False)
+        self.button_pause.setDisabled(True)
 
 
     def scroll(self, frame):
         self.canvas.stop_event_loop()
-
         self.slider.setValue(self.frame_id)
         self.current_image.set_data(self.imgs[self.frame_id])  #update data
         self.canvas.draw()  #refresh canvas
@@ -1063,14 +1065,13 @@ class _CCDetailsView(QMainWindow):
         self.show()
 
 
+    def closeEvent(self, ce):
+        self.vid_tab1.stop_movie()
+
+
     def onTabChange(self, i):
         if i != 0:  #needed to stop `Movie Player` if tab changed during playback
-            self.vid_tab1.run = 0
-            self.vid_tab1.canvas.stop_event_loop()
-            self.vid_tab1.button_play.setDisabled(False)
-            self.vid_tab1.button_play.setFocus()
-            self.vid_tab1.button_play_backward.setDisabled(False)
-            self.vid_tab1.button_pause.setDisabled(True)
+            self.vid_tab1.stop_movie()
 
 
     # FIXME attach signals
