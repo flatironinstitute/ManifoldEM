@@ -29,12 +29,6 @@ class Erg1dMain(QDialog):
         toolbar = NavigationToolbar(self.plot_erg1d, self)
         layout.addWidget(toolbar, 0, 0, 1, 8)
 
-        def update_selection():
-            plot_occupancy = self.erg2occ.currentText() == 'Occupancy'
-            CC_index = 1 if self.chooseCC.currentText() == 'CC 1' else 2
-            self.plot_erg1d.update_figure(plot_occupancy, CC_index)
-
-
         self.label_edge1 = QLabel('')
         self.label_edge1.setMargin(20)
         self.label_edge1.setLineWidth(1)
@@ -56,7 +50,7 @@ class Erg1dMain(QDialog):
         elif p.user_dimensions == 2:
             self.chooseCC.setDisabled(False)
         self.chooseCC.setToolTip('Switch between 1D conformational coordinates.')
-        self.chooseCC.currentIndexChanged.connect(update_selection)
+        self.chooseCC.currentIndexChanged.connect(self.update_selection)
         layout.addWidget(self.chooseCC, 9, 1, 1, 1, QtCore.Qt.AlignLeft)
         self.chooseCC.show()
 
@@ -77,7 +71,7 @@ class Erg1dMain(QDialog):
         self.erg2occ.addItem('Energy')
         self.erg2occ.addItem('Occupancy')
         self.erg2occ.setToolTip('Switch between energy and occupancy representations.')
-        self.erg2occ.currentIndexChanged.connect(update_selection)
+        self.erg2occ.currentIndexChanged.connect(self.update_selection)
         layout.addWidget(self.erg2occ, 9, 3, 1, 1, QtCore.Qt.AlignLeft)
         self.erg2occ.show()
 
@@ -124,6 +118,12 @@ class Erg1dMain(QDialog):
         self.progress7Changed.connect(self.on_progress7Changed)
         layout.addWidget(self.progress7, 11, 2, 1, 6)
         self.progress7.show()
+
+
+    def update_selection(self):
+        plot_occupancy = self.erg2occ.currentText() == 'Occupancy'
+        CC_index = 1 if self.chooseCC.currentText() == 'CC 1' else 2
+        self.plot_erg1d.update_figure(plot_occupancy, CC_index)
 
 
     def choose_width(self):
