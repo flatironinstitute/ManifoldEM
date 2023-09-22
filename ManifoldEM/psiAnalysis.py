@@ -49,14 +49,6 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
     for i in range(ConOrder):
         Ind = range(i, num - ConOrder + i)
         ConD += DD[Ind][:, Ind]
-    '''
-    for iii in range(num - ConOrder):
-        for ii in range(num - ConOrder):
-            for ConNum in range(ConOrder):
-                Ind1 = iii + ConNum
-                Ind2 = ii + ConNum
-                ConD[iii, ii] += DD[Ind1, Ind2]
-    '''
 
     # find the manifold mapping:
     lambdaC, psiC, sigmaC, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(
@@ -73,7 +65,6 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
         IMG1 = imgAll[posPsi1, :, :]
 
     dim = CTF.shape[1]
-    sigma = sigmaC
     ell = psiTrunc - 1
     N = psiC.shape[0]
     psiC = np.hstack((np.ones((N, 1)), psiC[:, 0:ell]))
