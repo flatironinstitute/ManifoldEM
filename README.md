@@ -1,17 +1,20 @@
 # ManifoldEM
 
-Note this is the Flatiron Institute hosted version of this code.  Further development is
-currently being conducted by Robert Blackwell and Sonya Hanson -- feel free to reach out
-directly with any questions or concerns, or file an issue.
+Note this is the Flatiron Institute fork of the [original
+ManifoldEM](https://github.com/evanseitz/ManifoldEM_Python).  This particular fork is
+maintained by [Robert Blackwell](https://github.com/blackwer) and [Sonya
+Hanson](https://github.com/sonyahanson). This work has made significant contributions in
+refactoring, code cleanup, optimization, portability, standardization, and distribution since
+the fork.
 
 ## ManifoldEM Python Suite
 
 This repository contains the Python software implementation of ManifoldEM for determination of
 conformational continua of macromolecules from single-particle cryo-EM data, as was first
-introduced by Dashti, et al. (2014). A detailed user manual is provided on the main branch of
-this repository. Carefully going through this manual will prepare you for running ManifoldEM on
-your own data sets. If you have any questions about ManifoldEM after reading this entire
-document, carefully check the ManifoldEM GitHub forum for similar inquiries or, if no similar
+introduced by Dashti, et al. (2014). A detailed user manual is provided
+[here](tutorial/README.md).  Carefully going through this manual will prepare you for running
+ManifoldEM on your own data sets. If you have any questions about ManifoldEM after reading this
+entire document, carefully check this GitHub forum for similar inquiries or, if no similar
 posts exist, create a new thread detailing your inquiry.
 
 This software was initially developed in the Frank research group at Columbia University
@@ -65,14 +68,10 @@ Original ManifoldEM Python team (alphabetically ordered):
 - Peter Schwander, University of Wisconsin-Milwaukee
 - Evan Seitz, Columbia University
 
-Individual author contributions are usually provided in the headers of each source file, or in the functions.
-
-This particular fork is maintained by [Robert Blackwell](https://github.com/blackwer) and
-[Sonya Hanson](https://github.com/sonyahanson). This work has made significant contributions in
-refactoring, code cleanup, optimization, portability, standardization, and distribution since
-the fork. While reasonable effort has been made to retain copyright notices for individual
-contributions from the source material, significant refactorings have made some individual
-contributions hard to track or ultimately meaningless.
+The original individual author contributions are usually provided in the headers of each source
+file, or in the functions. While reasonable effort has been made to retain copyright notices
+for individual contributions from the source material, significant refactorings have made some
+individual contributions hard to track or ultimately meaningless.
 
 
 ### Attribution
