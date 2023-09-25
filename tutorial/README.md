@@ -2,7 +2,7 @@
 This tutorial was pulled from a PDF file into markdown. Many things may display incorrectly or
 be inaccurate. Please report any problems via the issues page or create a PR to address them.
 
-<img src="image/header.png">
+<img src="images/header.png">
 
 # ManifoldEM User Manual
 Evan Seitz, Robert Blackwell, Ghoncheh Mashayekhi, Hstau Liao, Suvrajit Maji,
