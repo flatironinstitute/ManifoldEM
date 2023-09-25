@@ -6,7 +6,8 @@ import numpy as np
 from numpy import linalg as LA
 from functools import partial
 
-from ManifoldEM import p, myio
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
 from ManifoldEM.util import NullEmitter
 from fasthog import hog_from_gradient as histogram_from_gradients
@@ -101,7 +102,7 @@ def CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums, labels):
     distHOGAB = []
     distHOGAB_tblock = []
     isBadPsiAB_block = []
-    hp = np.ceil(np.float(hogDimA[0]) / hog_params['cell_size'][0]).astype(int)
+    hp = np.ceil(float(hogDimA[0]) / hog_params['cell_size'][0]).astype(int)
     num_hogel_th = np.ceil(0.2 * (hp**2) * hogDimA[2]).astype(int)
 
     if useNorm == 'l1':

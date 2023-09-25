@@ -1,12 +1,13 @@
 import mrcfile
 import numpy as np
+import os
 import sys
 import pickle
 import traceback
 
 from PIL import Image
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -47,7 +48,10 @@ def calc_ang_width(aperture: int, resolution: float, diameter: float) -> float:
 
 def debug_trace():
     from PyQt5.QtCore import pyqtRemoveInputHook
-    from pdb import set_trace
+    try:
+        from ipdb import set_trace
+    except:
+        from pdb import set_trace
     pyqtRemoveInputHook()
     set_trace()
 

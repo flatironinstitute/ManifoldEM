@@ -54,7 +54,8 @@ from scipy.ndimage import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
-from ManifoldEM import ctemh_cryoFrank, myio, p, projectMask
+from ManifoldEM import ctemh_cryoFrank, myio, projectMask
+from ManifoldEM.params import p
 from ManifoldEM.core import annularMask
 from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import rotate_fill
@@ -228,7 +229,7 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
     imgAll = np.zeros((nS, N, N))  #
 
     y = np.zeros((N**2, nS))  # each row is a flatten image
-    fy = np.complex(0) * np.ones((nS, N, N))  # each (i,:,:) is a Fourier image
+    fy = complex(0) * np.ones((nS, N, N))  # each (i,:,:) is a Fourier image
     CTF = np.zeros((nS, N, N))  # each (i,:,:) is the CTF
     D = np.zeros((nS, nS))  # distances among the particles in the bin
 

@@ -13,7 +13,8 @@ import csv
 
 import numpy as np
 
-from ManifoldEM import S2tessellation, myio, FindCCGraph, util, p, star
+from ManifoldEM import S2tessellation, myio, FindCCGraph, util, star
+from ManifoldEM.params import p
 from ManifoldEM.quaternion import qMult_bsx
 
 
@@ -195,50 +196,3 @@ def write_angles(ang_file, color, S20, full, NC):
             clusterID = color[prD][0] if full else 0
 
             csvwriter.writerow((idx + 1, theta, phi, 0, x, y, z, clusterID))
-
-
-
-def op(align_param_file):
-    p.load()
-    visual = False
-
-    if not p.relion_data:  # assumes SPIDER data
-        # read the angles
-        q = get_q(align_param_file, p.phiCol, p.thetaCol, p.psiCol, flip=True)
-        # double the number of data points by augmentation
-        q = util.augment(q)
-        # read defocus
-        df = get_df(align_param_file, p.dfCol)
-        # double the number of data points by augmentation
-        df = np.concatenate((df, df))
-        sh = get_shift(align_param_file, p.shx_col, p.shy_col)
-        size = len(df)
-    else:
-        sh, q, U, V = get_from_relion(align_param_file, flip=True)
-        df = (U + V) / 2
-        # double the number of data points by augmentation
-        q = util.augment(q)
-        df = np.concatenate((df, df))
-        size = len(df)
-
-    CG1, CG, nG, S2, S20_th, S20, NC = S2tessellation.op(q, p.ang_width, p.PDsizeThL, visual, p.PDsizeThH)
-    # CG1: list of lists, each of which is a list of image indices within one PD
-    # CG: thresholded version of CG1
-    # nG: approximate number of tessellated bins
-    # S2: cartesian coordinates of each of particles' angular position on S2 sphere
-    # S20_th: thresholded version of S20
-    # S20: cartesian coordinates of each bin-center on S2 sphere
-    # NC: list of occupancies of each PD
-
-    # copy ref angles S20 to file
-    myio.fout1(p.tess_file, CG1=CG1, CG=CG, nG=nG, q=q, df=df, S2=S2, S20=S20_th, sh=sh, NC=NC)
-
-    p.numberofJobs = len(CG)
-    p.save()
-
-    if p.resProj == 0 and (np.shape(CG)[0] > 2):
-        G, Gsub = FindCCGraph.op()
-        nodesColor = genColorConnComp(G)
-
-        write_angles(p.ref_ang_file, nodesColor, S20_th, 1, NC)  # to PrD_map.txt (thresh bins)
-        write_angles(p.ref_ang_file1, nodesColor, S20, 0, NC)  # to PrD_map1.txt (all bins)

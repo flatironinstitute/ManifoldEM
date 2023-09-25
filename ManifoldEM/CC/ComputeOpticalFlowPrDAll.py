@@ -6,7 +6,9 @@ import shutil
 
 import numpy as np
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.data_store import data_store
+from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
@@ -173,13 +175,7 @@ def op(node_edge_num_range, *argv):
             if os.path.exists(bad_nodes_psis_taufile):
                 os.remove(bad_nodes_psis_taufile)
 
-        CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
-        if os.path.exists(CC_graph_file_pruned):
-            dataG = myio.fin1(CC_graph_file_pruned)
-        else:
-            dataG = myio.fin1(p.CC_graph_file)
-
-        G = dataG['G']
+        G = data_store.get_prds().neighbor_graph_pruned
         bad_nodes_psis_tau = np.zeros((G['nNodes'], p.num_psis)).astype(int)
         nodes_psis_tau_IQR = np.zeros((G['nNodes'], p.num_psis)) + 5.  # any positive real number > 1.0 outside tau range
         # tau range is [0,1.0], since a zero or small tau value by default means it will be automatically assigned

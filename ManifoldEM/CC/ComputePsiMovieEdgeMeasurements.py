@@ -11,7 +11,9 @@ from skimage import filters
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 
-from ManifoldEM import myio, p, FindCCGraphPruned
+from ManifoldEM import myio
+from ManifoldEM.data_store import data_store
+from ManifoldEM.params import p
 from ManifoldEM.CC import ComputeOpticalFlowPrDAll, ComputeMeasureEdgeAll
 '''
 Copyright (c) Columbia University Suvrajit Maji 2019
@@ -290,12 +292,13 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     np.savetxt('{}NodeTauPsisOcc_of.txt'.format(p.CC_dir), TausMat_Occ, fmt="%f", newline="\n")
     np.savetxt('{}badNodePsis_of.txt'.format(p.CC_dir), badNodesPsisTau, fmt="%d", newline="\n")
     np.savetxt('{}nodesAllBadPsis_of.txt'.format(p.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
-
+    
+    trash_list_out = trash_list
     if nodesAllBadPsis.shape[0] > 0:
         print('nodesAllBadPsis', nodesAllBadPsis)
-        trash_list[nodesAllBadPsis] = True
+        trash_list_out = trash_list_out.union(set(nodesAllBadPsis))
 
-    return trash_list, num_nodesAllBadPsis
+    return trash_list_out, num_nodesAllBadPsis
 
 
 def op(G, nodeRange, edgeNumRange, *argv):
@@ -309,17 +312,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
         # Optical flow vectors for each psi-movies of each node are saved to disk
         ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, *argv)
 
-    # check for bad PDs found based on bad tau values
-    trash_list = p.get_trash_list()
-    tau_occ_thresh = p.tau_occ_thresh
-
-    # take the already existing trash_list and update it
-    trash_list_chk, num_nodesAllBadPsis = checkBadPsis(trash_list, tau_occ_thresh)
-
-    # trash_list_chk will be used inside the following pruned graph creation if p.use_pruned_graph =1
-    # p.trash_list = trash_list_chk
-    # FindCCGraphPruned uses p.trash_list to create the pruned graph
-    CC_graph_file_pruned = '{}_pruned'.format(p.CC_graph_file)
+    # FIXME: this codepath is never reached (experimental)
 
     if p.use_pruned_graph:
         #Step 2a. June 2020
@@ -328,6 +321,13 @@ def op(G, nodeRange, edgeNumRange, *argv):
         # just update the graph G with new edge connections
         #the bad psis are also checked during BP for setting tiny node potentials for bad node states
         # the graph edges can be pruned here
+
+        # check for bad PDs found based on bad tau values
+        trash_list = data_store.get_prds().trash_ids
+        tau_occ_thresh = p.tau_occ_thresh
+
+        # take the already existing trash_list and update it
+        trash_list_chk, num_nodesAllBadPsis = checkBadPsis(trash_list, tau_occ_thresh)
 
         num_bad_nodes_prune_cutoff = 5
         print('Pruning the graph G if there are more than {} bad nodes'.format(num_bad_nodes_prune_cutoff))
@@ -372,6 +372,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
             extra = dict(nodeRange=nodeRange, edgeNumRange=edgeNumRange, ConnCompNoAnchor=connCompNoAnchor)
             data.update(extra)
             myio.fout1(CC_graph_file_pruned, **data)
+
 
     # Step 2. Compute the pairwise edge measurements
     # Save individual edge measurements

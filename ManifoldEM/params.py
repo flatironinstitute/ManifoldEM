@@ -2,39 +2,37 @@
 
 This was implemented originally as basically a global namespace (implemented via globals on the
 module). To maintain that structure, but provide better functionality (like class @properties
-and sanity checking), we use a weird scheme where the module itself is a class instance of
-Params.
+and sanity checking), we use Params() as a singleton class, named 'p' for legacy reasons.
 
 Copyright (c) Columbia University Evan Seitz 2019
 Copyright (c) Columbia University Hstau Liao 2019
 Copyright (c) Columbia University Suvrajit Maji 2019
 Copyright (c) Flatiron Institute Robert Blackwell 2023
-
 """
 import os
-import sys
 import toml
-from pprint import pprint
+import traceback
 
 import numpy as np
 
-from ManifoldEM.util import debug_print
+from pprint import pprint
 
 # resProj structure:
 #     0: default; new project
-#     1: user has confirmed Data.py entries
-#     2: GetDistances.py complete
-#     3: manifoldAnalysis.py complete
-#     4: psiAnalysis.py complete
-#     5: NLSAmovie.py complete
-#     6: PD anchors chosen/saved, "Compile" button clicked
-#     7: FindReactionCoord.py complete
-#     8: EL1D.py complete
-#     9: PrepareOutputS2.py complete
-class Params(sys.__class__):
+#     1: import tab complete
+#     2: distribution tab complete
+#     3: embedding tab complete
+#     4: eigenvectors tab complete
+#     5: compilation tab complete
+class Params():
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(Params, cls).__new__(cls)
+        return cls.instance
+
     proj_name: str = ''            # name of the project :D
     resProj: int = 0               # see above
-    relion_data: bool = False      # working with relion data?
+    relion_data: bool = True       # working with relion data?
     ncpu: int = 1                  # number of CPUs for multiprocessing
     avg_vol_file: str = ''         # average volume file (e.g., .mrc)
     img_stack_file: str = ''       # image stack file (e.g., .mrcs)
@@ -53,14 +51,10 @@ class Params(sys.__class__):
     obj_diam: float = 0.0  # diameter of macromolecule [Angstroms]
     resol_est: float = 0.0 # estimated resolution [Angstroms]
     ap_index: int = 1      # aperture index {1,2,3...}; increases tessellated bin size
-    ang_width: float = 0.0 # angle width (via: ap_index * resol_est / obj_diam)
-    sh: float = 0.0        # Shannon angle (pix_size / obj_diam)
 
     # tessellation binning:
     PDsizeThL: int = 100   # minimum required snapshots in a tessellation for it be admitted
     PDsizeThH: int = 2000  # maximum number of snapshots that will be considered within each tessellation
-    S2rescale: float = 1.0 # proper scale ratio between S2 sphere and .mrc volume for visualizations
-    S2iso: int = 3         # proper isosurface level of .mrv volume for vizualiaztion (as chosen by user)
     numberofJobs: int = 0  # total number of bins to consider for manifold embedding
 
 
@@ -92,8 +86,6 @@ class Params(sys.__class__):
     #  reaction coordinates parameters:
     getOpticalFlow: bool = True                # default True to compute optical flow vectors
     getAllEdgeMeasures: bool = True            # default True to compute edge measures
-    anch_list: list[list[int]] = []            # user-defined PD anchors for Belief Propagation
-    trash_list: list[bool] = []                # user-defined PD removals to ignore via final compile [binary list, 1 entry/PD]
     opt_movie: dict = {'printFig': 0,
                        'OFvisual': 0,
                        'visual_CC': 0,
@@ -105,6 +97,26 @@ class Params(sys.__class__):
     tau_occ_thresh: float = 0.35
     use_pruned_graph: bool = False
 
+    visualization_params: dict = {
+        'S2_scale': 1.0,
+        'S2_density': 1000,
+        'S2_isosurface_level': 3,
+    }
+
+    @property
+    def proj_file(self) -> str:
+        return f'params_{self.proj_name}.toml'
+
+    @property
+    def ang_width(self) -> float:
+        if not self.obj_diam:
+            return 0.0
+        return np.min(((self.ap_index * self.resol_est) / self.obj_diam, np.sqrt(4 * np.pi)))
+
+    @property
+    def sh(self) -> float:
+        return self.resol_est / self.obj_diam
+
 
     @property
     def user_dir(self) -> str:
@@ -113,7 +125,7 @@ class Params(sys.__class__):
 
     @property
     def out_dir(self) -> str:
-        return os.path.join(self.user_dir, f'outputs_{self.proj_name}')
+        return os.path.join(self.user_dir, self.proj_name)
 
 
     @property
@@ -137,8 +149,8 @@ class Params(sys.__class__):
 
 
     @property
-    def tess_file(self) -> str:
-        return os.path.join(self.out_dir, 'selecGCs')
+    def pd_file(self) -> str:
+        return os.path.join(self.out_dir, 'pd_data')
 
 
     @property
@@ -197,11 +209,6 @@ class Params(sys.__class__):
 
 
     @property
-    def CC_graph_file(self) -> str:
-        return os.path.join(self.CC_dir, 'graphCC')
-
-
-    @property
     def CC_meas_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_meas')
 
@@ -246,6 +253,20 @@ class Params(sys.__class__):
         return os.path.join(self.out_dir, 'bin')
 
 
+    @property
+    def user_dimensions(self) -> int:
+        "Placeholder parameter for when we support 2d later"
+        return 1
+
+
+    def get_topos_path(self, prd: int, index: int) -> str:
+        return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
+
+
+    def get_psi_gif(self, prd: int, index: int) -> str:
+        return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'psi_{index}.gif')
+
+
     def get_EL_file(self, prd_index: int):
         return f'{self.EL_file}prD_{prd_index}'
 
@@ -260,14 +281,6 @@ class Params(sys.__class__):
 
     def get_dist_file(self, prd_index: int):
         return f'{self.dist_file}prD_{prd_index}'
-
-
-    def set_trash_list(self, trash_list):
-        setattr(self, 'trash_list', [bool(a) for a in trash_list])
-
-
-    def get_trash_list(self):
-        return np.array(self.trash_list, dtype=bool)
 
 
     def todict(self):
@@ -298,7 +311,8 @@ class Params(sys.__class__):
         valid_params = dir(Params)
         for param, val in indict['params'].items():
             if param not in valid_params:
-                debug_print(f"Warning: param '{param}' not found in parameters module")
+                print(traceback.format_stack()[-2].split('\n')[0])
+                print(f"Warning: param '{param}' not found in parameters module")
             else:
                 setattr(self, param, val)
 
@@ -321,5 +335,4 @@ class Params(sys.__class__):
         os.makedirs(self.euler_dir, exist_ok=True)
 
 
-
-sys.modules[__name__].__class__ = Params
+p = Params()

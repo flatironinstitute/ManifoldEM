@@ -12,7 +12,7 @@ import matplotlib.colorbar as mcolorbar
 from cv2 import calcOpticalFlowFarneback
 from scipy.ndimage import uniform_filter
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 from ManifoldEM.CC import hornschunck_simple
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
@@ -451,8 +451,7 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
 
         if do_simpleAvg:  # perform averaging over blockSize frames
-
-            numAvgFrames = np.ceil(np.float(numFrames) / blockSize_avg).astype(int)
+            numAvgFrames = np.ceil(float(numFrames) / blockSize_avg).astype(int)
             AvgMov = np.zeros((numAvgFrames, dim, dim))
             for b in range(0, numAvgFrames):
                 frameStart = b * blockSize_avg

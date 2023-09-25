@@ -4,7 +4,9 @@ import numpy as np
 
 from functools import partial
 
-from ManifoldEM import p, myio, ComputeEnergy1D
+from ManifoldEM import myio, ComputeEnergy1D
+from ManifoldEM.data_store import data_store
+from ManifoldEM.params import p
 from ManifoldEM.psiAnalysis import psi_analysis_single
 from ManifoldEM.util import NullEmitter
 '''
@@ -35,7 +37,7 @@ def op(*argv):
     multiprocessing.set_start_method('fork', force=True)
 
     R = np.array(range(p.numberofJobs))
-    R = np.delete(R, np.nonzero(p.get_trash_list())[0])
+    R = np.delete(R, list(data_store.get_prds().trash_ids))
 
     print("Recomputing the NLSA snapshots using the found reaction coordinates...")
     data = myio.fin1(p.CC_file)

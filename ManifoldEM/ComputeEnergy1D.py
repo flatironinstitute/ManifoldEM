@@ -4,7 +4,9 @@ import time
 
 import numpy as np
 
-from ManifoldEM import p, myio
+from ManifoldEM import myio
+from ManifoldEM.data_store import data_store
+from ManifoldEM.params import p
 from ManifoldEM.util import debug_print
 ''' %Version V 1.2
     % Copyright (c) UWM, Ali Dashti 2016 (matlab version)
@@ -26,7 +28,8 @@ def op(*argv):
     a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
 
     xSelect = np.delete(xSelect, a)
-    a = np.nonzero(p.get_trash_list())[0]  # unassigned states, python
+
+    a = list(data_store.get_prds().trash_ids)
     if len(xSelect):
         xSelect = np.delete(xSelect, a)
 

@@ -8,7 +8,8 @@ import shutil
 
 from argparse import ArgumentParser
 
-from ManifoldEM import p, Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
+from ManifoldEM import Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
+from ManifoldEM.params import p
 from ManifoldEM.util import calc_ang_width, calc_shannon, get_image_width_from_stack
 
 parser = ArgumentParser(
@@ -89,10 +90,10 @@ def init(args):
         if os.path.isdir(p.out_dir):
             shutil.rmtree(p.out_dir)
 
-    p.avg_vol_file = args.avg_volume
-    p.align_param_file = args.alignment
-    p.img_stack_file = args.image_stack
-    p.mask_vol_file = args.mask_volume
+    p.avg_vol_file = os.path.expanduser(args.avg_volume)
+    p.align_param_file = os.path.expanduser(args.alignment)
+    p.img_stack_file = os.path.expanduser(args.image_stack)
+    p.mask_vol_file = os.path.expanduser(args.mask_volume)
 
     p.pix_size = args.pixel_size
     p.obj_diam = args.diameter
@@ -101,46 +102,40 @@ def init(args):
     p.S2rescale = 1.0
     p.relion_data = args.alignment.endswith('.star')
 
-    p.sh = calc_shannon(args.resolution, args.diameter)
-    p.ang_width = calc_ang_width(args.aperture_index, args.resolution, args.diameter)
     p.nPix = get_image_width_from_stack(p.img_stack_file)
 
     p.create_dir()
 
 
 def threshold(args):
-    Data.op(p.align_param_file)
-    p.resProj = 1
+    p.PDsizeThL = args.low
+    p.PDsizeThH = args.high
+    p.resProj = 2
 
 
 def calc_distance(args):
     GetDistancesS2.op()
-    p.resProj = 2
 
 
 def manifold_analysis(args):
     manifoldAnalysis.op()
-    p.resProj = 3
 
 
 def psi_analysis(args):
     psiAnalysis.op()
-    p.resProj = 4
 
 
 def nlsa_movie(args):
     NLSAmovie.op()
-    p.resProj = 5
+    p.resProj = 3
 
 
 def find_conformational_coordinates(args):
     FindConformationalCoord.op()
-    p.resProj = 7
 
 
 def energy_landscape(args):
     EL1D.op()
-    p.resProj = 8
 
 
 _funcs = {

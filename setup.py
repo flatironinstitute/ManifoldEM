@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from glob import glob
 
 classes = """
@@ -26,8 +26,9 @@ setup(name='ManifoldEM',
       description=description,
       author_email="evan.e.seitz@gmail.com",
       maintainer_email="rblackwell@flatironinstitute.org",
-      packages=['ManifoldEM', 'ManifoldEM/CC'],
+      packages=['ManifoldEM', 'ManifoldEM.CC', 'ManifoldEM.gui', 'ManifoldEM.gui.eigen_views'],
       install_requires=[
+          'nptyping',
           'numpy',
           'numba',
           'mayavi',

@@ -1,7 +1,7 @@
 from os import remove
 from shutil import rmtree, copytree, copy
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)

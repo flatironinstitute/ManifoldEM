@@ -3,7 +3,8 @@ import mrcfile
 
 import numpy as np
 
-from ManifoldEM import myio, p, projectMask
+from ManifoldEM import myio, projectMask
+from ManifoldEM.params import p
 from ManifoldEM.core import annularMask
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		

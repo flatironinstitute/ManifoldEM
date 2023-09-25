@@ -1,15 +1,14 @@
-import os
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-from ManifoldEM import p, DMembeddingII, myio
-'''
+"""
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)    
-'''
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from ManifoldEM import DMembeddingII, myio
 
 
 def get_psiPath(psi, rad, plotNum):
@@ -78,5 +77,5 @@ def op(input_data, posPath, tune, rad, visual, doSave):
                    logEps=logEps, logSumWij=logSumWij, popt=popt, R_squared=R_squared)
 
     with open(eig_file, "w") as file:
-        for i in range(len(lamb) - 1):
-            file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
+        for i in range(1, len(lamb)):
+            file.write("%d\t%.5f\n" % (i, lamb[i]))

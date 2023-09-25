@@ -1,3 +1,10 @@
+"""
+Copyright (c) UWM, Ali Dashti 2016 (matlab version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Copyright (c) Hstau Liao 2018 (python version)
+Copyright (c) Evan Seitz 2019 (python version)
+"""
+
 import multiprocessing
 
 import numpy as np
@@ -5,17 +12,12 @@ import numpy as np
 from functools import partial
 from scipy.fftpack import fft2, ifft2
 
-from ManifoldEM import p, myio, DMembeddingII
+from ManifoldEM import myio, DMembeddingII
+from ManifoldEM.params import p
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 from ManifoldEM.util import NullEmitter
 import tqdm
-'''
-Copyright (c) UWM, Ali Dashti 2016 (matlab version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Hstau Liao 2018 (python version)
-Copyright (c) Evan Seitz 2019 (python version)
-'''
 
 
 def _corr(a, b, n, m):
@@ -47,14 +49,6 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
     for i in range(ConOrder):
         Ind = range(i, num - ConOrder + i)
         ConD += DD[Ind][:, Ind]
-    '''
-    for iii in range(num - ConOrder):
-        for ii in range(num - ConOrder):
-            for ConNum in range(ConOrder):
-                Ind1 = iii + ConNum
-                Ind2 = ii + ConNum
-                ConD[iii, ii] += DD[Ind1, Ind2]
-    '''
 
     # find the manifold mapping:
     lambdaC, psiC, sigmaC, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(
@@ -71,7 +65,6 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
         IMG1 = imgAll[posPsi1, :, :]
 
     dim = CTF.shape[1]
-    sigma = sigmaC
     ell = psiTrunc - 1
     N = psiC.shape[0]
     psiC = np.hstack((np.ones((N, 1)), psiC[:, 0:ell]))

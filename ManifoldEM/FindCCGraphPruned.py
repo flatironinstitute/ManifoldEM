@@ -8,7 +8,8 @@ from scipy.sparse import csr_matrix, lil_matrix
 from scipy.sparse import tril
 from scipy.sparse.csgraph import connected_components
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 '''
 Copyright (c) Columbia University Suvrajit Maji 2019
 '''

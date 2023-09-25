@@ -8,7 +8,8 @@ import numpy as np
 
 from scipy.optimize import curve_fit, OptimizeWarning
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 
 warnings.simplefilter(action='ignore', category=OptimizeWarning)
 

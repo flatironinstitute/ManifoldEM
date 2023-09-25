@@ -7,7 +7,8 @@ import numpy as np
 
 from functools import partial
 
-from ManifoldEM import myio, p
+from ManifoldEM import myio
+from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
 '''
@@ -48,6 +49,7 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
 
         ######################
         # write topos
+        # TODO: This shouldn't require imshow. We can almost certainly just write the images directly
         topo = Topo_mean[psinum]
         dim = int(np.sqrt(topo.shape[0]))
 

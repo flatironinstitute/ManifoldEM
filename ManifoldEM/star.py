@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ManifoldEM import p
+from ManifoldEM.params import p
 '''
 Copyright (c) Columbia University Sonya Hanson 2018
 Copyright (c) Columbia University Hstau Liao 2019

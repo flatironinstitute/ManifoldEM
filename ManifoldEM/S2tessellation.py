@@ -89,7 +89,7 @@ def op(q, shAngWidth, PDsizeTh, visual, thres, *fig):
 
     CG = np.array(CG, dtype=object)
 
-    return (CG1, CG, nG, S2, S20_th, S20, NC)
+    return (CG1, CG, nG, S2, S20_th, S20, NC, NIND)
     #CG1: list of lists, each of which is a list of image indices within one PD
     #CG: thresholded version of CG1
     #nG: approximate number of tessellated bins
