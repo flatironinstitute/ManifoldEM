@@ -1,4 +1,4 @@
-# README
+# ManifoldEM
 
 Note this is the Flatiron Institute hosted version of this code.  Further development is
 currently being conducted by Robert Blackwell and Sonya Hanson -- feel free to reach out
@@ -25,25 +25,33 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
    conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+). Needs a working
-`mpi` install as well (a default conda one should be fine). On cluster environments this might
-require something like
+Should be installable in any modern python/conda environment (python 3.7+). 
 
+python:
 ```bash
-module load python
-```
-
-Then to install...
-
-```bash
-# create virtual environment
-python3 -m venv ~/path/to/venv
-source ~/path/to/venv/bin/activate
+# create virtual environment. feel free to change the path!
+python3 -m venv ~/envs/manifoldem
+source ~/envs/manifoldem/activate
 
 pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
 
 manifold-gui
 ```
+
+conda:
+```bash
+conda create -n manifoldem
+conda activate manifoldem
+
+pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
+
+manifold-gui
+```
+
+Note that when using conda, this bypasses conda's package management system and can lead to
+problems if you later install packages into this environment with `conda install`. It's
+recommended to keep an environment purely for `ManifoldEM`.
+
 
 ### Contributions
 Original ManifoldEM Python team (alphabetically ordered):
