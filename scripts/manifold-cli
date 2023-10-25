@@ -8,9 +8,10 @@ import shutil
 
 from argparse import ArgumentParser
 
+import ManifoldEM
 from ManifoldEM import Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
 from ManifoldEM.params import p
-from ManifoldEM.util import calc_ang_width, calc_shannon, get_image_width_from_stack
+from ManifoldEM.util import get_image_width_from_stack
 
 parser = ArgumentParser(
     prog="manifold-cli",
@@ -151,6 +152,7 @@ _funcs = {
 
 
 if __name__ == "__main__":
+    print(f"ManifoldEM version: {ManifoldEM.__version__}\n")
     main_args = parser.parse_args()
     load_state(main_args)
     _funcs[main_args.command](main_args)

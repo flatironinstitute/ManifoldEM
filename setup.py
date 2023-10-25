@@ -27,6 +27,8 @@ setup(name='ManifoldEM',
       author_email="evan.e.seitz@gmail.com",
       maintainer_email="rblackwell@flatironinstitute.org",
       packages=['ManifoldEM', 'ManifoldEM.CC', 'ManifoldEM.gui', 'ManifoldEM.gui.eigen_views'],
+      use_scm_version=True,
+      setup_requires=['setuptools_scm'],
       install_requires=[
           'nptyping',
           'numpy',
