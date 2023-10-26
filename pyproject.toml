@@ -1,3 +1,91 @@
+[build-system]
+requires = [
+    "setuptools>=60",
+    "setuptools-scm>=8.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ManifoldEM"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Ali Dashti"},
+    {name = "Joachim Frank"},
+    {name = "Hstau Liao"},
+    {name = "Suvrajit Maji"},
+    {name = "Ghoncheh Mashayekhi"},
+    {name = "Abbas Ourmazd"},
+    {name = "Peter Schwander"},
+    {name = "Evan Seitz", email = "evan.e.seitz@gmail.com"},
+    {name = "Robert Blackwell", email = "rblackwell@flatironinstitute.org"},
+]
+maintainers = [
+    {name = "Robert Blackwell", email = "rblackwell@flatironinstitute.org"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: User Interfaces",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+]
+dependencies = [
+    "nptyping",
+    "numpy",
+    "numba",
+    "mayavi",
+    "PyQt5",
+    "psutil",
+    "matplotlib",
+    "scikit-image",
+    "scikit-learn",
+    "scipy",
+    "pillow",
+    "pandas",
+    "mrcfile",
+    "opencv-python-headless",
+    "opencv-contrib-python",
+    "h5py",
+    "imageio",
+    "toml",
+    "tqdm",
+    "fasthog@git+https://github.com/blackwer/fasthog@v0.1.4#egg=fasthog",
+]
+
+[project.urls]
+Repository = "https://github.com/flatironinstitute/ManifoldEM.git"
+
+# Must declare to have version automation, even if empty
+[tool.setuptools_scm]
+
+[tool.setuptools.packages.find]
+include = ["ManifoldEM*"]
+
+[tool.setuptools]
+script-files = [
+    "scripts/manifold-gui",
+    "scripts/manifold-cli",
+]
+
 [tool.yapf]
 based_on_style = "pep8"
 column_limit = 119
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
