@@ -181,7 +181,12 @@ class _ProjectionDirections:
 
     @property
     def thresholded_image_indices(self):
-        return self.image_indices_full[self.thres_ids]
+        thres_images = self.image_indices_full[self.thres_ids]
+        for i in range(thres_images.size):
+            if len(thres_images[i]) > self.thres_high:
+                thres_images[i] = thres_images[i][:self.thres_high]
+
+        return thres_images
 
 
     @property
