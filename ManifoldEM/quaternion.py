@@ -9,7 +9,7 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 
 @numba.jit(nopython=True)
-def qMult(q1, q2):
+def _q_product_single(q1, q2):
     return np.array([
         q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
         q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
@@ -19,12 +19,12 @@ def qMult(q1, q2):
 
 
 @numba.jit(nopython=True)
-def optfunc(a, q):
+def _optfunc(a, q):
     b = 0.5 * a
     q1 = np.array([np.cos(b[0]), 0., 0., -np.sin(b[0])])
     q2 = np.array([np.cos(b[1]), 0., -np.sin(b[1]), 0.])
     q3 = np.array([np.cos(b[2]), 0., 0., -np.sin(b[2])])
-    return q - qMult(q3, qMult(q2, q1))
+    return q - _q_product_single(q3, _q_product_single(q2, q1))
 
 
 def q2Spider(q):
@@ -41,7 +41,7 @@ def q2Spider(q):
     q = q / np.linalg.norm(q)
 
     def dev1(a):
-        return optfunc(a, q)
+        return _optfunc(a, q)
 
     lb = -np.inf
     ub = np.inf
@@ -58,7 +58,7 @@ def q2Spider(q):
     return (phi, theta, psi)
 
 
-def qMult_bsx(q, s):
+def q_product(q, s):
     """import globfunction p = qMult_bsx(q,s)
     for any number of quaternions N
     q is 4xN or 4x1

@@ -10,7 +10,7 @@ from nptyping import NDArray, Shape, Int, Int64, Float64
 from ManifoldEM.params import p
 from ManifoldEM.Data import get_from_relion
 from ManifoldEM.util import augment
-from ManifoldEM.S2tessellation import op as tesselate
+from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
 
 
@@ -102,7 +102,7 @@ class _ProjectionDirections:
             q = augment(q)
             df = np.concatenate((df, df))
 
-            CG1, _, _, S2, _, S20, NC, NIND = tesselate(q, p.ang_width, p.PDsizeThL, False, p.PDsizeThH)
+            CG1, S2, S20, NC, NIND = bin_and_threshold(q, p.ang_width, p.PDsizeThL, p.PDsizeThH)
 
             self.thres_low = p.PDsizeThL
             self.thres_high = p.PDsizeThH

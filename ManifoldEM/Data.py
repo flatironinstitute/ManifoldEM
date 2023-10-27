@@ -13,9 +13,8 @@ import csv
 
 import numpy as np
 
-from ManifoldEM import S2tessellation, myio, FindCCGraph, util, star
+from ManifoldEM import util, star
 from ManifoldEM.params import p
-from ManifoldEM.quaternion import qMult_bsx
 
 
 def get_from_relion(align_star_file, flip):
@@ -90,70 +89,9 @@ def get_from_relion(align_star_file, flip):
             print("missing Euler angles")
             exit(1)
 
-    qz, qy, qzs = util.eul_to_quat(phi, theta, psi, flip)
-    q = qMult_bsx(qzs, qMult_bsx(qy, qz))
+    q = util.eul_to_quat(phi, theta, psi, flip)
 
     return (sh, q, U, V)
-
-
-def parse_spider(filename: str):
-    """
-    Parse a SPIDER DOC file.
-
-    Parameters
-    ----------
-    filename : str
-               Name of the file
-
-    Returns
-    -------
-    np.array(dtype=float64)
-        Table of values in file
-    """
-    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    table = []
-    with open(filename, 'r') as fin:
-        p.num_part = 0
-        for line in fin:
-            line1 = line.strip()
-            words = line1.split()
-            if words[0].find(';') == -1:
-                p.num_part += 1
-                words = [float(x) for x in words]
-                table.append(words)
-    table = np.array(table)
-    # skip the second column
-    table = np.hstack((table[:, 0].reshape(-1, 1), table[:, 2:]))
-    return table
-
-
-def get_q(align_param_file, phiCol, thetaCol, psiCol, flip):
-    # read the angles
-    align = parse_spider(align_param_file)
-    phi = np.deg2rad(align[:, phiCol])
-    theta = np.deg2rad(align[:, thetaCol])
-    psi = np.deg2rad(align[:, psiCol])
-    qz, qy, qzs = util.eul_to_quat(phi, theta, psi, flip)
-    q = qMult_bsx(qzs, qMult_bsx(qy, qz))
-    return q
-
-
-def get_df(align_param_file, dfCol):
-    # read df
-    align = parse_spider(align_param_file)
-    if len(dfCol) == 1:
-        df = align[:, dfCol]
-    if len(dfCol) == 2:
-        df = (align[:, dfCol[0]] + align[:, dfCol[1]]) / 2
-
-    return df
-
-
-def get_shift(align_param_file, shx_col, shy_col):
-    # read the x-y shifts
-    align = parse_spider(align_param_file)
-    sh = (align[:, shx_col] * 0, align[:, shy_col] * 0)
-    return sh
 
 
 def cart2sph(x, y, z):
@@ -161,17 +99,6 @@ def cart2sph(x, y, z):
     phi = math.atan2(y, x) * 180. / math.pi
     theta = math.acos(z / r) * 180. / math.pi  #it was theta
     return (r, phi, theta)
-
-
-def genColorConnComp(G):
-    numConnComp = len(G['NodesConnComp'])
-
-    nodesColor = np.zeros((G['nNodes'], 1), dtype='int')
-    for i in range(numConnComp):
-        nodesCC = G['NodesConnComp'][i]
-        nodesColor[nodesCC] = i
-
-    return nodesColor
 
 
 def write_angles(ang_file, color, S20, full, NC):

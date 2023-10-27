@@ -8,6 +8,7 @@ import traceback
 from PIL import Image
 
 from ManifoldEM.params import p
+from ManifoldEM.quaternion import q_product
 
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -132,22 +133,13 @@ def histeq(src, thist):  # by Zagurskin; does not work well,
 
 
 def eul_to_quat(phi, theta, psi, flip=True):
-    try:
-        assert (len(phi) > 0 and len(theta) > 0 and len(psi) > 0)
-    except AssertionError:
-        _logger.error('subroutine eul_to_quat: some Euler angles are missing')
-        _logger.exception('subroutine eul_to_quat: some Euler angles are missing')
-        raise
-        sys.exit(1)
-
     zros = np.zeros(phi.shape[0])
     qz = np.vstack((np.cos(phi / 2), zros, zros, -np.sin(phi / 2)))
     qy = np.vstack((np.cos(theta / 2), zros, -np.sin(theta / 2), zros))
-    sp = np.sin(psi / 2)
-    if flip:
-        sp = -sp
+    sp = -np.sin(psi / 2) if flip else np.sin(psi / 2)
     qzs = np.vstack((np.cos(psi / 2), zros, zros, sp))
-    return (qz, qy, qzs)
+    q = q_product(qzs, q_product(qy, qz))
+    return q
 
 
 def augment(q):
