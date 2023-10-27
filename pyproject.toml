@@ -66,6 +66,10 @@ dependencies = [
     "fasthog@git+https://github.com/blackwer/fasthog@v0.1.4#egg=fasthog",
 ]
 
+[project.scripts]
+manifold-cli = "ManifoldEM.interfaces.cli:main"
+manifold-gui = "ManifoldEM.interfaces.gui:main"
+
 [project.urls]
 Repository = "https://github.com/flatironinstitute/ManifoldEM.git"
 
@@ -74,12 +78,6 @@ Repository = "https://github.com/flatironinstitute/ManifoldEM.git"
 
 [tool.setuptools.packages.find]
 include = ["ManifoldEM*"]
-
-[tool.setuptools]
-script-files = [
-    "scripts/manifold-gui",
-    "scripts/manifold-cli",
-]
 
 [tool.yapf]
 based_on_style = "pep8"

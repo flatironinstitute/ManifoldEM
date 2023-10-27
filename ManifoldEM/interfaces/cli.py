@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 if not 'OMP_NUM_THREADS' in os.environ:
     os.environ['OMP_NUM_THREADS'] = '1'
@@ -152,7 +150,7 @@ _funcs = {
 }
 
 
-if __name__ == "__main__":
+def main():
     print(f"ManifoldEM version: {ManifoldEM.__version__}\n")
     if len(sys.argv) == 1:
         parser.print_help()
@@ -161,3 +159,7 @@ if __name__ == "__main__":
     load_state(main_args)
     _funcs[main_args.command](main_args)
     p.save()
+
+
+if __name__ == "__main__":
+    main()

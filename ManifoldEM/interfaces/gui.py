@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 if 'OMP_NUM_THREADS' not in os.environ:
     os.environ['OMP_NUM_THREADS'] = '1'
@@ -57,7 +56,7 @@ def init(args):
     p.ap_index = args.aperture_index
 
 
-if __name__ == '__main__':
+def main():
     print(r"""
  __  __             _  __       _     _ _____ __  __
 |  \/  | __ _ _ __ (_)/ _| ___ | | __| | ____|  \/  |
@@ -80,3 +79,7 @@ if __name__ == '__main__':
     w = MainWindow()
     w.setWindowTitle('ManifoldEM')
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
