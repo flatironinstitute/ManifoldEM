@@ -102,21 +102,22 @@ class _ProjectionDirections:
             q = augment(q)
             df = np.concatenate((df, df))
 
-            CG1, S2, S20, NC, NIND = bin_and_threshold(q, p.ang_width, p.PDsizeThL, p.PDsizeThH)
+            image_indices, pos_full, bin_centers, occupancy, conjugate_bin_ids = \
+                bin_and_threshold(q, p.ang_width, p.PDsizeThL, p.PDsizeThH)
 
             self.thres_low = p.PDsizeThL
             self.thres_high = p.PDsizeThH
 
-            self.bin_centers = S20
+            self.bin_centers = bin_centers
             self.defocus = df
             self.microscope_origin = sh
 
-            self.pos_full = S2
+            self.pos_full = pos_full
             self.quats_full = q
 
-            self.image_indices_full = CG1
-            self.thres_ids = NIND
-            self.occupancy_full = NC
+            self.image_indices_full = image_indices
+            self.thres_ids = conjugate_bin_ids
+            self.occupancy_full = occupancy
 
             self.anchors = {}
             self.trash_ids = set()
@@ -126,7 +127,7 @@ class _ProjectionDirections:
             self.theta_thresholded = np.arccos(self.pos_thresholded[2, :]) * 180. / np.pi
 
             self.neighbor_graph, self.neighbor_subgraph = \
-                FindCCGraph(self.thresholded_image_indices, self.n_bins, self.bin_centers[:, self.thres_ids])
+                FindCCGraph(self.thresholded_image_indices, self.n_bins, self.pos_thresholded)
 
             def get_cluster_ids(G):
                 nodesColor = np.zeros(G['nNodes'], dtype='int')

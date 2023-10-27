@@ -1,29 +1,15 @@
-import logging
+# Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Copyright (c) Columbia University Hstau Liao 2018 (python version)
+# Copyright (c) Columbia University Evan Seitz 2019 (python version)
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from ManifoldEM.core import distribute3Sphere
-'''
-Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Columbia University Hstau Liao 2018 (python version)
-Copyright (c) Columbia University Evan Seitz 2019 (python version)
-'''
-
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
-
 
 def quaternion_to_S2(q):
-    try:
-        assert (q.shape[0] > 3)
-    except AssertionError:
-        _logger.error('subroutine get_S2: q has wrong dimensions')
-        _logger.exception('subroutine get_S2: q has wrong dimensions')
-        raise
-
-    # projection angles
+    # TODO: Understand how this magically gets rid of final psi rotation
     S2 = 2*np.vstack((q[1, :]*q[3, :] - q[0, :]*q[2, :],
                       q[0, :]*q[1, :] + q[2, :]*q[3, :],
                       q[0, :]**2 + q[3, :]**2 - 0.5))
@@ -55,21 +41,11 @@ def bin_and_threshold(q, bin_width, thres_low, thres_high):
         neighb_list[index].append(i)
     neighb_list = np.array([np.array(a) for a in neighb_list], dtype=object)
 
-    # list bins that have more than thres_low points AND lie on bigger half of "mid"
+    # list bins that have more than thres_low points AND lie on bigger half of bin list
     conjugate_bins = []
-    mid = n_bins // 2
-    take_lower = not bool(n_bins % 2)
-    if take_lower:
-        pd = 0  # PD index
-        for i in n_points_in_bin[:mid]:
-            if i >= thres_low:
-                conjugate_bins.append(pd)
-            pd += 1
-    else:
-        pd = mid  # PD index
-        for i in n_points_in_bin[mid:]:
-            if i >= thres_low:
-                conjugate_bins.append(pd)
-            pd += 1
+    start_bin, end_bin = (n_bins // 2, n_bins) if n_bins % 2 else (0, n_bins // 2)
+    for pd_rel, n_points in enumerate(n_points_in_bin[start_bin:end_bin]):
+        if n_points >= thres_low:
+            conjugate_bins.append(pd_rel + start_bin)
 
     return (neighb_list, S2, bin_centers, n_points_in_bin, conjugate_bins)
