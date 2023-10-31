@@ -115,7 +115,7 @@ def _get_fit_params(psi):
                   [sumX3, sumX2, sumX, nS]])
     b = np.array([sumX3Z, sumX2Z, sumXZ, sumZ])
 
-    coeff = np.linalg.lstsq(A, b)[0]
+    coeff = np.linalg.lstsq(A, b, rcond=None)[0]
     D = coeff[0]
     E = coeff[1]
     F = coeff[2]
@@ -141,7 +141,7 @@ def _get_fit_params(psi):
     sumXXbY = np.dot(XXb.T, Y)
     A = np.array([[sumX2Xb2, sumXXb], [sumXXb, nS]])
     b = np.array([sumXXbY, sumY])
-    coeff = np.linalg.lstsq(A, b)[0]
+    coeff = np.linalg.lstsq(A, b, rcond=None)[0]
 
     A = coeff[0]
     C = coeff[1]
@@ -213,7 +213,7 @@ def fit_1D_open_manifold_3D(psi):
         for qq in range(3):
             A = np.array([[A11[qq], A12[qq]], [A21[qq], A22]])
             b = np.array([b1[qq], b2[qq]])
-            coeff[:, qq] = np.linalg.lstsq(A, b)[0]
+            coeff[:, qq] = np.linalg.lstsq(A, b, rcond=None)[0]
 
         a.a = coeff[0, :]
         a.b = coeff[1, :]
