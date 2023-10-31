@@ -77,7 +77,12 @@ def get_from_relion(align_star_file, flip):
         if 'rlnOriginX' in df.columns and 'rlnOriginY' in df.columns:
             shx = df['rlnOriginX'].values
             shy = df['rlnOriginY'].values
+        elif 'rlnOriginXAngst' in df.columns and 'rlnOriginYAngst' in df.columns:
+            shx = df['rlnOriginXAngst'].values / p.pix_size
+            shy = df['rlnOriginYAngst'].values / p.pix_size
+            print(shx, shy)
         else:
+            print(f"Warning: missing relion origin data in {align_star_file}")
             shx = U * 0.
             shy = shx
         sh = (shx, shy)
