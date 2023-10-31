@@ -213,7 +213,6 @@ class Erg1dMain(QDialog):
     def on_progress7Changed(self, val):
         self.progress7.setValue(val)
         if val == 100:
-            p.resProj = 9
             p.save()  #send new GUI data to user parameters file
 
             self.reprepare = 1

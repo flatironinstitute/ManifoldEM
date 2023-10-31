@@ -66,14 +66,12 @@ class MainWindow(QMainWindow):
 
         self.set_tab_state(False, list(self.tab_indices.keys()))
         for tabi in range(p.resProj + 1):
-            tab_name = self.tab_names[tabi]
-            self.set_tab_state(True, tab_name)
-            self.switch_tab(tab_name)
+            if tabi in self.tab_names:
+                tab_name = self.tab_names[tabi]
+                self.set_tab_state(True, tab_name)
+                self.switch_tab(tab_name)
 
         self.show()
-        for i in range(p.resProj + 1):
-            self.set_tab_state(True, self.tab_names[i])
-            self.switch_tab(self.tab_names[i])
 
 
     def switch_tab(self, tab_name: str):
