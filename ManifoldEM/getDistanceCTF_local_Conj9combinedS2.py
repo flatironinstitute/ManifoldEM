@@ -44,7 +44,6 @@ import logging
 import sys
 import mrcfile
 import warnings
-import os
 import multiprocessing
 
 import numpy as np
@@ -54,7 +53,7 @@ from scipy.ndimage import shift
 from scipy.fftpack import ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 
-from ManifoldEM import ctemh_cryoFrank, myio, projectMask
+from ManifoldEM import myio, projectMask
 from ManifoldEM.params import p
 from ManifoldEM.core import annularMask
 from ManifoldEM.quaternion import q2Spider
@@ -207,6 +206,40 @@ def psi_ang(PD):
     return psi
 
 
+def ctemh_cryoFrank(k, Cs, df, kev, B, ampc):
+    """
+    % from Kirkland, adapted for cryo (EMAN1) by P. Schwander
+    % Version V 1.1
+    % Copyright (c) UWM, Peter Schwander 2010 MATLAB version
+    % '''
+    % Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %
+    %
+    % Here, the damping envelope is characterized by a single parameter B
+    % see J. Frank
+    % params(1)   Cs in mm
+    % params(2)   df in Angstrom, a positive value is underfocus
+    % params(3)   Electron energy in keV
+    % params(4)   B in A-2
+
+    % Note: we assume |k| = s
+    """
+    Cs *= 1.0e7
+    mo = 511.0
+    hc = 12.3986
+    wav = (2 * mo) + kev
+    wav = hc / np.sqrt(wav * kev)
+    w1 = np.pi * Cs * wav * wav * wav
+    w2 = np.pi * wav * df
+    k2 = k * k
+    sigm = B / math.sqrt(2 * math.log(2))  # B is Gaussian Env. Halfwidth
+    wi = np.exp(-k2 / (2 * sigm**2))
+    wr = (0.5 * w1 * k2 - w2) * k2  # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2
+
+    y = (np.sin(wr) - ampc * np.cos(wr)) * wi
+    return y
+
 def op(input_data, filterPar, imgFileName, sh, nStot, options):
 
     ind = input_data[0]
@@ -300,8 +333,8 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
         # Get the psi angle
         Psi, s, c = get_psi(q, PD, iS)
 
-        if np.isnan(
-                Psi):  # this happens only for a rotation of pi about an axis perpendicular to the projection direction
+        # this happens only for a rotation of pi about an axis perpendicular to the projection direction
+        if np.isnan(Psi):
             Psi = 0
         Psis[iS] = Psi  # save image rotations
         Dnom[iS] = c  # save denominator
@@ -313,19 +346,17 @@ def op(input_data, filterPar, imgFileName, sh, nStot, options):
         img = rotate_fill(img, -(180 / math.pi) * Psi)
 
         img = rotate_fill(img, -psi_p)
-        """img = imrotate(img,-(180/pi)*Psi,'bilinear','crop'); # the negative sign is due to Spider convention"""
         imgAvg = imgAvg + img  # plain 2d average
         ## where is this imgAvg used ?? there is a imgAvg in the next loop below
 
         # CTF info
-        tmp = ctemh_cryoFrank.op(Q / (2 * p.pix_size), [p.Cs, df[iS], p.EkV, p.gaussEnv, p.AmpContrast])
+        tmp = ctemh_cryoFrank(Q / (2 * p.pix_size), p.Cs, df[iS], p.EkV, p.gaussEnv, p.AmpContrast)
 
         CTF[iS, :, :] = ifftshift(tmp)  # tmp should be in matlab convention
-        """CTF(:,:,iS) = ifftshift(ctemh_cryoFrank(Q,[emPar.Cs,df(iS),emPar.EkV,emPar.gaussEnv])); % ifftshift is correct!"""
+
         CTFtemp = CTF[iS, :, :]
-        #fy[iS,:,:] = fft2(img)  # Fourier transformed
-        fy[iS, :, :] = fft2(img *
-                            msk2)  # Fourier transformed #April 2020, with vol mask msk2, used for distance calc D
+        # Fourier transformed #April 2020, with vol mask msk2, used for distance calc D
+        fy[iS, :, :] = fft2(img * msk2)
 
         imgFlip = ifft2(np.sign(CTFtemp) * fy[iS, :, :])  # phase-flipped
         imgAllFlip[iS, :, :] = imgFlip.real  # taking all the phase-flipped images
