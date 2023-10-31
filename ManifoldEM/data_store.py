@@ -8,7 +8,7 @@ from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape, Int, Int64, Float64
 
 from ManifoldEM.params import p
-from ManifoldEM.Data import get_from_relion
+from ManifoldEM.star import get_align_data
 from ManifoldEM.util import augment
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
@@ -95,7 +95,7 @@ class _ProjectionDirections:
                 os.environ.pop('MANIFOLD_REBUILD_DS')
 
             print("Calculating projection direction information")
-            sh, q, U, V = get_from_relion(p.align_param_file, flip=True)
+            sh, q, U, V = get_align_data(p.align_param_file, flip=True)
             df = (U + V) / 2
 
             # double the number of data points by augmentation

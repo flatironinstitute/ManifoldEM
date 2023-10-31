@@ -8,7 +8,7 @@ import sys
 from argparse import ArgumentParser
 
 import ManifoldEM
-from ManifoldEM import Data, GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
+from ManifoldEM import GetDistancesS2, manifoldAnalysis, psiAnalysis, NLSAmovie, FindConformationalCoord, EL1D
 from ManifoldEM.params import p
 from ManifoldEM.util import get_image_width_from_stack
 

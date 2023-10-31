@@ -1,6 +1,9 @@
+import numpy as np
 import pandas as pd
 
+from ManifoldEM import util
 from ManifoldEM.params import p
+
 '''
 Copyright (c) Columbia University Sonya Hanson 2018
 Copyright (c) Columbia University Hstau Liao 2019
@@ -78,3 +81,60 @@ def parse_star_optics(starfile, keep_index=False):  #added by E. Seitz -- 10/23/
     star.columns = headers
 
     return (star, ln + 1)
+
+
+def get_align_data(align_star_file, flip):
+    relion_old = True
+    with open(align_star_file, 'r') as f:
+        for line in f:
+            if line.startswith("data_optics"):
+                relion_old = False
+                break
+
+    if relion_old:
+        skip = 0
+        df = parse_star(align_star_file, skip, keep_index=False)
+        df0 = df
+    else:
+        print('RELION Optics Group found.')
+        df0, skip = parse_star_optics(align_star_file, keep_index=False)
+        df = parse_star(align_star_file, skip, keep_index=False)
+
+    try:
+        p.EkV = float(df0['rlnVoltage'].values[0])
+        p.Cs = float(df0['rlnSphericalAberration'].values[0])
+        p.AmpContrast = float(df0['rlnAmplitudeContrast'].values[0])
+    except:
+        print('missing microscope parameters')
+        exit(1)
+
+    try:
+        U = df['rlnDefocusU'].values
+        V = df['rlnDefocusV'].values
+    except:
+        print("missing defocus")
+        exit(1)
+
+    if 'rlnOriginX' in df.columns and 'rlnOriginY' in df.columns:
+        shx = df['rlnOriginX'].values
+        shy = df['rlnOriginY'].values
+    elif 'rlnOriginXAngst' in df.columns and 'rlnOriginYAngst' in df.columns:
+        shx = df['rlnOriginXAngst'].values / p.pix_size
+        shy = df['rlnOriginYAngst'].values / p.pix_size
+    else:
+        print(f"Warning: missing relion origin data in {align_star_file}")
+        shx = U * 0.
+        shy = shx
+    sh = (shx, shy)
+
+    try:
+        phi = np.deg2rad(df['rlnAngleRot'].values)
+        theta = np.deg2rad(df['rlnAngleTilt'].values)
+        psi = np.deg2rad(df['rlnAnglePsi'].values)
+    except:
+        print("missing Euler angles")
+        exit(1)
+
+    q = util.eul_to_quat(phi, theta, psi, flip)
+
+    return (sh, q, U, V)
