@@ -3,6 +3,8 @@ import mrcfile
 import multiprocessing
 import tqdm
 
+from dataclasses import dataclass
+
 from functools import partial
 
 from ManifoldEM import myio, projectMask
@@ -13,6 +15,8 @@ from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import NullEmitter, rotate_fill
 
 import numpy as np
+
+from typing import Tuple
 from nptyping import NDArray, Shape, Float64
 
 from scipy.fftpack import ifftshift, fft2, ifft2
@@ -32,36 +36,37 @@ _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
 
 
+@dataclass
+class FilterParams:
+    """
+    Class to assist in creation of image filters
+    method:      'Butter' or 'Gauss'
+    cutoff_freq: Nyquist cutoff freq
+    order:       Filter order (for 'Butter' only)
+    """
+    method: str
+    cutoff_freq: float
+    order: int
+
+    def create_filter(self, Q: NDArray[Shape["*,*"], Float64]) -> NDArray[Shape["*,*"], Float64]:
+        if self.method == 'Gauss':
+            G = np.exp(-(np.log(2) / 2.) * (Q / self.cutoff_freq)**2)
+        elif self.method == 'Butter':
+            G = np.sqrt(1. / (1 + (Q / self.cutoff_freq)**(2 * self.order)))
+        else:
+            _logger.error('%s filter is unsupported' % (self.method))
+            _logger.exception('%s filter is unsupported' % (self.method))
+            raise ValueError
+
+        return G
 
 
 def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
-    if N <= 0:
-        _logger.error('non-positive image size')
-        _logger.exception('non-positive image size')
-        raise ValueError
-
-    if N % 2 == 1:
-        a = np.arange(-(N - 1) / 2, (N - 1) / 2 + 1)
-    else:
-        a = np.arange(-N / 2, N / 2)
+    """Create NxN grid centered grid around (0, 0)"""
+    a = np.arange(N) - N // 2
     X, Y = np.meshgrid(a, a)
 
-    Q = (1. / (N / 2.)) * np.sqrt(X**2 + Y**2)
-
-    return Q
-
-
-def create_filter(filter_type, NN, Qc, Q):
-    if filter_type == 'Gauss':
-        G = np.exp(-(np.log(2) / 2.) * (Q / Qc)**2)
-    elif filter_type == 'Butter':
-        G = np.sqrt(1. / (1 + (Q / Qc)**(2 * NN)))
-    else:
-        _logger.error('%s filter is unsupported' % (filter_type))
-        _logger.exception('%s filter is unsupported' % (filter_type))
-        raise ValueError
-
-    return G
+    return 2 * np.sqrt(X**2 + Y**2) / N
 
 
 def calc_avg_pd(q, nS):
@@ -101,7 +106,8 @@ def get_wiener1(CTF1):
     return (wiener_dom)
 
 
-def ctemh_cryoFrank(k, spherical_aberration: float, defocus: float, electron_energy: float,
+def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64],
+                    spherical_aberration: float, defocus: float, electron_energy: float,
                     gauss_env_halfwidth: float, amplitude_contrast_ratio: float):
     """
     from Kirkland, adapted for cryo (EMAN1) by P. Schwander
@@ -133,11 +139,12 @@ def ctemh_cryoFrank(k, spherical_aberration: float, defocus: float, electron_ene
     wi = np.exp(-k2 / (2 * sigm**2))
     wr = (0.5 * w1 * k2 - w2) * k2  # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2
 
-    y = (np.sin(wr) - amplitude_contrast_ratio * np.cos(wr)) * wi
-    return y
+    return (np.sin(wr) - amplitude_contrast_ratio * np.cos(wr)) * wi
 
 
-def get_distance_CTF_local(input_data, filter_par, img_file_name, image_offsets, n_particles_tot, avg_only, relion_data):
+def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_name: str,
+                           image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
+                           n_particles_tot: int, avg_only: bool, relion_data: bool):
     """
     Calculates squared Euclidian distances for snapshots in similar
     projection directions. Includes CTF correction of microspope.
@@ -149,10 +156,7 @@ def get_distance_CTF_local(input_data, filter_par, img_file_name, image_offsets,
                  input_data['quats']        Rotation quaternions of all images, 4xN
                  input_data['defocus']      Defocus values of all images
                  input_data['dist_file']    Output file for results
-    filter_par   filter Gaussian width [pixel]
-                 filterPar['Qc']         Nyquist cutoff frequency
-                 filterPar['type']       Filter type 'Butter' or 'Gauss'
-                 filterPar['N']          Filter order (for 'Butter' only)
+    filter_params  Filter Gaussian width [pixel]
     image_offsets  Image origins (from star files, usually. aka "sh")
     img_file_name  Image file with all raw images
     avg_only       Skip calculation of distances
@@ -225,7 +229,7 @@ def get_distance_CTF_local(input_data, filter_par, img_file_name, image_offsets,
 
     # create grid for filter G
     Q = create_grid(n_pix)
-    G = create_filter(filter_par['type'], filter_par['N'], filter_par['Qc'], Q)
+    G = filter_params.create_filter(Q)
     G = ifftshift(G)
     # filter each image in the bin
     for i_part in range(n_particles):
@@ -332,12 +336,12 @@ def op(*argv):
 
     prds = data_store.get_prds()
 
-    filterPar = dict(type='Butter', Qc=0.5, N=8)
+    filter_params = FilterParams(method='Butter', cutoff_freq=0.5, order=8)
 
     input_data = _construct_input_data(prds.thresholded_image_indices, prds.quats_full, prds.defocus)
     n_jobs = len(input_data)
     local_distance_func = partial(get_distance_CTF_local,
-                                  filter_par=filterPar,
+                                  filter_params=filter_params,
                                   img_file_name=p.img_stack_file,
                                   image_offsets=prds.microscope_origin,
                                   n_particles_tot=len(prds.defocus),
