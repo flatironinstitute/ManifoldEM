@@ -4,8 +4,14 @@ import multiprocessing
 import tqdm
 
 from dataclasses import dataclass
-
 from functools import partial
+
+import numpy as np
+from scipy.fftpack import ifftshift, fft2, ifft2
+from scipy.ndimage import shift
+
+from nptyping import NDArray, Shape, Float64
+from typing import Tuple
 
 from ManifoldEM import myio, projectMask
 from ManifoldEM.core import annularMask
@@ -13,14 +19,6 @@ from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
 from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import NullEmitter, rotate_fill
-
-import numpy as np
-
-from typing import Tuple
-from nptyping import NDArray, Shape, Float64
-
-from scipy.fftpack import ifftshift, fft2, ifft2
-from scipy.ndimage import shift
 
 
 
@@ -185,57 +183,19 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
     # different types of averages of aligned particles of the same view
     img_avg = np.zeros((n_pix, n_pix))  # simple average
     img_avg_flip = np.zeros((n_pix, n_pix))  # average of phase-flipped particles
-    img_all_flip = np.zeros((n_particles, n_pix, n_pix))  # all the averages of phase-flipped particles
+    img_all_intensity = np.zeros((n_pix, n_pix))
     img_all = np.zeros((n_particles, n_pix, n_pix))  #
 
-    flattened_images = np.zeros((n_pix**2, n_particles))  # each row is a flatten image
     fourier_images = complex(0) * np.ones((n_particles, n_pix, n_pix))  # each (i,:,:) is a Fourier image
     CTF = np.zeros((n_particles, n_pix, n_pix))  # each (i,:,:) is the CTF
     distances = np.zeros((n_particles, n_particles))  # distances among the particles in the bin
 
     msk = annularMask(0, n_pix / 2., n_pix, n_pix)
 
-    # read images with conjugates
-    img_labels = np.zeros(n_particles, dtype=int)
-    for i_part in range(n_particles):
-        if indices[i_part] < n_particles_tot / 2:  # first half data set; i.e., before augmentation
-            indiS = int(indices[i_part])
-            img_labels[i_part] = 1
-        else:  # second half data set; i.e., the conjugates
-            indiS = int(indices[i_part] - n_particles_tot / 2)
-            img_labels[i_part] = -1
-            # matlab version: y[:,iS] = m.Data(ind(iS)).y
-        start = n_pix**2 * indiS * 4
-        if not relion_data:  # spider data
-            tmp = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix))
-            # store each flatted image in y
-            tmp = tmp.T  # numpy mapping is diff from matlab's
-        else:  # relion data
-            tmp = mrcfile.mmap(img_file_name, 'r')
-            tmp.is_image_stack()
-            tmp = tmp.data[indiS]
-            shi = (image_offsets[1][indiS] - 0.5, image_offsets[0][indiS] - 0.5)
-            tmp = shift(tmp, shi, order=3, mode='wrap')
-        if indices[i_part] >= n_particles_tot / 2:  # second half data set
-            tmp = np.flipud(tmp)
-        # normalizing
-        backg = tmp * (1 - msk)
-        try:
-            tmp = (tmp - backg.mean()) / backg.std()
-        except:
-            pass
-        # store each flatted image in y
-        flattened_images[:, i_part] = tmp.flatten('F')
-
     # create grid for filter G
     Q = create_grid(n_pix)
     G = filter_params.create_filter(Q)
     G = ifftshift(G)
-    # filter each image in the bin
-    for i_part in range(n_particles):
-        img = flattened_images[:, i_part].reshape(-1, n_pix).transpose()
-        img = ifft2(fft2(img) * G).real
-        flattened_images[:, i_part] = img.real.flatten('F')
 
     # Calculate average projection directions
     PDs = calc_avg_pd(quats, n_particles)
@@ -243,6 +203,9 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
     PD = np.sum(PDs, 1)
     # make it a unit vector
     PD = PD / np.linalg.norm(PD)
+
+    # psi_p angle for in-plane rotation alignment
+    psi_p = psi_ang(PD)
 
     # use volumetric mask, April 2020
     if p.mask_vol_file:
@@ -252,10 +215,42 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
     else:
         msk2 = 1
 
-    # psi_p angle for in-plane rotation alignment
-    psi_p = psi_ang(PD)
-    # looping for all the images in the bin
+    # read images with conjugates
+    img_labels = np.zeros(n_particles, dtype=int)
     for i_part in range(n_particles):
+        if indices[i_part] < n_particles_tot / 2:  # first half data set; i.e., before augmentation
+            raw_particle_index = int(indices[i_part])
+            img_labels[i_part] = 1
+        else:  # second half data set; i.e., the conjugates
+            raw_particle_index = int(indices[i_part] - n_particles_tot / 2)
+            img_labels[i_part] = -1
+            # matlab version: y[:,iS] = m.Data(ind(iS)).y
+        if not relion_data:  # spider data
+            start = n_pix**2 * raw_particle_index * 4
+            img = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix))
+            # store each flatted image in y
+            img = img.T  # numpy mapping is diff from matlab's
+        else:  # relion data
+            img = mrcfile.mmap(img_file_name, 'r')
+            img.is_image_stack()
+            img = img.data[raw_particle_index]
+            shi = (image_offsets[1][raw_particle_index] - 0.5, image_offsets[0][raw_particle_index] - 0.5)
+            img = shift(img, shi, order=3, mode='wrap')
+        if indices[i_part] >= n_particles_tot / 2:  # second half data set
+            img = np.flipud(img)
+        # normalizing
+        backg = img * (1 - msk)
+        try:
+            img = (img - backg.mean()) / backg.std()
+        except:
+            pass
+
+        # store each flatted image in y and filter
+        img = img.flatten('F')
+        img = img.reshape(-1, n_pix).transpose()
+        img = ifft2(fft2(img) * G).real
+        img = img.real.flatten('F')
+
         # Get the psi angle
         psi, s, c = get_psi(quats, PD, i_part)
 
@@ -267,24 +262,23 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
         numerator[i_part] = s  # save nominator
 
         # inplane align the images
-        img = flattened_images[:, i_part].reshape(-1, n_pix).transpose() * msk  # convert to matlab convention prior to rotation
+        img = img.reshape(-1, n_pix).transpose() * msk  # convert to matlab convention prior to rotation
         img = rotate_fill(img, -(180 / np.pi) * psi)
         img = rotate_fill(img, -psi_p)
 
         # CTF info
-        tmp = ctemh_cryoFrank(Q / (2 * p.pix_size), p.Cs, defocus[i_part], p.EkV, p.gaussEnv, p.AmpContrast)
+        ctf_i = ctemh_cryoFrank(Q / (2 * p.pix_size), p.Cs, defocus[i_part], p.EkV, p.gaussEnv, p.AmpContrast)
 
-        CTF[i_part, :, :] = ifftshift(tmp)  # tmp should be in matlab convention
+        CTF[i_part, :, :] = ifftshift(ctf_i)  # tmp should be in matlab convention
 
-        CTFtemp = CTF[i_part, :, :]
         # Fourier transformed #April 2020, with vol mask msk2, used for distance calc D
         fourier_images[i_part, :, :] = fft2(img * msk2)
 
-        img_flip = ifft2(np.sign(CTFtemp) * fourier_images[i_part, :, :])  # phase-flipped
-        img_all_flip[i_part, :, :] = img_flip.real  # taking all the phase-flipped images
+        img_flip = ifft2(np.sign(CTF[i_part, :, :]) * fourier_images[i_part, :, :])  # phase-flipped
         img_avg_flip = img_avg_flip + img_flip.real  # average of all phase-flipped images
+        img_all_intensity += img_flip.real**2 / n_particles
         img_all[i_part, :, :] = img
-    del flattened_images
+
 
     # use wiener filter
     img_avg = 0
@@ -306,10 +300,8 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
         CTF = CTF.reshape(n_particles, n_pix**2)
 
         CTFfy = CTF.conj() * fourier_images
-        distances = np.dot((abs(CTF)**2), (abs(fourier_images)**2).T)
+        distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
         distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
-
-    img_all_intensity = np.mean(img_all_flip**2, axis=0)
 
     myio.fout1(out_file, D=distances, ind=indices, q=quats, df=defocus, CTF=CTF, imgAll=img_all, msk2=msk2, PD=PD, PDs=PDs, Psis=psis,
                imgAvg=img_avg, imgAvgFlip=img_avg_flip, imgLabels=img_labels, Dnom=denominator, Nom=numerator,
