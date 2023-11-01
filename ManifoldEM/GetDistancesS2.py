@@ -11,7 +11,7 @@ from PIL import Image
 from scipy.fftpack import ifftshift, fft2, ifft2
 from scipy.ndimage import shift
 
-from nptyping import NDArray, Shape, Float64
+from nptyping import NDArray, Shape, Float64, Int
 from typing import Tuple
 
 from ManifoldEM import myio, projectMask
@@ -142,7 +142,15 @@ def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: flo
     return (np.sin(wr) - amplitude_contrast_ratio * np.cos(wr)) * wi
 
 
-def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_name: str,
+@dataclass
+class LocalInput:
+    indices: NDArray[Shape["*"], Int]
+    quats: NDArray[Shape["4,*"], Float64]
+    defocus: NDArray[Shape["*"], Float64]
+    dist_file: str
+
+
+def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, img_file_name: str,
                            image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
                            n_particles_tot: int, avg_only: bool, relion_data: bool):
     """
@@ -169,10 +177,10 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
         dPix       Pixel size [A]
     """
     version = 'getDistanceCTF_local9, V 1.0'
-    indices = input_data['indices']
-    quats = input_data['quats']
-    defocus = input_data['defocus']
-    out_file = input_data['dist_file']
+    indices = input_data.indices
+    quats = input_data.quats
+    defocus = input_data.defocus
+    out_file = input_data.dist_file
 
     n_particles = indices.shape[0]  # size of bin; ind are the indexes of particles in that bin
     # auxiliary variables
@@ -183,10 +191,10 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
     # different types of averages of aligned particles of the same view
     img_avg = np.zeros((n_pix, n_pix))  # simple average
     img_avg_flip = np.zeros((n_pix, n_pix))  # average of phase-flipped particles
-    img_all_intensity = np.zeros((n_pix, n_pix))
-    img_all = np.zeros((n_particles, n_pix, n_pix))  #
+    img_avg_intensity = np.zeros((n_pix, n_pix))
+    img_all = np.zeros((n_particles, n_pix, n_pix))
 
-    fourier_images = complex(0) * np.ones((n_particles, n_pix, n_pix))  # each (i,:,:) is a Fourier image
+    fourier_images = np.zeros((n_particles, n_pix, n_pix), dtype=np.complex128)  # each (i,:,:) is a Fourier image
     CTF = np.zeros((n_particles, n_pix, n_pix))  # each (i,:,:) is the CTF
     distances = np.zeros((n_particles, n_particles))  # distances among the particles in the bin
 
@@ -271,7 +279,7 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
 
         img_flip = ifft2(np.sign(CTF[i_part, :, :]) * fourier_images[i_part, :, :])  # phase-flipped
         img_avg_flip = img_avg_flip + img_flip.real  # average of all phase-flipped images
-        img_all_intensity += img_flip.real**2 / n_particles
+        img_avg_intensity += img_flip.real**2 / n_particles
         img_all[i_part, :, :] = img
 
     # use wiener filter
@@ -310,7 +318,7 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
                imgAvg=img_avg,
                imgAvgFlip=img_avg_flip,
                imgLabels=img_labels,
-               imgAllIntensity=img_all_intensity,
+               imgAllIntensity=img_avg_intensity,
                version=version,
                avg_only=avg_only,
                relion_data=relion_data)
@@ -320,12 +328,7 @@ def _construct_input_data(thresholded_indices, quats_full, defocus):
     ll = []
     for prD in range(len(thresholded_indices)):
         ind = thresholded_indices[prD]
-        ll.append({
-            'indices': ind,
-            'quats': quats_full[:, ind],
-            'defocus': defocus[ind],
-            'dist_file': p.get_dist_file(prD)
-        })
+        ll.append(LocalInput(ind, quats_full[:, ind], defocus[ind], p.get_dist_file(prD)))
 
     return ll
 
