@@ -16,8 +16,6 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication
 
 import ManifoldEM
-from ManifoldEM.params import p
-from ManifoldEM.gui import MainWindow
 
 parser = ArgumentParser(
     prog="manifold-gui",
@@ -39,6 +37,7 @@ parser.add_argument('-R', "--restore", type=str, default="")
 
 
 def init(args):
+    from ManifoldEM.params import p
     if (args.restore):
         p.load(args.restore)
         return
@@ -67,8 +66,7 @@ def main():
 """)
     print(f"version: {ManifoldEM.__version__}\n")
     args = parser.parse_args(sys.argv[1:])
-    if init(args):
-        sys.exit(1)
+    init(args)
 
     app = QApplication([])
     app.setStyle('fusion')
@@ -76,6 +74,7 @@ def main():
 
     QtCore.QCoreApplication.setApplicationName('ManifoldEM')
 
+    from ManifoldEM.gui import MainWindow
     w = MainWindow()
     w.setWindowTitle('ManifoldEM')
     sys.exit(app.exec_())
