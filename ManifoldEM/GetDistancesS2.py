@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from functools import partial
 
 import numpy as np
+from PIL import Image
 from scipy.fftpack import ifftshift, fft2, ifft2
 from scipy.ndimage import shift
 
@@ -18,17 +19,13 @@ from ManifoldEM.core import annularMask
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
 from ManifoldEM.quaternion import q2Spider
-from ManifoldEM.util import NullEmitter, rotate_fill
-
-
-
+from ManifoldEM.util import NullEmitter
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
-
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
@@ -59,6 +56,13 @@ class FilterParams:
         return G
 
 
+def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
+    n_pix = img.shape[0]
+    in_rep = Image.fromarray(np.tile(img, (3, 3)).astype('float32'), mode='F')
+    out_rep = np.array(in_rep.rotate(angle, expand=False), dtype=img.dtype)
+    return out_rep[n_pix:2 * n_pix, n_pix:2 * n_pix]
+
+
 def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
     """Create NxN grid centered grid around (0, 0)"""
     a = np.arange(N) - N // 2
@@ -67,25 +71,24 @@ def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
     return 2 * np.sqrt(X**2 + Y**2) / N
 
 
-def calc_avg_pd(q, nS):
+def quats_to_unit_vecs(q: NDArray[Shape["4,*"], Float64]) -> NDArray[Shape["3,*"], Float64]:
     # Calculate average projection directions (from matlab code)
     PDs = 2 * np.vstack((q[1, :] * q[3, :] - q[0, :] * q[2, :], q[0, :] * q[1, :] + q[2, :] * q[3, :],
-                         q[0, :]**2 + q[3, :]**2 - np.ones((1, nS)) / 2.0))
+                         q[0, :]**2 + q[3, :]**2 - np.ones((1, q.shape[1])) / 2.0))
 
     return PDs
 
 
-def get_psi(q, PD, iS):
-    # Quaternion approach
-    s = -(1 + PD[2]) * q[3, iS] - PD[0] * q[1, iS] - PD[1] * q[2, iS]
-    c = (1 + PD[2]) * q[0, iS] + PD[1] * q[1, iS] - PD[0] * q[2, iS]
+def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float64]) -> float:
+    s = -(1 + ref_vec[2]) * q[3] - ref_vec[0] * q[1] - ref_vec[1] * q[2]
+    c = (1 + ref_vec[2]) * q[0] + ref_vec[1] * q[1] - ref_vec[0] * q[2]
     psi = 2 * np.arctan(s / c)  # note that the Psi are in the interval [-pi,pi]
 
-    return (psi, s, c)
+    return psi
 
 
-def psi_ang(PD):
-    Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
+def psi_ang(ref_vec: NDArray[Shape["3"], Float64]):
+    Qr = np.array([1 + ref_vec[2], ref_vec[1], -ref_vec[0], 0])
     Qr = Qr / np.sqrt(np.sum(Qr**2))
     _, _, psi = q2Spider(Qr)
 
@@ -104,9 +107,8 @@ def get_wiener1(CTF1):
     return (wiener_dom)
 
 
-def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64],
-                    spherical_aberration: float, defocus: float, electron_energy: float,
-                    gauss_env_halfwidth: float, amplitude_contrast_ratio: float):
+def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: float, defocus: float,
+                    electron_energy: float, gauss_env_halfwidth: float, amplitude_contrast_ratio: float):
     """
     from Kirkland, adapted for cryo (EMAN1) by P. Schwander
     Version V 1.1
@@ -145,7 +147,7 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
                            n_particles_tot: int, avg_only: bool, relion_data: bool):
     """
     Calculates squared Euclidian distances for snapshots in similar
-    projection directions. Includes CTF correction of microspope.
+    projection directions. Includes CTF correction of microscope.
     Version with conjugates, effectively double number of data points
 
     Input parameters
@@ -178,8 +180,6 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
 
     # initialize arrays
     psis = np.nan * np.ones((n_particles, 1))  # psi angles
-    numerator = np.nan * np.ones((n_particles, 1))
-    denominator = np.nan * np.ones((n_particles, 1))
     # different types of averages of aligned particles of the same view
     img_avg = np.zeros((n_pix, n_pix))  # simple average
     img_avg_flip = np.zeros((n_pix, n_pix))  # average of phase-flipped particles
@@ -197,21 +197,18 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
     G = filter_params.create_filter(Q)
     G = ifftshift(G)
 
-    # Calculate average projection directions
-    PDs = calc_avg_pd(quats, n_particles)
     # reference PR is the average
-    PD = np.sum(PDs, 1)
-    # make it a unit vector
-    PD = PD / np.linalg.norm(PD)
+    avg_orientation_vec = np.sum(quats_to_unit_vecs(quats), axis=1)
+    avg_orientation_vec /= np.linalg.norm(avg_orientation_vec)
 
     # psi_p angle for in-plane rotation alignment
-    psi_p = psi_ang(PD)
+    psi_p = psi_ang(avg_orientation_vec)
 
     # use volumetric mask, April 2020
     if p.mask_vol_file:
         with mrcfile.open(p.mask_vol_file) as mrc:
             mask3D = mrc.data
-        msk2 = projectMask.op(mask3D, PD)
+        msk2 = projectMask.op(mask3D, avg_orientation_vec)
     else:
         msk2 = 1
 
@@ -252,14 +249,12 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
         img = img.real.flatten('F')
 
         # Get the psi angle
-        psi, s, c = get_psi(quats, PD, i_part)
+        psi = get_psi(quats[:, i_part], avg_orientation_vec)
 
         # this happens only for a rotation of pi about an axis perpendicular to the projection direction
         if np.isnan(psi):
             psi = 0.
         psis[i_part] = psi  # save image rotations
-        denominator[i_part] = c  # save denominator
-        numerator[i_part] = s  # save nominator
 
         # inplane align the images
         img = img.reshape(-1, n_pix).transpose() * msk  # convert to matlab convention prior to rotation
@@ -278,7 +273,6 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
         img_avg_flip = img_avg_flip + img_flip.real  # average of all phase-flipped images
         img_all_intensity += img_flip.real**2 / n_particles
         img_all[i_part, :, :] = img
-
 
     # use wiener filter
     img_avg = 0
@@ -303,19 +297,35 @@ def get_distance_CTF_local(input_data, filter_params: FilterParams, img_file_nam
         distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
         distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
 
-    myio.fout1(out_file, D=distances, ind=indices, q=quats, df=defocus, CTF=CTF, imgAll=img_all, msk2=msk2, PD=PD, PDs=PDs, Psis=psis,
-               imgAvg=img_avg, imgAvgFlip=img_avg_flip, imgLabels=img_labels, Dnom=denominator, Nom=numerator,
-               imgAllIntensity=img_all_intensity, version=version, avg_only=avg_only, relion_data=relion_data)
+    myio.fout1(out_file,
+               D=distances,
+               ind=indices,
+               q=quats,
+               df=defocus,
+               CTF=CTF,
+               imgAll=img_all,
+               msk2=msk2,
+               PD=avg_orientation_vec,
+               Psis=psis,
+               imgAvg=img_avg,
+               imgAvgFlip=img_avg_flip,
+               imgLabels=img_labels,
+               imgAllIntensity=img_all_intensity,
+               version=version,
+               avg_only=avg_only,
+               relion_data=relion_data)
 
 
 def _construct_input_data(thresholded_indices, quats_full, defocus):
     ll = []
     for prD in range(len(thresholded_indices)):
         ind = thresholded_indices[prD]
-        ll.append({'indices': ind,
-                   'quats': quats_full[:, ind],
-                   'defocus': defocus[ind],
-                   'dist_file': p.get_dist_file(prD)})
+        ll.append({
+            'indices': ind,
+            'quats': quats_full[:, ind],
+            'defocus': defocus[ind],
+            'dist_file': p.get_dist_file(prD)
+        })
 
     return ll
 
@@ -338,8 +348,7 @@ def op(*argv):
                                   image_offsets=prds.microscope_origin,
                                   n_particles_tot=len(prds.defocus),
                                   avg_only=False,
-                                  relion_data=p.relion_data
-                                  )
+                                  relion_data=p.relion_data)
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()
 
@@ -349,9 +358,9 @@ def op(*argv):
             progress1.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=p.ncpu) as pool:
-            for i, _ in tqdm.tqdm(
-                    enumerate(pool.imap_unordered(local_distance_func, input_data)),
-                    total=n_jobs, disable=use_gui_progress):
+            for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(local_distance_func, input_data)),
+                                  total=n_jobs,
+                                  disable=use_gui_progress):
                 progress1.emit(int(99 * i / n_jobs))
 
     p.save()
