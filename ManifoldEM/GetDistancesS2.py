@@ -144,10 +144,10 @@ def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: flo
 
 @dataclass
 class LocalInput:
-    indices: NDArray[Shape["*"], Int]
-    quats: NDArray[Shape["4,*"], Float64]
-    defocus: NDArray[Shape["*"], Float64]
-    dist_file: str
+    indices: NDArray[Shape["*"], Int]     #  Global image indexes
+    quats: NDArray[Shape["4,*"], Float64] #  Rotation quaternions of all images, 4xN
+    defocus: NDArray[Shape["*"], Float64] #  Defocus values of all images
+    dist_file: str                        #  Output file for results
 
 
 def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, img_file_name: str,
@@ -159,11 +159,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     Version with conjugates, effectively double number of data points
 
     Input parameters
-    input_data
-                 input_data['indices']      Global image indexes
-                 input_data['quats']        Rotation quaternions of all images, 4xN
-                 input_data['defocus']      Defocus values of all images
-                 input_data['dist_file']    Output file for results
+    input_data see LocalInput
     filter_params  Filter Gaussian width [pixel]
     image_offsets  Image origins (from star files, usually. aka "sh")
     img_file_name  Image file with all raw images
