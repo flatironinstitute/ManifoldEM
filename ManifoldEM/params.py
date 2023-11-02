@@ -307,6 +307,9 @@ class Params():
 
         with open(infile, 'r') as f:
             indict = toml.load(f)
+            basepath = os.path.dirname(infile)
+            if basepath:
+                os.chdir(basepath)
 
         valid_params = dir(Params)
         for param, val in indict['params'].items():

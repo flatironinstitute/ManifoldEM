@@ -63,9 +63,10 @@ def load_state(args):
     fname_front = args.input_file.split('params_', 1)[1]
     fname_sans = os.path.splitext(fname_front)[0]
     p.proj_name = fname_sans
-    p.load()
-    if hasattr(args, "ncpu"):
-        p.ncpu = args.ncpu
+
+    p.load(args.input_file)
+
+    p.ncpu = args.ncpu
     if hasattr(args, "num_psis"):
         p.num_psis = args.num_psis
     if args.command == "threshold":
