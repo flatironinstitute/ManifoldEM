@@ -8,27 +8,7 @@ from PyQt5.QtWidgets import (QLabel, QFrame, QLineEdit, QPushButton,
                              QGridLayout, QWidget, QSpinBox, QProgressBar)
 
 from ManifoldEM.params import p
-
-
-def _remote_runner(hostname, cmd, progress_callback):
-    from fabric import Connection
-    with Connection(hostname, inline_ssh_env=True) as c:
-        c.config.run.env = {k: v for k, v in os.environ.items()
-                            if k.startswith(('PATH', 'PYTHON', 'VIRTUAL_ENV'))}
-        param_file = os.path.join(os.getcwd(), f'params_{p.proj_name}.toml')
-        c.run(f'{cmd} {param_file}')
-        progress_callback.emit(100)
-
-
-def _is_valid_host(hostname):
-    from fabric import Connection
-    try:
-        with Connection(hostname) as c:
-            c.run('true')
-    except:
-        return False
-
-    return True
+from ManifoldEM.util import remote_runner, is_valid_host
 
 
 class EmbeddingTab(QWidget):
@@ -40,7 +20,7 @@ class EmbeddingTab(QWidget):
 
     @QtCore.pyqtSlot()
     def calc_distances(self):
-        if self.hostname and not _is_valid_host(self.hostname):
+        if self.hostname and not is_valid_host(self.hostname):
             print(f"Invalid hostname: {self.hostname}")
             return
 
@@ -55,7 +35,7 @@ class EmbeddingTab(QWidget):
 
         if self.hostname:
             cmd = f'manifold-cli -n {p.ncpu} calc-distance --num-psis {p.num_psis}'
-            task = threading.Thread(target=_remote_runner,
+            task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.distance_progress_changed))
         else:
             from ManifoldEM.GetDistancesS2 import op as GetDistancesS2
@@ -86,7 +66,7 @@ class EmbeddingTab(QWidget):
 
         if self.hostname:
             cmd = f'manifold-cli -n {p.ncpu} manifold-analysis'
-            task = threading.Thread(target=_remote_runner,
+            task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.eigenvector_progress_changed))
         else:
             from ManifoldEM.manifoldAnalysis import op as calculate_eigenvectors
@@ -117,7 +97,7 @@ class EmbeddingTab(QWidget):
 
         if self.hostname:
             cmd = f'manifold-cli -n {p.ncpu} psi-analysis'
-            task = threading.Thread(target=_remote_runner,
+            task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.psi_progress_changed))
         else:
             from ManifoldEM.psiAnalysis import op as psi_analysis
@@ -147,7 +127,7 @@ class EmbeddingTab(QWidget):
 
         if self.hostname:
             cmd = f'manifold-cli -n {p.ncpu} nlsa-movie'
-            task = threading.Thread(target=_remote_runner,
+            task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.nlsa_progress_changed))
         else:
             from ManifoldEM.NLSAmovie import op as nlsa_movie
