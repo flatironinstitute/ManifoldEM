@@ -38,8 +38,11 @@ parser.add_argument('-R', "--restore", type=str, default="")
 
 def init(args):
     from ManifoldEM.params import p
+    from ManifoldEM.data_store import data_store
+
     if (args.restore):
         p.load(args.restore)
+        data_store.init()
         return
 
     p.proj_name = args.project_name

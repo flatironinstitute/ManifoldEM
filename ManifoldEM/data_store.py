@@ -1,6 +1,7 @@
 import os
 
 from enum import Enum
+import h5py
 import numpy as np
 import pickle
 
@@ -76,7 +77,7 @@ class _ProjectionDirections:
         with open(pd_file, 'rb') as f:
             self.__dict__.update(pickle.load(f))
 
-    
+
     def save(self):
         with open(p.pd_file, 'wb') as f:
             pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
@@ -204,8 +205,56 @@ class _ProjectionDirections:
         return len(self.thres_ids)
 
 
+class _Distances:
+    def load(self):
+        if not hasattr(self, '_handle') or self._handle.filename != p.h5_file:
+            self._handle = h5py.File(p.h5_file, 'a')
+            self._grp = self._handle.require_group('distances')
+
+
+    def update(self, prd, data):
+        path = f"prd_{prd}"
+        if path in self._grp:
+            del self._grp[path]
+
+        igroup = self._grp.require_group(f"prd_{prd}")
+        igroup.attrs['version'] = data.pop('version')
+        igroup.attrs['relion_data'] = data.pop('relion_data')
+
+        for key, val in data.items():
+            igroup.create_dataset(key, data=val)
+
+
+    def clear(self):
+        del self._handle['distances']
+        self._grp = self._handle.require_group('distances')
+
+
+    def distance_matrix(self, prd: int) -> NDArray[Shape["*,*"], Float64]:
+        return self._grp[f'prd_{prd}']['D'][:]
+
+
+    def indices(self, prd: int) -> NDArray[Shape["*"], Int64]:
+        return self._grp[f'prd_{prd}']['ind'][:]
+
+
+    def img_all(self, prd: int) -> NDArray[Shape["*,*,*"], Int64]:
+        return self._grp[f'prd_{prd}']['imgAll'][:]
+
+
+    def CTF(self, prd: int) -> NDArray[Shape["*,*,*"], Int64]:
+        return self._grp[f'prd_{prd}']['CTF'][:]
+
+
+    def msk2(self, prd: int):
+        msk2 = self._grp[f'prd_{prd}'].get('msk2')
+        return msk2[()] if msk2.ndim == 0 else msk2[:]
+
+
+
 class _DataStore:
     _projection_directions = _ProjectionDirections()
+    _distances = _Distances()
 
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -213,9 +262,18 @@ class _DataStore:
         return cls.instance
 
 
+    def init(self):
+        self._distances.load()
+
+
     def get_prds(self):
         self._projection_directions.update()
         return self._projection_directions
+
+
+    def get_distances(self):
+        self._distances.load()
+        return self._distances
 
 
 data_store = _DataStore()

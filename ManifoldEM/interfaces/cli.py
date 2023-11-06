@@ -57,6 +57,7 @@ def get_parser():
 
 def load_state(args):
     from ManifoldEM.params import p
+    from ManifoldEM.data_store import data_store
 
     if args.command == "init":
         return
@@ -65,6 +66,7 @@ def load_state(args):
     p.proj_name = fname_sans
 
     p.load(args.input_file)
+    data_store.init()
 
     p.ncpu = args.ncpu
     if hasattr(args, "num_psis"):

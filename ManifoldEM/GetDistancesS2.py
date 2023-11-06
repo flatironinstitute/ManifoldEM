@@ -1,8 +1,6 @@
 import logging
 import multiprocessing
-import os
 
-import h5py
 import mrcfile
 import tqdm
 
@@ -301,22 +299,21 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
     distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
 
-    return dict(prd=input_data.prd,
-                D=distances,
-                ind=indices,
-                q=quats,
-                df=defocus,
-                CTF=CTF,
-                imgAll=img_all,
-                msk2=msk2,
-                PD=avg_orientation_vec,
-                Psis=psis,
-                imgAvg=img_avg,
-                imgAvgFlip=img_avg_flip,
-                imgLabels=img_labels,
-                imgAllIntensity=img_avg_intensity,
-                version=version,
-                relion_data=relion_data)
+    return (input_data.prd, dict(D=distances,
+                                 ind=indices,
+                                 q=quats,
+                                 df=defocus,
+                                 CTF=CTF,
+                                 imgAll=img_all,
+                                 msk2=msk2,
+                                 PD=avg_orientation_vec,
+                                 Psis=psis,
+                                 imgAvg=img_avg,
+                                 imgAvgFlip=img_avg_flip,
+                                 imgLabels=img_labels,
+                                 imgAllIntensity=img_avg_intensity,
+                                 version=version,
+                                 relion_data=relion_data))
 
 
 def _construct_input_data(thresholded_indices, quats_full, defocus):
@@ -328,18 +325,6 @@ def _construct_input_data(thresholded_indices, quats_full, defocus):
     return ll
 
 
-def write_h5(data: dict, f: h5py.File):
-    dgroup = f.require_group("distances")
-
-    prd: int = data.pop('prd')
-    igroup = dgroup.require_group(f"prd_{prd}")
-    igroup.attrs['version'] = data.pop('version')
-    igroup.attrs['relion_data'] = data.pop('relion_data')
-
-    for key, val in data.items():
-        igroup.create_dataset(key, data=val)
-
-
 def op(*argv):
     print("Computing the distances...")
     p.load()
@@ -348,6 +333,7 @@ def op(*argv):
     progress = argv[0] if use_gui_progress else NullEmitter()
 
     prds = data_store.get_prds()
+    distance_store = data_store.get_distances()
 
     filter_params = FilterParams(method='Butter', cutoff_freq=0.5, order=8)
 
@@ -360,12 +346,13 @@ def op(*argv):
                                   n_particles_tot=len(prds.defocus),
                                   relion_data=p.relion_data)
 
-    with h5py.File(p.h5_file, "w") as f, multiprocessing.Pool(processes=p.ncpu) as pool:
+    with multiprocessing.Pool(processes=p.ncpu) as pool:
         jobs = pool.imap_unordered(local_distance_func, input_data)
 
-        for i, res in enumerate(tqdm.tqdm(jobs, total=n_jobs, disable=use_gui_progress)):
-            write_h5(res, f)
+        for i, (prd, res) in enumerate(tqdm.tqdm(jobs, total=n_jobs, disable=use_gui_progress)):
+            distance_store.update(prd, res)
             progress.emit(int(99 * i / n_jobs))
+
 
     p.save()
     progress.emit(100)

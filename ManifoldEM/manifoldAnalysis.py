@@ -20,10 +20,9 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 def _construct_input_data(N):
     ll = []
     for prD in range(N):
-        dist_file = p.h5_file
         psi_file = p.get_psi_file(prD)
         eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, prD + 1)
-        ll.append([dist_file, psi_file, eig_file, prD])
+        ll.append([psi_file, eig_file, prD])
     return ll
 
 

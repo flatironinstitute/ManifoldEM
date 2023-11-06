@@ -4,11 +4,13 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)    
 """
-import h5py
+
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse import data
 
 from ManifoldEM import DMembeddingII, myio
+from ManifoldEM.data_store import data_store
 
 
 def get_psiPath(psi, rad, plotNum):
@@ -33,14 +35,13 @@ def show_plot(lamb, psi, string):
 
 
 def op(input_data, posPath, tune, rad, visual, doSave):
-    dist_file = input_data[0]
-    psi_file = input_data[1]
-    eig_file = input_data[2]
-    prd = input_data[3]
+    psi_file = input_data[0]
+    eig_file = input_data[1]
+    prd = input_data[2]
 
-    with h5py.File(dist_file, 'r') as f:
-        D = f['distances'][f'prd_{prd}']['D'][:]
-        ind = f['distances'][f'prd_{prd}']['ind'][:]
+    distance_store = data_store.get_distances()
+    D = distance_store.distance_matrix(prd)
+    ind = distance_store.indices(prd)
 
     nS = D.shape[1]
     if posPath == 0:

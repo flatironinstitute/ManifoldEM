@@ -10,6 +10,7 @@ import shutil
 import tempfile
 
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
 from ManifoldEM.util import get_image_width_from_stack
 
 def choose_pixel(entry: QDoubleSpinBox):
@@ -226,6 +227,7 @@ class ImportTab(QWidget):
             p.nPix = get_image_width_from_stack(p.img_stack_file)
             p.save()
             p.create_dir()
+            data_store.init()
 
             p.resProj = 1
             self.parent.set_tab_state(True, "Distribution")
