@@ -4,7 +4,7 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)    
 """
-
+import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -36,10 +36,12 @@ def op(input_data, posPath, tune, rad, visual, doSave):
     dist_file = input_data[0]
     psi_file = input_data[1]
     eig_file = input_data[2]
-    prD = input_data[3]
-    data = myio.fin1(dist_file)
-    D = data['D']
-    ind = data['ind']
+    prd = input_data[3]
+
+    with h5py.File(dist_file, 'r') as f:
+        D = f['distances'][f'prd_{prd}']['D'][:]
+        ind = f['distances'][f'prd_{prd}']['ind'][:]
+
     nS = D.shape[1]
     if posPath == 0:
         posPath = np.arange(nS)

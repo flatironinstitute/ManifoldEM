@@ -1,6 +1,9 @@
 import logging
-import mrcfile
 import multiprocessing
+import os
+
+import h5py
+import mrcfile
 import tqdm
 
 from dataclasses import dataclass
@@ -144,15 +147,15 @@ def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: flo
 
 @dataclass
 class LocalInput:
+    prd: int                              #  prd of interest
     indices: NDArray[Shape["*"], Int]     #  Global image indexes
     quats: NDArray[Shape["4,*"], Float64] #  Rotation quaternions of all images, 4xN
     defocus: NDArray[Shape["*"], Float64] #  Defocus values of all images
-    dist_file: str                        #  Output file for results
 
 
 def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, img_file_name: str,
                            image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
-                           n_particles_tot: int, avg_only: bool, relion_data: bool):
+                           n_particles_tot: int, relion_data: bool):
     """
     Calculates squared Euclidian distances for snapshots in similar
     projection directions. Includes CTF correction of microscope.
@@ -163,7 +166,6 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     filter_params  Filter Gaussian width [pixel]
     image_offsets  Image origins (from star files, usually. aka "sh")
     img_file_name  Image file with all raw images
-    avg_only       Skip calculation of distances
 
     Uses the following microscope data from global params:
         Cs         Spherical aberration [mm]
@@ -176,7 +178,6 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     indices = input_data.indices
     quats = input_data.quats
     defocus = input_data.defocus
-    out_file = input_data.dist_file
 
     n_particles = indices.shape[0]  # size of bin; ind are the indexes of particles in that bin
     # auxiliary variables
@@ -293,40 +294,50 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     img_avg = img_avg * msk2 / n_particles
     img_avg_flip = img_avg_flip.real * msk2 / n_particles
 
-    if not avg_only:
-        fourier_images = fourier_images.reshape(n_particles, n_pix**2)
-        CTF = CTF.reshape(n_particles, n_pix**2)
+    fourier_images = fourier_images.reshape(n_particles, n_pix**2)
+    CTF = CTF.reshape(n_particles, n_pix**2)
 
-        CTFfy = CTF.conj() * fourier_images
-        distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
-        distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
+    CTFfy = CTF.conj() * fourier_images
+    distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
+    distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
 
-    myio.fout1(out_file,
-               D=distances,
-               ind=indices,
-               q=quats,
-               df=defocus,
-               CTF=CTF,
-               imgAll=img_all,
-               msk2=msk2,
-               PD=avg_orientation_vec,
-               Psis=psis,
-               imgAvg=img_avg,
-               imgAvgFlip=img_avg_flip,
-               imgLabels=img_labels,
-               imgAllIntensity=img_avg_intensity,
-               version=version,
-               avg_only=avg_only,
-               relion_data=relion_data)
+    return dict(prd=input_data.prd,
+                D=distances,
+                ind=indices,
+                q=quats,
+                df=defocus,
+                CTF=CTF,
+                imgAll=img_all,
+                msk2=msk2,
+                PD=avg_orientation_vec,
+                Psis=psis,
+                imgAvg=img_avg,
+                imgAvgFlip=img_avg_flip,
+                imgLabels=img_labels,
+                imgAllIntensity=img_avg_intensity,
+                version=version,
+                relion_data=relion_data)
 
 
 def _construct_input_data(thresholded_indices, quats_full, defocus):
     ll = []
     for prD in range(len(thresholded_indices)):
         ind = thresholded_indices[prD]
-        ll.append(LocalInput(ind, quats_full[:, ind], defocus[ind], p.get_dist_file(prD)))
+        ll.append(LocalInput(prD, ind, quats_full[:, ind], defocus[ind]))
 
     return ll
+
+
+def write_h5(data: dict, f: h5py.File):
+    dgroup = f.require_group("distances")
+
+    prd: int = data.pop('prd')
+    igroup = dgroup.require_group(f"prd_{prd}")
+    igroup.attrs['version'] = data.pop('version')
+    igroup.attrs['relion_data'] = data.pop('relion_data')
+
+    for key, val in data.items():
+        igroup.create_dataset(key, data=val)
 
 
 def op(*argv):
@@ -334,6 +345,7 @@ def op(*argv):
     p.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
+    progress = argv[0] if use_gui_progress else NullEmitter()
 
     prds = data_store.get_prds()
 
@@ -346,21 +358,14 @@ def op(*argv):
                                   img_file_name=p.img_stack_file,
                                   image_offsets=prds.microscope_origin,
                                   n_particles_tot=len(prds.defocus),
-                                  avg_only=False,
                                   relion_data=p.relion_data)
 
-    progress1 = argv[0] if use_gui_progress else NullEmitter()
+    with h5py.File(p.h5_file, "w") as f, multiprocessing.Pool(processes=p.ncpu) as pool:
+        jobs = pool.imap_unordered(local_distance_func, input_data)
 
-    if p.ncpu == 1:
-        for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
-            local_distance_func(datai)
-            progress1.emit(int(99 * i / n_jobs))
-    else:
-        with multiprocessing.Pool(processes=p.ncpu) as pool:
-            for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(local_distance_func, input_data)),
-                                  total=n_jobs,
-                                  disable=use_gui_progress):
-                progress1.emit(int(99 * i / n_jobs))
+        for i, res in enumerate(tqdm.tqdm(jobs, total=n_jobs, disable=use_gui_progress)):
+            write_h5(res, f)
+            progress.emit(int(99 * i / n_jobs))
 
     p.save()
-    progress1.emit(100)
+    progress.emit(100)

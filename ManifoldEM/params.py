@@ -259,6 +259,11 @@ class Params():
         return 1
 
 
+    @property
+    def h5_file(self) -> str:
+        return os.path.join(self.out_dir, f'{self.proj_name}.h5')
+
+
     def get_topos_path(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
 

@@ -7,6 +7,7 @@ Copyright (c) Evan Seitz 2019 (python version)
 
 import multiprocessing
 
+import h5py
 import numpy as np
 
 from functools import partial
@@ -168,20 +169,22 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
     EL_file = input_data[3]
     psinums = input_data[4]
     senses = input_data[5]
-    prD = input_data[6]
+    prd = input_data[6]
     if len(input_data) == 8:
         psi_list = input_data[7]
     else:
         psi_list = psinums
-    data_IMG = myio.fin1(dist_file)
+
+    with h5py.File(dist_file, 'r') as f:
+        distance_grp = f['distances'][f'prd_{prd}']
+        D = distance_grp['D'][:] # distance matrix between images in PD
+        imgAll = distance_grp['imgAll'][:] # every image in PD (and dimensions): e.g., shape=(numPDs,boxSize,boxSize)
+        msk2 = distance_grp.get('msk2')
+        msk2 = msk2[()] if msk2.ndim == 0 else msk2[:]
+        CTF = distance_grp['CTF'][:]
+
     data_psi = myio.fin1(psi_file)
 
-    D = np.array(data_IMG['D'])  # distance matrix
-    imgAll = np.array(data_IMG['imgAll'])  # every image in PD (and dimensions): e.g., shape=(numPDs,boxSize,boxSize)
-
-    msk2 = np.array(data_IMG['msk2'])  # April 2020, vol mask to be used after ctf has been applied
-
-    CTF = np.array(data_IMG['CTF'])
     psi = data_psi['psi']  # coordinates of all images in 15-dim space from diffusion map: e.g., shape=(numPDs,15)
     pos_path = data_psi['posPath']  # indices of every image in PD: e.g., shape=(numPDs,); [0,1,2,...(numPDs-1)]
     nS = len(pos_path)  # number of images in PD
@@ -194,7 +197,7 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
     pos_path = np.squeeze(pos_path)
     D = D[pos_path][:, pos_path]
 
-    extra_params = dict(outDir='', prD=prD)
+    extra_params = dict(outDir='', prD=prd)
     for psinum in psi_list:  # for each reaction coordinates do the following:
         if psinum == -1:
             continue
@@ -261,7 +264,7 @@ def _construct_input_data(N):
     senses_all = np.tile(np.ones(p.num_psis), (N, 1))  # numberofJobs x num_psis
 
     for prD in range(N):
-        dist_file = p.get_dist_file(prD)
+        dist_file = p.h5_file
         psi_file = p.get_psi_file(prD)
         psi2_file = p.get_psi2_file(prD)
         EL_file = p.get_EL_file(prD)
