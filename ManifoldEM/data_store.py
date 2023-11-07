@@ -203,7 +203,7 @@ class _Distances:
             self._grp = self._handle.require_group('distances')
 
     def update(self, prd, data):
-        path = f"prd_{prd}"
+        path = f'prd_{prd}'
         if path in self._grp:
             del self._grp[path]
 
@@ -244,9 +244,56 @@ class _Distances:
         return mask[()] if mask.ndim == 0 else mask[:]
 
 
+class _DiffusionMaps:
+
+    def load(self):
+        if not hasattr(self, '_handle') or self._handle.filename != p.h5_file:
+            self._handle = h5py.File(p.h5_file, 'a')
+            self._grp = self._handle.require_group('diffusion_maps')
+
+    def update(self, prd, data):
+        igroup = self._grp.require_group(f"prd_{prd}")
+
+        for key, val in data.items():
+            if key in igroup:
+                if isinstance(val, np.ndarray):
+                    igroup[key].resize(val.shape)
+                    igroup[key][:] = val
+                else:
+                    igroup[key] = val
+            else:
+                igroup.create_dataset(key, data=val)
+
+    def clear(self):
+        del self._handle['diffusion_maps']
+        self._grp = self._handle.require_group('diffusion_maps')
+
+    def psi(self, prd: int) -> NDArray[Shape["*,15"], Float64]:
+        return self._grp[f'prd_{prd}']['psi'][:]
+
+    def pos_path(self, prd: int) -> NDArray[Shape["*"], Int64]:
+        return self._grp[f'prd_{prd}']['posPath'][:]
+
+    def indices(self, prd: int) -> NDArray[Shape["*"], Int64]:
+        return self._grp[f'prd_{prd}']['ind'][:]
+
+    def log_eps(self, prd: int) -> NDArray[Shape["*"], Float64]:
+        return self._grp[f'prd_{prd}']['logEps'][:]
+
+    def log_sum_Wij(self, prd: int) -> NDArray[Shape["*"], Float64]:
+        return self._grp[f'prd_{prd}']['logSumWij'][:]
+
+    def popt(self, prd: int) -> NDArray[Shape["4"], Float64]:
+        return self._grp[f'prd_{prd}']['popt'][:]
+
+    def R_squared(self, prd: int) -> float:
+        return self._grp[f'prd_{prd}']['R_squared']
+
+
 class _DataStore:
     _projection_directions = _ProjectionDirections()
     _distances = _Distances()
+    _diff_maps = _DiffusionMaps()
 
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -255,6 +302,7 @@ class _DataStore:
 
     def init(self):
         self._distances.load()
+        self._diff_maps.load()
 
     def get_prds(self):
         self._projection_directions.update()
@@ -263,6 +311,10 @@ class _DataStore:
     def get_distances(self):
         self._distances.load()
         return self._distances
+
+    def get_diff_maps(self):
+        self._diff_maps.load()
+        return self._diff_maps
 
 
 data_store = _DataStore()

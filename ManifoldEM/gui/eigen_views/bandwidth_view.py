@@ -4,12 +4,14 @@ import numpy as np
 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox
 
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
-                                                NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as
+                                                NavigationToolbar)
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
+from ManifoldEM.data_store import data_store
 
 from ManifoldEM.params import p
+
 
 class _BandwidthMain(QMainWindow):
 
@@ -24,7 +26,6 @@ class _BandwidthMain(QMainWindow):
         mainMenu.setNativeMenuBar(False)
         helpMenu = mainMenu.addMenu('&Help')
         helpMenu.addAction('&Kernel Bandwidth', self.guide_bandwidth)
-
 
     def guide_bandwidth(self):
         box = QMessageBox(self)
@@ -41,7 +42,6 @@ class _BandwidthMain(QMainWindow):
         box.setStandardButtons(QMessageBox.Ok)
         box.exec_()
 
-
     def initUI(self):
         centralwidget = QWidget()
         self.setCentralWidget(centralwidget)
@@ -52,12 +52,12 @@ class _BandwidthMain(QMainWindow):
         vbl.addWidget(self.bw_canvas)
         self.show()
 
-
     def plot(self, index: int):
         self.bw_canvas.plot(index)
 
 
 class _BandwidthCanvas(FigureCanvas):
+
     def __init__(self, parent=None, width=5, height=4, dpi=200):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
@@ -67,15 +67,12 @@ class _BandwidthCanvas(FigureCanvas):
         self.updateGeometry()
         fig.set_tight_layout(True)
 
-
     def plot(self, index: int):
-        with open(p.get_psi_file(index), 'rb') as f:
-            data = pickle.load(f)
-
-        logEps = data['logEps']
-        logSumWij = data['logSumWij']
-        popt = data['popt']
-        R_squared = data['R_squared']
+        ds = data_store.get_diff_maps()
+        logEps = ds.log_eps(index)
+        logSumWij = ds.log_sum_Wij(index)
+        popt = data.popt(index)
+        R_squared = data.R_squared(index)
 
         def fun(xx, aa0, aa1, aa2, aa3):  #fit tanh()
             #aa3: y-value of tanh inflection point
@@ -86,16 +83,9 @@ class _BandwidthCanvas(FigureCanvas):
             return F
 
         self.axes.clear()
-        self.axes.scatter(logEps,
-                          logSumWij,
-                          s=1,
-                          c='C0',
-                          edgecolor='C0',
-                          zorder=.1,
-                          label='data')
+        self.axes.scatter(logEps, logSumWij, s=1, c='C0', edgecolor='C0', zorder=.1, label='data')
         self.axes.plot(logEps,
-                       fun(logEps, popt[0], popt[1], popt[2],
-                           popt[3]),
+                       fun(logEps, popt[0], popt[1], popt[2], popt[3]),
                        c='C1',
                        linewidth=.5,
                        zorder=.2,
@@ -107,26 +97,20 @@ class _BandwidthCanvas(FigureCanvas):
                           zorder=0,
                           label=r'$\mathrm{ln \ \epsilon}$')
         self.axes.plot(logEps,
-                       popt[0] * popt[2] *
-                       (logEps + popt[1] / popt[0]) + popt[3],
+                       popt[0] * popt[2] * (logEps + popt[1] / popt[0]) + popt[3],
                        c='C3',
                        linewidth=.5,
                        zorder=.3,
                        label='slope')
         self.axes.set_ylim(
-            np.amin(
-                fun(logEps, popt[0], popt[1], popt[2],
-                    popt[3])) - 1,
-            np.amax(
-                fun(logEps, popt[0], popt[1], popt[2],
-                    popt[3])) + 1)
+            np.amin(fun(logEps, popt[0], popt[1], popt[2], popt[3])) - 1,
+            np.amax(fun(logEps, popt[0], popt[1], popt[2], popt[3])) + 1)
         self.axes.legend(loc='lower right', fontsize=6)
 
         slope = popt[0] * popt[2]  #slope of tanh
 
         textstr = '\n'.join((
-            r'$y=%.2f + %.2f tanh(%.2fx + %.2f)$' %
-            (popt[3], popt[2], popt[0], popt[1]),
+            r'$y=%.2f + %.2f tanh(%.2fx + %.2f)$' % (popt[3], popt[2], popt[0], popt[1]),
             r'$\mathrm{Slope=%.2f}$' % (slope, ),
             r'$\mathrm{Optimal \ log(\epsilon)=%.2f}$' % (-(popt[1] / popt[0]), ),
             r'$\mathrm{R^2}=%.2f$' % (R_squared, ),
@@ -134,7 +118,13 @@ class _BandwidthCanvas(FigureCanvas):
 
         props = dict(boxstyle='round', facecolor='whitesmoke', alpha=0.5)
 
-        self.axes.text(0.05, 0.95, textstr, transform=self.axes.transAxes, fontsize=6, verticalalignment='top', bbox=props)
+        self.axes.text(0.05,
+                       0.95,
+                       textstr,
+                       transform=self.axes.transAxes,
+                       fontsize=6,
+                       verticalalignment='top',
+                       bbox=props)
 
         for tick in self.axes.xaxis.get_major_ticks():
             tick.label1.set_fontsize(6)

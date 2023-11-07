@@ -128,10 +128,6 @@ class Params():
         return os.path.join(self.user_dir, self.proj_name)
 
     @property
-    def psi_file(self) -> str:
-        return os.path.join(self.psi_dir, 'gC_trimmed_psi_')
-
-    @property
     def psi2_file(self) -> str:
         return os.path.join(self.psi2_dir, 'S2_')
 
@@ -146,10 +142,6 @@ class Params():
     @property
     def pd_file(self) -> str:
         return os.path.join(self.out_dir, 'pd_data')
-
-    @property
-    def psi_dir(self) -> str:
-        return os.path.join(self.out_dir, 'diff_maps')
 
     @property
     def psi2_dir(self) -> str:
@@ -237,9 +229,6 @@ class Params():
     def get_EL_file(self, prd_index: int):
         return f'{self.EL_file}prD_{prd_index}'
 
-    def get_psi_file(self, prd_index: int):
-        return f'{self.psi_file}prD_{prd_index}'
-
     def get_psi2_file(self, prd_index: int):
         return f'{self.psi2_file}prD_{prd_index}'
 
@@ -281,7 +270,6 @@ class Params():
         pprint(self.todict())
 
     def create_dir(self):
-        os.makedirs(self.psi_dir, exist_ok=True)
         os.makedirs(self.psi2_dir, exist_ok=True)
         os.makedirs(self.EL_dir, exist_ok=True)
         os.makedirs(self.OM_dir, exist_ok=True)

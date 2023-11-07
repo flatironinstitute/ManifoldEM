@@ -34,10 +34,9 @@ def show_plot(lamb, psi, string):
     plt.show()
 
 
-def op(input_data, posPath, tune, rad, visual, doSave):
-    psi_file = input_data[0]
-    eig_file = input_data[1]
-    prd = input_data[2]
+def op(input_data, posPath, tune, rad):
+    eig_file = input_data[0]
+    prd = input_data[1]
 
     distance_store = data_store.get_distances()
     D = distance_store.distance_matrix(prd)
@@ -68,17 +67,20 @@ def op(input_data, posPath, tune, rad, visual, doSave):
         posPathInt = get_psiPath(psi, rad, 0)
         posPath1 = posPath1[posPathInt]
 
-        if visual:
-            show_plot(lamb, psi, 'in loop')
-    if visual:
-        show_plot(lamb, psi, 'out loop')
-
     posPath = posPath[posPath1]
-
-    if doSave['Is']:
-        myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind,
-                   logEps=logEps, logSumWij=logSumWij, popt=popt, R_squared=R_squared)
 
     with open(eig_file, "w") as file:
         for i in range(1, len(lamb)):
             file.write("%d\t%.5f\n" % (i, lamb[i]))
+
+    return (prd,
+            dict(lamb=lamb,
+                 psi=psi,
+                 sigma=sigma,
+                 mu=mu,
+                 posPath=posPath,
+                 ind=ind,
+                 logEps=logEps,
+                 logSumWij=logSumWij,
+                 popt=popt,
+                 R_squared=R_squared))

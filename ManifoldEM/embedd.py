@@ -13,12 +13,10 @@ Copyright (c) Columbia University Evan Seitz 2020 (python version)
 
 def op(orig_zip, new_zip, PrD):
     print('Initiating re-embedding...')
-    psi_file = p.get_psi_file(PrD)
     eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, PrD + 1)
     D = data_store.get_distances().distance_matrix(PrD)
-    data = myio.fin1(psi_file)
-    posPath = data['posPath']
-    ind = data['ind']
+    posPath = data_store.get_diff_maps().pos_path(PrD)
+    ind = data_store.get_diff_maps().indices(PrD)
     D = D[posPath][:, posPath]  # D now contains the orig distances
 
     # Py3 update -- E.Seitz, 2021:
@@ -43,8 +41,6 @@ def op(orig_zip, new_zip, PrD):
         with open(eig_file, "a") as file:  #updated 9/11/21
             file.write("%d\t%.5f\n" % (i + 1, lamb[i + 1]))
 
-    myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind)
-
     # remove the existing NLSA and movies etc, so that new ones can be created
     for psinum in range(p.num_psis):
         psi2_file = p.get_psi2_file(PrD) + f'_psi_{psinum}'
@@ -54,3 +50,5 @@ def op(orig_zip, new_zip, PrD):
     ca_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, PrD + 1)
     if os.path.exists(ca_file):
         os.remove(ca_file)
+
+    return (PrD, dict(lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind))

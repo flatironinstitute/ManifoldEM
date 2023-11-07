@@ -10,10 +10,9 @@ from matplotlib.path import Path as PlotPath
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QMainWindow, QDialog, QTabWidget, QMessageBox, QPushButton, QSlider,
-                             QLayout, QGridLayout, QProgressBar, QLabel, QComboBox, QCheckBox, QFrame)
+from PyQt5.QtWidgets import (QMainWindow, QDialog, QTabWidget, QMessageBox, QPushButton, QSlider, QLayout, QGridLayout,
+                             QProgressBar, QLabel, QComboBox, QCheckBox, QFrame)
 
 from . import ClusterAvgMain
 
@@ -21,6 +20,7 @@ from ManifoldEM.core import clusterAvg
 from ManifoldEM.embedd import op as embedd
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import p
+
 
 def _backup_restore(prd_index, backup=True):
     os.makedirs(os.path.join(p.out_dir, 'backup', 'topos'), exist_ok=True)
@@ -58,7 +58,7 @@ def _backup_restore(prd_index, backup=True):
 
 class TauCanvas(QDialog):
 
-    def __init__(self, prd_index:int, psi_index: int, parent=None):
+    def __init__(self, prd_index: int, psi_index: int, parent=None):
         super(TauCanvas, self).__init__(parent)
 
         # tau from psi analsis:
@@ -119,6 +119,7 @@ class TauCanvas(QDialog):
 
 
 class PsiCanvas(QDialog):
+
     def __init__(self, prd_index: int, psi_index: int, parent):
         super(PsiCanvas, self).__init__(parent)
 
@@ -205,7 +206,6 @@ class PsiCanvas(QDialog):
             self.combo_Y.addItem('Psi %s' % (int(psi + 1)))
             self.combo_Z.addItem('Psi %s' % (int(psi + 1)))
 
-
         self.combo_X.setCurrentIndex(0)
         self.combo_Y.setCurrentIndex(1)
         self.combo_Z.setCurrentIndex(2)
@@ -248,7 +248,6 @@ class PsiCanvas(QDialog):
 
         self.setLayout(layout)
         self.canvas.draw()
-
 
     def replot(self):
         # redraw and resize figure:
@@ -293,7 +292,6 @@ class PsiCanvas(QDialog):
 
         self.canvas.draw()
 
-
     def choose_X(self):
         x = int(self.combo_X.currentIndex())
 
@@ -310,7 +308,6 @@ class PsiCanvas(QDialog):
         self.combo_Z.model().item(int(self.combo_Y.currentIndex())).setEnabled(False)
 
         self.replot()
-
 
     def choose_Y(self):
         y = int(self.combo_Y.currentIndex())
@@ -329,7 +326,6 @@ class PsiCanvas(QDialog):
 
         self.replot()
 
-
     def choose_Z(self):
         z = int(self.combo_Z.currentIndex())
 
@@ -347,14 +343,12 @@ class PsiCanvas(QDialog):
 
         self.replot()
 
-
     def choose_con(self):
         if self.check_psiC.isChecked():
             self.con_on = 1
         else:
             self.con_on = 0
         self.replot()
-
 
     def choose_rec(self):
         if self.check_psiR.isChecked():
@@ -365,6 +359,7 @@ class PsiCanvas(QDialog):
 
 
 class ChronosCanvas(QDialog):
+
     def __init__(self, prd_index: int, psi_index: int, parent):
         super(ChronosCanvas, self).__init__(parent)
 
@@ -404,7 +399,6 @@ class ChronosCanvas(QDialog):
             for side in sides:
                 ax.spines[side].set_linewidth(1)
 
-
         canvas.draw()
 
         layout = QGridLayout()
@@ -419,7 +413,6 @@ class VidCanvas(QDialog):
     def get_frame_count(self):
         return len(self.imgs)
 
-
     def __init__(self, gif_path: str, parent=None):
         super(VidCanvas, self).__init__(parent)
 
@@ -427,8 +420,7 @@ class VidCanvas(QDialog):
         self.run = 0  #switch, {-1,0,1} :: {backwards,pause,forward}
         self.frame_id = 0  #frame index (current frame)
         self.rec = 0  #safeguard for recursion limit
-        self.delay = 0.016666 # frame time in s
-
+        self.delay = 0.016666  # frame time in s
 
         self.figure = Figure(dpi=200, facecolor='w', edgecolor='w')
         self.ax = self.figure.add_axes([0, 0, 1, 1])
@@ -494,7 +486,6 @@ class VidCanvas(QDialog):
         layout.addWidget(self.slider, 4, 0, 1, 5)
         self.setLayout(layout)
 
-
     def stop_movie(self):
         self.run = 0
         self.canvas.stop_event_loop()
@@ -502,7 +493,6 @@ class VidCanvas(QDialog):
         self.button_play.setFocus()
         self.button_play_backward.setDisabled(False)
         self.button_pause.setDisabled(True)
-
 
     def scroll(self, frame):
         self.canvas.stop_event_loop()
@@ -539,7 +529,6 @@ class VidCanvas(QDialog):
         elif self.run == 0:
             self.canvas.stop_event_loop()
 
-
     def forward_one(self):  #forward one frame
         self.button_pause.setDisabled(True)
         self.button_play.setDisabled(False)
@@ -558,7 +547,6 @@ class VidCanvas(QDialog):
         self.current_image.set_data(self.imgs[self.frame_id])  #update data
         self.canvas.draw()  #refresh canvas
 
-
     def play(self):  #play forward
         self.button_play.setDisabled(True)
         self.button_play_backward.setDisabled(False)
@@ -568,7 +556,6 @@ class VidCanvas(QDialog):
         self.run = 1
         self.rec = 0
         self.scroll(self.frame_id)
-
 
     def pause(self):  #stop play
         self.button_play.setDisabled(False)
@@ -580,7 +567,6 @@ class VidCanvas(QDialog):
         self.rec = 0
         self.scroll(self.frame_id)
 
-
     def play_backward(self):  #play backward
         self.button_play_backward.setDisabled(True)
         self.button_play.setDisabled(False)
@@ -590,7 +576,6 @@ class VidCanvas(QDialog):
         self.run = -1
         self.rec = 0
         self.scroll(self.frame_id)
-
 
     def backward_one(self):  #backward one frame
         self.button_pause.setDisabled(True)
@@ -610,7 +595,6 @@ class VidCanvas(QDialog):
         self.current_image.set_data(self.imgs[self.frame_id])  #update data
         self.canvas.draw()  #refresh canvas
 
-
     def slider_update(self):  #update frame based on user slider position
         if self.frame_id != self.slider.value():  #only if user moves slider position manually
             self.button_pause.setDisabled(True)
@@ -623,7 +607,6 @@ class VidCanvas(QDialog):
             self.frame_id = self.slider.value()
             self.current_image.set_data(self.imgs[self.slider.value()])  #update data
             self.canvas.draw()
-
 
 
 class Manifold2dCanvas(QDialog):
@@ -651,17 +634,14 @@ class Manifold2dCanvas(QDialog):
         self.pts_origX = []
         self.pts_origY = []
 
-
         self.figure = Figure(dpi=200)
         self.ax = self.figure.add_subplot(111)
         self.figure.set_tight_layout(True)
         self.canvas = FigureCanvas(self.figure)
 
-        psi_file = p.get_psi_file(prd_index - 1)  #current embedding
-        with open(psi_file, 'rb') as f:
-            data = pickle.load(f)
-        x = data['psi'][:, self.eigChoice1]
-        y = data['psi'][:, self.eigChoice2]
+        psis = data_store.get_diff_maps().psi(prd_index - 1)
+        x = psis[:, self.eigChoice1]
+        y = psis[:, self.eigChoice2]
 
         self.pts_orig = zip(x, y)
         self.pts_origX = x
@@ -740,7 +720,6 @@ class Manifold2dCanvas(QDialog):
 
         self.setLayout(layout)
 
-
     def reset(self):
         self.connected = 0
         self.btn_connect.setDisabled(True)
@@ -766,7 +745,6 @@ class Manifold2dCanvas(QDialog):
         self.ax.autoscale()
         self.canvas.draw()
 
-
     def connect(self):
         if len(self.coordsX) <= 2:
             print("Not enough points to connect")
@@ -786,22 +764,19 @@ class Manifold2dCanvas(QDialog):
         self.btn_remove.setDisabled(False)
         self.btn_view.setDisabled(False)
 
-
     def remove(self):
         # reset cropped points if re-clicked:
         pts_newX = []
         pts_newY = []
 
         path = PlotPath(list(map(list, zip(self.coordsX, self.coordsY))), codes=None, closed=True, readonly=True)
-        inside = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(),
-                                      radius=1e-9)
+        inside = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(), radius=1e-9)
 
         for index, i in enumerate(inside):
             if i == False:
                 pts_newX.append(self.pts_origX[index])
                 pts_newY.append(self.pts_origY[index])
         self.pts_new = zip(pts_newX, pts_newY)
-
 
         # crop out points, redraw and resize figure:
         self.ax.clear()
@@ -820,7 +795,6 @@ class Manifold2dCanvas(QDialog):
         self.btn_remove.setDisabled(True)
         self.btn_view.setDisabled(True)
         self.btn_rebed.setDisabled(False)
-
 
     def rebed(self):
         msg = 'Performing this action will recalculate the manifold \
@@ -854,11 +828,10 @@ class Manifold2dCanvas(QDialog):
         self.pts_orig, pts_orig_zip = itertools.tee(self.pts_orig)
         self.pts_new, pts_new_zip = itertools.tee(self.pts_new)
 
-        embedd(list(pts_orig_zip), list(pts_new_zip), self.prd_index - 1)  #updates all manifold files for PD
-
+        (prd, res) = embedd(list(pts_orig_zip), list(pts_new_zip),
+                            self.prd_index - 1)  #updates all manifold files for PD
+        data_store.get_diff_maps().update(prd, res)
         self.start_task1()
-
-
 
     def revert(self):
         msg = "Performing this action will revert the manifold for the \
@@ -890,12 +863,9 @@ class Manifold2dCanvas(QDialog):
         prds.reembed_ids.discard(self.prd_index - 1)
         _backup_restore(self.prd_index - 1, backup=False)
 
-        psi_file = p.get_psi_file(self.prd_index - 1)  #current embedding
-        with open(psi_file, 'rb') as f:
-            data = pickle.load(f)
-
-        x = data['psi'][:, self.eigChoice1]
-        y = data['psi'][:, self.eigChoice2]
+        psis = data_store.get_diff_maps().psi(self.prd_index - 1)
+        x = psis[:, self.eigChoice1]
+        y = psis[:, self.eigChoice2]
 
         # redraw and resize figure:
         self.ax.clear()
@@ -940,11 +910,9 @@ class Manifold2dCanvas(QDialog):
         # force-update main GUI window (topos images)
         self.data_changed.emit()
 
-
     def view(self):  #view average of all images in encircled region
         path = PlotPath(list(map(list, zip(self.coordsX, self.coordsY))), closed=True, codes=None, readonly=True)
-        inside_mask = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(),
-                                      radius=1e-9)
+        inside_mask = path.contains_points(np.dstack((self.pts_origX, self.pts_origY))[0].tolist(), radius=1e-9)
 
         idx_encircled = list(np.nonzero(inside_mask)[0])
         print('Encircled Points:', len(idx_encircled))
@@ -955,7 +923,6 @@ class Manifold2dCanvas(QDialog):
         self.cluster_avg_window.setMinimumSize(10, 10)
         self.cluster_avg_window.setWindowTitle(f'Projection Direction {self.prd_index}')
         self.cluster_avg_window.show()
-
 
     def onclick(self, event):
         if self.connected == 0:
@@ -973,7 +940,6 @@ class Manifold2dCanvas(QDialog):
             if len(self.coordsX) > 2:
                 self.btn_connect.setDisabled(False)
 
-
     ##########
     # Task 1:
     @QtCore.Slot()
@@ -984,13 +950,11 @@ class Manifold2dCanvas(QDialog):
         task1.daemon = True
         task1.start()
 
-
     @QtCore.Slot(int)
     def on_progress1Changed(self, val):
         self.progress1.setValue(val / 2)
         if val / 2 == 50:
             self.start_task2()
-
 
     ##########
     # Task 2:
@@ -1001,7 +965,6 @@ class Manifold2dCanvas(QDialog):
         task2 = threading.Thread(target=NLSAmovie.op, args=(self.progress2Changed, ))
         task2.daemon = True
         task2.start()
-
 
     @QtCore.Slot(int)
     def on_progress2Changed(self, val):
@@ -1028,14 +991,13 @@ class Manifold2dCanvas(QDialog):
             self.data_changed.emit()
 
 
-
 class _CCDetailsView(QMainWindow):
+
     def __init__(self, prd_index: int, psi_index: int):
         super(_CCDetailsView, self).__init__()
         self.prd_index = prd_index
         self.psi_index = psi_index
         self.initUI()
-
 
     def initUI(self):
         gif_path = p.get_psi_gif(self.prd_index, self.psi_index)
@@ -1064,15 +1026,12 @@ class _CCDetailsView(QMainWindow):
         #self.setWindowModality(QtCore.Qt.ApplicationModal) #freezes out parent window
         self.show()
 
-
     def closeEvent(self, ce):
         self.vid_tab1.stop_movie()
-
 
     def onTabChange(self, i):
         if i != 0:  #needed to stop `Movie Player` if tab changed during playback
             self.vid_tab1.stop_movie()
-
 
     # FIXME attach signals
     def connect_signals(self, data_change_callback):

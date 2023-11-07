@@ -20,12 +20,11 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 def divide1(R, psiNumsAll, sensesAll):
     ll = []
     for prD in R:
-        psi_file = p.get_psi_file(prD)
         psi2_file = p.get_psi2_file(prD)
         EL_file = p.get_EL_file(prD)
         psinums = [psiNumsAll[0, prD]]
         senses = [sensesAll[0, prD]]
-        ll.append([psi_file, psi2_file, EL_file, psinums, senses, prD])
+        ll.append([psi2_file, EL_file, psinums, senses, prD])
 
     return ll
 
