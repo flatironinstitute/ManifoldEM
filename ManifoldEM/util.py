@@ -7,7 +7,6 @@ import traceback
 
 from ManifoldEM.params import p
 from ManifoldEM.quaternion import q_product
-
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,15 +15,17 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 
 class NullEmitter:
+
     def emit(self, percent):
         pass
 
 
 def remote_runner(hostname, cmd, progress_callback):
     from fabric import Connection
+    from ManifoldEM.data_store import data_store
+    data_store.release_locks()
     with Connection(hostname, inline_ssh_env=True) as c:
-        c.config.run.env = {k: v for k, v in os.environ.items()
-                            if k.startswith(('PATH', 'PYTHON', 'VIRTUAL_ENV'))}
+        c.config.run.env = {k: v for k, v in os.environ.items() if k.startswith(('PATH', 'PYTHON', 'VIRTUAL_ENV'))}
         param_file = os.path.join(os.getcwd(), f'params_{p.proj_name}.toml')
         c.run(f'{cmd} {param_file}')
         progress_callback.emit(100)
@@ -76,7 +77,7 @@ def debug_trace():
     set_trace()
 
 
-def debug_print(msg: str=""):
+def debug_print(msg: str = ""):
     if msg:
         print(msg)
     stack = traceback.format_stack()

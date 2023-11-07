@@ -243,6 +243,11 @@ class _Distances:
         mask = self._grp[f'prd_{prd}'].get('mask')
         return mask[()] if mask.ndim == 0 else mask[:]
 
+    def unload(self):
+        if hasattr(self, '_handle'):
+            del self._handle
+            del self._grp
+
 
 class _DiffusionMaps:
 
@@ -289,6 +294,11 @@ class _DiffusionMaps:
     def R_squared(self, prd: int) -> float:
         return self._grp[f'prd_{prd}']['R_squared']
 
+    def unload(self):
+        if hasattr(self, '_handle'):
+            del self._handle
+            del self._grp
+
 
 class _DataStore:
     _projection_directions = _ProjectionDirections()
@@ -315,6 +325,10 @@ class _DataStore:
     def get_diff_maps(self):
         self._diff_maps.load()
         return self._diff_maps
+
+    def release_locks(self):
+        self._distances.unload()
+        self._diff_maps.unload()
 
 
 data_store = _DataStore()
