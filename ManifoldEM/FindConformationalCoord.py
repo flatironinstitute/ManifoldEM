@@ -1,6 +1,4 @@
 import os
-import sys
-import time
 
 import numpy as np
 from copy import deepcopy
@@ -10,11 +8,11 @@ from ManifoldEM.data_store import data_store
 from ManifoldEM.FindCCGraph import prune
 from ManifoldEM.params import p
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
-
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
     Columbia University
     Created: Dec 2017. Modified:Aug 16,2019
 '''
+
 
 def force_remove(*paths):
     for path in paths:

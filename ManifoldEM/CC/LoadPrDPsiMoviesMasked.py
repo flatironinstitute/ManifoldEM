@@ -5,6 +5,7 @@ import numpy as np
 
 from ManifoldEM import myio, projectMask
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
 from ManifoldEM.core import annularMask
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		
@@ -13,7 +14,6 @@ Modified:Sept 17,2021
 
 
 def getMask2D(prD, maskType, radius):
-
 
     if maskType == 'annular':  #annular mask
         N = p.nPix
@@ -30,7 +30,7 @@ def getMask2D(prD, maskType, radius):
     elif maskType == 'volumetric':  #3d volume mask from user-input
         dist_file = p.get_dist_file(prD)
         data = myio.fin1(dist_file)
-        PD = data['PD']
+        PD = data_store.get_distances().avg_orientation_vec
         maskFile = p.mask_vol_file
 
         with mrcfile.open(maskFile) as mrc:
@@ -70,7 +70,6 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
     quartile_1, quartile_3 = np.percentile(tau, [25, 75])
     iqr = quartile_3 - quartile_1
 
-
     ## Sept 2021
     # check if the tau value distribution have more than one narrow ranges far apart
     # this will artifically make the IQR value high giving the illusion of a wide tau
@@ -80,8 +79,6 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
     tau_h = np.array(tau_h)
     tau_nz = np.where(tau_h > 0.0)[0].size
     tau_occ = tau_nz / float(taubins)
-
-
 
     # if number of states present in tau values is less than occ_thresh=30%?then there are lot of
     # missing states,
@@ -134,7 +131,6 @@ def op(prD):
         #psirec = data_IMG['psirec']
         #psiC1 = data_IMG['psiC1']
 
-
         Mpsi = -IMG1
 
         # checkflip
@@ -162,6 +158,5 @@ def op(prD):
                 k = k + 1
         else:
             badPsis = []
-
 
     return moviePrDPsis, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc

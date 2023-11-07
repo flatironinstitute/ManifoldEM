@@ -11,6 +11,7 @@ from ManifoldEM import myio
 from ManifoldEM.params import p
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
+from ManifoldEM.data_store import data_store
 '''
 % scriptPsiNLSAmovie
 % Matlab Version V1.2
@@ -23,19 +24,18 @@ Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
+
 def _construct_input_data(N):
     ll = []
     for prD in range(N):
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
-        ll.append([prD])
+        ll.append(prD)
     return ll
 
 
-def movie(input_data, out_dir, dist_file, psi2_file, fps):
-    prD = input_data[0]
-    dist_file1 = p.get_dist_file(prD)
+def movie(prD, psi2_file, fps):
     # Fetching NLSA outputs and making movies
     IMG1All = []
     Topo_mean = []
@@ -67,8 +67,7 @@ def movie(input_data, out_dir, dist_file, psi2_file, fps):
         plt.close(fig2)
 
     # write class avg image
-    data = myio.fin1(dist_file1)
-    avg = data['imgAvg']
+    avg = data_store.get_distances().img_avg(prD)
     fig3 = plt.figure(frameon=False)
     ax3 = fig3.add_axes([0, 0, 1, 1])
     ax3.axis('off')
@@ -92,7 +91,7 @@ def op(*argv):
     input_data = _construct_input_data(p.numberofJobs)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
-    movie_local = partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps)
+    movie_local = partial(movie, psi2_file=p.psi2_file, fps=p.fps)
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
@@ -101,7 +100,8 @@ def op(*argv):
     else:
         with multiprocessing.Pool(processes=p.ncpu) as pool:
             for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(movie_local, input_data)),
-                                  total=n_jobs, disable=use_gui_progress):
+                                  total=n_jobs,
+                                  disable=use_gui_progress):
                 progress4.emit(int(99 * i / n_jobs))
 
     p.save()

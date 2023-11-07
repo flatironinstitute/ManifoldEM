@@ -32,23 +32,25 @@ class Sense(Enum):
 
 
 class Anchor:
+
     def __init__(self, CC: int = 1, sense: Sense = Sense.FWD):
         self.CC: int = CC
         self.sense: Sense = sense
 
 
 class _ProjectionDirections:
+
     def __init__(self):
         self.thres_low: int = p.PDsizeThL
         self.thres_high: int = p.PDsizeThH
         self.bin_centers: NDArray[Shape["3,*", Any], Float64] = np.empty(shape=(3, 0))
 
         self.defocus: NDArray[Shape["*"], Float64] = np.empty(0)
-        self.microscope_origin: Tuple[NDArray[Shape["*"], Float64],
-                                      NDArray[Shape["*"], Float64]] = (np.empty(0), np.empty(0))
+        self.microscope_origin: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"],
+                                                                            Float64]] = (np.empty(0), np.empty(0))
 
-        self.pos_full: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3,0))
-        self.quats_full: NDArray[Shape["4", Any], Float64] = np.empty(shape=(4,0))
+        self.pos_full: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3, 0))
+        self.quats_full: NDArray[Shape["4", Any], Float64] = np.empty(shape=(4, 0))
 
         self.image_indices_full: NDArray[Shape["*"], List[Int]] = np.empty(0, dtype=object)
         self.thres_ids: NDArray[Shape["*"], Int64] = np.empty(0, dtype=np.int64)
@@ -64,11 +66,10 @@ class _ProjectionDirections:
         self.neighbor_graph_pruned: Dict[str, Any] = {}
         self.neighbor_subgraph_pruned: List[Dict[str, Any]] = []
 
-        self.pos_thresholded: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3,0))
+        self.pos_thresholded: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3, 0))
         self.theta_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
         self.phi_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
         self.cluster_ids: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
-
 
     def load(self, pd_file=None):
         if pd_file is None:
@@ -77,11 +78,9 @@ class _ProjectionDirections:
         with open(pd_file, 'rb') as f:
             self.__dict__.update(pickle.load(f))
 
-
     def save(self):
         with open(p.pd_file, 'wb') as f:
             pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
-
 
     def update(self):
         # Load if cache exists and store uninitialized
@@ -144,15 +143,12 @@ class _ProjectionDirections:
             p.save()
             self.save()
 
-
     def insert_anchor(self, id: int, anchor: Anchor):
         self.anchors[id] = anchor
-
 
     def remove_anchor(self, id: int):
         if id in self.anchors:
             self.anchors.pop(id)
-
 
     def deduplicate(self, arr):
         mid = arr.shape[-1] // 2
@@ -165,7 +161,6 @@ class _ProjectionDirections:
     def occupancy_no_duplication(self):
         return self.deduplicate(self.occupancy_full)
 
-
     @property
     def bin_centers_no_duplication(self):
         mid = self.bin_centers.shape[1] // 2
@@ -174,11 +169,9 @@ class _ProjectionDirections:
         else:
             return self.bin_centers[:, mid:]
 
-
     @property
     def anchor_ids(self):
         return sorted(list(self.anchors.keys()))
-
 
     @property
     def thresholded_image_indices(self):
@@ -189,16 +182,13 @@ class _ProjectionDirections:
 
         return thres_images
 
-
     @property
     def occupancy(self):
         return self.occupancy_full[self.thres_ids]
 
-
     @property
     def n_bins(self):
         return self.bin_centers.shape[1]
-
 
     @property
     def n_thresholded(self):
@@ -206,11 +196,11 @@ class _ProjectionDirections:
 
 
 class _Distances:
+
     def load(self):
         if not hasattr(self, '_handle') or self._handle.filename != p.h5_file:
             self._handle = h5py.File(p.h5_file, 'a')
             self._grp = self._handle.require_group('distances')
-
 
     def update(self, prd, data):
         path = f"prd_{prd}"
@@ -224,32 +214,34 @@ class _Distances:
         for key, val in data.items():
             igroup.create_dataset(key, data=val)
 
-
     def clear(self):
         del self._handle['distances']
         self._grp = self._handle.require_group('distances')
 
-
     def distance_matrix(self, prd: int) -> NDArray[Shape["*,*"], Float64]:
-        return self._grp[f'prd_{prd}']['D'][:]
-
+        return self._grp[f'prd_{prd}']['distance_matrix'][:]
 
     def indices(self, prd: int) -> NDArray[Shape["*"], Int64]:
-        return self._grp[f'prd_{prd}']['ind'][:]
-
+        return self._grp[f'prd_{prd}']['indices'][:]
 
     def img_all(self, prd: int) -> NDArray[Shape["*,*,*"], Int64]:
-        return self._grp[f'prd_{prd}']['imgAll'][:]
+        return self._grp[f'prd_{prd}']['img_all'][:]
 
+    def img_avg(self, prd: int) -> NDArray[Shape["*,*"], Int64]:
+        return self._grp[f'prd_{prd}']['img_avg'][:]
 
     def CTF(self, prd: int) -> NDArray[Shape["*,*,*"], Int64]:
         return self._grp[f'prd_{prd}']['CTF'][:]
 
+    def q_rotations(self, prd: int) -> NDArray[Shape["4,*"], Int64]:
+        return self._grp[f'prd_{prd}']['q_rotations'][:]
 
-    def msk2(self, prd: int):
-        msk2 = self._grp[f'prd_{prd}'].get('msk2')
-        return msk2[()] if msk2.ndim == 0 else msk2[:]
+    def avg_orientation_vec(self, prd: int) -> NDArray[Shape["3"], Int64]:
+        return self._grp[f'prd_{prd}']['avg_orientation_vec'][:]
 
+    def mask(self, prd: int):
+        mask = self._grp[f'prd_{prd}'].get('mask')
+        return mask[()] if mask.ndim == 0 else mask[:]
 
 
 class _DataStore:
@@ -261,15 +253,12 @@ class _DataStore:
             cls.instance = super(_DataStore, cls).__new__(cls)
         return cls.instance
 
-
     def init(self):
         self._distances.load()
-
 
     def get_prds(self):
         self._projection_directions.update()
         return self._projection_directions
-
 
     def get_distances(self):
         self._distances.load()

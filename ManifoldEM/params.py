@@ -17,6 +17,7 @@ import numpy as np
 
 from pprint import pprint
 
+
 # resProj structure:
 #     0: default; new project
 #     1: import tab complete
@@ -25,6 +26,7 @@ from pprint import pprint
 #     4: eigenvectors tab complete
 #     5: compilation tab complete
 class Params():
+
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(Params, cls).__new__(cls)
@@ -117,176 +119,129 @@ class Params():
     def sh(self) -> float:
         return self.resol_est / self.obj_diam
 
-
     @property
     def user_dir(self) -> str:
         return 'output'
-
 
     @property
     def out_dir(self) -> str:
         return os.path.join(self.user_dir, self.proj_name)
 
-
     @property
     def psi_file(self) -> str:
         return os.path.join(self.psi_dir, 'gC_trimmed_psi_')
-
 
     @property
     def psi2_file(self) -> str:
         return os.path.join(self.psi2_dir, 'S2_')
 
-
     @property
     def OM1_file(self) -> str:
         return os.path.join(self.OM_dir, 'S2_')
-
 
     @property
     def rho_file(self) -> str:
         return os.path.join(self.OM_dir, 'rho')
 
-
     @property
     def pd_file(self) -> str:
         return os.path.join(self.out_dir, 'pd_data')
-
-
-    @property
-    def dist_dir(self) -> str:
-        return os.path.join(self.out_dir, 'distances')
-
-
-    @property
-    def dist_file(self) -> str:
-        return os.path.join(self.dist_dir, 'IMGs_')
-
 
     @property
     def psi_dir(self) -> str:
         return os.path.join(self.out_dir, 'diff_maps')
 
-
     @property
     def psi2_dir(self) -> str:
         return os.path.join(self.out_dir, 'psi_analysis')
-
 
     @property
     def EL_dir(self) -> str:
         return os.path.join(self.out_dir, f'ELConc{self.conOrderRange}')
 
-
     @property
     def OM_dir(self) -> str:
         return os.path.join(self.EL_dir, 'OM')
-
 
     @property
     def EL_file(self) -> str:
         return os.path.join(self.EL_dir, 'S2_')
 
-
     @property
     def OM_file(self) -> str:
         return os.path.join(self.OM_dir, 'S2_')
-
 
     @property
     def traj_dir(self) -> str:
         return os.path.join(self.out_dir, 'traj')
 
-
     @property
     def CC_dir(self) -> str:
         return os.path.join(self.out_dir, 'CC')
 
-
     @property
     def CC_file(self) -> str:
-        return os.path.join(self.CC_dir,  'CC_file')
-
+        return os.path.join(self.CC_dir, 'CC_file')
 
     @property
     def CC_meas_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_meas')
 
-
     @property
     def CC_meas_file(self) -> str:
         return os.path.join(self.CC_meas_dir, 'meas_edge_prDs_')
-
 
     @property
     def CC_OF_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_OF')
 
-
     @property
     def CC_OF_file(self) -> str:
         return os.path.join(self.CC_OF_dir, 'OF_prD_')
-
 
     @property
     def traj_file(self) -> str:
         return os.path.join(self.traj_dir, 'traj_')
 
-
     @property
     def euler_dir(self) -> str:
         return os.path.join(self.out_dir, 'topos', 'Euler_PrD')
-
 
     @property
     def ref_ang_file(self) -> str:
         return os.path.join(self.euler_dir, 'PrD_map.txt')
 
-
     @property
     def ref_ang_file1(self) -> str:
         return os.path.join(self.euler_dir, 'PrD_map1.txt')
 
-
     @property
     def bin_dir(self) -> str:
         return os.path.join(self.out_dir, 'bin')
-
 
     @property
     def user_dimensions(self) -> int:
         "Placeholder parameter for when we support 2d later"
         return 1
 
-
     @property
     def h5_file(self) -> str:
-        return os.path.join(self.out_dir, f'{self.proj_name}.h5')
-
+        return os.path.join(self.out_dir, 'manifold.h5')
 
     def get_topos_path(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
 
-
     def get_psi_gif(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'psi_{index}.gif')
-
 
     def get_EL_file(self, prd_index: int):
         return f'{self.EL_file}prD_{prd_index}'
 
-
     def get_psi_file(self, prd_index: int):
         return f'{self.psi_file}prD_{prd_index}'
 
-
     def get_psi2_file(self, prd_index: int):
         return f'{self.psi2_file}prD_{prd_index}'
-
-
-    def get_dist_file(self, prd_index: int):
-        return f'{self.dist_file}prD_{prd_index}'
-
 
     def todict(self):
         res = {}
@@ -296,7 +251,6 @@ class Params():
 
         return res
 
-
     def save(self, outfile: str = ''):
         if outfile == '':
             outfile = f'params_{self.proj_name}.toml'
@@ -304,7 +258,6 @@ class Params():
         with open(outfile, 'w') as f:
             toml.dump(res, f)
             f.flush()
-
 
     def load(self, infile: str = ''):
         if infile == '':
@@ -324,13 +277,10 @@ class Params():
             else:
                 setattr(self, param, val)
 
-
     def print(self):
         pprint(self.todict())
 
-
     def create_dir(self):
-        os.makedirs(self.dist_dir, exist_ok=True)
         os.makedirs(self.psi_dir, exist_ok=True)
         os.makedirs(self.psi2_dir, exist_ok=True)
         os.makedirs(self.EL_dir, exist_ok=True)

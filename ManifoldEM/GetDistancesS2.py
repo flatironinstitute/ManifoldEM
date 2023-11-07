@@ -145,10 +145,10 @@ def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: flo
 
 @dataclass
 class LocalInput:
-    prd: int                              #  prd of interest
-    indices: NDArray[Shape["*"], Int]     #  Global image indexes
-    quats: NDArray[Shape["4,*"], Float64] #  Rotation quaternions of all images, 4xN
-    defocus: NDArray[Shape["*"], Float64] #  Defocus values of all images
+    prd: int  #  prd of interest
+    indices: NDArray[Shape["*"], Int]  #  Global image indexes
+    quats: NDArray[Shape["4,*"], Float64]  #  Rotation quaternions of all images, 4xN
+    defocus: NDArray[Shape["*"], Float64]  #  Defocus values of all images
 
 
 def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, img_file_name: str,
@@ -299,21 +299,18 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
     distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
 
-    return (input_data.prd, dict(D=distances,
-                                 ind=indices,
-                                 q=quats,
-                                 df=defocus,
-                                 CTF=CTF,
-                                 imgAll=img_all,
-                                 msk2=msk2,
-                                 PD=avg_orientation_vec,
-                                 Psis=psis,
-                                 imgAvg=img_avg,
-                                 imgAvgFlip=img_avg_flip,
-                                 imgLabels=img_labels,
-                                 imgAllIntensity=img_avg_intensity,
-                                 version=version,
-                                 relion_data=relion_data))
+    return (input_data.prd,
+            dict(distance_matrix=distances,
+                 indices=indices,
+                 q_rotations=quats,
+                 defocus=defocus,
+                 CTF=CTF,
+                 img_all=img_all,
+                 mask=msk2,
+                 avg_orientation_vec=avg_orientation_vec,
+                 img_avg=img_avg,
+                 version=version,
+                 relion_data=relion_data))
 
 
 def _construct_input_data(thresholded_indices, quats_full, defocus):
@@ -352,7 +349,6 @@ def op(*argv):
         for i, (prd, res) in enumerate(tqdm.tqdm(jobs, total=n_jobs, disable=use_gui_progress)):
             distance_store.update(prd, res)
             progress.emit(int(99 * i / n_jobs))
-
 
     p.save()
     progress.emit(100)

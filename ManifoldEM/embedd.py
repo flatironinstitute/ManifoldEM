@@ -4,6 +4,7 @@ import numpy as np
 
 from ManifoldEM import myio, DMembeddingII
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2020 (python version) 
@@ -12,11 +13,9 @@ Copyright (c) Columbia University Evan Seitz 2020 (python version)
 
 def op(orig_zip, new_zip, PrD):
     print('Initiating re-embedding...')
-    dist_file = p.get_dist_file(PrD)
     psi_file = p.get_psi_file(PrD)
     eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, PrD + 1)
-    data = myio.fin1(dist_file)
-    D = data['D']
+    D = data_store.get_distances().distance_matrix(PrD)
     data = myio.fin1(psi_file)
     posPath = data['posPath']
     ind = data['ind']

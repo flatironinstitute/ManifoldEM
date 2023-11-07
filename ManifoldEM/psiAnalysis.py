@@ -38,7 +38,7 @@ def _diff_corr(a, b, maxval):
         (_corr(a, b, 0, maxval) + _corr(a, b, maxval, 0))
 
 
-def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
+def _NLSA(NLSAPar, DD, posPath, posPsi1, img_all, mask, CTF, ExtPar):
     num = NLSAPar['num']
     ConOrder = NLSAPar['ConOrder']
     k = NLSAPar['k']
@@ -59,11 +59,11 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
     psiC1 = np.copy(psiC)
     # rearrange arrays
     if 'prD' in ExtPar:
-        IMG1 = imgAll[posPath[posPsi1], :, :]
+        IMG1 = img_all[posPath[posPsi1], :, :]
         # Wiener filtering
         wiener_dom, CTF1 = get_wiener(CTF, posPath, posPsi1, ConOrder, num)
     elif 'cuti' in ExtPar:
-        IMG1 = imgAll[posPsi1, :, :]
+        IMG1 = img_all[posPsi1, :, :]
 
     dim = CTF.shape[1]
     ell = psiTrunc - 1
@@ -84,7 +84,7 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
                 CTF_i = CTF1[ind3, :, :]
                 img_f_wiener = img_f * (CTF_i / wiener_dom[i, :, :])
                 img = ifft2(img_f_wiener).real
-                img = img * msk2  # April 2020
+                img = img * mask  # April 2020
             tmp[ind1:ind2, i] = np.squeeze(img.T.reshape(-1, 1))
 
         mm = dim * dim  #max(IMG1.shape)
@@ -177,7 +177,7 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
     ds = data_store.get_distances()
     D = ds.distance_matrix(prd)
     imgAll = ds.img_all(prd)
-    msk2 = ds.msk2(prd)
+    mask = ds.mask(prd)
     CTF = ds.CTF(prd)
 
     data_psi = myio.fin1(psi_file)
@@ -203,12 +203,13 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
         pos_psi1 = psi_sorted_ind  # duplicate of above...
 
         DD = D[pos_psi1]
-        DD = DD[:, pos_psi1]  # distance matrix with indices of images re-arranged along current diffusion map coordinate
+        DD = DD[:,
+                pos_psi1]  # distance matrix with indices of images re-arranged along current diffusion map coordinate
         num = DD.shape[1]  # number of images in PD (duplicate of nS?)
         k = num - con_order
 
         NLSAPar = dict(num=num, ConOrder=con_order, k=k, tune=p.tune, nS=nS, save=False, psiTrunc=psi_trunc)
-        IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau = _NLSA(NLSAPar, DD, pos_path, pos_psi1, imgAll, msk2, CTF,
+        IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau = _NLSA(NLSAPar, DD, pos_path, pos_psi1, imgAll, mask, CTF,
                                                                    extra_params)
 
         n_s_recon = min(IMGT.shape)
@@ -246,13 +247,32 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
                 tau = 1 - tau
 
             out_file = f'{EL_file}_{traj_name}_1'
-            myio.fout1(out_file, IMG1=IMG1, IMGT=IMGT, posPath=pos_path, PosPsi1=pos_psi1, psirec=psirec,
-                       tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag, Topo_mean=Topo_mean, tauinds=tauinds)
+            myio.fout1(out_file,
+                       IMG1=IMG1,
+                       IMGT=IMGT,
+                       posPath=pos_path,
+                       PosPsi1=pos_psi1,
+                       psirec=psirec,
+                       tau=tau,
+                       psiC1=psiC1,
+                       mu=mu,
+                       VX=VX,
+                       sdiag=sdiag,
+                       Topo_mean=Topo_mean,
+                       tauinds=tauinds)
 
         else:  # first pass
             out_file = f'{psi2_file}_psi_{psinum}'
-            myio.fout1(out_file, IMG1=IMG1, psirec=psirec, tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag,
-                       Topo_mean=Topo_mean, tauinds=tauinds)
+            myio.fout1(out_file,
+                       IMG1=IMG1,
+                       psirec=psirec,
+                       tau=tau,
+                       psiC1=psiC1,
+                       mu=mu,
+                       VX=VX,
+                       sdiag=sdiag,
+                       Topo_mean=Topo_mean,
+                       tauinds=tauinds)
 
 
 def _construct_input_data(N):

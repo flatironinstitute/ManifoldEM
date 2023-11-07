@@ -7,6 +7,7 @@ import numpy as np
 
 from ManifoldEM import myio, util, quaternion, star
 from ManifoldEM.params import p
+from ManifoldEM.data_store import data_store
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,6 +32,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
     xSelect = np.array(xSelect)
     if get_traj_bins:
         print('Extracting and writing individual trajectory data from selected projection directions ...')
+        ds = data_store.get_distances()
 
         for num in range(0, numberOfJobs, numberOfWorkers):
             imgss = [[] for i in range(p.nClass)]
@@ -52,9 +54,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                 posPath = posPathAll[x]
                 psi1Path = posPsi1All[x]
 
-                dist_file = p.get_dist_file(x)
-                data = myio.fin1(dist_file)
-                q = data['q']
+                q = ds.q_rotations(x)
 
                 q = q[:, posPath[psi1Path]]
                 nS = q.shape[1]
