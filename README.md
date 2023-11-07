@@ -1,6 +1,6 @@
 # ManifoldEM
 
-test branch edits 123-4567
+test branch edits
 
 Note this is the Flatiron Institute fork of the [original
 ManifoldEM](https://github.com/evanseitz/ManifoldEM_Python).  This particular fork is
