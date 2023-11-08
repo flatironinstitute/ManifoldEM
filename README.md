@@ -28,7 +28,28 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
    conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+). 
+Should be installable in any modern python/conda environment (python 3.7+). One dependency
+doesn't have wheels yet unfortunately (`fasthog`) so you'll need developer tools installed to
+build it. Note that windows is unsupported currently. If you're on a cluster managed
+environment, you should use the `module` system or whatever system available for loading
+compilers (e.g. `module load gcc cmake`) and ignore the following bits...
+
+On mac:
+```
+xcode-select --install
+```
+
+on debian based distros (debian, ubuntu, et al.)
+```
+sudo apt install build-essential cmake
+```
+
+and on rpm based distros (centos, rocky, rhel, et al.)
+```
+sudo dnf install gcc cmake
+```
+
+Now for the actual install:
 
 python:
 ```bash
@@ -36,7 +57,8 @@ python:
 python3 -m venv ~/envs/manifoldem
 source ~/envs/manifoldem/activate
 
-pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
+pip install --upgrade pip
+pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
@@ -46,7 +68,8 @@ conda:
 conda create -n manifoldem
 conda activate manifoldem
 
-pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
+conda install mayavi pyqt=5 python=3.10 -c conda-forge
+pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
