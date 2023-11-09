@@ -64,7 +64,7 @@ dependencies = [
     "imageio",
     "toml",
     "tqdm",
-    "fasthog@git+https://github.com/blackwer/fasthog@v0.1.5#egg=fasthog",
+    "fasthog",
 ]
 
 [project.scripts]
