@@ -1,7 +1,5 @@
 # ManifoldEM
 
-test branch edits
-
 Note this is the Flatiron Institute fork of the [original
 ManifoldEM](https://github.com/evanseitz/ManifoldEM_Python).  This particular fork is
 maintained by [Robert Blackwell](https://github.com/blackwer) and [Sonya
