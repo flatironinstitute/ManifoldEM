@@ -28,28 +28,8 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
    conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+). One dependency
-doesn't have wheels yet unfortunately (`fasthog`) so you'll need developer tools installed to
-build it. Note that windows is unsupported currently. If you're on a cluster managed
-environment, you should use the `module` system or whatever system available for loading
-compilers (e.g. `module load gcc cmake`) and ignore the following bits...
-
-On mac:
-```
-xcode-select --install
-```
-
-on debian based distros (debian, ubuntu, et al.)
-```
-sudo apt install build-essential cmake
-```
-
-and on rpm based distros (centos, rocky, rhel, et al.)
-```
-sudo dnf install gcc cmake
-```
-
-Now for the actual install:
+Should be installable in any modern python/conda environment (python 3.7+, though `mayavi` and
+`pyqt` packages don't always immediately work with the most recent version of python).
 
 python:
 ```bash
@@ -114,4 +94,4 @@ include technical or other mistakes, inaccuracies or typographical errors. We ma
 to this software or documentation at any time without prior notice, and we assume no
 responsibility for errors or omissions therein.
 
-For further details, please see the LICENSE file. 
+For further details, please see the LICENSE file.
