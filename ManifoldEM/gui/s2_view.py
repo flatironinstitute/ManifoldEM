@@ -4,15 +4,21 @@ import mrcfile
 import numpy as np
 from scipy import stats
 
+import platform
 import subprocess
-has_gl = not bool(subprocess.run('glxinfo', capture_output=True).returncode)
+
+# Linux runners often run through X forwarding/headless, so check for GL support
+if platform.system() == "Linux":
+    has_gl = not bool(subprocess.run('glxinfo', capture_output=True).returncode)
+else:
+    has_gl = True
+
 if has_gl:
-    print("GL context found, using Mayavi frontend")
     from mayavi import mlab
     from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
     from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 else:
-    print("No GL context available, falling back on matplotlib for visualization")
+    print("ManifoldEM: No GL context available, disabling mayavi visualization")
     class _Dummy:
         def __init__(self, *args, **kwargs):
             pass

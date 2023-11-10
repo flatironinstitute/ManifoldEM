@@ -28,7 +28,8 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
    conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+). 
+Should be installable in any modern python/conda environment (python 3.7+, though `mayavi` and
+`pyqt` packages don't always immediately work with the most recent version of python).
 
 python:
 ```bash
@@ -36,7 +37,8 @@ python:
 python3 -m venv ~/envs/manifoldem
 source ~/envs/manifoldem/activate
 
-pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
+pip install --upgrade pip
+pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
@@ -46,7 +48,8 @@ conda:
 conda create -n manifoldem
 conda activate manifoldem
 
-pip install git+ssh://git@github.com/flatironinstitute/ManifoldEM
+conda install mayavi pyqt=5 python=3.10 -c conda-forge
+pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
@@ -91,4 +94,4 @@ include technical or other mistakes, inaccuracies or typographical errors. We ma
 to this software or documentation at any time without prior notice, and we assume no
 responsibility for errors or omissions therein.
 
-For further details, please see the LICENSE file. 
+For further details, please see the LICENSE file.
