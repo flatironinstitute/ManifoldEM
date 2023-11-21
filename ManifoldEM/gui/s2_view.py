@@ -4,21 +4,15 @@ import mrcfile
 import numpy as np
 from scipy import stats
 
-import platform
-import subprocess
+import os
+_disable_viz = bool(os.environ.get('MANIFOLD_DISABLE_VIZ', False))
+from traitsui.api import View, Group, HGroup, VGroup, TextEditor, Item
+from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, observe
 
-# Linux runners often run through X forwarding/headless, so check for GL support
-if platform.system() == "Linux":
-    has_gl = not bool(subprocess.run('glxinfo', capture_output=True).returncode)
-else:
-    has_gl = True
-
-if has_gl:
+if not _disable_viz:
     from mayavi import mlab
     from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
-    from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 else:
-    print("ManifoldEM: No GL context available, disabling mayavi visualization")
     class _Dummy:
         def __init__(self, *args, **kwargs):
             pass
@@ -26,15 +20,7 @@ else:
     MlabSceneModel = _Dummy
     MayaviScene = _Dummy
     SceneEditor = _Dummy
-    View = _Dummy
-    Item = _Dummy
-    Group = _Dummy
-    HGroup = _Dummy
-    VGroup = _Dummy
-    TextEditor = _Dummy
 
-
-from traits.api import Instance, HasTraits, List, Enum, Button, Str, Range, Int, observe
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store
@@ -110,6 +96,8 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
     @observe('S2_scale, S2_density')  #S2 Orientation Sphere
     def update_scene1(self, event):
+        if _disable_viz:
+            return
         if self.df_vol is None:
             self.load_data()
 
@@ -163,6 +151,8 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
     @observe('isosurface_level')  #Electrostatic Potential Map
     def update_scene2(self, event):
+        if _disable_viz:
+            return
         # store current camera info:
         view = mlab.view()
         roll = mlab.roll()
@@ -218,7 +208,6 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
            self.thresholding_window.setWindowTitle('Projection Direction Thresholding')
         self.thresholding_window.show()
 
-
     view = View(
         VGroup(
             HGroup(  # HSplit
@@ -230,7 +219,7 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
                          style_sheet='*{font-size:12px; qproperty-alignment:AlignCenter}'),
                     Item(
                         'scene1',
-                        editor=SceneEditor(scene_class=MayaviScene),
+                        editor=SceneEditor(scene_class=MayaviScene) if not _disable_viz else None,
                         height=1,
                         width=1,
                         show_label=False,
@@ -245,7 +234,7 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
                          style_sheet='*{font-size:12px; qproperty-alignment:AlignCenter}'),
                     Item(
                         'scene2',
-                        editor=SceneEditor(scene_class=MayaviScene),
+                        editor=SceneEditor(scene_class=MayaviScene) if not _disable_viz else None,
                         height=1,
                         width=1,
                         show_label=False,
@@ -294,21 +283,4 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
         resizable=True,
     )
 
-class S2ViewMatplotlib(QWidget, S2ViewBase):
-    def __init__(self, parent=None):
-        super(S2ViewMatplotlib, self).__init__(parent)
-        self.df_vol = None
-
-    def get_widget(self):
-        return self
-
-    def update_scene1(self, event):
-        pass
-
-    def update_scene2(self, event):
-        pass
-
-if has_gl:
-    S2View = S2ViewMayavi
-else:
-    S2View = S2ViewMatplotlib
+S2View = S2ViewMayavi

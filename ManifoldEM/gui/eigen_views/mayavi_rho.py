@@ -3,13 +3,26 @@ import numpy as np
 from traits.api import HasTraits, Instance, on_trait_change, Str, Range, Enum
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 
-from mayavi import mlab
-from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
-
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store
+
+import os
+_disable_viz = bool(os.environ.get('MANIFOLD_DISABLE_VIZ', False))
+
+if not _disable_viz:
+    from mayavi import mlab
+    from mayavi.core.ui.api import MayaviScene, MlabSceneModel, SceneEditor
+    from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
+else:
+    class _Dummy:
+        def __init__(self):
+            pass
+    mlab = None
+    MlabSceneModel = _Dummy
+    MayaviScene = None
+    SceneEditor = None
 
 
 class _Mayavi_Rho(HasTraits):
@@ -41,11 +54,15 @@ class _Mayavi_Rho(HasTraits):
 
 
     def view_angles(self):
+        if _disable_viz:
+            return
         zoom = self.scene3.mlab.view(figure=self.fig3)[2]
         return zoom
 
 
     def update_view(self, azimuth, elevation, distance):
+        if _disable_viz:
+            return
         self.scene3.mlab.view(azimuth=azimuth,
                               elevation=elevation,
                               distance=distance,
@@ -65,6 +82,8 @@ class _Mayavi_Rho(HasTraits):
 
     @on_trait_change('volume_alpha,isosurface')
     def update_scene3(self, init=False):
+        if _disable_viz:
+            return
         # store current camera info:
         view = self.scene3.mlab.view()
         roll = self.scene3.mlab.roll()
@@ -243,7 +262,7 @@ class _Mayavi_Rho(HasTraits):
                      style='readonly',
                      style_sheet='*{font: "Arial"; font-size:12px; qproperty-alignment:AlignCenter}'),
                 Item('scene3',
-                     editor=SceneEditor(scene_class=MayaviScene),
+                     editor=SceneEditor(scene_class=MayaviScene) if not _disable_viz else None,
                      height=1,
                      width=1,
                      show_label=False,
