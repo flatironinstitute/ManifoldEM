@@ -39,10 +39,9 @@ class MainWindow(QMainWindow):
             h = (9 * w) // 16
         self.resize((7 * w) // 10, (7 * h) // 10)
 
-        self.distribution_tab = DistributionTab(self)
         self.tabs = QTabWidget(self)
         self.tabs.addTab(ImportTab(self), 'Import')
-        self.tabs.addTab(self.distribution_tab, 'Distribution')
+        self.tabs.addTab(DistributionTab(self), 'Distribution')
         self.tabs.addTab(EmbeddingTab(self), 'Embedding')
         self.tabs.addTab(EigenvectorsTab(self), 'Eigenvectors')
         self.tabs.addTab(CompilationTab(self), 'Compilation')
@@ -63,15 +62,18 @@ class MainWindow(QMainWindow):
         groupscroll.addWidget(scroll)
 
         self.setCentralWidget(scroll)
+        self.reload_tab_states()
+        self.show()
 
+
+    def reload_tab_states(self):
         self.set_tab_state(False, list(self.tab_indices.keys()))
+
         for tabi in range(p.resProj + 1):
             if tabi in self.tab_names:
                 tab_name = self.tab_names[tabi]
                 self.set_tab_state(True, tab_name)
                 self.switch_tab(tab_name)
-
-        self.show()
 
 
     def switch_tab(self, tab_name: str):

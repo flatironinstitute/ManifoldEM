@@ -191,13 +191,26 @@ class ImportTab(QWidget):
         update_shannon(shannon_entry)
         update_ang_width(ang_width_entry)
 
+        self.load_button = QPushButton("Load existing project", self)
+        layout.addWidget(self.load_button, 7, 2, 1, 1)
+        self.load_button.clicked.connect(self.load)
+        self.load_button.show()
+
         self.finalize_button = QPushButton("View Orientation Distribution", self)
         self.finalize_button.setToolTip("All entries must be complete.")
-        layout.addWidget(self.finalize_button, 7, 2, 1, 2)
+        layout.addWidget(self.finalize_button, 7, 3, 1, 1)
         self.finalize_button.clicked.connect(self.finalize)
         self.finalize_button.show()
 
         self.show()
+
+    def load(self):
+        filename = QFileDialog.getOpenFileName(self, 'Choose project config', '', ('Project configs (*.toml)'))[0]
+
+        if filename:
+            p.load(filename)
+            self.parent.reload_tab_states()
+            self.finalize_button.setDisabled(True)
 
     def finalize(self):
         self.finalize_button.setDisabled(True)
