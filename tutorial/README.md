@@ -8,6 +8,8 @@ be inaccurate. Please report any problems via the issues page or create a PR to 
 Evan Seitz, Robert Blackwell, Ghoncheh Mashayekhi, Hstau Liao, Suvrajit Maji,
 Peter Schwander*, Abbas Ourmazd* and Joachim Frank*
 Version 0.3.0
+The dataset for this tutorial can be downloaded:
+[RyR1GCs_demo.tar.gz](https://users.flatironinstitute.org/~rblackwell/manifold/RyR1GCs_demo.tar.gz)
 
 # Introduction
 This tutorial provides an overview of ManifoldEM (Beta version) in Python 3 for determination of
