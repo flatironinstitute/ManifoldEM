@@ -7,7 +7,9 @@ be inaccurate. Please report any problems via the issues page or create a PR to 
 # ManifoldEM User Manual
 Evan Seitz, Robert Blackwell, Ghoncheh Mashayekhi, Hstau Liao, Suvrajit Maji,
 Peter Schwander*, Abbas Ourmazd* and Joachim Frank*
+
 Version 0.3.0
+
 The dataset for this tutorial can be downloaded:
 [RyR1GCs_demo.tar.gz](https://users.flatironinstitute.org/~rblackwell/manifold/RyR1GCs_demo.tar.gz)
 
