@@ -28,7 +28,7 @@ else:
 class _Mayavi_Rho(HasTraits):
     """View of electrostatic potential map"""
     scene3 = Instance(MlabSceneModel, ())
-    isosurface = Range(2, 9, 3, mode='enum')
+    isosurface_level = Range(2, 9, 3, mode='enum')
     volume_alpha = Enum(1.0, .8, .6, .4, .2, 0.0)
     phi = Str
     theta = Str
@@ -80,7 +80,7 @@ class _Mayavi_Rho(HasTraits):
         self.parent = parent
 
 
-    @on_trait_change('volume_alpha,isosurface')
+    @on_trait_change('volume_alpha,isosurface_level')
     def update_scene3(self, init=False):
         if _disable_viz:
             return
@@ -105,7 +105,7 @@ class _Mayavi_Rho(HasTraits):
 
             mirror = df_vol[..., ::-1]
 
-            cplot = mlab.contour3d(mirror, contours=self.isosurface, color=(0.5, 0.5, 0.5), figure=self.fig3)
+            cplot = mlab.contour3d(mirror, contours=self.isosurface_level, color=(0.5, 0.5, 0.5), figure=self.fig3)
             cplot.actor.actor.orientation = np.array([0., -90., 0.])
 
             cplot.actor.actor.origin = np.array([len(df_vol) / 2, len(df_vol) / 2, len(df_vol) / 2])
@@ -284,6 +284,10 @@ class _Mayavi_Rho(HasTraits):
                         editor=TextEditor(evaluate=float),
                         enabled_when='phi == float(0)',  #i.e., never
                     ),
+                    Item('isosurface_level',
+                         springy=True,
+                         show_label=True,
+                         tooltip='Change the isosurface level of the volume map above.'),
                 ),
                 show_border=False,
                 orientation='vertical'),
