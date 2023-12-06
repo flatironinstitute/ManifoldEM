@@ -265,28 +265,6 @@ class EigenvectorsTab(QWidget):
     def view_cc_details(self, psi_index):
         self.cc_details_window = CCDetailsView(self.user_prd_index, psi_index)
 
-        # Manifold2dCanvas.coordsX = []
-        # Manifold2dCanvas.coordsY = []
-        # Manifold2dCanvas.eig_current = n
-        # eig_n_others = []
-        # eig_v_others = []
-        # index = 0
-        # for i in EigValCanvas.eig_v:  #find next highest eigenvalue
-        #     index += 1
-        #     if index != n:
-        #         eig_n_others.append(EigValCanvas.eig_n[index - 1])
-        #         eig_v_others.append(EigValCanvas.eig_v[index - 1])
-
-        # Manifold2dCanvas.eig_compare1 = eig_n_others[0]  #max eigenvalue (other than one selected)
-        # Manifold2dCanvas.eig_compare2 = eig_n_others[1]  #next highest eigenvalue from the above
-
-        # p.eig_current = Manifold2dCanvas.eig_current
-        # p.eig_compare1 = Manifold2dCanvas.eig_compare1
-
-        # VidCanvas.run = 0
-        # VidCanvas.img_paths = []
-        # VidCanvas.imgs = []
-        # VidCanvas.frames = 0
         self.cc_details_window.setWindowTitle('PD %s: Psi %s' % (self.user_prd_index, psi_index))
         self.cc_details_window.connect_signals(data_change_callback=self.on_prd_change)
 
