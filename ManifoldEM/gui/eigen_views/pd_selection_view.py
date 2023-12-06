@@ -373,8 +373,8 @@ class PDEditorCanvas(QDialog):
     def view_occupancy_table(self):
         prds = data_store.get_prds()
 
-        headers = ['PD', 'Occ']
-        values = sorted(zip(range(1, prds.n_thresholded + 1), prds.occupancy), key=lambda x: x[1], reverse=True)
+        headers = ['PD index', 'Occupancy', 'Cluster']
+        values = sorted(zip(range(1, prds.n_thresholded + 1), prds.occupancy, prds.cluster_ids), key=lambda x: x[1], reverse=True)
 
         self.occupancy_table = TableView(headers, values)
         sizeObject = QDesktopWidget().screenGeometry(-1)  #user screen size
