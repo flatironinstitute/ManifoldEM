@@ -92,7 +92,10 @@ def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float6
 
 def psi_ang(ref_vec: NDArray[Shape["3"], Float64]):
     Qr = np.array([1 + ref_vec[2], ref_vec[1], -ref_vec[0], 0])
-    Qr = Qr / np.sqrt(np.sum(Qr**2))
+    L2 = np.sum(Qr**2)
+    if L2 == 0.0:
+        return 0.0
+    Qr = Qr / L2
     _, _, psi = q2Spider(Qr)
 
     psi = np.mod(psi, 2 * np.pi) * (180 / np.pi)
