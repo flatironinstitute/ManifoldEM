@@ -36,7 +36,7 @@ def sembedding(yVal, yCol, yRow, nS, options1):
         print("eigsh not converging in 300 iterations...")
 
     ix = np.argsort(vals)[::-1]
-    vals = np.sort(vals)[::-1]
+    vals = vals[ix]
     vecs = vecs[:, ix]
 
     return (vals, vecs)
