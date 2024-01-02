@@ -247,10 +247,11 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
             img = np.flipud(img)
         # normalizing
         backg = img * (1 - msk)
-        try:
-            img = (img - backg.mean()) / backg.std()
-        except:
-            pass
+        std = backg.std()
+        if not std == 0.:
+            img = (img - backg.mean()) / std
+        else:
+            print(f"Warning: flat image found at index: {raw_particle_index}")
 
         # store each flatted image in y and filter
         img = img.flatten('F')
