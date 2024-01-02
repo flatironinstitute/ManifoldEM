@@ -227,12 +227,11 @@ def op(D, k, tune, prefsigma):  #*arg
     yCol = np.hstack((yCol, yColNZ)).astype(int)
     yVal = np.hstack((yVal, yValNZ))
 
-    a0 = (np.random.rand(4, 1) - .5)
     count = 0
     resnorm = np.inf
 
     logEps = np.arange(-150, 150.2, 0.2)
-    popt, logSumWij, resnorm, R_squared = fergusonE(np.sqrt(yVal), logEps, a0)
+    popt, logSumWij, resnorm, R_squared = fergusonE(np.sqrt(yVal), logEps)
     nS = D.shape[0]
     nEigs = min(p.num_eigs, nS - 3)  #number of eigenfunctions to compute
     nA = 0  #autotuning parameter

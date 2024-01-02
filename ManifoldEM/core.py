@@ -122,44 +122,41 @@ def makeMovie(IMG1, prD, psinum, fps):
                 writer.append_data(frame)
 
 
-def fergusonE(D, logEps, a0):
+def fergusonE(D, logEps, a0=None):
     # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Copyright (c) Columbia University Hstau Liao 2018 (python version)
     # Copyright (c) Columbia University Evan Seitz 2019 (python version)
+    if a0 is None:
+        a0 = np.ones(4)
 
-    def fun(xx, aa0, aa1, aa2, aa3):
-        return aa3 + aa2 * np.tanh(aa0 * xx + aa1)
+    def fun(x, a, b, c, d):
+        return d + c * np.tanh(a * x + b)
 
     def find_thres(logEps, D2):
-        eps = np.exp(logEps)
-        d = 1. / (2. * np.max(eps)) * D2
-        sg = np.sort(d)
-        ss = np.sum(np.exp(-sg))
-        thr = max(-np.log(0.01 * ss / len(D2)), 10)  # taking 1% of the average (10)
-        return thr
+        d = 0.5 * D2 / np.exp(np.max(logEps))
+        ss = np.sum(np.exp(-d))
+        return max(-np.log(0.01 * ss / len(D2)), 10)  # taking 1% of the average (10)
 
     # range of values to try:
-    logSumWij = np.zeros(len(logEps))
+    logSumWij = np.empty_like(logEps)
     D2 = D * D
     thr = find_thres(logEps, D2)
-    for k in range(len(logEps)):
-        eps = np.exp(logEps[k])
-        d = 1. / (2. * eps) * D2
-        d = -d[d < thr]
-        Wij = np.exp(d)  # see Coifman 2008
+    for k, le in enumerate(logEps):
+        d = 0.5 * D2 / np.exp(le)
+        Wij = np.exp(-d[d < thr])  # see Coifman 2008
         logSumWij[k] = np.log(np.sum(Wij))
 
     # curve fitting of a tanh():
     resnorm = np.inf
-    cc = 0
     while (resnorm > 100):
-        cc += 1
-        popt, pcov = curve_fit(fun, logEps, logSumWij, p0=a0)
+        popt, pcov, infodict, mesg, ier = curve_fit(fun, logEps, logSumWij, p0=a0, full_output=True)
         resnorm = np.sum(np.sqrt(np.fabs(np.diag(pcov))))
-        a0 = 1 * (np.random.rand(4, 1) - .5)
+        if ier < 1 or ier > 4:
+            print(resnorm, popt, ier)
+        a0 *= 0.5
 
-        residuals = logSumWij - fun(logEps, popt[0], popt[1], popt[2], popt[3])
+        residuals = logSumWij - fun(logEps, *popt)
         ss_res = np.sum(residuals**2)  # residual sum of squares
         ss_tot = np.sum((logSumWij - np.mean(logSumWij))**2)  # total sum of squares
         R_squared = 1 - (ss_res / ss_tot)  # R**2-value
