@@ -25,13 +25,10 @@ def op(*argv):
     psiNumsAll = data['psinums']
 
     xSelect = np.arange(p.numberofJobs)
-    a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
+    unused_prds = set(np.nonzero(psiNumsAll[0, :] == -1)[0])  # unassigned states
+    unused_prds = unused_prds.union(data_store.get_prds().trash_ids)
 
-    xSelect = np.delete(xSelect, a)
-
-    a = list(data_store.get_prds().trash_ids)
-    if len(xSelect):
-        xSelect = np.delete(xSelect, a)
+    xSelect = np.delete(xSelect, list(unused_prds))
 
     if not len(xSelect):
         debug_print("No assigned states: Unable to compute energy profile")

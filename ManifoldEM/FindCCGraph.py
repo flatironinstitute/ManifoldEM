@@ -258,6 +258,7 @@ def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[s
     n_nodes_tot = G['nNodes']
     n_nodes_left = n_nodes_tot - len(trash_ids)
     print(f"Number of isolated nodes in the graph after pruning: {len(trash_ids)}")
+    trash_list = list(trash_ids)
 
     max_state = 2 * num_psis
     if n_nodes_left > 1:
@@ -268,8 +269,8 @@ def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[s
         # prune edges corresponding to the bad nodes with actually removing those bad nodes by disconnecting the edges
         # in and out of those specified nodes
         new_adj_mat = lil_matrix(G['AdjMat'])
-        new_adj_mat[trash_ids, :] = 0
-        new_adj_mat[:, trash_ids] = 0
+        new_adj_mat[trash_list, :] = 0
+        new_adj_mat[:, trash_list] = 0
 
         new_adj_mat = csr_matrix(new_adj_mat)
         G.update(AdjMat=new_adj_mat)
