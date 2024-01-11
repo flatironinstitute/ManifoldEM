@@ -22,7 +22,7 @@ from fasthog import hog_from_gradient as histogram_from_gradients
 '''
 
 
-def HOGOpticalFlowPy(flowVec, hogFigfile):
+def HOGOpticalFlowPy(flowVec):
     cell_size = (4, 4)
     cells_per_block = (2, 2)
     n_bins = 9
@@ -73,25 +73,15 @@ def HOGOpticalFlowPy(flowVec, hogFigfile):
 # Compare how similar two Matrices/Images are.
 # TODO: Implement error checking for wrong or, improper inputs
 # Check for NaN or Inf outputs , etc.
-def CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums, labels):
+def CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums):
     useNorm = 'l2'
     prD_A = prds_psinums[0]
     psinum_A = prds_psinums[1]
     prD_B = prds_psinums[2]
     psinum_B = prds_psinums[3]
 
-    Hog_fig_dir = os.path.join(p.CC_dir, 'CC_OF_fig/hog')
-    if p.opt_movie['printFig']:
-        os.makedirs(Hog_fig_dir, exist_ok=True)
-
-    filenameA = "hog_prd_" + str(prD_A) + '_psi_' + str(psinum_A) + '_' + str(labels[0])
-    hogFigfile_A = os.path.join(Hog_fig_dir, filenameA)
-
-    filenameB = "hog_prd_" + str(prD_B) + '_psi_' + str(psinum_B) + '_' + str(labels[1])
-    hogFigfile_B = os.path.join(Hog_fig_dir, filenameB)
-
-    HOGFA, hog_params = HOGOpticalFlowPy(FlowVecSelA, hogFigfile_A)
-    HOGFB, hog_params = HOGOpticalFlowPy(FlowVecSelB, hogFigfile_B)
+    HOGFA, hog_params = HOGOpticalFlowPy(FlowVecSelA)
+    HOGFB, hog_params = HOGOpticalFlowPy(FlowVecSelB)
 
     # The dimensions of HOGFA and HOGFB should always match given the number of movie blocks created for movie A and B
     # if for some reason the number of blocks for movie A and B are different, then this check is a fail safe to make
@@ -157,26 +147,21 @@ def CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums, labels):
     return varargout
 
 
-def ComparePsiMoviesOpticalFlow(FlowVecSelA, FlowVecSelB, prds_psinums, labels):
+def ComparePsiMoviesOpticalFlow(FlowVecSelA, FlowVecSelB, prds_psinums):
     # Analysis of the flow matrix
     psiMovFlowOrientMeasures = dict(Values=[], Values_tblock=[])
-    Values, Values_tblock, isBadPsiAB_block = CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums, labels)
+    Values, Values_tblock, isBadPsiAB_block = CompareOrientMatrix(FlowVecSelA, FlowVecSelB, prds_psinums)
     psiMovFlowOrientMeasures.update(Values=Values, Values_tblock=Values_tblock)
 
     return psiMovFlowOrientMeasures, isBadPsiAB_block
 
 
 def ComputeMeasuresPsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBFWD, FlowVecSelBREV, prds_psinums):
-
-    labels = ['AFWD', 'BFWD']
-    psiMovOFMeasuresFWD, isBadPsiAB_blockF = ComparePsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBFWD, prds_psinums,
-                                                                         labels)
+    psiMovOFMeasuresFWD, isBadPsiAB_blockF = ComparePsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBFWD, prds_psinums)
     psiMovMFWD = psiMovOFMeasuresFWD['Values']
     psiMovMFWD_tblock = psiMovOFMeasuresFWD['Values_tblock']
 
-    labels = ['AFWD', 'BREV']
-    psiMovOFMeasuresREV, isBadPsiAB_blockR = ComparePsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBREV, prds_psinums,
-                                                                         labels)
+    psiMovOFMeasuresREV, isBadPsiAB_blockR = ComparePsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBREV, prds_psinums)
     psiMovMREV = psiMovOFMeasuresREV['Values']
     psiMovMREV_tblock = psiMovOFMeasuresREV['Values_tblock']
 
@@ -188,7 +173,6 @@ def ComputeMeasuresPsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBFWD, FlowVecS
 
 
 def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
-
     currPrD = input_data[0]
     nbrPrD = input_data[1]
     CC_meas_file = input_data[2]
