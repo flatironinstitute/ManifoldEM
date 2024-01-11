@@ -29,7 +29,7 @@ def sembedding(yVal, yCol, yRow, nS, options1):
 
     l, sigmaTune = slaplacian(yVal, yCol, yRow, nS, options)
     try:
-        vals, vecs = eigsh(l, k=options.nEigs + 1, maxiter=300, return_eigenvectors=True)
+        vals, vecs = eigsh(l, k=options.nEigs + 1, maxiter=300, v0=np.ones(nS), return_eigenvectors=True)
     except ArpackNoConvergence as e:
         vals = e.eigenvalues
         vecs = e.eigenvectors
