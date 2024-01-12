@@ -52,6 +52,10 @@ def get_parser():
     el_parser = subparsers.add_parser("energy-landscape", help="Calculate energy landscape")
     el_parser.add_argument("input_file", type=str)
 
+    traj_parser = subparsers.add_parser("trajectory", help="Calculate trajectory")
+    traj_parser.add_argument("input_file", type=str)
+    traj_parser.add_argument("--path-width", type=int)
+
     return parser
 
 
@@ -72,6 +76,12 @@ def load_state(args):
     if args.command == "threshold":
         p.PDsizeThL = args.low
         p.PDsizeThH = args.high
+    if hasattr(args, "path_width"):
+        if args.path_width < 1 or args.path_width > 5:
+            print("path-width argument must be on the interval [1, 5]")
+            sys.exit(1)
+        p.width_1D = args.path_width
+        
     p.save()
 
 
@@ -157,6 +167,11 @@ def energy_landscape(_):
     p.save()
 
 
+def compute_trajectory(_):
+    from ManifoldEM import PrepareOutputS2
+    PrepareOutputS2.op()
+
+
 _funcs = {
     "init": init,
     "threshold": threshold,
@@ -166,6 +181,7 @@ _funcs = {
     "nlsa-movie": nlsa_movie,
     "find-ccs": find_conformational_coordinates,
     "energy-landscape": energy_landscape,
+    "trajectory": compute_trajectory,
 }
 
 

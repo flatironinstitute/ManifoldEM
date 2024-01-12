@@ -17,14 +17,11 @@ def op(*argv):
     p.load()
     print("Writing output files...")
 
-    data = myio.fin1(p.CC_file)
-    psiNumsAll = data['psinums']
+    psiNumsAll = myio.fin1(p.CC_file)['psinums']
 
-    range1 = np.arange(p.numberofJobs)
     # read reaction coordinates
-
     a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
-    myrange = np.delete(range1, a)
+    myrange = np.delete(np.arange(p.numberofJobs), a)
     a = list(data_store.get_prds().trash_ids)
     myrange = np.delete(myrange, a)
     xSelect = myrange

@@ -1,21 +1,13 @@
 import pickle
-from ManifoldEM.util import debug_print
-'''
-Copyright (c) Columbia University Hstau Liao 2018 (python version)
-'''
+from typing import Dict, Any
 
 
-def fin1(filename):
+def fin1(filename: str) -> Dict[str, Any]:
     with open(filename, 'rb') as f:
-        try:
-            data = pickle.load(f)
-            return data
-        except Exception as e:
-            debug_print(str(e))
-            return None
+        return pickle.load(f)
 
 
-def fout1(filename, **kwargs):
+def fout1(filename: str, **kwargs) -> None:
     with open(filename, 'wb') as f:
         pickle.dump(kwargs, f, protocol=pickle.HIGHEST_PROTOCOL)
-    f.close()
+

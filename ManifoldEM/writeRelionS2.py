@@ -17,7 +17,6 @@ Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 
 def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
     # S.M. June 2020
-    offset = 0
     pathw = p.width_1D
 
     # TODO: Have to find a way to control this from the GUI and also write extra steps to provide resume capability
@@ -42,29 +41,22 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
             xSel = xSelect[num:numNext]
             for x in xSel:
-                offset += 1
-                EL_file = p.get_EL_file(x)
-                File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
-                data = myio.fin1(File)
+                fname = f'{p.get_EL_file(x)}_{p.trajName}_1'
+                IMGT = myio.fin1(fname)['IMGT']
 
-                IMGT = data['IMGT']
+                dist_file = p.get_dist_file(x)
+                q = myio.fin1(dist_file)['q']
 
                 posPath = posPathAll[x]
                 psi1Path = posPsi1All[x]
-
-                dist_file = p.get_dist_file(x)
-                data = myio.fin1(dist_file)
-                q = data['q']
-
                 q = q[:, posPath[psi1Path]]
                 nS = q.shape[1]
 
                 conOrder = nS // p.conOrderRange
-                copies = conOrder
-                q = q[:, copies - 1:nS - conOrder]
+                q = q[:, conOrder - 1:nS - conOrder]
 
-                IMGT = IMGT / conOrder
-                IMGT = IMGT.T  # flip here IMGT is now num_images x dim^2
+                # scale and flip here. IMGT is now num_images x dim^2
+                IMGT = (IMGT / conOrder).T
 
                 tau = trajTaus[x]
                 tauEq = util.hist_match(tau, tauAvg)
@@ -147,8 +139,8 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         print('Concatenated imgs, shape', np.shape(imgs))
 
         traj_file_rel = 'imgsRELION_{}_{}_of_{}.mrcs'.format(p.trajName, bin + 1, p.nClass)
-        traj_file = '{}{}'.format(p.bin_dir, traj_file_rel)
-        ang_file = '{}EulerAngles_{}_{}_of_{}.star'.format(p.bin_dir, p.trajName, bin + 1, p.nClass)
+        traj_file = os.path.join(p.bin_dir, traj_file_rel)
+        ang_file = os.path.join(p.bin_dir, f'EulerAngles_{p.trajName}_{bin + 1}_of_{p.nClass}.star')
 
         if os.path.exists(traj_file):
             mrc = mrcfile.open(traj_file, mode='r+')
