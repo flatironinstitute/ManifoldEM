@@ -221,7 +221,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         if indices[i_part] < n_particles_tot / 2:  # first half data set; i.e., before augmentation
             raw_particle_index = indices[i_part]
         else:  # second half data set; i.e., the conjugates
-            raw_particle_index = (indices[i_part] - n_particles_tot) // 2
+            raw_particle_index = int(indices[i_part] - n_particles_tot / 2)
         if not relion_data:  # spider data
             start = n_pix**2 * raw_particle_index * 4
             img = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix)).T
