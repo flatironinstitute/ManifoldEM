@@ -20,11 +20,9 @@ def op(*argv):
     psiNumsAll = myio.fin1(p.CC_file)['psinums']
 
     # read reaction coordinates
-    a = np.nonzero(psiNumsAll[0, :] == -1)[0]  #unassigned states, python
-    myrange = np.delete(np.arange(p.numberofJobs), a)
-    a = list(data_store.get_prds().trash_ids)
-    myrange = np.delete(myrange, a)
-    xSelect = myrange
+    a = set(np.nonzero(psiNumsAll[0, :] == -1)[0])  #unassigned states, python
+    a = list(a.union(data_store.get_prds().trash_ids))
+    xSelect = np.delete(np.arange(p.numberofJobs), a)
 
     # getFromFileS2
     xLost = []

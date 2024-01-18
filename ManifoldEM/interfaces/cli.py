@@ -77,6 +77,8 @@ def load_state(args):
         p.PDsizeThL = args.low
         p.PDsizeThH = args.high
     if hasattr(args, "path_width"):
+        if args.path_width is None:
+            return
         if args.path_width < 1 or args.path_width > 5:
             print("path-width argument must be on the interval [1, 5]")
             sys.exit(1)
