@@ -35,7 +35,7 @@ python:
 ```bash
 # create virtual environment. feel free to change the path!
 python3 -m venv ~/envs/manifoldem
-source ~/envs/manifoldem/activate
+source ~/envs/manifoldem/bin/activate
 
 pip install --upgrade pip
 pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
