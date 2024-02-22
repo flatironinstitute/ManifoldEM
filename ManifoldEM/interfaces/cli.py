@@ -30,8 +30,8 @@ def get_parser():
 
     threshold_parser = subparsers.add_parser("threshold", help="Set upper/lower thresholds for principal direction detection")
     threshold_parser.add_argument("input_file", type=str)
-    threshold_parser.add_argument("--low", type=int, default=100)
-    threshold_parser.add_argument("--high", type=int, default=2000)
+    threshold_parser.add_argument("--low", type=int, default=100, help="Minimum number of images in a bin to count as a valid principle direction")
+    threshold_parser.add_argument("--high", type=int, default=2000, help="Maximum number of images to analyze in a single principle direction")
 
     distance_parser = subparsers.add_parser("calc-distance", help="Calculate S2 distances")
     distance_parser.add_argument("input_file", type=str)

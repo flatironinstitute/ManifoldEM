@@ -69,6 +69,127 @@ MANIFOLD_DISABLE_VIZ=1 manifold-gui
 ```
 
 
+## Basic command line interface
+For most steps in the ManifoldEM pipeline, the GUI is unnecessary and sometimes even burdensome. For
+this reason we supply a basic command line interface. The CLI allows the user to make more granular
+steps through the analysis pipeline and is generally more useful for cluster/remote environment and
+debugging. All CLI invocations start with the program `manifold-cli`. If you run `manifold-cli` with
+no arguments, it will print a help message and exit.
+
+```
+% manifold-cli
+ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+
+usage: manifold-cli [-h] [-n NCPU] {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,energy-landscape,trajectory} ...
+
+Command-line interface for ManifoldEM package
+
+positional arguments:
+  {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,energy-landscape,trajectory}
+    init                Initialize new project
+    threshold           Set upper/lower thresholds for principal direction detection
+    calc-distance       Calculate S2 distances
+    manifold-analysis   Initial embedding
+    psi-analysis        Analyze images to get psis
+    nlsa-movie          Create 2D psi movies
+    find-ccs            Find conformational coordinates
+    energy-landscape    Calculate energy landscape
+    trajectory          Calculate trajectory
+
+options:
+  -h, --help            show this help message and exit
+  -n NCPU, --ncpu NCPU
+```
+
+The output shows that there are nine sub-commands listed in the order they belong in the
+pipeline. Some commands support additional arguments, especially the `init` command, which creates a
+new project in your current working directory. To see how to use a given command, simply run the
+command with a following `-h` flag, e.g.
+
+```
+% manifold-cli init -h
+ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+
+usage: manifold-cli init [-h] -p PROJECT_NAME [-v AVG_VOLUME] [-a ALIGNMENT] [-i IMAGE_STACK] [-m MASK_VOLUME] -s PIXEL_SIZE -d DIAMETER -r RESOLUTION [-x APERTURE_INDEX]
+                         [-o]
+
+options:
+  -h, --help            show this help message and exit
+  -p PROJECT_NAME, --project-name PROJECT_NAME
+                        Name of project to create
+  -v AVG_VOLUME, --avg-volume AVG_VOLUME
+  -a ALIGNMENT, --alignment ALIGNMENT
+  -i IMAGE_STACK, --image-stack IMAGE_STACK
+  -m MASK_VOLUME, --mask-volume MASK_VOLUME
+  -s PIXEL_SIZE, --pixel-size PIXEL_SIZE
+  -d DIAMETER, --diameter DIAMETER
+  -r RESOLUTION, --resolution RESOLUTION
+  -x APERTURE_INDEX, --aperture-index APERTURE_INDEX
+  -o, --overwrite       Replace existing project with same name automatically
+```
+
+An example invocation then might look like
+
+```
+manifold-cli init -v J310/J310_003_volume_map.mrc -a J310/from_csparc.star -i J310/signal_subtracted.mrcs -s 1.22 -d 160.0 -r 3.02 -x 1 -p my_J310_analysis
+```
+
+The rest of the commands will take as their final argument the "toml" file generated from the
+initialization step. Let's set the image count thresholds and calculate the distance matrices for
+the leading five eigenvalue decompositions ("psis") next as an example. Note the `-n 16` _before_
+the sub-command. Most processing steps support this option, which specifies how many workers to use
+in processing. In most cases you want roughly the output of the `nproc` command. My workstation has
+16 physical cores, so I specify 16 below for the matrix calculation step. Supplying `-n` for
+commands that don't support parallel processing is harmless.
+
+```
+% manifold-cli threshold --low 100 --high 4000 params_my_J310_analysis.toml
+ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+
+% manifold-cli -n 16 calc-distance --num-psis 5 params_my_J310_analysis.toml
+ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+
+Computing the distances...
+Calculating projection direction information
+RELION Optics Group found.
+Number of PDs: 132
+Neighborhood epsilon: 0.053387630212191464
+Number of Graph Edges: (926, 2)
+
+Performing connected component analysis.
+Number of connected components: 2
+Number of Graph Edges: (485, 2)
+Number of Graph Edges: (441, 2)
+100%|████████████████| 132/132 [01:09<00:00,  1.89it/s]
+```
+
+This has created a significant amount of data stored in the `output/my_J310_analysis/distances` --
+one file for each principal direction. Currently there isn't much tooling to visualize these
+outputs, though that is a work in progress. Each file is a python `pickle` file and can be inspected
+using the usual python tooling for the curious user.
+
+Let's finish up the first major stage of the pipeline. I'm hiding the output for clarity's sake.
+
+```
+% manifold-cli -n 16 manifold-analysis params_my_J310_analysis.toml &> /dev/null
+% manifold-cli -n 16 psi-analysis params_my_J310_analysis.toml &> /dev/null
+% manifold-cli -n 16 nlsa-movie params_my_J310_analysis.toml &> /dev/null
+```
+
+At this point, if you wanted to visualize and manually manipulate the principle directions and
+associated data, you could simply `manifold-gui -R params_my_J310_analysis.toml`. Here you could set
+the anchor directions, manually control the sense of each direction, remove directions, and other
+various things. Once you hit the "Compile Results" command, you can continue using the command
+line. Here I set a few anchors and will continue on, though note that the trajectory ignores the
+`-n` flag as of this writing...
+
+```
+% manifold-cli -n 16 find-ccs params_my_J310_analysis.toml &> /dev/null
+% manifold-cli -n 16 energy-landscape params_my_J310_analysis.toml &> /dev/null
+% manifold-cli -n 16 trajectory params_my_J310_analysis.toml &> /dev/null
+```
+
+
 ### Contributions
 Original ManifoldEM Python team (alphabetically ordered):
 
