@@ -38,3 +38,18 @@
   * `msk2` - [Union[nPix x nPix, 1], int] image mask given avg orientation in bin. just `1` if no volumetric mask input
   * `PD` - [float] average orientation vector of images in bin
   * `imgAvg` - [nPix x nPix, float] wiener filtered average of `imgAll`
+
+# manifold-cli manifold-analysis
+
+* create `topos/PrD_{prd+1}/eig_spec.txt` reverse sorted first 15 eigenvalues
+* create `diff_maps/gC_trimmed_psi_prD_{prd}`
+  * `lamb` - [16, float] `cat([1.0], [eig_spec.txt])`
+  * `psi` - [veclen x 15, float] ?? some kind of normalized eigenvectors
+  * `sigma` - ??
+  * `mu` - [veclen, float] ??
+  * `posPath` - [veclen, int] relevant image indices in bin?
+  * `ind` - images of _all_ images in this prd bin
+  * `logEps` - Linspace(-150.0, 150.0, 0.2)
+  * `logSumWij` - ?? something to do with fergusonE
+  * `popt` - optimization parameters for fergusonE fit
+  * `R_squared` - `R_squared` for fit
