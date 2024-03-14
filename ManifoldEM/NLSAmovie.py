@@ -2,7 +2,7 @@ import os
 import multiprocessing
 import tqdm
 
-import matplotlib.pyplot as plt
+import imageio
 import numpy as np
 
 from functools import partial
@@ -33,54 +33,31 @@ def _construct_input_data(N):
     return ll
 
 
-def movie(input_data, out_dir, dist_file, psi2_file, fps):
+def movie(input_data, psi2_file, fps):
     prD = input_data[0]
     dist_file1 = p.get_dist_file(prD)
     # Fetching NLSA outputs and making movies
-    IMG1All = []
-    Topo_mean = []
     for psinum in range(p.num_psis):
         psi_file1 = psi2_file + 'prD_{}'.format(prD) + '_psi_{}'.format(psinum)
         data = myio.fin1(psi_file1)
-        IMG1All.append(data['IMG1'])
-        Topo_mean.append(data['Topo_mean'])
         # make movie
-        makeMovie(IMG1All[psinum], prD, psinum, fps)
+        makeMovie(data['IMG1'], prD, psinum, fps)
 
-        ######################
         # write topos
-        # TODO: This shouldn't require imshow. We can almost certainly just write the images directly
-        topo = Topo_mean[psinum]
+        topo = data['Topo_mean'][:, 1]
         dim = int(np.sqrt(topo.shape[0]))
-
-        fig2 = plt.figure(frameon=False)
-        ax2 = fig2.add_axes([0, 0, 1, 1])
-        ax2.axis('off')
-        ax2.set_title('')
-        ax2.get_xaxis().set_visible(False)
-        ax2.get_yaxis().set_visible(False)
-        ax2.imshow(topo[:, 1].reshape(dim, dim), cmap=plt.get_cmap('gray'))
         image_file = '{}/topos/PrD_{}/topos_{}.png'.format(p.out_dir, prD + 1, psinum + 1)
-        fig2.savefig(image_file, bbox_inches='tight', dpi=100, pad_inches=-0.1)
-        ax2.clear()
-        fig2.clf()
-        plt.close(fig2)
+        topo = topo.reshape(dim, dim)
+        topo = (255. * (topo - topo.min()) / (topo.max() - topo.min())).astype(np.uint8)
+        imageio.imwrite(image_file, topo)
+
 
     # write class avg image
     data = myio.fin1(dist_file1)
-    avg = data['imgAvg']
-    fig3 = plt.figure(frameon=False)
-    ax3 = fig3.add_axes([0, 0, 1, 1])
-    ax3.axis('off')
-    ax3.set_title('')
-    ax3.get_xaxis().set_visible(False)
-    ax3.get_yaxis().set_visible(False)
-    ax3.imshow(avg, cmap=plt.get_cmap('gray'))
+    img = data['imgAvg']
     image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
-    fig3.savefig(image_file, bbox_inches='tight', dpi=100, pad_inches=-0.1)
-    ax3.clear()
-    fig3.clf()
-    plt.close(fig3)
+    img = (255. * (img - img.min()) / (img.max() - img.min())).astype(np.uint8)
+    imageio.imwrite(image_file, img)
 
 
 def op(*argv):
@@ -92,7 +69,7 @@ def op(*argv):
     input_data = _construct_input_data(p.numberofJobs)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
-    movie_local = partial(movie, out_dir=p.out_dir, dist_file=p.dist_file, psi2_file=p.psi2_file, fps=p.fps)
+    movie_local = partial(movie, psi2_file=p.psi2_file, fps=p.fps)
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
