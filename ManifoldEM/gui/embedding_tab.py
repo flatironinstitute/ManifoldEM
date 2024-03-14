@@ -39,7 +39,7 @@ class EmbeddingTab(QWidget):
                                     args=(self.hostname, cmd, self.distance_progress_changed))
         else:
             from ManifoldEM.GetDistancesS2 import op as GetDistancesS2
-            task = threading.Thread(target=GetDistancesS2, args=(self.distance_progress_changed, ))
+            task = threading.Thread(target=GetDistancesS2, args=(None, self.distance_progress_changed, ))
 
         task.daemon = True
         task.start()

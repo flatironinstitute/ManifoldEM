@@ -298,16 +298,25 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
                imgAvg=img_avg)
 
 
-def _construct_input_data(thresholded_indices, quats_full, defocus):
+def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
+    n_prds = len(thresholded_indices)
+    valid_prds = set(range(n_prds))
+    if prd_list is not None:
+        requested_prds = set(prd_list)
+        invalid_prds = requested_prds.difference(valid_prds)
+        if invalid_prds:
+            print(f"Warning: requested invalid prds: {invalid_prds}")
+        valid_prds = valid_prds.intersection(requested_prds)
+
     ll = []
-    for prD in range(len(thresholded_indices)):
+    for prD in valid_prds:
         ind = thresholded_indices[prD]
         ll.append(LocalInput(ind, quats_full[:, ind], defocus[ind], p.get_dist_file(prD)))
 
     return ll
 
 
-def op(*argv):
+def op(prd_list: Union[List[int], None], *argv):
     print("Computing the distances...")
     p.load()
     multiprocessing.set_start_method('fork', force=True)
@@ -317,7 +326,7 @@ def op(*argv):
 
     filter_params = FilterParams(method='Butter', cutoff_freq=0.5, order=8)
 
-    input_data = _construct_input_data(prds.thresholded_image_indices, prds.quats_full, prds.defocus)
+    input_data = _construct_input_data(prd_list, prds.thresholded_image_indices, prds.quats_full, prds.defocus)
     n_jobs = len(input_data)
     local_distance_func = partial(get_distance_CTF_local,
                                   filter_params=filter_params,

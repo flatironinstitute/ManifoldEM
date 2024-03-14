@@ -35,7 +35,8 @@ def get_parser():
 
     distance_parser = subparsers.add_parser("calc-distance", help="Calculate S2 distances")
     distance_parser.add_argument("input_file", type=str)
-    distance_parser.add_argument("--num-psis", type=int, default=8)
+    distance_parser.add_argument("--num-psis", type=int, default=8, help="Number of eigenvectors to use for NLSA analysis")
+    distance_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
 
     manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="Initial embedding")
     manifold_analysis_parser.add_argument("input_file", type=str)
@@ -132,9 +133,15 @@ def threshold(args):
     p.save()
 
 
-def calc_distance(_):
+def calc_distance(args):
     from ManifoldEM import GetDistancesS2
-    GetDistancesS2.op()
+
+    if args.prds:
+        prd_list = [int(i) for i in args.prds.split(',')]
+    else:
+        prd_list = None
+
+    GetDistancesS2.op(prd_list)
 
 
 def manifold_analysis(_):
