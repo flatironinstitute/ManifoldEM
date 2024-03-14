@@ -70,7 +70,7 @@ class EmbeddingTab(QWidget):
                                     args=(self.hostname, cmd, self.eigenvector_progress_changed))
         else:
             from ManifoldEM.manifoldAnalysis import op as calculate_eigenvectors
-            task = threading.Thread(target=calculate_eigenvectors, args=(self.eigenvector_progress_changed, ))
+            task = threading.Thread(target=calculate_eigenvectors, args=(None, self.eigenvector_progress_changed, ))
         
         task.daemon = True
         task.start()
@@ -101,7 +101,7 @@ class EmbeddingTab(QWidget):
                                     args=(self.hostname, cmd, self.psi_progress_changed))
         else:
             from ManifoldEM.psiAnalysis import op as psi_analysis
-            task = threading.Thread(target=psi_analysis, args=(self.psi_progress_changed, ))
+            task = threading.Thread(target=psi_analysis, args=(None, self.psi_progress_changed, ))
 
         task.daemon = True
         task.start()
@@ -131,7 +131,7 @@ class EmbeddingTab(QWidget):
                                     args=(self.hostname, cmd, self.nlsa_progress_changed))
         else:
             from ManifoldEM.NLSAmovie import op as nlsa_movie
-            task = threading.Thread(target=nlsa_movie, args=(self.nlsa_progress_changed, ))
+            task = threading.Thread(target=nlsa_movie, args=(None, self.nlsa_progress_changed, ))
         
         task.daemon = True
         task.start()

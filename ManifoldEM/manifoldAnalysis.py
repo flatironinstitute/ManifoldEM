@@ -2,6 +2,7 @@ import os
 import multiprocessing
 
 from functools import partial
+from typing import List, Union
 
 from ManifoldEM import manifoldTrimmingAuto
 from ManifoldEM.params import p
@@ -17,24 +18,34 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
 
-def _construct_input_data(N):
+def _construct_input_data(prd_list, N):
     ll = []
-    for prD in range(N):
+
+    valid_prds = set(range(N))
+    if prd_list is not None:
+        requested_prds = set(prd_list)
+        invalid_prds = requested_prds.difference(valid_prds)
+        if invalid_prds:
+            print(f"Warning: requested invalid prds: {invalid_prds}")
+        valid_prds = valid_prds.intersection(requested_prds)
+
+    for prD in valid_prds:
         dist_file = p.get_dist_file(prD)
         psi_file = p.get_psi_file(prD)
         eig_file = '{}/topos/PrD_{}/eig_spec.txt'.format(p.out_dir, prD + 1)
         ll.append([dist_file, psi_file, eig_file, prD])
+
     return ll
 
 
-def op(*argv):
+def op(prd_list: Union[List[int], None], *argv):
     print("Computing the eigenfunctions...")
     p.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
     # Finding and trimming manifold from particles
-    input_data = _construct_input_data(p.numberofJobs)
+    input_data = _construct_input_data(prd_list, p.numberofJobs)
     n_jobs = len(input_data)
     progress2 = argv[0] if use_gui_progress else NullEmitter()
 

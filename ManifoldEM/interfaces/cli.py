@@ -40,12 +40,15 @@ def get_parser():
 
     manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="Initial embedding")
     manifold_analysis_parser.add_argument("input_file", type=str)
+    manifold_analysis_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
 
     psi_analysis_parser = subparsers.add_parser("psi-analysis", help="Analyze images to get psis")
     psi_analysis_parser.add_argument("input_file", type=str)
+    psi_analysis_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
 
     nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="Create 2D psi movies")
     nlsa_movie_parser.add_argument("input_file", type=str)
+    nlsa_movie_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
 
     cc_parser = subparsers.add_parser("find-ccs", help="Find conformational coordinates")
     cc_parser.add_argument("input_file", type=str)
@@ -84,7 +87,7 @@ def load_state(args):
             print("path-width argument must be on the interval [1, 5]")
             sys.exit(1)
         p.width_1D = args.path_width
-        
+
     p.save()
 
 
@@ -124,6 +127,14 @@ def init(args):
     p.save()
 
 
+def _parse_prd_list(prd_list: str):
+    if prd_list:
+        return [int(i) for i in prd_list.split(',')]
+
+    return None
+
+
+
 def threshold(args):
     from ManifoldEM.params import p
 
@@ -135,32 +146,35 @@ def threshold(args):
 
 def calc_distance(args):
     from ManifoldEM import GetDistancesS2
-
-    if args.prds:
-        prd_list = [int(i) for i in args.prds.split(',')]
-    else:
-        prd_list = None
+    prd_list = _parse_prd_list(args.prds)
 
     GetDistancesS2.op(prd_list)
 
 
-def manifold_analysis(_):
+def manifold_analysis(args):
     from ManifoldEM import manifoldAnalysis
-    manifoldAnalysis.op()
+    prd_list = _parse_prd_list(args.prds)
+
+    manifoldAnalysis.op(prd_list)
 
 
-def psi_analysis(_):
+def psi_analysis(args):
     from ManifoldEM import psiAnalysis
-    psiAnalysis.op()
+    prd_list = _parse_prd_list(args.prds)
+
+    psiAnalysis.op(prd_list)
 
 
-def nlsa_movie(_):
+def nlsa_movie(args):
     from ManifoldEM import NLSAmovie
     from ManifoldEM.params import p
 
-    NLSAmovie.op()
-    p.resProj = 3
-    p.save()
+    prd_list = _parse_prd_list(args.prds)
+
+    NLSAmovie.op(prd_list)
+    if prd_list:
+        p.resProj = 3
+        p.save()
 
 
 def find_conformational_coordinates(_):

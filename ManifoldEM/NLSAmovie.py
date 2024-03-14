@@ -6,6 +6,7 @@ import imageio
 import numpy as np
 
 from functools import partial
+from typing import List, Union
 
 from ManifoldEM import myio
 from ManifoldEM.params import p
@@ -23,13 +24,23 @@ Copyright (c) Columbia University Sonya Hanson 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 '''
 
-def _construct_input_data(N):
+def _construct_input_data(prd_list: Union[List[int], None], N):
+
+    valid_prds = set(range(N))
+    if prd_list is not None:
+        requested_prds = set(prd_list)
+        invalid_prds = requested_prds.difference(valid_prds)
+        if invalid_prds:
+            print(f"Warning: requested invalid prds: {invalid_prds}")
+        valid_prds = valid_prds.intersection(requested_prds)
+
     ll = []
-    for prD in range(N):
+    for prD in valid_prds:
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
         ll.append([prD])
+
     return ll
 
 
@@ -60,13 +71,13 @@ def movie(input_data, psi2_file, fps):
     imageio.imwrite(image_file, img)
 
 
-def op(*argv):
+def op(prd_list: Union[List[int], None], *argv):
     print("Making the 2D movies...")
     p.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    input_data = _construct_input_data(p.numberofJobs)
+    input_data = _construct_input_data(prd_list, p.numberofJobs)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
     movie_local = partial(movie, psi2_file=p.psi2_file, fps=p.fps)

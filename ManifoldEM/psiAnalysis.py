@@ -11,6 +11,7 @@ import numpy as np
 
 from functools import partial
 from scipy.fftpack import fft2, ifft2
+from typing import List, Union
 
 from ManifoldEM import myio, DMembeddingII
 from ManifoldEM.params import p
@@ -255,12 +256,20 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
                        Topo_mean=Topo_mean, tauinds=tauinds)
 
 
-def _construct_input_data(N):
+def _construct_input_data(prd_list: Union[List[int], None], N):
     ll = []
     psi_nums_all = np.tile(np.array(range(p.num_psis)), (N, 1))  # numberofJobs x num_psis
     senses_all = np.tile(np.ones(p.num_psis), (N, 1))  # numberofJobs x num_psis
 
-    for prD in range(N):
+    valid_prds = set(range(N))
+    if prd_list is not None:
+        requested_prds = set(prd_list)
+        invalid_prds = requested_prds.difference(valid_prds)
+        if invalid_prds:
+            print(f"Warning: requested invalid prds: {invalid_prds}")
+        valid_prds = valid_prds.intersection(requested_prds)
+
+    for prD in valid_prds:
         dist_file = p.get_dist_file(prD)
         psi_file = p.get_psi_file(prD)
         psi2_file = p.get_psi2_file(prD)
@@ -269,16 +278,17 @@ def _construct_input_data(N):
         senses = senses_all[prD, :]
         psi_list = list(range(len(psinums)))  # list of incomplete psi values per PD
         ll.append([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prD, psi_list])
+
     return ll
 
 
-def op(*argv):
+def op(prd_list: Union[List[int], None], *argv):
     print("Computing the NLSA snapshots...")
     p.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    input_data = _construct_input_data(p.numberofJobs)
+    input_data = _construct_input_data(prd_list, p.numberofJobs)
     n_jobs = len(input_data)
     progress3 = argv[0] if use_gui_progress else NullEmitter()
     local_psi_func = partial(psi_analysis_single,
