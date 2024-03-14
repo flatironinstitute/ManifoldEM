@@ -291,7 +291,7 @@ class _Vid2Canvas(QDialog):
         self.canvas1.start_event_loop(self.delay)
         self.canvas2.start_event_loop(self.delay)
 
-        max_index = self.get_frame_count()
+        max_index = self.get_frame_count() - 1
         if self.run == 1:
             if self.f < max_index:
                 self.f += 1
@@ -351,6 +351,7 @@ class _Vid2Canvas(QDialog):
 
         self.run = 1
         self.rec = 0
+        self.f = (self.f + 1) % self.get_frame_count()
         self.scroll(self.f)
 
 
