@@ -109,9 +109,10 @@ def makeMovie(IMG1, prD, psinum, fps):
     frame_dt = 1.0/fps
     with zipfile.ZipFile(zip_path, 'w') as fzip:
         with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
+            movie_min, movie_max = np.min(images), np.max(images)
             for i in range(nframes):
                 img = images[:, i].reshape(dim, dim)
-                frame = np.round(255 * (img - np.min(img)) / (np.max(img) - np.min(img))).astype(np.uint8)
+                frame = np.round(255 * (img - movie_min) / (movie_max - movie_min)).astype(np.uint8)
                 frame_path = 'frame{:02d}.png'.format(i)
 
                 b = io.BytesIO()
