@@ -3,13 +3,14 @@ import mrcfile
 import multiprocessing
 import tqdm
 
+from typing import List, Union
 from dataclasses import dataclass
 from functools import partial
 
 import numpy as np
 from PIL import Image
 from scipy.fftpack import ifftshift, fft2, ifft2
-from scipy.ndimage import shift
+from scipy.ndimage import shift, rotate
 
 from nptyping import NDArray, Shape, Float64, Int
 from typing import Tuple
@@ -56,11 +57,14 @@ class FilterParams:
         return G
 
 
-def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
+def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float, fill=True) -> NDArray[Shape["*,*"], Float64]:
     n_pix = img.shape[0]
-    in_rep = Image.fromarray(np.tile(img, (3, 3)).astype('float32'), mode='F')
-    out_rep = np.array(in_rep.rotate(angle, expand=False), dtype=img.dtype)
-    return out_rep[n_pix:2 * n_pix, n_pix:2 * n_pix]
+    if fill:
+        in_rep = Image.fromarray(np.tile(img, (3, 3)).astype('float32'), mode='F')
+        out_rep = np.array(in_rep.rotate(angle, expand=False), dtype=img.dtype)
+        return out_rep[n_pix:2 * n_pix, n_pix:2 * n_pix]
+    else:
+        return rotate(img, angle, reshape=False)
 
 
 def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
@@ -194,8 +198,6 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     CTF = np.zeros((n_particles, n_pix, n_pix))  # each (i,:,:) is the CTF
     distances = np.zeros((n_particles, n_particles))  # distances among the particles in the bin
 
-    msk = annularMask(0, n_pix / 2., n_pix, n_pix)
-
     # create grid for filter G
     Q = create_grid(n_pix)
     G = filter_params.create_filter(Q)
@@ -205,16 +207,17 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     avg_orientation_vec = np.sum(quats_to_unit_vecs(quats), axis=1)
     avg_orientation_vec /= np.linalg.norm(avg_orientation_vec)
 
-    # psi_p angle for in-plane rotation alignment
+    # angle for in-plane rotation alignment
     psi_p = psi_ang(avg_orientation_vec)
 
     # use volumetric mask, April 2020
     if p.mask_vol_file:
         with mrcfile.open(p.mask_vol_file) as mrc:
             mask3D = mrc.data
-        msk2 = projectMask.op(mask3D, avg_orientation_vec)
+        mask = projectMask.op(mask3D, avg_orientation_vec)
     else:
-        msk2 = 1
+        mask = annularMask(0, n_pix / 2., n_pix, n_pix)
+
 
     # read images with conjugates
     for i_part in range(n_particles):
@@ -232,14 +235,6 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         if indices[i_part] >= n_particles_tot / 2:  # second half data set
             img = np.flipud(img)
 
-        # normalizing
-        backg = img * (1 - msk)
-        std = backg.std()
-        if not std == 0.:
-            img = (img - backg.mean()) / std
-        else:
-            print(f"Warning: flat image found at index: {raw_particle_index}")
-
         # store each flatted image in y and filter
         img = img.flatten('F')
         img = img.reshape(-1, n_pix).transpose()
@@ -253,7 +248,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
             psi = 0.
 
         # inplane align the images
-        img = img.reshape(-1, n_pix).transpose() * msk  # convert to matlab convention prior to rotation
+        img = img.reshape(-1, n_pix).transpose()  # convert to matlab convention prior to rotation
         img = rotate_fill(img, -(180 / np.pi) * psi)
         img = rotate_fill(img, -psi_p)
 
@@ -261,24 +256,26 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         ctf_i = ctemh_cryoFrank(Q / (2 * p.pix_size), p.Cs, defocus[i_part], p.EkV, p.gaussEnv, p.AmpContrast)
         CTF[i_part, :, :] = ifftshift(ctf_i)
 
-        # Fourier transformed #April 2020, with vol mask msk2, used for distance calc D
-        fourier_images[i_part, :, :] = fft2(img * msk2)
+        # just go ahead and mask it
+        img_all[i_part, :, :] = img * mask
 
-        img_all[i_part, :, :] = img
 
     # use wiener filter
     img_avg = 0
     wiener_dom = -get_wiener1(CTF)
     for i_part in range(n_particles):
         img = img_all[i_part, :, :]
+        img = (img - img.mean()) / img.std()
         img_f = fft2(img)  #.reshape(dim, dim)) T only for matlab
+        fourier_images[i_part, :, :] = img_f
         CTF_i = CTF[i_part, :, :]
         img_f_wiener = img_f * (CTF_i / wiener_dom)
         img_avg = img_avg + ifft2(img_f_wiener).real
 
+
     # plain and phase-flipped averages
     # April 2020, msk2 = 1 when there is no volume mask
-    img_avg = img_avg * msk2 / n_particles
+    img_avg = img_avg / n_particles
 
     fourier_images = fourier_images.reshape(n_particles, n_pix**2)
     CTF = CTF.reshape(n_particles, n_pix**2)
@@ -293,7 +290,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
                q=quats,
                CTF=CTF,
                imgAll=img_all,
-               msk2=msk2,
+               msk2=mask,
                PD=avg_orientation_vec,
                imgAvg=img_avg)
 
