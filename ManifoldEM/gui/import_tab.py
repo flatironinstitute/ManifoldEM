@@ -240,7 +240,7 @@ class ImportTab(QWidget):
             p.save()
             p.create_dir()
 
-            p.resProj = 1
+            p.project_state = 1
             self.parent.set_tab_state(True, "Distribution")
             self.parent.switch_tab("Distribution")
         else:

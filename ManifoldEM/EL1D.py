@@ -71,5 +71,6 @@ def op(*argv):
                 progress6.emit(((offset + i) / len(R)) * 99)
 
     ComputeEnergy1D.op()
+    p.project_state = 8
     p.save()
     progress6.emit(100)

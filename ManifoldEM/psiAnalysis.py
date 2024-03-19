@@ -307,5 +307,9 @@ def op(prd_list: Union[List[int], None], *argv):
                                   disable=use_gui_progress):
                 progress3.emit(int(99 * i / n_jobs))
 
+    if not prd_list:
+        p.project_state = 4
+        p.save()
+
     p.save()
     progress3.emit(100)

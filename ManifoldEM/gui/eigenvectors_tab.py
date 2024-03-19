@@ -404,7 +404,6 @@ class EigenvectorsTab(QWidget):
         if box.exec_() == QMessageBox.No:
             return
 
-        p.resProj = 4
         data_store.get_prds().save()
         p.save()
         self.main_window.set_tab_state(True, "Compilation")

@@ -5,6 +5,7 @@ if not 'OMP_NUM_THREADS' in os.environ:
 import sys
 from argparse import ArgumentParser
 import ManifoldEM
+from ManifoldEM.params import p
 
 def get_parser():
     parser = ArgumentParser(
@@ -64,8 +65,6 @@ def get_parser():
 
 
 def load_state(args):
-    from ManifoldEM.params import p
-
     if args.command == "init":
         return
     fname_front = args.input_file.split('params_', 1)[1]
@@ -93,7 +92,6 @@ def load_state(args):
 
 def init(args):
     import shutil
-    from ManifoldEM.params import p
     from ManifoldEM.util import get_image_width_from_stack
 
     p.proj_name = args.project_name
@@ -135,45 +133,34 @@ def _parse_prd_list(prd_list: str):
 
 
 def threshold(args):
-    from ManifoldEM.params import p
-
     p.PDsizeThL = args.low
     p.PDsizeThH = args.high
-    p.resProj = 2
+    p.project_state = 1
     p.save()
 
 
 def calc_distance(args):
     from ManifoldEM import GetDistancesS2
     prd_list = _parse_prd_list(args.prds)
-
     GetDistancesS2.op(prd_list)
 
 
 def manifold_analysis(args):
     from ManifoldEM import manifoldAnalysis
     prd_list = _parse_prd_list(args.prds)
-
     manifoldAnalysis.op(prd_list)
 
 
 def psi_analysis(args):
     from ManifoldEM import psiAnalysis
     prd_list = _parse_prd_list(args.prds)
-
     psiAnalysis.op(prd_list)
 
 
 def nlsa_movie(args):
     from ManifoldEM import NLSAmovie
-    from ManifoldEM.params import p
-
     prd_list = _parse_prd_list(args.prds)
-
     NLSAmovie.op(prd_list)
-    if prd_list:
-        p.resProj = 3
-        p.save()
 
 
 def find_conformational_coordinates(_):
@@ -183,10 +170,7 @@ def find_conformational_coordinates(_):
 
 def energy_landscape(_):
     from ManifoldEM import EL1D
-    from ManifoldEM.params import p
     EL1D.op()
-    p.resProj = 5
-    p.save()
 
 
 def compute_trajectory(_):

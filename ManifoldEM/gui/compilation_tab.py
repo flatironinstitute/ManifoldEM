@@ -1,4 +1,3 @@
-import multiprocessing
 import threading
 
 from PyQt5 import QtCore
@@ -82,8 +81,6 @@ class CompilationTab(QWidget):
         self.progress6.setValue(val)
 
         if val == 100:
-            p.resProj = 5
-            p.save()  #send new GUI data to user parameters file
             self.button_erg.setText('Energy Landscape Complete')
 
             # fnameOM = f'{p.OM_file}OM'

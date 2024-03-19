@@ -41,8 +41,6 @@ class DistributionTab(QWidget):
         self.s2_viz.update_scene2(None)
 
     def finalize(self):
-        p.resProj = 2
-        p.save()
         # not strictly necessary, but at least makes the "bin particles" text not a lie
         data_store.get_prds().update()
         self.main_window.set_tab_state(True, "Embedding")

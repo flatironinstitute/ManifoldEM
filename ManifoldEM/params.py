@@ -17,13 +17,17 @@ import traceback
 from typing import Annotated
 
 
-# resProj structure:
+# project_state structure:
 #     0: default; new project
-#     1: import tab complete
-#     2: distribution tab complete
-#     3: embedding tab complete
-#     4: eigenvectors tab complete
-#     5: compilation tab complete
+#     1: import tab/thresholding complete
+#     2: calc-distance complete
+#     3: manifold-analysis complete
+#     4: psi-analysis complete
+#     5: nlsa-movie complete
+#     6: PrD selection complete
+#     7: find-ccs complete
+#     8: energy-landscape complete
+#     9: trajectory complete
 class Params():
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -31,7 +35,7 @@ class Params():
         return cls.instance
 
     proj_name: Annotated[str, 'Name of the project'] = ''
-    resProj: Annotated[int, 'Current analysis level of project']  = 0
+    project_state: Annotated[int, 'Current analysis level of project'] = 0
     relion_data: Annotated[bool, 'Is the code analyzing relion data?'] = True
     ncpu: Annotated[int, 'Number of processes to use for multiprocessing'] = 1
     avg_vol_file: Annotated[str, 'Average volume file (e.g., .mrc)'] = ''

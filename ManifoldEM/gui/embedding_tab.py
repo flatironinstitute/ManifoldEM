@@ -142,8 +142,6 @@ class EmbeddingTab(QWidget):
         if val == self.nlsa_progress.maximum():
             self.button_nlsa.setText('NLSA Movie Complete')
             self.button_to_eigenvectors.setEnabled(True)
-            p.resProj = 5
-            p.save()
 
 
     def __init__(self, parent=None):
@@ -328,8 +326,6 @@ class EmbeddingTab(QWidget):
 
 
     def finalize(self):
-        p.resProj = 3
-        p.save()
         self.main_window.set_tab_state(True, "Eigenvectors")
         self.main_window.switch_tab("Eigenvectors")
 

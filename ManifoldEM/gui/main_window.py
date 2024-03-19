@@ -15,6 +15,18 @@ from typing import List, Union
 
 
 class MainWindow(QMainWindow):
+    proj_lev_to_tab: list[str] = [
+        'Import', # 0
+        'Distribution', # 1
+        'Embedding', # 2
+        'Embedding', # 3
+        'Embedding', # 4
+        'Eigenvectors', # 5
+        'Compilation', # 6
+        'Compilation', # 7
+        'Energetics', # 8
+        'Energetics', # 9
+    ]
     tab_indices: dict[str, int] = {
         'Import': 0,
         'Distribution': 1,
@@ -23,7 +35,6 @@ class MainWindow(QMainWindow):
         'Compilation': 4,
         'Energetics': 5,
     }
-    tab_names: dict[int, str] = {val: key for (key, val) in tab_indices.items()}
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -67,13 +78,10 @@ class MainWindow(QMainWindow):
 
 
     def reload_tab_states(self):
-        self.set_tab_state(False, list(self.tab_indices.keys()))
-
-        for tabi in range(p.resProj + 1):
-            if tabi in self.tab_names:
-                tab_name = self.tab_names[tabi]
-                self.set_tab_state(True, tab_name)
-                self.switch_tab(tab_name)
+        self.set_tab_state(False)
+        for tabi in range(p.project_state + 1):
+            self.set_tab_state(True, self.proj_lev_to_tab[tabi])
+            self.switch_tab(self.proj_lev_to_tab[tabi])
 
 
     def switch_tab(self, tab_name: str):

@@ -60,9 +60,11 @@ def op(*argv):
     # Section III
     if argv:
         writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, argv[0])
-
     else:
         writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg)
+
+    p.project_state = 9
+    p.save()
 
     if argv:
         progress7 = argv[0]

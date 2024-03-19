@@ -163,6 +163,9 @@ def op(*argv):
         nodeBels2[:, 1:] = nodeBelief_cc2.T
         np.savetxt(nodeBelFile2, nodeBels2, fmt='%f', delimiter='\t')
 
+    p.project_state = 7
+    p.save()
+
     if argv:
         progress5 = argv[0]
         progress5.emit(int(100))
