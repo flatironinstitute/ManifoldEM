@@ -52,8 +52,7 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
         ConD += DD[Ind][:, Ind]
 
     # find the manifold mapping:
-    lambdaC, psiC, sigmaC, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(
-        ConD, k, tune, 600000)  ### USE THE MU FROM SUPERVECTORS' DISTANCES
+    lambdaC, psiC, _, mu, _, _, _, _ = DMembeddingII.op(ConD, k, tune, 600000)
 
     lambdaC = lambdaC[lambdaC > 0]  ## lambdaC not used? REVIEW
     psiC1 = np.copy(psiC)
