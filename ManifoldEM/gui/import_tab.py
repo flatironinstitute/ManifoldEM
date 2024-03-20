@@ -9,7 +9,7 @@ from typing import Tuple, Union
 import shutil
 import tempfile
 
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.util import get_image_width_from_stack
 
 def choose_pixel(entry: QDoubleSpinBox):
@@ -240,7 +240,7 @@ class ImportTab(QWidget):
             p.save()
             p.create_dir()
 
-            p.project_state = 1
+            p.project_level = ProjectLevel.BINNING
             self.parent.set_tab_state(True, "Distribution")
             self.parent.switch_tab("Distribution")
         else:

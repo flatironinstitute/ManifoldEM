@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
 
     def reload_tab_states(self):
         self.set_tab_state(False)
-        for tabi in range(p.project_state + 1):
+        for tabi in range(p.project_level.value + 1):
             self.set_tab_state(True, self.proj_lev_to_tab[tabi])
             self.switch_tab(self.proj_lev_to_tab[tabi])
 

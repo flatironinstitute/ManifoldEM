@@ -9,7 +9,7 @@ from functools import partial
 from typing import List, Union
 
 from ManifoldEM import myio
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
 '''
@@ -93,7 +93,7 @@ def op(prd_list: Union[List[int], None], *argv):
                 progress4.emit(int(99 * i / n_jobs))
 
     if not prd_list:
-        p.project_state = 6
+        p.project_level = ProjectLevel.NLSA_MOVIE
 
     p.save()
     progress4.emit(100)

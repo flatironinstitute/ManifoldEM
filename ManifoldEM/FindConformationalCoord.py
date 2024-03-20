@@ -1,6 +1,4 @@
 import os
-import sys
-import time
 
 import numpy as np
 from copy import deepcopy
@@ -8,7 +6,7 @@ from copy import deepcopy
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
 from ManifoldEM.FindCCGraph import prune
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
@@ -163,7 +161,7 @@ def op(*argv):
         nodeBels2[:, 1:] = nodeBelief_cc2.T
         np.savetxt(nodeBelFile2, nodeBels2, fmt='%f', delimiter='\t')
 
-    p.project_state = 7
+    p.project_level = ProjectLevel.FIND_CCS
     p.save()
 
     if argv:

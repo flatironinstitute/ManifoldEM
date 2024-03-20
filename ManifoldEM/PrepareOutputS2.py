@@ -6,7 +6,7 @@ import numpy as np
 
 from ManifoldEM import writeRelionS2, myio
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 
 def op(*argv):
     """This script prepares the image stacks and orientations for 3D reconstruction."""
@@ -63,7 +63,7 @@ def op(*argv):
     else:
         writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg)
 
-    p.project_state = 9
+    p.project_level = ProjectLevel.TRAJECTORY
     p.save()
 
     if argv:

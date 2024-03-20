@@ -14,7 +14,7 @@ from scipy.fftpack import fft2, ifft2
 from typing import List, Union
 
 from ManifoldEM import myio, DMembeddingII
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 from ManifoldEM.util import NullEmitter
@@ -308,7 +308,7 @@ def op(prd_list: Union[List[int], None], *argv):
                 progress3.emit(int(99 * i / n_jobs))
 
     if not prd_list:
-        p.project_state = 4
+        p.project_level = ProjectLevel.PSI_ANALYSIS
         p.save()
 
     p.save()

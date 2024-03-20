@@ -18,7 +18,7 @@ from typing import Tuple
 from ManifoldEM import myio, projectMask
 from ManifoldEM.core import annularMask
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import NullEmitter
 '''
@@ -346,7 +346,7 @@ def op(prd_list: Union[List[int], None], *argv):
                 progress1.emit(int(99 * i / n_jobs))
 
     if prd_list is None:
-        p.project_state = 2
+        p.project_level = ProjectLevel.CALC_DISTANCE
 
     p.save()
     progress1.emit(100)

@@ -5,7 +5,7 @@ if not 'OMP_NUM_THREADS' in os.environ:
 import sys
 from argparse import ArgumentParser
 import ManifoldEM
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 
 def get_parser():
     parser = ArgumentParser(
@@ -135,7 +135,7 @@ def _parse_prd_list(prd_list: str):
 def threshold(args):
     p.PDsizeThL = args.low
     p.PDsizeThH = args.high
-    p.project_state = 1
+    p.project_level = ProjectLevel.BINNING
     p.save()
 
 

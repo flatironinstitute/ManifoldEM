@@ -6,7 +6,7 @@ from functools import partial
 
 from ManifoldEM import myio, ComputeEnergy1D
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.psiAnalysis import psi_analysis_single
 from ManifoldEM.util import NullEmitter
 '''
@@ -71,6 +71,6 @@ def op(*argv):
                 progress6.emit(((offset + i) / len(R)) * 99)
 
     ComputeEnergy1D.op()
-    p.project_state = 8
+    p.project_level = ProjectLevel.ENERGY_LANDSCAPE
     p.save()
     progress6.emit(100)

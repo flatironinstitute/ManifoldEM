@@ -5,7 +5,7 @@ from functools import partial
 from typing import List, Union
 
 from ManifoldEM import manifoldTrimmingAuto
-from ManifoldEM.params import p
+from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.util import NullEmitter
 
 import tqdm
@@ -72,7 +72,7 @@ def op(prd_list: Union[List[int], None], *argv):
                 progress2.emit(int(99 * i / n_jobs))
 
     if prd_list is None:
-        p.project_state = 3
+        p.project_level = ProjectLevel.MANIFOLD_ANALYSIS
 
     p.save()
     progress2.emit(100)
