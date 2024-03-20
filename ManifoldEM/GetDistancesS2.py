@@ -12,7 +12,7 @@ from scipy.fftpack import ifftshift, fft2, ifft2
 from scipy.ndimage import shift
 
 from nptyping import NDArray, Shape, Float64, Int
-from typing import Tuple
+from typing import Tuple, Union, List
 
 from ManifoldEM import myio, projectMask
 from ManifoldEM.core import annularMask
@@ -44,14 +44,14 @@ class FilterParams:
     order: int
 
     def create_filter(self, Q: NDArray[Shape["*,*"], Float64]) -> NDArray[Shape["*,*"], Float64]:
-        if self.method == 'Gauss':
+        if self.method.lower() == 'gauss':
             G = np.exp(-(np.log(2) / 2.) * (Q / self.cutoff_freq)**2)
-        elif self.method == 'Butter':
+        elif self.method.lower() == 'butter':
             G = np.sqrt(1. / (1 + (Q / self.cutoff_freq)**(2 * self.order)))
         else:
             _logger.error('%s filter is unsupported' % (self.method))
             _logger.exception('%s filter is unsupported' % (self.method))
-            raise ValueError
+            raise ValueError("Unsupported filter in distance calculation")
 
         return G
 
@@ -324,7 +324,9 @@ def op(prd_list: Union[List[int], None], *argv):
 
     prds = data_store.get_prds()
 
-    filter_params = FilterParams(method='Butter', cutoff_freq=0.5, order=8)
+    filter_params = FilterParams(method=p.distance_filter_type,
+                                 cutoff_freq=p.distance_filter_cutoff_freq,
+                                 order=p.distance_filter_order)
 
     input_data = _construct_input_data(prd_list, prds.thresholded_image_indices, prds.quats_full, prds.defocus)
     n_jobs = len(input_data)

@@ -81,6 +81,12 @@ class Params():
                                         [ProjectLevel.BINNING])] = 2000
     numberofJobs: Annotated[int, ParamInfo('Total number of bins to consider for manifold embedding')] = 0
 
+    # Distance calculation parameters
+    distance_filter_type: Annotated[str, ParamInfo('Filter type for image preprocessing. Valid: {"Butter", "Gauss"}', True,
+                                                   [ProjectLevel.CALC_DISTANCE])] = 'Butter'
+    distance_filter_cutoff_freq: Annotated[float, ParamInfo('Nyquist cutoff frequency for filter', True, [ProjectLevel.CALC_DISTANCE])] = 0.5
+    distance_filter_order: Annotated[int, ParamInfo('Order of Filter ("Butter" only)', True, [ProjectLevel.CALC_DISTANCE])] = 8
+
     # eigenfunction parameters:
     num_eigs: Annotated[int, ParamInfo('Number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)')] = 15
     num_psiTrunc: Annotated[int, ParamInfo('Number of eigenfunctions for truncated views')] = 8
