@@ -15,51 +15,63 @@ def get_parser():
     parser.add_argument('-n', '--ncpu', type=int, default=1)
     subparsers = parser.add_subparsers(help=None, dest="command")
 
+    def add_relevant_params(subparser, level: ProjectLevel, prefix: str = ""):
+        params = p.get_params_for_level(level)
+        for param, (paramtype, paraminfo) in params.items():
+            if paraminfo.user_param:
+                subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, help=f'{prefix}{paraminfo.description}')
+
+
     init_parser = subparsers.add_parser("init", help="Initialize new project")
-    init_parser.add_argument('-p', "--project-name", type=str, help="Name of project to create", required=True)
-    init_parser.add_argument('-v', "--avg-volume", type=str, default="")
-    init_parser.add_argument('-a', "--alignment", type=str, default="")
-    init_parser.add_argument('-i', "--image-stack", type=str, default="")
-    init_parser.add_argument('-m', "--mask-volume", type=str, default="")
-    init_parser.add_argument('-s', "--pixel-size", type=float, required=True)
-    init_parser.add_argument('-d', "--diameter", type=float, required=True)
-    init_parser.add_argument('-r', "--resolution", type=float, required=True)
-    init_parser.add_argument('-x', "--aperture-index", type=int, default=1)
+    init_parser.add_argument('-p', "--project-name", type=str, metavar="STR", help="Name of project to create", required=True)
+    init_parser.add_argument('-v', "--avg-volume", type=str, metavar="FILEPATH", default="")
+    init_parser.add_argument('-a', "--alignment", type=str, metavar="FILEPATH", default="")
+    init_parser.add_argument('-i', "--image-stack", type=str, metavar="FILEPATH", default="")
+    init_parser.add_argument('-m', "--mask-volume", type=str, metavar="FILEPATH", default="")
+    init_parser.add_argument('-s', "--pixel-size", type=float, metavar="FLOAT", required=True)
+    init_parser.add_argument('-d', "--diameter", type=float, metavar="FLOAT", required=True)
+    init_parser.add_argument('-r', "--resolution", type=float, metavar="FLOAT", required=True)
+    init_parser.add_argument('-x', "--aperture-index", type=int, metavar="INT", default=1)
     init_parser.add_argument('-o', '--overwrite', action='store_true',
                              help="Replace existing project with same name automatically")
-
+    for level in ProjectLevel:
+        add_relevant_params(init_parser, level, f"[{level.name}] ")
 
     threshold_parser = subparsers.add_parser("threshold", help="Set upper/lower thresholds for principal direction detection")
     threshold_parser.add_argument("input_file", type=str)
-    threshold_parser.add_argument("--low", type=int, default=100, help="Minimum number of images in a bin to count as a valid principle direction")
-    threshold_parser.add_argument("--high", type=int, default=2000, help="Maximum number of images to analyze in a single principle direction")
+    add_relevant_params(threshold_parser, ProjectLevel.BINNING)
 
     distance_parser = subparsers.add_parser("calc-distance", help="Calculate S2 distances")
     distance_parser.add_argument("input_file", type=str)
-    distance_parser.add_argument("--num-psis", type=int, default=8, help="Number of eigenvectors to use for NLSA analysis")
-    distance_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    distance_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    add_relevant_params(distance_parser, ProjectLevel.CALC_DISTANCE)
 
     manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="Initial embedding")
     manifold_analysis_parser.add_argument("input_file", type=str)
-    manifold_analysis_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    manifold_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    add_relevant_params(manifold_analysis_parser, ProjectLevel.MANIFOLD_ANALYSIS)
 
     psi_analysis_parser = subparsers.add_parser("psi-analysis", help="Analyze images to get psis")
     psi_analysis_parser.add_argument("input_file", type=str)
-    psi_analysis_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    psi_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    add_relevant_params(psi_analysis_parser, ProjectLevel.PSI_ANALYSIS)
 
     nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="Create 2D psi movies")
     nlsa_movie_parser.add_argument("input_file", type=str)
-    nlsa_movie_parser.add_argument("--prds", type=str, help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    nlsa_movie_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
+    add_relevant_params(nlsa_movie_parser, ProjectLevel.NLSA_MOVIE)
 
     cc_parser = subparsers.add_parser("find-ccs", help="Find conformational coordinates")
     cc_parser.add_argument("input_file", type=str)
+    add_relevant_params(cc_parser, ProjectLevel.FIND_CCS)
 
     el_parser = subparsers.add_parser("energy-landscape", help="Calculate energy landscape")
     el_parser.add_argument("input_file", type=str)
+    add_relevant_params(el_parser, ProjectLevel.ENERGY_LANDSCAPE)
 
     traj_parser = subparsers.add_parser("trajectory", help="Calculate trajectory")
     traj_parser.add_argument("input_file", type=str)
-    traj_parser.add_argument("--path-width", type=int)
+    add_relevant_params(traj_parser, ProjectLevel.TRAJECTORY)
 
     return parser
 
@@ -74,8 +86,6 @@ def load_state(args):
     p.load(args.input_file)
 
     p.ncpu = args.ncpu
-    if hasattr(args, "num_psis"):
-        p.num_psis = args.num_psis
     if args.command == "threshold":
         p.PDsizeThL = args.low
         p.PDsizeThH = args.high

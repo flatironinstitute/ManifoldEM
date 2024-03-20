@@ -16,7 +16,7 @@ import os
 from pprint import pprint
 import toml
 import traceback
-from typing import Annotated, Dict, List, get_type_hints
+from typing import Annotated, Dict, List, get_type_hints, get_args
 
 
 class ProjectLevel(Enum):
@@ -48,13 +48,7 @@ class Params():
     proj_name: Annotated[str, ParamInfo('Name of the project', False, [ProjectLevel.INIT])] = ''
     project_level: Annotated[ProjectLevel, ParamInfo('Current analysis level of project')] = ProjectLevel.INIT
     relion_data: Annotated[bool, ParamInfo('Is the code analyzing relion data?')] = True
-    ncpu: Annotated[int, ParamInfo('Number of processes to use for multiprocessing', True,
-                                   [ProjectLevel.CALC_DISTANCE,
-                                    ProjectLevel.MANIFOLD_ANALYSIS,
-                                    ProjectLevel.PSI_ANALYSIS,
-                                    ProjectLevel.NLSA_MOVIE,
-                                    ProjectLevel.FIND_CCS,
-                                    ProjectLevel.ENERGY_LANDSCAPE])] = 1
+    ncpu: Annotated[int, ParamInfo('Number of processes to use for multiprocessing', True)] = 1
     avg_vol_file: Annotated[str, ParamInfo('Average volume file (e.g., .mrc)')] = ''
     img_stack_file: Annotated[str, ParamInfo('Image stack file (e.g., .mrcs)')] = ''
     align_param_file: Annotated[str, ParamInfo('Alignment file (e.g., .star)')] = ''
@@ -90,7 +84,7 @@ class Params():
     # eigenfunction parameters:
     num_eigs: Annotated[int, ParamInfo('Number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)')] = 15
     num_psiTrunc: Annotated[int, ParamInfo('Number of eigenfunctions for truncated views')] = 8
-    num_psis: Annotated[int, ParamInfo('Number of eigenfunctions', True)] = 8
+    num_psis: Annotated[int, ParamInfo('Number of eigenfunctions for analysis', True, [ProjectLevel.BINNING])] = 8
     rad: Annotated[int, ParamInfo('Manifold pruning'), True, [ProjectLevel.MANIFOLD_ANALYSIS]] = 5
 
     # NLSA parameters:
@@ -133,16 +127,6 @@ class Params():
         'S2_density': 1000,
         'S2_isosurface_level': 3,
     }
-
-
-    def get_user_params(self) -> Dict[str, Annotated]:
-        return {k: v for k, v in get_type_hints(self, include_extras=True).items()
-                if hasattr(v, '__metadata__') and v.__metadata__[0].user_param }
-
-
-    def get_params_for_level(self, level: ProjectLevel):
-        return {k: v for k, v in get_type_hints(self, include_extras=True).items()
-                if hasattr(v, '__metadata__') and level in v.__metadata__[0].affects }
 
 
     @property
@@ -323,6 +307,23 @@ class Params():
 
     def get_dist_file(self, prd_index: int):
         return f'{self.dist_file}prD_{prd_index}'
+
+
+    def get_user_params(self) -> Dict[str, Annotated]:
+        return {k: v for k, v in get_type_hints(self, include_extras=True).items()
+                if hasattr(v, '__metadata__') and v.__metadata__[0].user_param }
+
+
+    def get_params_for_level(self, level: ProjectLevel, first_appearance=True):
+        res = dict()
+        for k, v in get_type_hints(self, include_extras=True).items():
+            if not hasattr(v, '__metadata__') or level not in v.__metadata__[0].affects:
+                continue
+
+            if not first_appearance or level.value == min([a.value for a in v.__metadata__[0].affects], default=-1):
+                res[k] = (get_args(v)[0], v.__metadata__[0],)
+
+        return res
 
 
     def asdict(self):
