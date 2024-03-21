@@ -5,6 +5,7 @@ import numpy as np
 
 from matplotlib.figure import Figure
 from PIL import Image
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QDialog, QLabel, QFrame, QPushButton, QSlider,

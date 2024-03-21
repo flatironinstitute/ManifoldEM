@@ -5,6 +5,8 @@ import threading
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QWidget, QMessageBox, QGridLayout, QDialog,
                              QLabel, QFrame, QComboBox, QPushButton, QProgressBar)
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
+                                                NavigationToolbar2QT as NavigationToolbar)
 
 from matplotlib.figure import Figure
 

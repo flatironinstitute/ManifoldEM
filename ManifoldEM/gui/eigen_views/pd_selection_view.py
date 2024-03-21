@@ -3,6 +3,8 @@ import numpy as np
 
 import matplotlib.cm as cm
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
+                                                NavigationToolbar2QT as NavigationToolbar)
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QMessageBox, QDialog, QLabel, QFrame, QPushButton, QTabWidget,
