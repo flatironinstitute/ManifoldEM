@@ -37,22 +37,22 @@ parser.add_argument('-R', "--restore", type=str, default="")
 
 
 def init(args):
-    from ManifoldEM.params import p
+    from ManifoldEM.params import params
     if (args.restore):
-        p.load(args.restore)
+        params.load(args.restore)
         return
 
-    p.project_name = args.project_name
+    params.project_name = args.project_name
 
-    p.avg_vol_file = args.avg_volume
-    p.align_param_file = args.alignment
-    p.img_stack_file = args.image_stack
-    p.mask_vol_file = args.mask_volume
+    params.avg_vol_file = args.avg_volume
+    params.align_param_file = args.alignment
+    params.img_stack_file = args.image_stack
+    params.mask_vol_file = args.mask_volume
 
-    p.ms_pixel_size = args.pixel_size
-    p.particle_diameter = args.diameter
-    p.ms_estimated_resolution = args.resolution
-    p.aperture_index = args.aperture_index
+    params.ms_pixel_size = args.pixel_size
+    params.particle_diameter = args.diameter
+    params.ms_estimated_resolution = args.resolution
+    params.aperture_index = args.aperture_index
 
 
 def main():

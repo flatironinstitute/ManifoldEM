@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from ManifoldEM import util
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 '''
 Copyright (c) Columbia University Sonya Hanson 2018
@@ -12,7 +12,7 @@ Copyright (c) Columbia University Evan Seitz 2021
 
 
 def write_star(star_file, traj_file, df):
-    p.load()
+    params.load()
 
     with open(star_file, 'w') as text_file:
         text_file.write(
@@ -20,7 +20,7 @@ def write_star(star_file, traj_file, df):
         )
         for i in range(len(df)):
             text_file.write('%s@%s %s %s %s %s %s\n' %
-                            (i + 1, traj_file, df.psi[i], df.theta[i], df.phi[i], p.ms_pixel_size, 10000.0))
+                            (i + 1, traj_file, df.psi[i], df.theta[i], df.phi[i], params.ms_pixel_size, 10000.0))
             # Note: DetectorPixelSize and Magnification required by relion_reconstruct; 10000 used here such that we can always put in the user-defined pixel size...
             # ...since it may be obtained via calibration (see user manual); since Pixel Size = Detector Pixel Size [um] / Magnification --> [Angstroms]
 
@@ -101,9 +101,9 @@ def get_align_data(align_star_file, flip):
         df = parse_star(align_star_file, skip, keep_index=False)
 
     try:
-        p.ms_kilovolts = float(df0['rlnVoltage'].values[0])
-        p.ms_spherical_aberration = float(df0['rlnSphericalAberration'].values[0])
-        p.ms_amplitude_contrast_ratio = float(df0['rlnAmplitudeContrast'].values[0])
+        params.ms_kilovolts = float(df0['rlnVoltage'].values[0])
+        params.ms_spherical_aberration = float(df0['rlnSphericalAberration'].values[0])
+        params.ms_amplitude_contrast_ratio = float(df0['rlnAmplitudeContrast'].values[0])
     except:
         print('missing microscope parameters')
         exit(1)
@@ -119,8 +119,8 @@ def get_align_data(align_star_file, flip):
         shx = df['rlnOriginX'].values
         shy = df['rlnOriginY'].values
     elif 'rlnOriginXAngst' in df.columns and 'rlnOriginYAngst' in df.columns:
-        shx = df['rlnOriginXAngst'].values / p.ms_pixel_size
-        shy = df['rlnOriginYAngst'].values / p.ms_pixel_size
+        shx = df['rlnOriginXAngst'].values / params.ms_pixel_size
+        shy = df['rlnOriginYAngst'].values / params.ms_pixel_size
     else:
         print(f"Warning: missing relion origin data in {align_star_file}")
         shx = U * 0.

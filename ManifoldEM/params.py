@@ -1,13 +1,15 @@
-"""A place to hold parameters and generate paths.
+"""A place to hold parameters and properties, and to generate paths.
 
 This was implemented originally as basically a global namespace (implemented via globals on the
-module). To maintain that structure, but provide better functionality (like class @properties
-and sanity checking), we use Params() as a singleton class, named 'p' for legacy reasons.
+module). To maintain that structure, but provide better functionality (like class @properties,
+sanity checking, and cli argument generation), we use Params() as a singleton class, named
+'params'.
 
 Copyright (c) Columbia University Evan Seitz 2019
 Copyright (c) Columbia University Hstau Liao 2019
 Copyright (c) Columbia University Suvrajit Maji 2019
-Copyright (c) Flatiron Institute Robert Blackwell 2023
+Copyright (c) Flatiron Institute Robert Blackwell 2023, 2024
+
 """
 from dataclasses import dataclass, field
 from enum import Enum
@@ -394,4 +396,4 @@ class Params():
         os.makedirs(self.euler_dir, exist_ok=True)
 
 
-p = Params()
+params = Params()

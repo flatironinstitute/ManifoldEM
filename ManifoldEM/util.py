@@ -5,7 +5,7 @@ import sys
 import pickle
 import traceback
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.quaternion import q_product
 
 '''
@@ -25,7 +25,7 @@ def remote_runner(hostname, cmd, progress_callback):
     with Connection(hostname, inline_ssh_env=True) as c:
         c.config.run.env = {k: v for k, v in os.environ.items()
                             if k.startswith(('PATH', 'PYTHON', 'VIRTUAL_ENV'))}
-        param_file = os.path.join(os.getcwd(), f'params_{p.project_name}.toml')
+        param_file = os.path.join(os.getcwd(), f'params_{params.project_name}.toml')
         c.run(f'{cmd} {param_file}')
         progress_callback.emit(100)
 
@@ -44,16 +44,16 @@ def is_valid_host(hostname):
 def get_image_width_from_stack(stack_file: str):
     img_width = 0
     if stack_file.endswith('.mrcs'):
-        mrc = mrcfile.mmap(p.img_stack_file, mode='r')
+        mrc = mrcfile.mmap(params.img_stack_file, mode='r')
         if not mrc.is_image_stack():
             mrc.close()
-            mrc = mrcfile.mmap(p.img_stack_file, mode='r+')
+            mrc = mrcfile.mmap(params.img_stack_file, mode='r+')
             mrc.set_image_stack()
 
         img_width = mrc.data[0].shape[0]
         mrc.close()
     else:
-        img_width = int(np.sqrt(os.path.getsize(stack_file) / (4 * p.num_part)))
+        img_width = int(np.sqrt(os.path.getsize(stack_file) / (4 * params.num_part)))
 
     return img_width
 

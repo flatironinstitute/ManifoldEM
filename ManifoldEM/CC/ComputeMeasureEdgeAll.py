@@ -6,7 +6,7 @@ from numpy import linalg as LA
 from functools import partial
 
 from ManifoldEM import myio
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
 from ManifoldEM.util import NullEmitter
 from fasthog import hog_from_gradient as histogram_from_gradients
@@ -177,10 +177,10 @@ def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
     CC_meas_file = input_data[2]
     edgeNum = input_data[3]
 
-    currentPrDPsiFile = '{}{}'.format(p.CC_OF_file, currPrD)
-    nbrPrDPsiFile = '{}{}'.format(p.CC_OF_file, nbrPrD)
+    currentPrDPsiFile = '{}{}'.format(params.CC_OF_file, currPrD)
+    nbrPrDPsiFile = '{}{}'.format(params.CC_OF_file, nbrPrD)
 
-    NumPsis = p.num_psi
+    NumPsis = params.num_psi
     # load the data for the current and neighbor prds
     data = myio.fin1(currentPrDPsiFile)
     FlowVecCurrPrD = data['FlowVecPrD']
@@ -262,7 +262,7 @@ def divide1(N, G):
     for e in N:
         currPrD = G['Edges'][e, 0]
         nbrPrD = G['Edges'][e, 1]
-        CC_meas_file = '{}{}_{}_{}'.format(p.CC_meas_file, e, currPrD, nbrPrD)
+        CC_meas_file = '{}{}_{}_{}'.format(params.CC_meas_file, e, currPrD, nbrPrD)
         ll.append([currPrD, nbrPrD, CC_meas_file, e])
 
     return ll
@@ -271,14 +271,14 @@ def divide1(N, G):
 def op(G, nodeEdgeNumRange, *argv):
     multiprocessing.set_start_method('fork', force=True)
 
-    p.load()
+    params.load()
 
     nodeRange = nodeEdgeNumRange[0]
     edgeNumRange = nodeEdgeNumRange[1]
     if len(edgeNumRange) == 0:
         edgeNumRange = range(G['nEdges'])
     numberofJobs = len(nodeRange) + len(edgeNumRange)
-    flowVecPctThresh = p.opt_movie['flowVecPctThresh']
+    flowVecPctThresh = params.opt_movie['flowVecPctThresh']
 
     offset = 0
     if argv:
@@ -293,16 +293,16 @@ def op(G, nodeEdgeNumRange, *argv):
         offset = numberofJobs - len(input_data)
         progress5.emit(int((offset / float(numberofJobs)) * 99))
 
-    if p.ncpu == 1:  # avoids the multiprocessing package
+    if params.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in enumerate(input_data):
             ComputeEdgeMeasurePairWisePsiAll(datai, G, flowVecPctThresh)
             if argv:
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
-        with multiprocessing.Pool(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=params.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(
                     partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
                     input_data)):
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
 
-    p.save()
+    params.save()

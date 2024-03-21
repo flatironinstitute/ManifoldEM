@@ -14,7 +14,7 @@ from scipy.fftpack import fft2, ifft2
 from typing import List, Union
 
 from ManifoldEM import myio, DMembeddingII
-from ManifoldEM.params import p, ProjectLevel
+from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 from ManifoldEM.util import NullEmitter
@@ -207,12 +207,12 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
         num = DD.shape[1]  # number of images in PD (duplicate of nS?)
         k = num - con_order
 
-        NLSAPar = dict(num=num, ConOrder=con_order, k=k, tune=p.nlsa_tune, nS=nS, save=False, psiTrunc=psi_trunc)
+        NLSAPar = dict(num=num, ConOrder=con_order, k=k, tune=params.nlsa_tune, nS=nS, save=False, psiTrunc=psi_trunc)
         IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau = _NLSA(NLSAPar, DD, pos_path, pos_psi1, imgAll, msk2, CTF,
                                                                    extra_params)
 
         n_s_recon = min(IMGT.shape)
-        numclass = min(p.states_per_coord, n_s_recon // 2)
+        numclass = min(params.states_per_coord, n_s_recon // 2)
 
         tau = (tau - min(tau)) / (max(tau) - min(tau))
         tauinds = []
@@ -257,8 +257,8 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
 
 def _construct_input_data(prd_list: Union[List[int], None], N):
     ll = []
-    psi_nums_all = np.tile(np.array(range(p.num_psi)), (N, 1))  # numberofJobs x num_psis
-    senses_all = np.tile(np.ones(p.num_psi), (N, 1))  # numberofJobs x num_psis
+    psi_nums_all = np.tile(np.array(range(params.num_psi)), (N, 1))  # numberofJobs x num_psis
+    senses_all = np.tile(np.ones(params.num_psi), (N, 1))  # numberofJobs x num_psis
 
     valid_prds = set(range(N))
     if prd_list is not None:
@@ -269,10 +269,10 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
         valid_prds = valid_prds.intersection(requested_prds)
 
     for prD in valid_prds:
-        dist_file = p.get_dist_file(prD)
-        psi_file = p.get_psi_file(prD)
-        psi2_file = p.get_psi2_file(prD)
-        EL_file = p.get_EL_file(prD)
+        dist_file = params.get_dist_file(prD)
+        psi_file = params.get_psi_file(prD)
+        psi2_file = params.get_psi2_file(prD)
+        EL_file = params.get_EL_file(prD)
         psinums = psi_nums_all[prD, :]
         senses = senses_all[prD, :]
         psi_list = list(range(len(psinums)))  # list of incomplete psi values per PD
@@ -283,33 +283,33 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
 
 def op(prd_list: Union[List[int], None], *argv):
     print("Computing the NLSA snapshots...")
-    p.load()
+    params.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    input_data = _construct_input_data(prd_list, p.prd_n_active)
+    input_data = _construct_input_data(prd_list, params.prd_n_active)
     n_jobs = len(input_data)
     progress3 = argv[0] if use_gui_progress else NullEmitter()
     local_psi_func = partial(psi_analysis_single,
-                             con_order_range=p.con_order_range,
-                             traj_name=p.traj_name,
+                             con_order_range=params.con_order_range,
+                             traj_name=params.traj_name,
                              is_full=0,
-                             psi_trunc=p.num_psi_truncated)
+                             psi_trunc=params.num_psi_truncated)
 
-    if p.ncpu == 1:
+    if params.ncpu == 1:
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
             local_psi_func(datai)
             progress3.emit(int(99 * i / n_jobs))
     else:
-        with multiprocessing.Pool(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=params.ncpu) as pool:
             for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(local_psi_func, input_data)),
                                   total=n_jobs,
                                   disable=use_gui_progress):
                 progress3.emit(int(99 * i / n_jobs))
 
     if not prd_list:
-        p.project_level = ProjectLevel.PSI_ANALYSIS
-        p.save()
+        params.project_level = ProjectLevel.PSI_ANALYSIS
+        params.save()
 
-    p.save()
+    params.save()
     progress3.emit(100)

@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QMainWindow, QMessageBox, QDialog, QLabel, QFrame, 
                              QLayout, QGridLayout, QDesktopWidget, QTableWidget, QTableWidgetItem)
 
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 # FIXME Loads/saves for prds/trash overwrite other progress
 class _PDSelectorWindow(QMainWindow):
@@ -230,7 +230,7 @@ class PDEditorCanvas(QDialog):
             return
 
         prds = data_store.get_prds()
-        if p.n_reaction_coords == 1:
+        if params.n_reaction_coords == 1:
             headers = ['PD', 'CC', 'Sense', 'Color']
             values = [(id + 1, anchor.CC, anchor.sense.value, prds.cluster_ids[id]) for (id, anchor) in prds.anchors.items()]
         else:

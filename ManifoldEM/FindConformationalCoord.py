@@ -6,7 +6,7 @@ from copy import deepcopy
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
 from ManifoldEM.FindCCGraph import prune
-from ManifoldEM.params import p, ProjectLevel
+from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.CC import ComputePsiMovieEdgeMeasurements, runGlobalOptimization
 
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
@@ -21,12 +21,12 @@ def force_remove(*paths):
 
 
 def op(*argv):
-    p.load()
+    params.load()
 
-    nodeOutputFile = os.path.join(p.CC_dir, 'comp_psi_sense_nodes.txt')
-    nodeBelFile1 = os.path.join(p.CC_dir, 'nodeAllStateBel_rc1.txt')
-    nodeBelFile2 = os.path.join(p.CC_dir, 'nodeAllStateBel_rc2.txt')
-    force_remove(p.CC_file, nodeBelFile1, nodeBelFile2)
+    nodeOutputFile = os.path.join(params.CC_dir, 'comp_psi_sense_nodes.txt')
+    nodeBelFile1 = os.path.join(params.CC_dir, 'nodeAllStateBel_rc1.txt')
+    nodeBelFile2 = os.path.join(params.CC_dir, 'nodeAllStateBel_rc2.txt')
+    force_remove(params.CC_file, nodeBelFile1, nodeBelFile2)
 
     # if trash PDs were created manually
     prds = data_store.get_prds()
@@ -37,7 +37,7 @@ def op(*argv):
     if num_trash_nodes:
         print('Number of trash PDs', num_trash_nodes)
         prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned = \
-            prune(deepcopy(prds.neighbor_graph), prds.trash_ids, p.num_psi)
+            prune(deepcopy(prds.neighbor_graph), prds.trash_ids, params.num_psi)
     else:
         prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned = \
             deepcopy(prds.neighbor_graph), deepcopy(prds.neighbor_subgraph)
@@ -66,7 +66,7 @@ def op(*argv):
                 senses[0, trash_index] = 0
 
             print('\nFind CC: Writing the output to disk...\n')
-            myio.fout1(p.CC_file, psinums=psinums, senses=senses)
+            myio.fout1(params.CC_file, psinums=psinums, senses=senses)
 
             return
     else:
@@ -116,7 +116,7 @@ def op(*argv):
     psinums[0, :] = psinums_cc1
     senses[0, :] = senses_cc1
 
-    if p.n_reaction_coords == 2:
+    if params.n_reaction_coords == 2:
         cc = 2
         print('\nFinding CC for Dim:2')
         nodeStateBP_cc2, psinums_cc2, senses_cc2, OptNodeBel_cc2, nodeBelief_cc2 = runGlobalOptimization.op(
@@ -126,9 +126,9 @@ def op(*argv):
 
     # save
     print('\nFind CC: Writing the output to disk...\n')
-    myio.fout1(p.CC_file, psinums=psinums, senses=senses)
+    myio.fout1(params.CC_file, psinums=psinums, senses=senses)
 
-    if p.n_reaction_coords == 1:  # 1 dimension
+    if params.n_reaction_coords == 1:  # 1 dimension
         node_list = np.empty((G['nNodes'], 4))
         node_list[:, 0] = np.arange(1, G['nNodes'] + 1)
         node_list[:, 1] = psinums[0, :] + 1
@@ -144,7 +144,7 @@ def op(*argv):
         nodeBels1[:, 1:] = nodeBelief_cc1.T
         np.savetxt(nodeBelFile1, nodeBels1, fmt='%f', delimiter='\t')
 
-    elif p.n_reaction_coords == 2:  # 2 dimension
+    elif params.n_reaction_coords == 2:  # 2 dimension
         node_list = np.empty((G['nNodes'], 7))
         node_list[:, 0] = np.arange(1, G['nNodes'] + 1)
         node_list[:, 1:3] = (psinums + 1).T
@@ -161,8 +161,8 @@ def op(*argv):
         nodeBels2[:, 1:] = nodeBelief_cc2.T
         np.savetxt(nodeBelFile2, nodeBels2, fmt='%f', delimiter='\t')
 
-    p.project_level = ProjectLevel.FIND_CCS
-    p.save()
+    params.project_level = ProjectLevel.FIND_CCS
+    params.save()
 
     if argv:
         progress5 = argv[0]

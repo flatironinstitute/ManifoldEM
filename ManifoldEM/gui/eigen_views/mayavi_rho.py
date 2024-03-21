@@ -3,7 +3,7 @@ import numpy as np
 from traits.api import HasTraits, Instance, on_trait_change, Str, Range, Enum
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.data_store import data_store
 
 import os
@@ -98,7 +98,7 @@ class _Mayavi_Rho(HasTraits):
             # Volume (contour):
             # =================================================================
             import mrcfile
-            with mrcfile.open(p.avg_vol_file, mode='r') as mrc:
+            with mrcfile.open(params.avg_vol_file, mode='r') as mrc:
                 df_vol = mrc.data
 
             mirror = df_vol[..., ::-1]
@@ -121,7 +121,7 @@ class _Mayavi_Rho(HasTraits):
             y = np.sin(phi) * np.sin(theta)
             z = np.cos(phi)
             testPlot = mlab.mesh(x, y, z, representation='wireframe', color=(1, 1, 1))
-            scale_vec = p.visualization_params['S2_scale'] * len(df_vol) / np.sqrt(2.0) * np.ones(3)
+            scale_vec = params.visualization_params['S2_scale'] * len(df_vol) / np.sqrt(2.0) * np.ones(3)
 
             testPlot.actor.actor.scale = scale_vec
             testPlot.actor.property.opacity = 0

@@ -4,7 +4,7 @@ import numpy as np
 
 from ManifoldEM import writeRelionS2, myio
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p, ProjectLevel
+from ManifoldEM.params import params, ProjectLevel
 
 def op(*argv):
     """This script prepares the image stacks and orientations for 3D reconstruction."""
@@ -12,25 +12,25 @@ def op(*argv):
     # Copyright (c) Columbia Univ Hstau Liao 2018 (python version)
     # Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 
-    p.load()
+    params.load()
     print("Writing output files...")
 
-    psiNumsAll = myio.fin1(p.CC_file)['psinums']
+    psiNumsAll = myio.fin1(params.CC_file)['psinums']
 
     # read reaction coordinates
     a = set(np.nonzero(psiNumsAll[0, :] == -1)[0])  #unassigned states, python
     a = list(a.union(data_store.get_prds().trash_ids))
-    xSelect = np.delete(np.arange(p.prd_n_active), a)
+    xSelect = np.delete(np.arange(params.prd_n_active), a)
 
     # getFromFileS2
     xLost = []
-    trajTaus = [None] * p.prd_n_active
-    posPathAll = [None] * p.prd_n_active
-    posPsi1All = [None] * p.prd_n_active
+    trajTaus = [None] * params.prd_n_active
+    posPathAll = [None] * params.prd_n_active
+    posPsi1All = [None] * params.prd_n_active
 
     for x in xSelect:
-        EL_file = p.get_EL_file(x)
-        File = '{}_{}_{}'.format(EL_file, p.traj_name, 1)
+        EL_file = params.get_EL_file(x)
+        File = '{}_{}_{}'.format(EL_file, params.traj_name, 1)
         if os.path.exists(File):
             data = myio.fin1(File)
             trajTaus[x] = data['tau']
@@ -51,7 +51,7 @@ def op(*argv):
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # added June 2020, S.M.
-    traj_file2 = "{}name{}_vars".format(p.traj_file, p.traj_name)
+    traj_file2 = "{}name{}_vars".format(params.traj_file, params.traj_name)
     myio.fout1(traj_file2, trajTaus=trajTaus, posPsi1All=posPsi1All, posPathAll=posPathAll,
                xSelect=xSelect, tauAvg=tauAvg)
 
@@ -61,8 +61,8 @@ def op(*argv):
     else:
         writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg)
 
-    p.project_level = ProjectLevel.TRAJECTORY
-    p.save()
+    params.project_level = ProjectLevel.TRAJECTORY
+    params.save()
 
     if argv:
         progress7 = argv[0]

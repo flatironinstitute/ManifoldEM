@@ -17,7 +17,7 @@ from typing import Tuple, Union, List
 from ManifoldEM import myio, projectMask
 from ManifoldEM.core import annularMask
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p, ProjectLevel
+from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.util import NullEmitter
 '''
@@ -184,7 +184,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
 
     n_particles = indices.shape[0]  # size of bin; ind are the indexes of particles in that bin
     # auxiliary variables
-    n_pix = p.ms_num_pixels
+    n_pix = params.ms_num_pixels
 
     # different types of averages of aligned particles of the same view
     img_avg = np.zeros((n_pix, n_pix))  # simple average
@@ -209,8 +209,8 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     psi_p = psi_ang(avg_orientation_vec)
 
     # use volumetric mask, April 2020
-    if p.mask_vol_file:
-        with mrcfile.open(p.mask_vol_file) as mrc:
+    if params.mask_vol_file:
+        with mrcfile.open(params.mask_vol_file) as mrc:
             mask3D = mrc.data
         msk2 = projectMask.op(mask3D, avg_orientation_vec)
     else:
@@ -258,7 +258,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         img = rotate_fill(img, -psi_p)
 
         # CTF info
-        ctf_i = ctemh_cryoFrank(Q / (2 * p.ms_pixel_size), p.ms_spherical_aberration, defocus[i_part], p.ms_kilovolts, p.ms_ctf_envelope, p.ms_amplitude_contrast_ratio)
+        ctf_i = ctemh_cryoFrank(Q / (2 * params.ms_pixel_size), params.ms_spherical_aberration, defocus[i_part], params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
         CTF[i_part, :, :] = ifftshift(ctf_i)
 
         # Fourier transformed #April 2020, with vol mask msk2, used for distance calc D
@@ -311,47 +311,47 @@ def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
     ll = []
     for prD in valid_prds:
         ind = thresholded_indices[prD]
-        ll.append(LocalInput(ind, quats_full[:, ind], defocus[ind], p.get_dist_file(prD)))
+        ll.append(LocalInput(ind, quats_full[:, ind], defocus[ind], params.get_dist_file(prD)))
 
     return ll
 
 
 def op(prd_list: Union[List[int], None], *argv):
     print("Computing the distances...")
-    p.load()
+    params.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
     prds = data_store.get_prds()
 
-    filter_params = FilterParams(method=p.distance_filter_type,
-                                 cutoff_freq=p.distance_filter_cutoff_freq,
-                                 order=p.distance_filter_order)
+    filter_params = FilterParams(method=params.distance_filter_type,
+                                 cutoff_freq=params.distance_filter_cutoff_freq,
+                                 order=params.distance_filter_order)
 
     input_data = _construct_input_data(prd_list, prds.thresholded_image_indices, prds.quats_full, prds.defocus)
     n_jobs = len(input_data)
     local_distance_func = partial(get_distance_CTF_local,
                                   filter_params=filter_params,
-                                  img_file_name=p.img_stack_file,
+                                  img_file_name=params.img_stack_file,
                                   image_offsets=prds.microscope_origin,
                                   n_particles_tot=len(prds.defocus),
-                                  relion_data=p.is_relion_data)
+                                  relion_data=params.is_relion_data)
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()
 
-    if p.ncpu == 1:
+    if params.ncpu == 1:
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
             local_distance_func(datai)
             progress1.emit(int(99 * i / n_jobs))
     else:
-        with multiprocessing.Pool(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=params.ncpu) as pool:
             for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(local_distance_func, input_data)),
                                   total=n_jobs,
                                   disable=use_gui_progress):
                 progress1.emit(int(99 * i / n_jobs))
 
     if prd_list is None:
-        p.project_level = ProjectLevel.CALC_DISTANCE
+        params.project_level = ProjectLevel.CALC_DISTANCE
 
-    p.save()
+    params.save()
     progress1.emit(100)

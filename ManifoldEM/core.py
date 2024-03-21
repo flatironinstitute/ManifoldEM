@@ -9,13 +9,13 @@ import numpy as np
 from scipy.optimize import curve_fit, OptimizeWarning
 
 from ManifoldEM import myio
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 warnings.simplefilter(action='ignore', category=OptimizeWarning)
 
 
 def clusterAvg(clust, PrD):
-    dist_file = p.get_dist_file(PrD)
+    dist_file = params.get_dist_file(PrD)
     data = myio.fin1(dist_file)
 
     imgAll = data['imgAll']
@@ -104,8 +104,8 @@ def makeMovie(IMG1, prD, psinum, fps):
     dim = int(np.sqrt(max(IMG1.shape)))  # window size
     nframes = IMG1.shape[1]
     images = -IMG1
-    gif_path = os.path.join(p.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')
-    zip_path = os.path.join(p.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.zip')
+    gif_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')
+    zip_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.zip')
     frame_dt = 1.0/fps
     with zipfile.ZipFile(zip_path, 'w') as fzip:
         with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:

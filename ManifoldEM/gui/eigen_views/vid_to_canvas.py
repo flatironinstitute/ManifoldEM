@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QDialog, QLabel, QFrame, QPushButton, QSlider,
                              QLayout, QGridLayout, QSpinBox, QComboBox, QCheckBox)
 
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 
 class _Vid2Canvas(QDialog):
@@ -28,13 +28,13 @@ class _Vid2Canvas(QDialog):
         # =====================================================================
         # Create blank image for initiation:
         # =====================================================================
-        picDir = os.path.join(p.out_dir, 'topos', 'PrD_1', 'topos_1.png')
+        picDir = os.path.join(params.out_dir, 'topos', 'PrD_1', 'topos_1.png')
         picImg = Image.open(picDir)
         picSize = picImg.size
         self.blank = np.ones([picSize[0], picSize[1], 3], dtype=int) * 255  #white background
         # =====================================================================
 
-        gif_path1 = os.path.join(p.out_dir, 'topos', 'PrD_1', 'psi_1.gif')
+        gif_path1 = os.path.join(params.out_dir, 'topos', 'PrD_1', 'psi_1.gif')
         imgs1 = imageio.get_reader(gif_path1)
         for _ in range(len(imgs1)):
             self.imgs1.append(self.blank)
@@ -57,7 +57,7 @@ class _Vid2Canvas(QDialog):
 
         self.Psi1 = QSpinBox(self)
         self.Psi1.setMinimum(1)
-        self.Psi1.setMaximum(p.num_psi)
+        self.Psi1.setMaximum(params.num_psi)
         self.Psi1.setPrefix('Psi: ')
         self.Psi1.setDisabled(False)
 
@@ -84,7 +84,7 @@ class _Vid2Canvas(QDialog):
 
         self.Psi2 = QSpinBox(self)
         self.Psi2.setMinimum(1)
-        self.Psi2.setMaximum(p.num_psi)
+        self.Psi2.setMaximum(params.num_psi)
         self.Psi2.setPrefix('Psi: ')
         self.Psi2.setDisabled(False)
 
@@ -208,7 +208,7 @@ class _Vid2Canvas(QDialog):
 
         prD = self.PrD1.value()
         psi = self.Psi1.value()
-        self.gif_path1 = os.path.join(p.out_dir, 'topos', f'PrD_{prD}', f'psi_{psi}.gif')
+        self.gif_path1 = os.path.join(params.out_dir, 'topos', f'PrD_{prD}', f'psi_{psi}.gif')
         self.imgs1 = list(imageio.get_reader(self.gif_path1))
 
         if self.btnSet1.isChecked():
@@ -247,7 +247,7 @@ class _Vid2Canvas(QDialog):
 
         prD = self.PrD2.value()
         psi = self.Psi2.value()
-        self.gif_path2 = os.path.join(p.out_dir, 'topos', f'PrD_{prD}', f'psi_{psi}.gif')
+        self.gif_path2 = os.path.join(params.out_dir, 'topos', f'PrD_{prD}', f'psi_{psi}.gif')
         self.imgs2 = list(imageio.get_reader(self.gif_path2))
 
         if self.btnSet2.isChecked():

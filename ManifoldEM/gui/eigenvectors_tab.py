@@ -8,7 +8,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PIL import Image
 import numpy as np
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.data_store import data_store, Anchor, Sense
 from .eigen_views import (Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow,
                           Vid2Canvas, PDSelectorWindow, CCDetailsView)
@@ -158,7 +158,7 @@ class EigenvectorsTab(QWidget):
 
         self.CC_selector = QSpinBox(self)
         self.CC_selector.setMinimum(1)
-        self.CC_selector.setMaximum(p.num_psi)
+        self.CC_selector.setMaximum(params.num_psi)
         self.CC_selector.setPrefix('CC1: \u03A8')
         self.layoutB.addWidget(self.CC_selector, 8, 2, 1, 1)
 
@@ -334,10 +334,10 @@ class EigenvectorsTab(QWidget):
 
 
     def update_psi_view(self):
-        blank_pixmap = get_blank_pixmap(p.get_topos_path(1, 1))
+        blank_pixmap = get_blank_pixmap(params.get_topos_path(1, 1))
 
         for i, (label, button) in enumerate(zip(self.label_pic, self.button_pic)):
-            picpath = p.get_topos_path(self.user_prd_index, i + 1)
+            picpath = params.get_topos_path(self.user_prd_index, i + 1)
             label.setPixmap(QPixmap(picpath))
 
             if not os.path.isfile(picpath):
@@ -405,6 +405,6 @@ class EigenvectorsTab(QWidget):
             return
 
         data_store.get_prds().save()
-        p.save()
+        params.save()
         self.main_window.set_tab_state(True, "Compilation")
         self.main_window.switch_tab("Compilation")

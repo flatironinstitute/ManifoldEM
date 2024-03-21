@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 class _BandwidthMain(QMainWindow):
 
@@ -67,7 +67,7 @@ class _BandwidthCanvas(FigureCanvas):
 
 
     def plot(self, index: int):
-        with open(p.get_psi_file(index), 'rb') as f:
+        with open(params.get_psi_file(index), 'rb') as f:
             data = pickle.load(f)
 
         logEps = data['logEps']

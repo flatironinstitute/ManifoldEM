@@ -4,7 +4,7 @@ from collections import namedtuple
 from scipy.sparse import csr_matrix, csc_matrix
 from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.core import fergusonE
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -233,7 +233,7 @@ def op(D, k, tune, prefsigma):  #*arg
     logEps = np.arange(-150, 150.2, 0.2)
     popt, logSumWij, resnorm, R_squared = fergusonE(np.sqrt(yVal), logEps)
     nS = D.shape[0]
-    nEigs = min(p.num_eigs, nS - 3)  #number of eigenfunctions to compute
+    nEigs = min(params.num_eigs, nS - 3)  #number of eigenfunctions to compute
     nA = 0  #autotuning parameter
     nN = k  #number of nearest neighbors
     nNA = 0  #number of nearest neighbors used for autotuning

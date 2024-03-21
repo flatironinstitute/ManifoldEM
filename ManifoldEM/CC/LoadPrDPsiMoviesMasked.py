@@ -4,7 +4,7 @@ import mrcfile
 import numpy as np
 
 from ManifoldEM import myio, projectMask
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.core import annularMask
 '''		
 Copyright (c) Columbia University Suvrajit Maji 2020		
@@ -16,9 +16,9 @@ def getMask2D(prD, maskType, radius):
 
 
     if maskType == 'annular':  #annular mask
-        N = p.ms_num_pixels
-        diam_angst = p.particle_diameter
-        diam_pix = diam_angst / p.ms_pixel_size
+        N = params.ms_num_pixels
+        diam_angst = params.particle_diameter
+        diam_pix = diam_angst / params.ms_pixel_size
         if radius == None:  # if no input is provided
             N2 = N / 2. - .25 * (N - diam_pix) * 0.30
         else:
@@ -28,10 +28,10 @@ def getMask2D(prD, maskType, radius):
         mask = annularMask(0, N2, N, N)
 
     elif maskType == 'volumetric':  #3d volume mask from user-input
-        dist_file = p.get_dist_file(prD)
+        dist_file = params.get_dist_file(prD)
         data = myio.fin1(dist_file)
         PD = data['PD']
-        maskFile = p.mask_vol_file
+        maskFile = params.mask_vol_file
 
         with mrcfile.open(maskFile) as mrc:
             mask3D = mrc.data
@@ -98,21 +98,21 @@ def findBadNodePsiTau(tau, tau_occ_thresh=0.33):
 
 def op(prD):
     useMask = 0  # default
-    if p.opt_mask_type == 0:
+    if params.opt_mask_type == 0:
         useMask = 0
         maskType = 'None'
-        radius = p.opt_mask_param
-    elif p.opt_mask_type == 1:
+        radius = params.opt_mask_param
+    elif params.opt_mask_type == 1:
         useMask = 1
         maskType = 'annular'
-        radius = p.opt_mask_param
-    elif p.opt_mask_type == 2:
+        radius = params.opt_mask_param
+    elif params.opt_mask_type == 2:
         useMask = 1
         maskType = 'volumetric'
         radius = None  # for volumetric we don't need any radius
 
-    psi2_file = p.psi2_file
-    NumPsis = p.num_psi
+    psi2_file = params.psi2_file
+    NumPsis = params.num_psi
 
     moviePrDPsis = [None] * NumPsis
     tauPrDPsis = [None] * NumPsis
@@ -125,7 +125,7 @@ def op(prD):
         mask2D = getMask2D(prD, maskType, radius)
 
     for psinum in range(NumPsis):
-        imgPsiFileName = p.get_psi2_file(prD) + f'_psi_{psinum}'
+        imgPsiFileName = params.get_psi2_file(prD) + f'_psi_{psinum}'
         data_IMG = myio.fin1(imgPsiFileName)
         #IMG1 = data_IMG["IMG1"].T
 
@@ -152,8 +152,8 @@ def op(prD):
         moviePrDPsis[psinum] = Mpsi_masked
         tauPrDPsis[psinum] = tau
 
-        if p.find_bad_psi_tau:
-            b, tauIQR, tauOcc = findBadNodePsiTau(tau, p.tau_occ_thresh)
+        if params.find_bad_psi_tau:
+            b, tauIQR, tauOcc = findBadNodePsiTau(tau, params.tau_occ_thresh)
             tauPsisIQR.append(tauIQR)
             tauPsisOcc.append(tauOcc)
             if b:

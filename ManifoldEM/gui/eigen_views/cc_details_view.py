@@ -18,19 +18,19 @@ from . import ClusterAvgMain
 from ManifoldEM.core import clusterAvg
 from ManifoldEM.embedd import op as embedd
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 def _backup_restore(prd_index, backup=True):
-    os.makedirs(os.path.join(p.out_dir, 'backup', 'topos'), exist_ok=True)
-    os.makedirs(os.path.join(p.out_dir, 'backup', 'diff_maps'), exist_ok=True)
-    os.makedirs(os.path.join(p.out_dir, 'backup', 'psi_analysis'), exist_ok=True)
+    os.makedirs(os.path.join(params.out_dir, 'backup', 'topos'), exist_ok=True)
+    os.makedirs(os.path.join(params.out_dir, 'backup', 'diff_maps'), exist_ok=True)
+    os.makedirs(os.path.join(params.out_dir, 'backup', 'psi_analysis'), exist_ok=True)
 
     if backup:
-        srcprefix = os.path.join(p.out_dir)
-        dstprefix = os.path.join(p.out_dir, 'backup')
+        srcprefix = os.path.join(params.out_dir)
+        dstprefix = os.path.join(params.out_dir, 'backup')
     else:
-        srcprefix = os.path.join(p.out_dir, 'backup')
-        dstprefix = os.path.join(p.out_dir)
+        srcprefix = os.path.join(params.out_dir, 'backup')
+        dstprefix = os.path.join(params.out_dir)
 
     # topos
     srcdir = os.path.join(srcprefix, 'topos', f'PrD_{prd_index + 1}')
@@ -48,7 +48,7 @@ def _backup_restore(prd_index, backup=True):
     shutil.copy(srcfile, dstfile)
 
     # psianalysis
-    for psi in range(p.num_psi):
+    for psi in range(params.num_psi):
         srcfile = os.path.join(srcprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
         dstfile = os.path.join(dstprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
         shutil.copy(srcfile, dstfile)
@@ -60,7 +60,7 @@ class TauCanvas(QDialog):
         super(TauCanvas, self).__init__(parent)
 
         # tau from psi analsis:
-        tau_fname = os.path.join(p.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        tau_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
         with open(tau_fname, 'rb') as f:
             tau_data = pickle.load(f)
 
@@ -84,7 +84,7 @@ class TauCanvas(QDialog):
             idx += 1
 
         self.ax1.scatter(taus_val, taus_num, linewidths=.1, s=1, edgecolors='k', c=taus_num, cmap='jet')
-        self.ax2.hist(tau, bins=p.states_per_coord, color='#1f77b4')  #C0
+        self.ax2.hist(tau, bins=params.states_per_coord, color='#1f77b4')  #C0
 
         for tick in self.ax1.xaxis.get_major_ticks():
             tick.label1.set_fontsize(4)
@@ -124,7 +124,7 @@ class PsiCanvas(QDialog):
         self.rec_on = 1
 
         # psis from psi analsis:
-        psi_fname = os.path.join(p.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        psi_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
         with open(psi_fname, 'rb') as f:
             psi_data = pickle.load(f)
 
@@ -198,7 +198,7 @@ class PsiCanvas(QDialog):
         self.combo_Z = QComboBox(self)
         self.combo_Z.setDisabled(False)
 
-        for psi in range(p.num_psi_truncated):
+        for psi in range(params.num_psi_truncated):
             self.combo_X.addItem('Psi %s' % (int(psi + 1)))
             self.combo_Y.addItem('Psi %s' % (int(psi + 1)))
             self.combo_Z.addItem('Psi %s' % (int(psi + 1)))
@@ -298,7 +298,7 @@ class PsiCanvas(QDialog):
         self.psiC1 = self.psiC[:, x]
         self.psirec1 = self.psirec[:, x]
 
-        for i in range(p.num_psi_truncated):
+        for i in range(params.num_psi_truncated):
             self.combo_Y.model().item(i).setEnabled(True)
             self.combo_Z.model().item(i).setEnabled(True)
 
@@ -316,7 +316,7 @@ class PsiCanvas(QDialog):
         self.psiC2 = self.psiC[:, y]
         self.psirec2 = self.psirec[:, y]
 
-        for i in range(p.num_psi_truncated):
+        for i in range(params.num_psi_truncated):
             self.combo_X.model().item(i).setEnabled(True)
             self.combo_Z.model().item(i).setEnabled(True)
 
@@ -334,7 +334,7 @@ class PsiCanvas(QDialog):
         self.psiC3 = self.psiC[:, z]
         self.psirec3 = self.psirec[:, z]
 
-        for i in range(p.num_psi_truncated):
+        for i in range(params.num_psi_truncated):
             self.combo_X.model().item(i).setEnabled(True)
             self.combo_Y.model().item(i).setEnabled(True)
 
@@ -370,7 +370,7 @@ class ChronosCanvas(QDialog):
         self.psi_index = psi_index
 
         # chronos from psi analsis:
-        chr_fname = os.path.join(p.psi2_dir, 'S2_prD_%s_psi_%s' % (self.prd_index - 1, self.psi_index - 1))
+        chr_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (self.prd_index - 1, self.psi_index - 1))
         with open(chr_fname, 'rb') as f:
             chr_data = pickle.load(f)
 
@@ -806,7 +806,7 @@ class Manifold2dCanvas(QDialog):
 
 
     def reload_psi_coords(self):
-        psi_file = p.get_psi_file(self.prd_index - 1)  #current embedding
+        psi_file = params.get_psi_file(self.prd_index - 1)  #current embedding
         with open(psi_file, 'rb') as f:
             data = pickle.load(f)
 
@@ -888,26 +888,26 @@ class Manifold2dCanvas(QDialog):
 
 
     def redo_prd_analysis(self):
-        p.save()  #send new GUI data to parameters file
+        params.save()  #send new GUI data to parameters file
         print(f"Re-running spectral analysis for prd {self.prd_index - 1}")
         from ManifoldEM.psiAnalysis import psi_analysis_single
         prd = self.prd_index - 1
-        dist_file = p.get_dist_file(prd)
-        psi_file = p.get_psi_file(prd)
-        psi2_file = p.get_psi2_file(prd)
-        EL_file = p.get_EL_file(prd)
-        psinums = list(range(p.num_psi))
-        senses = np.ones(p.num_psi)
-        psi_list = list(range(p.num_psi))  # list of incomplete psi values per PD
+        dist_file = params.get_dist_file(prd)
+        psi_file = params.get_psi_file(prd)
+        psi2_file = params.get_psi2_file(prd)
+        EL_file = params.get_EL_file(prd)
+        psinums = list(range(params.num_psi))
+        senses = np.ones(params.num_psi)
+        psi_list = list(range(params.num_psi))  # list of incomplete psi values per PD
         psi_analysis_single([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prd, psi_list],
-                            con_order_range=p.con_order_range,
-                            traj_name=p.traj_name,
+                            con_order_range=params.con_order_range,
+                            traj_name=params.traj_name,
                             is_full=0,
-                            psi_trunc=p.num_psi_truncated)
+                            psi_trunc=params.num_psi_truncated)
 
         print(f"Re-making NLSA movie for prd {self.prd_index - 1}")
         from ManifoldEM.NLSAmovie import movie
-        movie([prd], None, None, p.psi2_file, p.fps)
+        movie([prd], None, None, params.psi2_file, params.fps)
 
         msg = f'The manifold for PD {self.prd_index} has been successfully re-embedded.'
         box = QMessageBox(self)
@@ -935,7 +935,7 @@ class _CCDetailsView(QMainWindow):
 
 
     def initUI(self):
-        gif_path = p.get_psi_gif(self.prd_index, self.psi_index)
+        gif_path = params.get_psi_gif(self.prd_index, self.psi_index)
         self.vid_tab1 = VidCanvas(gif_path, parent=self)
         self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
         self.vid_tab3 = QDialog(self)  # Manifold3dCanvas(self)

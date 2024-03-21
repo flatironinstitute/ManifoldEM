@@ -8,7 +8,7 @@ from scipy.sparse import tril
 from scipy.sparse.csgraph import connected_components
 
 from ManifoldEM import myio
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 '''
 Copyright (c) Columbia University Suvrajit Maji 2019
 '''
@@ -244,7 +244,7 @@ def CalcPairwiseDistS2(X, *argv):
 
 
 def op(CC_graph_file_pruned):
-    trash_list = p.get_trash_list()
+    trash_list = params.get_trash_list()
     good_nodes = np.nonzero(~trash_list)[0]
     bad_nodes = np.nonzero(trash_list)[0]
     numNodes = len(good_nodes)
@@ -252,15 +252,15 @@ def op(CC_graph_file_pruned):
 
     print("Number of isolated nodes in the graph after pruning:", num_pruned_nodes)
 
-    maxState = 2 * p.num_psi  # Up and Down
+    maxState = 2 * params.num_psi  # Up and Down
 
     if numNodes > 1:
 
         # Modifying the graph structure
-        data = myio.fin1(p.CC_graph_file)
+        data = myio.fin1(params.CC_graph_file)
         G = data['G']
         epsilon = G['epsilon']  # save it later after update
-        G.update(nPsiModes=p.num_psi)
+        G.update(nPsiModes=params.num_psi)
 
         print('Number of Graph Edges before prunning:', G['nEdges'])
         # prune edges corresponding to the bad nodes with actually removing those bad nodes by disconnecting the edges

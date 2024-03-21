@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 
 class _EigenSpectrumWindow(QMainWindow):
@@ -51,7 +51,7 @@ class _EigenSpectrumCanvas(FigureCanvas):
         self.eig_n2 = []
         self.eig_v2 = []
 
-        fname = os.path.join(p.out_dir, 'topos', f'PrD_{index}', 'eig_spec.txt')
+        fname = os.path.join(params.out_dir, 'topos', f'PrD_{index}', 'eig_spec.txt')
         data = []
         with open(fname) as values:
             for column in zip(*[line for line in csv.reader(values, dialect="excel-tab")]):
@@ -63,7 +63,7 @@ class _EigenSpectrumCanvas(FigureCanvas):
         for i, j in cols:
             self.eig_n.append(int(i))
             self.eig_v.append(float(j))
-            if int(i) <= int(p.num_psi):
+            if int(i) <= int(params.num_psi):
                 self.eig_n1.append(int(i))
                 self.eig_v1.append(float(j))
             else:

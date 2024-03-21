@@ -4,9 +4,9 @@ from .embedding_tab import EmbeddingTab
 from .eigenvectors_tab import EigenvectorsTab
 from .compilation_tab import CompilationTab
 from .energetics_tab import EnergeticsTab
-from ..params import p
+from ..params import params
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QScrollArea, QDesktopWidget)
@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
 
     def reload_tab_states(self):
         self.set_tab_state(False)
-        for tabi in range(p.project_level.value + 1):
+        for tabi in range(params.project_level.value + 1):
             self.set_tab_state(True, self.proj_lev_to_tab[tabi])
             self.switch_tab(self.proj_lev_to_tab[tabi])
 

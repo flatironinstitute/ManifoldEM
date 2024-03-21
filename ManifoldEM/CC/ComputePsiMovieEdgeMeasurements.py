@@ -13,7 +13,7 @@ from sklearn.mixture import GaussianMixture
 
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.CC import ComputeOpticalFlowPrDAll, ComputeMeasureEdgeAll
 '''
 Copyright (c) Columbia University Suvrajit Maji 2019
@@ -105,7 +105,7 @@ def findThreshHist(X, nbins, method=1):
         _, xbins = np.histogram(h, nbins - 1)
         figy = plt.figure(figsize=(12, 6))
         plt.plot(xbins, yfilt)
-        yfigfile = os.path.join(p.CC_dir, 'yfilt')
+        yfigfile = os.path.join(params.CC_dir, 'yfilt')
         figy.savefig(yfigfile + '.png')
 
         pk_inv, _ = find_peaks(-yfilt, prominence=np.max(yfilt) // 3)
@@ -211,7 +211,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     # it is there in case, the threshold needs to be modified to exclude or include more bad psi-movies
     #
     # the graph edges can be pruned here
-    badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
+    badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
     dataR = myio.fin1(badNodesPsisTaufile)
 
     badNodesPsisTau = dataR['badNodesPsisTau']  # this was pre-calculated using some tau-cutoff, here we are update it
@@ -288,10 +288,10 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     num_nodesAllBadPsis = len(nodesAllBadPsis)
     print('Number of trash PDs detected using auto tau-cutoff:', num_nodesAllBadPsis)
 
-    np.savetxt('{}NodeTauPsis_of.txt'.format(p.CC_dir), TausMat_IQR, fmt="%f", newline="\n")
-    np.savetxt('{}NodeTauPsisOcc_of.txt'.format(p.CC_dir), TausMat_Occ, fmt="%f", newline="\n")
-    np.savetxt('{}badNodePsis_of.txt'.format(p.CC_dir), badNodesPsisTau, fmt="%d", newline="\n")
-    np.savetxt('{}nodesAllBadPsis_of.txt'.format(p.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
+    np.savetxt('{}NodeTauPsis_of.txt'.format(params.CC_dir), TausMat_IQR, fmt="%f", newline="\n")
+    np.savetxt('{}NodeTauPsisOcc_of.txt'.format(params.CC_dir), TausMat_Occ, fmt="%f", newline="\n")
+    np.savetxt('{}badNodePsis_of.txt'.format(params.CC_dir), badNodesPsisTau, fmt="%d", newline="\n")
+    np.savetxt('{}nodesAllBadPsis_of.txt'.format(params.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
     
     trash_list_out = trash_list
     if nodesAllBadPsis.shape[0] > 0:
@@ -307,14 +307,14 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # Step 1. Compute Optical Flow Vectors
     # Save the optical flow vectors for each psi-movie of individual projection direction
-    if p.calc_optical_flow:
+    if params.calc_optical_flow:
         print('\n1.Now computing optical flow vectors for all (selected) PrDs...\n')
         # Optical flow vectors for each psi-movies of each node are saved to disk
         ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, *argv)
 
     # FIXME: this codepath is never reached (experimental)
 
-    if p.use_pruned_graph:
+    if params.use_pruned_graph:
         #Step 2a. June 2020
         ### Check if there are significant bad PDs(>10 or 5 ?) after Optical Flow computations of the psi-movies,
         # if yes then prune those bad nodes. The nodes are not removed from the graph but the edges are modified
@@ -324,7 +324,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
         # check for bad PDs found based on bad tau values
         trash_list = data_store.get_prds().trash_ids
-        tau_occ_thresh = p.tau_occ_thresh
+        tau_occ_thresh = params.tau_occ_thresh
 
         # take the already existing trash_list and update it
         trash_list_chk, num_nodesAllBadPsis = checkBadPsis(trash_list, tau_occ_thresh)
@@ -333,7 +333,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
         print('Pruning the graph G if there are more than {} bad nodes'.format(num_bad_nodes_prune_cutoff))
 
         # update the p.trash_list
-        p.set_trash_list(trash_list_chk)
+        params.set_trash_list(trash_list_chk)
         if num_nodesAllBadPsis > num_bad_nodes_prune_cutoff:
             if not os.path.exists(CC_graph_file_pruned):
                 G, Gsub = FindCCGraphPruned.op(CC_graph_file_pruned)
@@ -344,7 +344,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
                 Gsub = data['Gsub']
             numConnComp = len(G['NodesConnComp'])
 
-            anchorlist = [a[0] - 1 for a in p.anch_list]  # we need labels with 0 index to compare with the node labels in G, Gsub
+            anchorlist = [a[0] - 1 for a in params.anch_list]  # we need labels with 0 index to compare with the node labels in G, Gsub
             nodelCsel = []
             edgelCsel = []
             # this list keeps track of the connected component (single nodes included) for which no anchor was provided
@@ -376,7 +376,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # Step 2. Compute the pairwise edge measurements
     # Save individual edge measurements
-    if p.calc_all_edge_measures:
+    if params.calc_all_edge_measures:
         print('\n2.Now computing pairwise edge-measurements...\n')
         # measures for creating potentials later on
         # edgeMeasures files for each edge (pair of nodes) are saved to disk
@@ -396,13 +396,13 @@ def op(G, nodeRange, edgeNumRange, *argv):
     print('Edges', G['nEdges'])
     edgeMeasures = np.empty((G['nEdges']), dtype=object)
     edgeMeasures_tblock = np.empty((G['nEdges']), dtype=object)
-    badNodesPsisBlock = np.zeros((G['nNodes'], p.num_psi))
+    badNodesPsisBlock = np.zeros((G['nNodes'], params.num_psi))
 
     for e in edgeNumRange:
         currPrD = G['Edges'][e, 0]
         nbrPrD = G['Edges'][e, 1]
 
-        CC_meas_file = '{}{}_{}_{}'.format(p.CC_meas_file, e, currPrD, nbrPrD)
+        CC_meas_file = '{}{}_{}_{}'.format(params.CC_meas_file, e, currPrD, nbrPrD)
         data = myio.fin1(CC_meas_file)
         measureOFCurrNbrEdge = data['measureOFCurrNbrEdge']
         measureOFCurrNbrEdge_tblock = data['measureOFCurrNbrEdge_tblock']

@@ -4,7 +4,7 @@ import numpy as np
 
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store, Sense
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.CC import MRFGeneratePotentials, MRFBeliefPropagation
 from ManifoldEM.CC.MRFBeliefPropagation import createBPalg
 
@@ -192,11 +192,11 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     #Generate the node and edge potentials for the Markov Random Field
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     '''
-    NumPsis = p.num_psi
+    NumPsis = params.num_psi
     #always make sure that the number of states maxState = 2*nPsiModes, because
     #we have two levels: up and down state for each psiMode.
     maxState = 2 * NumPsis
-    G.update(nPsiModes=p.num_psi)  # update the nPsiModes in case p.num_psis is changed in the later steps
+    G.update(nPsiModes=params.num_psi)  # update the nPsiModes in case p.num_psis is changed in the later steps
     G.update(maxState=maxState)
 
     # if cc == 1:
@@ -243,7 +243,7 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     nodePot, edgePot = MRFGeneratePotentials.op(G, anchor_nodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock)
 
     # Set potential value to small number <= 1e-16 for bad psi-movies
-    badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
+    badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
     badNodesPsisTau = readBadNodesPsisTau(badNodesPsisTaufile)
 
     # from bad taus (badNodesPsisTau) and split block movies (badNodesPsis)
@@ -277,8 +277,8 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     # so , printing it out as *_bp.txt , the *_of.txt files will have just the badNodesPsisTau
     nodesAllBadPsis = np.array(nodesAllBadPsis)
     print('nodesAllBadPsis', len(nodesAllBadPsis))
-    np.savetxt('{}badNodePsis_bp.txt'.format(p.CC_dir), badNodesPsis2, fmt="%d", newline="\n")
-    np.savetxt('{}nodesAllBadPsis_bp.txt'.format(p.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
+    np.savetxt('{}badNodePsis_bp.txt'.format(params.CC_dir), badNodesPsis2, fmt="%d", newline="\n")
+    np.savetxt('{}nodesAllBadPsis_bp.txt'.format(params.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
 
     # if cc == 2:
     #     for n in range(nodeStateBP_cc1.shape[0]):  # as nodeStateBP_cc1 is row vector so shape is (num_prds,)

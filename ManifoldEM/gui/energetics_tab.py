@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 
 import numpy as np
 from ManifoldEM.PrepareOutputS2 import op as PrepareOutputS2
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 
 class Erg1dMain(QDialog):
@@ -43,9 +43,9 @@ class Erg1dMain(QDialog):
         self.chooseCC = QComboBox(self)
         self.chooseCC.addItem('CC 1')
         self.chooseCC.addItem('CC 2')
-        if p.user_dimensions == 1:
+        if params.user_dimensions == 1:
             self.chooseCC.setDisabled(True)
-        elif p.user_dimensions == 2:
+        elif params.user_dimensions == 2:
             self.chooseCC.setDisabled(False)
         self.chooseCC.setToolTip('Switch between 1D conformational coordinates.')
         self.chooseCC.currentIndexChanged.connect(self.update_selection)
@@ -133,24 +133,24 @@ class Erg1dMain(QDialog):
 
         if self.entry_width.currentText() == '1 State':
             self.entry_width.model().item(0).setEnabled(False)
-            p.width_1D = int(1)
-            p.save()
+            params.width_1D = int(1)
+            params.save()
         if self.entry_width.currentText() == '2 States':
             self.entry_width.model().item(1).setEnabled(False)
-            p.width_1D = int(2)
-            p.save()
+            params.width_1D = int(2)
+            params.save()
         if self.entry_width.currentText() == '3 States':
             self.entry_width.model().item(2).setEnabled(False)
-            p.width_1D = int(3)
-            p.save()
+            params.width_1D = int(3)
+            params.save()
         if self.entry_width.currentText() == '4 States':
             self.entry_width.model().item(3).setEnabled(False)
-            p.width_1D = int(4)
-            p.save()
+            params.width_1D = int(4)
+            params.save()
         if self.entry_width.currentText() == '5 States':
             self.entry_width.model().item(4).setEnabled(False)
-            p.width_1D = int(5)
-            p.save()
+            params.width_1D = int(5)
+            params.save()
 
 
     ##########
@@ -178,16 +178,16 @@ class Erg1dMain(QDialog):
 
             self.progress7.setValue(0)
             # hard-remove pre-existing PrepareOutputS2 outputs:
-            if os.path.isdir(p.bin_dir):
-                shutil.rmtree(p.bin_dir)
-                os.makedirs(p.bin_dir)
+            if os.path.isdir(params.bin_dir):
+                shutil.rmtree(params.bin_dir)
+                os.makedirs(params.bin_dir)
 
             self.button_traj.setDisabled(True)
             self.button_traj.setText('Computing 3D Trajectories')
             self.erg2occ.setDisabled(True)
             self.entry_width.setDisabled(True)
 
-            p.save()  #send new GUI data to parameters file
+            params.save()  #send new GUI data to parameters file
 
             task7 = threading.Thread(target=PrepareOutputS2, args=(self.progress7Changed, ))
             task7.daemon = True
@@ -200,7 +200,7 @@ class Erg1dMain(QDialog):
             self.erg2occ.setDisabled(True)
             self.entry_width.setDisabled(True)
 
-            p.save()  #send new GUI data to parameters file
+            params.save()  #send new GUI data to parameters file
 
             task7 = threading.Thread(target=PrepareOutputS2, args=(self.progress7Changed, ))
             task7.daemon = True
@@ -211,7 +211,7 @@ class Erg1dMain(QDialog):
     def on_progress7Changed(self, val):
         self.progress7.setValue(val)
         if val == 100:
-            p.save()  #send new GUI data to user parameters file
+            params.save()  #send new GUI data to user parameters file
 
             self.reprepare = 1
             self.button_traj.setText('Recompute 3D Trajectories')
@@ -238,9 +238,9 @@ class Erg1dCanvas(FigureCanvas):
 
     def update_figure(self, plot_occupancies=False, CC_coord=1):
         if plot_occupancies:
-            LS1d = np.fromfile(f'{p.OM_file}OM', dtype=int)
+            LS1d = np.fromfile(f'{params.OM_file}OM', dtype=int)
         else:  # plot energies
-            LS1d = np.fromfile(f'{p.OM1_file}EL')  #energy path for plot
+            LS1d = np.fromfile(f'{params.OM1_file}EL')  #energy path for plot
 
         self.axes.clear()
         for tick in self.axes.xaxis.get_major_ticks():

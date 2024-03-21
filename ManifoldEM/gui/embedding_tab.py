@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QLabel, QFrame, QLineEdit, QPushButton,
                              QGridLayout, QWidget, QSpinBox, QProgressBar)
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.util import remote_runner, is_valid_host
 
 
@@ -22,7 +22,7 @@ class EmbeddingTab(QWidget):
             print(f"Invalid hostname: {self.hostname}")
             return
 
-        p.save()
+        params.save()
 
         self.entry_proc.setDisabled(True)
         self.entry_hostname.setDisabled(True)
@@ -32,7 +32,7 @@ class EmbeddingTab(QWidget):
         self.button_dist.setText('Distance Calculation Initiated')
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} calc-distance --num_psi {p.num_psi}'
+            cmd = f'manifold-cli -n {params.ncpu} calc-distance --num_psi {params.num_psi}'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.distance_progress_changed))
         else:
@@ -48,12 +48,12 @@ class EmbeddingTab(QWidget):
         if val == self.distance_progress.maximum():
             self.button_dist.setText('Distance Calculation Complete')
             self.button_eig.setDisabled(False)
-            p.save()
+            params.save()
             self.calc_eigenvectors()
 
     @QtCore.pyqtSlot()
     def calc_eigenvectors(self):
-        p.save()
+        params.save()
 
         self.entry_proc.setDisabled(True)
         self.entry_hostname.setDisabled(True)
@@ -63,7 +63,7 @@ class EmbeddingTab(QWidget):
         self.button_eig.setText('Embedding Initiated')
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} manifold-analysis'
+            cmd = f'manifold-cli -n {params.ncpu} manifold-analysis'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.eigenvector_progress_changed))
         else:
@@ -79,12 +79,12 @@ class EmbeddingTab(QWidget):
         if val == self.eigenvector_progress.maximum():
             self.button_eig.setText('Embedding Complete')
             self.button_psi.setDisabled(False)
-            p.save()
+            params.save()
             self.calc_psi()
 
     @QtCore.pyqtSlot()
     def calc_psi(self):
-        p.save()
+        params.save()
 
         self.entry_proc.setDisabled(True)
         self.entry_hostname.setDisabled(True)
@@ -94,7 +94,7 @@ class EmbeddingTab(QWidget):
         self.button_psi.setText('Spectral Analysis Initiated')
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} psi-analysis'
+            cmd = f'manifold-cli -n {params.ncpu} psi-analysis'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.psi_progress_changed))
         else:
@@ -109,12 +109,12 @@ class EmbeddingTab(QWidget):
         self.psi_progress.setValue(val)
         if val == self.psi_progress.maximum():
             self.button_psi.setText('Spectral Analysis Complete')
-            p.save()
+            params.save()
             self.calc_nlsa()
 
     @QtCore.pyqtSlot()
     def calc_nlsa(self):
-        p.save()
+        params.save()
 
         self.entry_proc.setDisabled(True)
         self.entry_hostname.setDisabled(True)
@@ -124,7 +124,7 @@ class EmbeddingTab(QWidget):
         self.button_nlsa.setText('NLSA Movie Initiated')
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} nlsa-movie'
+            cmd = f'manifold-cli -n {params.ncpu} nlsa-movie'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.nlsa_progress_changed))
         else:
@@ -151,10 +151,10 @@ class EmbeddingTab(QWidget):
         layout.setSpacing(10)
 
         def choose_processors():
-            p.ncpu = self.entry_proc.value()
+            params.ncpu = self.entry_proc.value()
 
         def choose_psi():
-            p.num_psi = self.entry_psi.value()
+            params.num_psi = self.entry_psi.value()
 
         def choose_dimensions():
             pass
@@ -194,7 +194,7 @@ class EmbeddingTab(QWidget):
         self.entry_proc = QSpinBox(self)
         self.entry_proc.setMinimum(1)
         self.entry_proc.setMaximum(256)
-        self.entry_proc.setValue(p.ncpu)
+        self.entry_proc.setValue(params.ncpu)
         self.entry_proc.valueChanged.connect(choose_processors)
         self.entry_proc.setStyleSheet("QSpinBox { width : 100px }")
         self.entry_proc.setToolTip('The number of processors to use in parallel.')
@@ -329,4 +329,4 @@ class EmbeddingTab(QWidget):
 
 
     def activate(self):
-        self.entry_proc.setValue(p.ncpu)
+        self.entry_proc.setValue(params.ncpu)

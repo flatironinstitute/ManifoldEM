@@ -1,7 +1,7 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGridLayout, QWidget
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.data_store import data_store
 from .s2_view import S2View
 

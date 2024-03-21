@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 from matplotlib.figure import Figure
 import matplotlib.image as mpimg
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 # FIXME: Merge these two...
 class _ClusterAvgMain(QMainWindow):
@@ -73,7 +73,7 @@ class _AverageViewCanvas(FigureCanvas):
 
 
     def plot(self, index: int):
-        fname = os.path.join(p.out_dir, 'topos', f'PrD_{index}', 'class_avg.png')
+        fname = os.path.join(params.out_dir, 'topos', f'PrD_{index}', 'class_avg.png')
         img = mpimg.imread(fname)
         ax = self.figure.add_subplot(111)
         ax.clear()

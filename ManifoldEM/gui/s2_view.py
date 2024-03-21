@@ -22,7 +22,7 @@ else:
     SceneEditor = _Dummy
 
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.data_store import data_store
 from .threshold_view import ThresholdView
 
@@ -52,13 +52,13 @@ class S2ViewBase:
 
     def get_volume_data(self):
         if self.df_vol is None:
-            with mrcfile.open(p.avg_vol_file, mode='r') as mrc:
+            with mrcfile.open(params.avg_vol_file, mode='r') as mrc:
                 self.df_vol = mrc.data
 
     def update_S2_params(self):
-        self.isosurface_level = int(p.visualization_params['S2_isosurface_level'])
-        self.S2_scale = float(p.visualization_params['S2_scale'])
-        self.S2_density = int(p.visualization_params['S2_density'])
+        self.isosurface_level = int(params.visualization_params['S2_isosurface_level'])
+        self.S2_scale = float(params.visualization_params['S2_scale'])
+        self.S2_density = int(params.visualization_params['S2_density'])
 
 
 class S2ViewMayavi(HasTraits, S2ViewBase):
@@ -88,10 +88,10 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
         return self.edit_traits(parent=self, kind='subpanel').control
 
     def sync_params(self):
-        p.visualization_params['S2_scale'] = self.S2_scale
-        p.visualization_params['S2_density'] = self.S2_density
-        p.visualization_params['S2_isosurface_level'] = self.isosurface_level
-        p.save()
+        params.visualization_params['S2_scale'] = self.S2_scale
+        params.visualization_params['S2_density'] = self.S2_density
+        params.visualization_params['S2_isosurface_level'] = self.isosurface_level
+        params.save()
 
 
     @observe('S2_scale, S2_density')  #S2 Orientation Sphere
@@ -165,7 +165,7 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
         mlab.clf(figure=self.fig2)
 
-        if p.is_relion_data:
+        if params.is_relion_data:
             mirror = self.df_vol[..., ::-1]
             cplot = mlab.contour3d(mirror,
                                    contours=self.isosurface_level,

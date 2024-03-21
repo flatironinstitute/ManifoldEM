@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QLabel, QFrame, QPushButton, QGridLayout, QLineEdit,
                              QWidget, QSpinBox, QProgressBar)
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.util import remote_runner, is_valid_host
 
 
@@ -32,10 +32,10 @@ class CompilationTab(QWidget):
         self.entry_temp.setDisabled(True)
         self.entry_proc.setDisabled(True)
 
-        p.save()  #send new GUI data to user parameters file
+        params.save()  #send new GUI data to user parameters file
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} find-ccs'
+            cmd = f'manifold-cli -n {params.ncpu} find-ccs'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.find_cc_progress_changed))
         else:
@@ -65,7 +65,7 @@ class CompilationTab(QWidget):
         self.entry_proc.setDisabled(True)
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} energy-landscape'
+            cmd = f'manifold-cli -n {params.ncpu} energy-landscape'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.compute_landscape_progress_changed))
         else:
@@ -106,10 +106,10 @@ class CompilationTab(QWidget):
         layout.setSpacing(10)
 
         def choose_processors():
-            p.ncpu = self.entry_proc.value()
+            params.ncpu = self.entry_proc.value()
 
         def choose_temperature():
-            p.temperature = self.entry_temp.value()
+            params.temperature = self.entry_temp.value()
 
         def choose_hostname():
             self.hostname = self.entry_hostname.text()
@@ -226,7 +226,7 @@ class CompilationTab(QWidget):
 
 
     def activate(self):
-        self.entry_proc.setValue(p.ncpu)
+        self.entry_proc.setValue(params.ncpu)
 
 
     def finalize(self):

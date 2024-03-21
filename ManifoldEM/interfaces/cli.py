@@ -5,7 +5,7 @@ if not 'OMP_NUM_THREADS' in os.environ:
 import sys
 from argparse import ArgumentParser
 import ManifoldEM
-from ManifoldEM.params import p, ProjectLevel
+from ManifoldEM.params import params, ProjectLevel
 
 def get_parser():
     parser = ArgumentParser(
@@ -16,7 +16,7 @@ def get_parser():
     subparsers = parser.add_subparsers(help=None, dest="command")
 
     def add_relevant_params(subparser, level: ProjectLevel, prefix: str = ""):
-        params = p.get_params_for_level(level)
+        params = params.get_params_for_level(level)
         for param, (paramtype, paraminfo) in params.items():
             if paraminfo.user_param:
                 subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, help=f'{prefix}{paraminfo.description}')
@@ -81,33 +81,33 @@ def load_state(args):
         return
     fname_front = args.input_file.split('params_', 1)[1]
     fname_sans = os.path.splitext(fname_front)[0]
-    p.project_name = fname_sans
+    params.project_name = fname_sans
 
-    p.load(args.input_file)
+    params.load(args.input_file)
 
-    p.ncpu = args.ncpu
+    params.ncpu = args.ncpu
     if args.command == "threshold":
-        p.prd_thres_low = args.low
-        p.prd_thres_high = args.high
+        params.prd_thres_low = args.low
+        params.prd_thres_high = args.high
     if hasattr(args, "path_width"):
         if args.path_width is None:
             return
         if args.path_width < 1 or args.path_width > 5:
             print("path-width argument must be on the interval [1, 5]")
             sys.exit(1)
-        p.width_1D = args.path_width
+        params.width_1D = args.path_width
 
-    p.save()
+    params.save()
 
 
 def init(args):
     import shutil
     from ManifoldEM.util import get_image_width_from_stack
 
-    p.project_name = args.project_name
-    proj_file = f'params_{p.project_name}.toml'
+    params.project_name = args.project_name
+    proj_file = f'params_{params.project_name}.toml'
 
-    if os.path.isfile(proj_file) or os.path.isdir(p.out_dir):
+    if os.path.isfile(proj_file) or os.path.isdir(params.out_dir):
         response = 'y' if args.overwrite else None
         while response not in ('y', 'n'):
             response = input("Project appears to exist. Overwrite? y/n\n").lower()
@@ -115,24 +115,24 @@ def init(args):
             print("Aborting")
             return 1
         print("Removing previous project")
-        if os.path.isdir(p.out_dir):
-            shutil.rmtree(p.out_dir)
+        if os.path.isdir(params.out_dir):
+            shutil.rmtree(params.out_dir)
 
-    p.avg_vol_file = os.path.expanduser(args.avg_volume)
-    p.align_param_file = os.path.expanduser(args.alignment)
-    p.img_stack_file = os.path.expanduser(args.image_stack)
-    p.mask_vol_file = os.path.expanduser(args.mask_volume)
+    params.avg_vol_file = os.path.expanduser(args.avg_volume)
+    params.align_param_file = os.path.expanduser(args.alignment)
+    params.img_stack_file = os.path.expanduser(args.image_stack)
+    params.mask_vol_file = os.path.expanduser(args.mask_volume)
 
-    p.ms_pixel_size = args.pixel_size
-    p.particle_diameter = args.diameter
-    p.ms_estimated_resolution = args.resolution
-    p.aperture_index = args.aperture_index
-    p.is_relion_data = args.alignment.endswith('.star')
+    params.ms_pixel_size = args.pixel_size
+    params.particle_diameter = args.diameter
+    params.ms_estimated_resolution = args.resolution
+    params.aperture_index = args.aperture_index
+    params.is_relion_data = args.alignment.endswith('.star')
 
-    p.ms_num_pixels = get_image_width_from_stack(p.img_stack_file)
+    params.ms_num_pixels = get_image_width_from_stack(params.img_stack_file)
 
-    p.create_dir()
-    p.save()
+    params.create_dir()
+    params.save()
 
 
 def _parse_prd_list(prd_list: str):
@@ -143,10 +143,10 @@ def _parse_prd_list(prd_list: str):
 
 
 def threshold(args):
-    p.prd_thres_low = args.low
-    p.prd_thres_high = args.high
-    p.project_level = ProjectLevel.BINNING
-    p.save()
+    params.prd_thres_low = args.low
+    params.prd_thres_high = args.high
+    params.project_level = ProjectLevel.BINNING
+    params.save()
 
 
 def calc_distance(args):

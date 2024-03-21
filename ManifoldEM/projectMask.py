@@ -3,7 +3,7 @@ import math
 import numpy as np
 from numpy import cos, sin
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.quaternion import q2Spider
 from ManifoldEM.CC.transformations import quaternion_matrix
 '''

@@ -7,7 +7,7 @@ import pickle
 from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape, Int, Int64, Float64
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.star import get_align_data
 from ManifoldEM.util import augment
 from ManifoldEM.S2tessellation import bin_and_threshold
@@ -38,8 +38,8 @@ class Anchor:
 
 class _ProjectionDirections:
     def __init__(self):
-        self.thres_low: int = p.prd_thres_low
-        self.thres_high: int = p.prd_thres_high
+        self.thres_low: int = params.prd_thres_low
+        self.thres_high: int = params.prd_thres_high
         self.bin_centers: NDArray[Shape["3,*", Any], Float64] = np.empty(shape=(3, 0))
 
         self.defocus: NDArray[Shape["*"], Float64] = np.empty(0)
@@ -71,31 +71,31 @@ class _ProjectionDirections:
 
     def load(self, pd_file=None):
         if pd_file is None:
-            pd_file = p.pd_file
+            pd_file = params.pd_file
 
         with open(pd_file, 'rb') as f:
             self.__dict__.update(pickle.load(f))
 
     
     def save(self):
-        with open(p.pd_file, 'wb') as f:
+        with open(params.pd_file, 'wb') as f:
             pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
 
 
     def update(self):
         # Load if cache exists and store uninitialized
-        if self.pos_full.size == 0 and os.path.isfile(p.pd_file):
-            self.load(p.pd_file)
+        if self.pos_full.size == 0 and os.path.isfile(params.pd_file):
+            self.load(params.pd_file)
 
         # If uninitialized or things have changed, actually update
         force_rebuild = bool(os.environ.get('MANIFOLD_REBUILD_DS', 0))
-        if force_rebuild or self.pos_full.size == 0 or self.thres_low != p.prd_thres_low or self.thres_high != p.prd_thres_high:
+        if force_rebuild or self.pos_full.size == 0 or self.thres_low != params.prd_thres_low or self.thres_high != params.prd_thres_high:
             if force_rebuild:
                 print("Rebuilding data store")
                 os.environ.pop('MANIFOLD_REBUILD_DS')
 
             print("Calculating projection direction information")
-            sh, q, U, V = get_align_data(p.align_param_file, flip=True)
+            sh, q, U, V = get_align_data(params.align_param_file, flip=True)
             df = (U + V) / 2
 
             # double the number of data points by augmentation
@@ -103,10 +103,10 @@ class _ProjectionDirections:
             df = np.concatenate((df, df))
 
             image_indices, pos_full, bin_centers, occupancy, conjugate_bin_ids = \
-                bin_and_threshold(q, p.ang_width, p.prd_thres_low, p.prd_thres_high)
+                bin_and_threshold(q, params.ang_width, params.prd_thres_low, params.prd_thres_high)
 
-            self.thres_low = p.prd_thres_low
-            self.thres_high = p.prd_thres_high
+            self.thres_low = params.prd_thres_low
+            self.thres_high = params.prd_thres_high
 
             self.bin_centers = bin_centers
             self.defocus = df
@@ -138,9 +138,9 @@ class _ProjectionDirections:
 
             self.cluster_ids = get_cluster_ids(self.neighbor_graph)
 
-            p.prd_n_active = len(self.thres_ids)
+            params.prd_n_active = len(self.thres_ids)
 
-            p.save()
+            params.save()
             self.save()
 
 

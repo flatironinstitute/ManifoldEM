@@ -9,7 +9,7 @@ from functools import partial
 from typing import List, Union
 
 from ManifoldEM import myio
-from ManifoldEM.params import p, ProjectLevel
+from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
 '''
@@ -36,7 +36,7 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
 
     ll = []
     for prD in valid_prds:
-        image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
+        image_file = '{}/topos/PrD_{}/class_avg.png'.format(params.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
         ll.append([prD])
@@ -46,9 +46,9 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
 
 def movie(input_data, psi2_file, fps):
     prD = input_data[0]
-    dist_file1 = p.get_dist_file(prD)
+    dist_file1 = params.get_dist_file(prD)
     # Fetching NLSA outputs and making movies
-    for psinum in range(p.num_psi):
+    for psinum in range(params.num_psi):
         psi_file1 = psi2_file + 'prD_{}'.format(prD) + '_psi_{}'.format(psinum)
         data = myio.fin1(psi_file1)
         # make movie
@@ -57,7 +57,7 @@ def movie(input_data, psi2_file, fps):
         # write topos
         topo = data['Topo_mean'][:, 1]
         dim = int(np.sqrt(topo.shape[0]))
-        image_file = '{}/topos/PrD_{}/topos_{}.png'.format(p.out_dir, prD + 1, psinum + 1)
+        image_file = '{}/topos/PrD_{}/topos_{}.png'.format(params.out_dir, prD + 1, psinum + 1)
         topo = topo.reshape(dim, dim)
         topo = (255. * (topo - topo.min()) / (topo.max() - topo.min())).astype(np.uint8)
         imageio.imwrite(image_file, topo)
@@ -66,34 +66,34 @@ def movie(input_data, psi2_file, fps):
     # write class avg image
     data = myio.fin1(dist_file1)
     img = data['imgAvg']
-    image_file = '{}/topos/PrD_{}/class_avg.png'.format(p.out_dir, prD + 1)
+    image_file = '{}/topos/PrD_{}/class_avg.png'.format(params.out_dir, prD + 1)
     img = (255. * (img - img.min()) / (img.max() - img.min())).astype(np.uint8)
     imageio.imwrite(image_file, img)
 
 
 def op(prd_list: Union[List[int], None], *argv):
     print("Making the 2D movies...")
-    p.load()
+    params.load()
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    input_data = _construct_input_data(prd_list, p.prd_n_active)
+    input_data = _construct_input_data(prd_list, params.prd_n_active)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
-    movie_local = partial(movie, psi2_file=p.psi2_file, fps=p.fps)
+    movie_local = partial(movie, psi2_file=params.psi2_file, fps=params.fps)
 
-    if p.ncpu == 1:  # avoids the multiprocessing package
+    if params.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
             movie_local(datai)
             progress4.emit(int(99 * i / n_jobs))
     else:
-        with multiprocessing.Pool(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=params.ncpu) as pool:
             for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(movie_local, input_data)),
                                   total=n_jobs, disable=use_gui_progress):
                 progress4.emit(int(99 * i / n_jobs))
 
     if not prd_list:
-        p.project_level = ProjectLevel.NLSA_MOVIE
+        params.project_level = ProjectLevel.NLSA_MOVIE
 
-    p.save()
+    params.save()
     progress4.emit(100)

@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
@@ -60,7 +60,7 @@ def transformFunction(M, elist, printPotFig):
 
     Mt = np.exp(-M / (2.0 * sigma**2))  #modified kernel
 
-    nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psi)).astype(int)
+    nBlocks = np.ceil(M.shape[1] / (2.0 * params.num_psi)).astype(int)
 
     showPlot = 0  #printPotFig
     if showPlot or printPotFig:
@@ -75,7 +75,7 @@ def transformFunction(M, elist, printPotFig):
         #plt.yticks(np.arange(0,p.num_psis,1),yticklabels)
         plt.rcParams.update({'font.size': 18})
         plt.colorbar()
-        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, p.num_psi))  # n2 : 1 indexing
+        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, params.num_psi))  # n2 : 1 indexing
         plt.ylabel('PD-{}, psi'.format(n1 + 1))  # n1:1 indexing
 
         if showPlot:
@@ -84,7 +84,7 @@ def transformFunction(M, elist, printPotFig):
         if printPotFig:
 
             e, n1, n2 = elist[:]
-            CC_meas_dir = os.path.join(p.CC_dir, 'CC_meas_fig')
+            CC_meas_dir = os.path.join(params.CC_dir, 'CC_meas_fig')
             os.makedirs(CC_meas_dir, exist_ok=True)
 
             potfilename = 'pot_edge' + str(e + 1) + '_' + str(n1 + 1) + '_' + str(n2 + 1)
@@ -101,7 +101,7 @@ def transformFunction_tblock(M, elist, label, printPotFig):
 
     Mt = np.exp(-M / (2.0 * sigma**2))  #modified kernel
 
-    nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psi)).astype(int)
+    nBlocks = np.ceil(M.shape[1] / (2.0 * params.num_psi)).astype(int)
 
 
     showPlot = 0  #only show for checking
@@ -115,17 +115,17 @@ def transformFunction_tblock(M, elist, label, printPotFig):
         xticklabels = np.arange(0, M.shape[1], nBlocks) + 1  # 1 indexing
         plt.xticks(np.arange(0, M.shape[1], nBlocks), xticklabels)
         yticklabels = np.arange(0, M.shape[1]) + 1  # 1 indexing
-        plt.yticks(np.arange(0, p.num_psi, 1), yticklabels)
+        plt.yticks(np.arange(0, params.num_psi, 1), yticklabels)
         plt.rcParams.update({'font.size': 18})
         plt.colorbar()
-        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, p.num_psi))  # n2: 1 indexing
+        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, params.num_psi))  # n2: 1 indexing
         plt.ylabel('PD-{}, psi'.format(n1 + 1))  # n1:1 indexing
 
         if showPlot:
             plt.show()
 
         if printPotFig:
-            CC_meas_dir = os.path.join(p.CC_dir, 'CC_meas_fig/')
+            CC_meas_dir = os.path.join(params.CC_dir, 'CC_meas_fig/')
             os.makedirs(CC_meas_dir, exist_ok=True)
 
             potfilename = label + 'pot_edge' + str(e + 1) + '_' + str(n1 + 1) + '_' + str(n2 + 1)
@@ -137,7 +137,7 @@ def transformFunction_tblock(M, elist, label, printPotFig):
 
 def op(G, anchorNodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock):
     Edges = G['Edges']
-    NumPsis = p.num_psi
+    NumPsis = params.num_psi
     maxState = 2 * NumPsis
     nNodes = G['nNodes']
     nEdges = Edges.shape[0]
@@ -178,7 +178,7 @@ def op(G, anchorNodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock):
                 mOF = np.asarray([])
 
         if (mOF is not None) and (mOF.size > 0):
-            mOFn = transformFunction(mOF, [e, n1, n2], p.opt_movie['printFig'])
+            mOFn = transformFunction(mOF, [e, n1, n2], params.opt_movie['printFig'])
 
             w = [1.0, 0.0]
             measOF = w[0] * mOFn

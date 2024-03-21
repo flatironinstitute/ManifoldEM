@@ -8,7 +8,7 @@ import numpy as np
 
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
@@ -18,7 +18,7 @@ from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 def _construct_input_data(R):
     ll = []
     for prD in R:
-        CC_OF_file = f'{p.CC_OF_file}{prD}'
+        CC_OF_file = f'{params.CC_OF_file}{prD}'
         if os.path.exists(CC_OF_file) and os.path.getsize(CC_OF_file):
             continue
         ll.append([CC_OF_file, prD])
@@ -121,14 +121,14 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
 def ComputeOptFlowPrDPsiAll1(input_data):
     CC_OF_file = input_data[0]
     currPrD = input_data[1]
-    FlowVecPrD = np.empty(p.num_psi, dtype=object)
-    psiSelcurrPrD = range(p.num_psi)
+    FlowVecPrD = np.empty(params.num_psi, dtype=object)
+    psiSelcurrPrD = range(params.num_psi)
 
     # load movie and tau param first
     moviePrDPsi, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc = LoadPrDPsiMoviesMasked.op(currPrD)
 
     badPsis = np.array(badPsis)
-    CC_dir_temp = '{}temp/'.format(p.CC_dir)
+    CC_dir_temp = '{}temp/'.format(params.CC_dir)
 
     os.makedirs(CC_dir_temp, exist_ok=True)
 
@@ -150,7 +150,7 @@ def ComputeOptFlowPrDPsiAll1(input_data):
         IMGcurrPrD = moviePrDPsi[psinum_currPrD]
 
         prds_psinums = [currPrD, psinum_currPrD]
-        FlowVecPrDPsi = ComputePsiMovieOpticalFlow(IMGcurrPrD, p.opt_movie, prds_psinums)
+        FlowVecPrDPsi = ComputePsiMovieOpticalFlow(IMGcurrPrD, params.opt_movie, prds_psinums)
         FlowVecPrD[psinum_currPrD] = FlowVecPrDPsi
 
     CC_OF_file = '{}'.format(CC_OF_file)
@@ -159,7 +159,7 @@ def ComputeOptFlowPrDPsiAll1(input_data):
 
 # If computing for a specified set of nodes, then call the function with nodeRange
 def op(node_edge_num_range, *argv):
-    p.load()
+    params.load()
     multiprocessing.set_start_method('fork', force=True)
 
     node_range = node_edge_num_range[0]
@@ -167,20 +167,20 @@ def op(node_edge_num_range, *argv):
     numberofJobs = len(node_range) + len(edge_num_range)
     input_data = _construct_input_data(node_range)
 
-    if p.find_bad_psi_tau:
+    if params.find_bad_psi_tau:
         # initialize and write to file badpsis array
         offset_OF_files = len(node_range) - len(input_data)
         if offset_OF_files == 0:  # offset_OF_files=0 when no OF files were generated
-            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
+            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
             if os.path.exists(bad_nodes_psis_taufile):
                 os.remove(bad_nodes_psis_taufile)
 
         G = data_store.get_prds().neighbor_graph_pruned
-        bad_nodes_psis_tau = np.zeros((G['nNodes'], p.num_psi)).astype(int)
-        nodes_psis_tau_IQR = np.zeros((G['nNodes'], p.num_psi)) + 5.  # any positive real number > 1.0 outside tau range
+        bad_nodes_psis_tau = np.zeros((G['nNodes'], params.num_psi)).astype(int)
+        nodes_psis_tau_IQR = np.zeros((G['nNodes'], params.num_psi)) + 5.  # any positive real number > 1.0 outside tau range
         # tau range is [0,1.0], since a zero or small tau value by default means it will be automatically assigned
         # as a bad tau depending on the cut-off
-        nodes_psis_tau_occ = np.zeros((G['nNodes'], p.num_psi))
+        nodes_psis_tau_occ = np.zeros((G['nNodes'], params.num_psi))
         nodes_psis_tau_vals = [[None]] * G['nNodes']
 
         # the above variables are initialized at the start and also at resume of CC step
@@ -203,18 +203,18 @@ def op(node_edge_num_range, *argv):
         progress5 = NullEmitter()
         offset = 0
 
-    if p.ncpu == 1:  # avoids the multiprocessing package
+    if params.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in enumerate(input_data):
             ComputeOptFlowPrDPsiAll1(datai)
             progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
-        with multiprocessing.Pool(processes=p.ncpu) as pool:
+        with multiprocessing.Pool(processes=params.ncpu) as pool:
             for i, _ in enumerate(pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data)):
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
 
     # for now individual files were written and are being combined here
-    if p.find_bad_psi_tau:
-        CC_dir_temp = '{}temp/'.format(p.CC_dir)
+    if params.find_bad_psi_tau:
+        CC_dir_temp = '{}temp/'.format(params.CC_dir)
 
         # if CC_dir_temp exists and is non-empty  combine the individual files again
         if os.path.exists(CC_dir_temp) and len(os.listdir(CC_dir_temp)) > 0:
@@ -233,7 +233,7 @@ def op(node_edge_num_range, *argv):
                 nodes_psis_tau_occ[currPrD, :] = tauPsisOcc
                 nodes_psis_tau_vals[currPrD] = tauPrDPsis
 
-            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(p.CC_dir)
+            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
             myio.fout1(bad_nodes_psis_taufile,
                        badNodesPsisTau=bad_nodes_psis_tau,
                        NodesPsisTauIQR=nodes_psis_tau_IQR,

@@ -5,7 +5,7 @@ import numpy as np
 from typing import Set, Any, Dict, Tuple, Union, List
 from nptyping import NDArray, Shape
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 
 from scipy.sparse import csr_matrix, tril, lil_matrix
 from scipy.sparse.csgraph import connected_components
@@ -303,7 +303,7 @@ def op(CG, nG, S20_th):
     #Number of Projection directions
     PrDs = range(numPDs)
 
-    maxState = 2 * p.num_psi  # Up and Down
+    maxState = 2 * params.num_psi  # Up and Down
 
     if numPDs > 1:
         # Setting up the graph structure
@@ -312,13 +312,13 @@ def op(CG, nG, S20_th):
         mindist = np.min(pwDist[np.nonzero(pwDist)])  # 2*shAngWidth
 
         epsilonBall = mindist * nG / numPDs
-        epsilon = min(max(mindist + p.eps, epsilonBall),
-                      mindist * 2 * np.sqrt(2) + p.eps)  #mindist + eps <= epsilon <= mindist *2*sqrt(2) + eps
+        epsilon = min(max(mindist + params.eps, epsilonBall),
+                      mindist * 2 * np.sqrt(2) + params.eps)  #mindist + eps <= epsilon <= mindist *2*sqrt(2) + eps
         print("Neighborhood epsilon:", epsilon)
 
         # Updated graph info
         G = CreateGraphStruct(maxState, pwDist, epsilon)
-        G.update(nPsiModes=p.num_psi)
+        G.update(nPsiModes=params.num_psi)
     else:
         G = CreateGraphStruct(maxState, [0], 0)
 

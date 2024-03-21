@@ -12,7 +12,7 @@ import matplotlib.colorbar as mcolorbar
 from cv2 import calcOpticalFlowFarneback
 from scipy.ndimage import uniform_filter
 
-from ManifoldEM.params import p
+from ManifoldEM.params import params
 from ManifoldEM.CC import hornschunck_simple
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt
 ''' Suvrajit Maji,sm4073@cumc.columbia.edu
@@ -59,7 +59,7 @@ def normalizeRescaleVector(f, normalizeVec, rescaleRange):
 
 
 def saveImage(Img, prD, psinum, frame_no):
-    frame_file = p.out_dir + 'CC/tmp_figs/PrD_{}_psi_{}_frame{:02d}'.format(prD + 1, psinum + 1, frame_no)
+    frame_file = params.out_dir + 'CC/tmp_figs/PrD_{}_psi_{}_frame{:02d}'.format(prD + 1, psinum + 1, frame_no)
 
     fig = plt.figure(frameon=False)
     ax = fig.add_axes([0, 0, 1, 1])
@@ -566,7 +566,7 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
     if OFvisualPrint[0] or OFvisualPrint[1]:
         # uses indexing 1 for user output
         filename = "flow_prd_" + str(prD + 1) + '_psi_' + str(psinum_prD + 1) + '_' + str(label)
-        CC_OF_fig_dir = os.path.join(p.CC_dir, 'CC_OF_fig/PrD_' + str(prD + 1) + '/')
+        CC_OF_fig_dir = os.path.join(params.CC_dir, 'CC_OF_fig/PrD_' + str(prD + 1) + '/')
         os.makedirs(CC_OF_fig_dir, exist_ok=True)
 
         figOutfile = os.path.join(CC_OF_fig_dir, filename)
@@ -574,7 +574,7 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
         dim = VxM.shape[0]
         flow = np.zeros((dim, dim, 2))
 
-        FlowVecSel = SelectFlowVec(FlowVec, p.opt_movie['flowVecPctThresh'])
+        FlowVecSel = SelectFlowVec(FlowVec, params.opt_movie['flowVecPctThresh'])
 
         #visualize only the selected flow vectors
         VxMSel = FlowVecSel['Vx']
