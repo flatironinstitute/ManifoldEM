@@ -55,7 +55,6 @@ dependencies = [
     "scikit-image",
     "scikit-learn",
     "scipy",
-    "pillow",
     "pandas",
     "mrcfile",
     "opencv-python-headless",

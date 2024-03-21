@@ -4,7 +4,6 @@ import os
 import numpy as np
 
 from matplotlib.figure import Figure
-from PIL import Image
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from PyQt5 import QtCore
@@ -30,8 +29,8 @@ class _Vid2Canvas(QDialog):
         # Create blank image for initiation:
         # =====================================================================
         picDir = os.path.join(params.out_dir, 'topos', 'PrD_1', 'topos_1.png')
-        picImg = Image.open(picDir)
-        picSize = picImg.size
+        picImg = imageio.imread(picDir)
+        picSize = picImg.shape
         self.blank = np.ones([picSize[0], picSize[1], 3], dtype=int) * 255  #white background
         # =====================================================================
 

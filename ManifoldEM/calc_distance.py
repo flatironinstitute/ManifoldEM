@@ -7,9 +7,8 @@ from dataclasses import dataclass
 from functools import partial
 
 import numpy as np
-from PIL import Image
 from scipy.fftpack import ifftshift, fft2, ifft2
-from scipy.ndimage import shift
+from scipy.ndimage import shift, rotate
 
 from nptyping import NDArray, Shape, Float64, Int
 from typing import Tuple, Union, List
@@ -57,10 +56,7 @@ class FilterParams:
 
 
 def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
-    n_pix = img.shape[0]
-    in_rep = Image.fromarray(np.tile(img, (3, 3)).astype('float32'), mode='F')
-    out_rep = np.array(in_rep.rotate(angle, expand=False), dtype=img.dtype)
-    return out_rep[n_pix:2 * n_pix, n_pix:2 * n_pix]
+    return rotate(img, angle, reshape=False, mode='grid-wrap')
 
 
 def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
@@ -90,7 +86,7 @@ def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float6
     return psi
 
 
-def psi_ang(ref_vec: NDArray[Shape["3"], Float64]):
+def psi_ang(ref_vec: NDArray[Shape["3"], Float64]) -> float:
     Qr = np.array([1 + ref_vec[2], ref_vec[1], -ref_vec[0], 0])
     L2 = np.sum(Qr**2)
     if L2 == 0.0:

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QWidget, QLabel, QFrame, QPushButton, QMessageBox, 
                              QDoubleSpinBox, QGridLayout, QWidget, QSplitter, QAbstractSpinBox)
 from PyQt5.QtGui import QImage, QPixmap
 
-from PIL import Image
+import imageio
 import numpy as np
 
 from ManifoldEM.params import params
@@ -16,8 +16,8 @@ from .eigen_views import (Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, Ei
 
 def get_blank_pixmap(path: str):
     if os.path.isfile(path):
-        pic = Image.open(path)
-        size = pic.size
+        pic = imageio.imread(path)
+        size = pic.shape
     else:
         size = (192, 192)
 
