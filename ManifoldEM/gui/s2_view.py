@@ -165,7 +165,7 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
         mlab.clf(figure=self.fig2)
 
-        if p.relion_data:
+        if p.is_relion_data:
             mirror = self.df_vol[..., ::-1]
             cplot = mlab.contour3d(mirror,
                                    contours=self.isosurface_level,

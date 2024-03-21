@@ -232,7 +232,7 @@ class PDEditorCanvas(QDialog):
             return
 
         prds = data_store.get_prds()
-        if p.dim == 1:
+        if p.n_reaction_coords == 1:
             headers = ['PD', 'CC', 'Sense', 'Color']
             values = [(id + 1, anchor.CC, anchor.sense.value, prds.cluster_ids[id]) for (id, anchor) in prds.anchors.items()]
         else:

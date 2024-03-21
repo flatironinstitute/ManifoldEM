@@ -65,7 +65,7 @@ class _EigenSpectrumCanvas(FigureCanvas):
         for i, j in cols:
             self.eig_n.append(int(i))
             self.eig_v.append(float(j))
-            if int(i) <= int(p.num_psis):
+            if int(i) <= int(p.num_psi):
                 self.eig_n1.append(int(i))
                 self.eig_v1.append(float(j))
             else:

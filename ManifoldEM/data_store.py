@@ -38,8 +38,8 @@ class Anchor:
 
 class _ProjectionDirections:
     def __init__(self):
-        self.thres_low: int = p.PDsizeThL
-        self.thres_high: int = p.PDsizeThH
+        self.thres_low: int = p.prd_thres_low
+        self.thres_high: int = p.prd_thres_high
         self.bin_centers: NDArray[Shape["3,*", Any], Float64] = np.empty(shape=(3, 0))
 
         self.defocus: NDArray[Shape["*"], Float64] = np.empty(0)
@@ -89,7 +89,7 @@ class _ProjectionDirections:
 
         # If uninitialized or things have changed, actually update
         force_rebuild = bool(os.environ.get('MANIFOLD_REBUILD_DS', 0))
-        if force_rebuild or self.pos_full.size == 0 or self.thres_low != p.PDsizeThL or self.thres_high != p.PDsizeThH:
+        if force_rebuild or self.pos_full.size == 0 or self.thres_low != p.prd_thres_low or self.thres_high != p.prd_thres_high:
             if force_rebuild:
                 print("Rebuilding data store")
                 os.environ.pop('MANIFOLD_REBUILD_DS')
@@ -103,10 +103,10 @@ class _ProjectionDirections:
             df = np.concatenate((df, df))
 
             image_indices, pos_full, bin_centers, occupancy, conjugate_bin_ids = \
-                bin_and_threshold(q, p.ang_width, p.PDsizeThL, p.PDsizeThH)
+                bin_and_threshold(q, p.ang_width, p.prd_thres_low, p.prd_thres_high)
 
-            self.thres_low = p.PDsizeThL
-            self.thres_high = p.PDsizeThH
+            self.thres_low = p.prd_thres_low
+            self.thres_high = p.prd_thres_high
 
             self.bin_centers = bin_centers
             self.defocus = df
@@ -138,7 +138,7 @@ class _ProjectionDirections:
 
             self.cluster_ids = get_cluster_ids(self.neighbor_graph)
 
-            p.numberofJobs = len(self.thres_ids)
+            p.prd_n_active = len(self.thres_ids)
 
             p.save()
             self.save()

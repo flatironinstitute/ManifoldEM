@@ -307,7 +307,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # Step 1. Compute Optical Flow Vectors
     # Save the optical flow vectors for each psi-movie of individual projection direction
-    if p.getOpticalFlow:
+    if p.calc_optical_flow:
         print('\n1.Now computing optical flow vectors for all (selected) PrDs...\n')
         # Optical flow vectors for each psi-movies of each node are saved to disk
         ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, *argv)
@@ -376,7 +376,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
 
     # Step 2. Compute the pairwise edge measurements
     # Save individual edge measurements
-    if p.getAllEdgeMeasures:
+    if p.calc_all_edge_measures:
         print('\n2.Now computing pairwise edge-measurements...\n')
         # measures for creating potentials later on
         # edgeMeasures files for each edge (pair of nodes) are saved to disk
@@ -396,7 +396,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
     print('Edges', G['nEdges'])
     edgeMeasures = np.empty((G['nEdges']), dtype=object)
     edgeMeasures_tblock = np.empty((G['nEdges']), dtype=object)
-    badNodesPsisBlock = np.zeros((G['nNodes'], p.num_psis))
+    badNodesPsisBlock = np.zeros((G['nNodes'], p.num_psi))
 
     for e in edgeNumRange:
         currPrD = G['Edges'][e, 0]

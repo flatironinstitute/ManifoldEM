@@ -24,7 +24,7 @@ def op(*argv):
     data = myio.fin1(p.CC_file)
     psiNumsAll = data['psinums']
 
-    xSelect = np.arange(p.numberofJobs)
+    xSelect = np.arange(p.prd_n_active)
     unused_prds = set(np.nonzero(psiNumsAll[0, :] == -1)[0])  # unassigned states
     unused_prds = unused_prds.union(data_store.get_prds().trash_ids)
 
@@ -36,13 +36,13 @@ def op(*argv):
 
     # getFromFileS2
     xLost = []
-    trajTaus = [None] * p.numberofJobs
-    posPathAll = [None] * p.numberofJobs
-    posPsi1All = [None] * p.numberofJobs
+    trajTaus = [None] * p.prd_n_active
+    posPathAll = [None] * p.prd_n_active
+    posPsi1All = [None] * p.prd_n_active
 
     for x in xSelect:
         EL_file = p.get_EL_file(x)
-        File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
+        File = '{}_{}_{}'.format(EL_file, p.traj_name, 1)
 
         if os.path.exists(File):
             data = myio.fin1(File)
@@ -55,7 +55,7 @@ def op(*argv):
 
     xSelect = list(set(xSelect) - set(xLost))
     # Section II
-    hUn = np.zeros((1, p.nClass)).flatten()
+    hUn = np.zeros((1, p.states_per_coord)).flatten()
     tauAvg = np.array([])
 
     for x in xSelect:
@@ -63,16 +63,16 @@ def op(*argv):
         tau = tau.flatten()
 
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
-        h, ctrs = np.histogram(tau, p.nClass)
+        h, ctrs = np.histogram(tau, p.states_per_coord)
         hUn = hUn + h
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # Section III
-    traj_file = "{}name{}".format(p.traj_file, p.trajName)
+    traj_file = "{}name{}".format(p.traj_file, p.traj_name)
     myio.fout1(traj_file, hUn=hUn)
 
     # added June 2020, S.M.
-    traj_file_vars = f"{p.traj_file}name{p.trajName}_vars"
+    traj_file_vars = f"{p.traj_file}name{p.traj_name}_vars"
     myio.fout1(traj_file_vars, trajTaus=trajTaus, posPsi1All=posPsi1All,
                posPathAll=posPathAll, xSelect=xSelect, tauAvg=tauAvg)
     gc.collect()

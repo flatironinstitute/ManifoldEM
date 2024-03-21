@@ -45,7 +45,7 @@ def op(prd_list: Union[List[int], None], *argv):
     use_gui_progress = len(argv) > 0
 
     # Finding and trimming manifold from particles
-    input_data = _construct_input_data(prd_list, p.numberofJobs)
+    input_data = _construct_input_data(prd_list, p.prd_n_active)
     n_jobs = len(input_data)
     progress2 = argv[0] if use_gui_progress else NullEmitter()
 
@@ -55,7 +55,7 @@ def op(prd_list: Union[List[int], None], *argv):
 
     local_trim_func = partial(manifoldTrimmingAuto.op,
                               posPath=0,
-                              tune=p.tune,
+                              tune=p.nlsa_tune,
                               rad=p.rad,
                               visual=False,
                               doSave=dict(outputFile='', Is=True))

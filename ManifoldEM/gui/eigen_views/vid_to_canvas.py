@@ -58,7 +58,7 @@ class _Vid2Canvas(QDialog):
 
         self.Psi1 = QSpinBox(self)
         self.Psi1.setMinimum(1)
-        self.Psi1.setMaximum(p.num_psis)
+        self.Psi1.setMaximum(p.num_psi)
         self.Psi1.setPrefix('Psi: ')
         self.Psi1.setDisabled(False)
 
@@ -85,7 +85,7 @@ class _Vid2Canvas(QDialog):
 
         self.Psi2 = QSpinBox(self)
         self.Psi2.setMinimum(1)
-        self.Psi2.setMaximum(p.num_psis)
+        self.Psi2.setMaximum(p.num_psi)
         self.Psi2.setPrefix('Psi: ')
         self.Psi2.setDisabled(False)
 

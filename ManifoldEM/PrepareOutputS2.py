@@ -22,17 +22,17 @@ def op(*argv):
     # read reaction coordinates
     a = set(np.nonzero(psiNumsAll[0, :] == -1)[0])  #unassigned states, python
     a = list(a.union(data_store.get_prds().trash_ids))
-    xSelect = np.delete(np.arange(p.numberofJobs), a)
+    xSelect = np.delete(np.arange(p.prd_n_active), a)
 
     # getFromFileS2
     xLost = []
-    trajTaus = [None] * p.numberofJobs
-    posPathAll = [None] * p.numberofJobs
-    posPsi1All = [None] * p.numberofJobs
+    trajTaus = [None] * p.prd_n_active
+    posPathAll = [None] * p.prd_n_active
+    posPsi1All = [None] * p.prd_n_active
 
     for x in xSelect:
         EL_file = p.get_EL_file(x)
-        File = '{}_{}_{}'.format(EL_file, p.trajName, 1)
+        File = '{}_{}_{}'.format(EL_file, p.traj_name, 1)
         if os.path.exists(File):
             data = myio.fin1(File)
             trajTaus[x] = data['tau']
@@ -53,7 +53,7 @@ def op(*argv):
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # added June 2020, S.M.
-    traj_file2 = "{}name{}_vars".format(p.traj_file, p.trajName)
+    traj_file2 = "{}name{}_vars".format(p.traj_file, p.traj_name)
     myio.fout1(traj_file2, trajTaus=trajTaus, posPsi1All=posPsi1All, posPathAll=posPathAll,
                xSelect=xSelect, tauAvg=tauAvg)
 

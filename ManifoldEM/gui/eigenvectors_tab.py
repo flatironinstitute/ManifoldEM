@@ -158,7 +158,7 @@ class EigenvectorsTab(QWidget):
 
         self.CC_selector = QSpinBox(self)
         self.CC_selector.setMinimum(1)
-        self.CC_selector.setMaximum(p.num_psis)
+        self.CC_selector.setMaximum(p.num_psi)
         self.CC_selector.setPrefix('CC1: \u03A8')
         self.layoutB.addWidget(self.CC_selector, 8, 2, 1, 1)
 

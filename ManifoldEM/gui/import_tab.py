@@ -13,19 +13,19 @@ from ManifoldEM.params import p, ProjectLevel
 from ManifoldEM.util import get_image_width_from_stack
 
 def choose_pixel(entry: QDoubleSpinBox):
-    p.pix_size = float(entry.value())
+    p.ms_pixel_size = float(entry.value())
 
 
 def choose_resolution(entry: QDoubleSpinBox):
-    p.resol_est = float(entry.value())
+    p.ms_estimated_resolution = float(entry.value())
 
 
 def choose_diameter(entry: QDoubleSpinBox):
-    p.obj_diam = float(entry.value())
+    p.particle_diameter = float(entry.value())
 
 
 def choose_aperture(entry: QDoubleSpinBox):
-    p.ap_index = int(entry.value())
+    p.aperture_index = int(entry.value())
 
 
 def update_shannon(entry: QDoubleSpinBox):
@@ -76,12 +76,12 @@ def choose_proj_name(entry, parent):
             box.setStandardButtons(QMessageBox.Ok)
             box.setDefaultButton(QMessageBox.Ok)
             box.exec_()
-            text = p.proj_name
+            text = p.project_name
     else:
-        text = p.proj_name
+        text = p.project_name
 
     entry.setText(text)
-    p.proj_name = text
+    p.project_name = text
 
 
 def text_field_selector(yoffset: int, field_name: str, default_val: str, button_text: str, onclick, parent):
@@ -175,13 +175,13 @@ class ImportTab(QWidget):
         text_field_selector(1, "Alignment File", p.align_param_file, "Browse", choose_align, self)
         text_field_selector(2, "Image Stack", p.img_stack_file, "Browse", choose_stack, self)
         text_field_selector(3, "Mask Volume", p.mask_vol_file, "Browse", choose_mask, self)
-        text_field_selector(4, "Project Name", p.proj_name, "Choose", choose_proj_name, self)
+        text_field_selector(4, "Project Name", p.project_name, "Choose", choose_proj_name, self)
 
-        pixel_selector = num_selector((0, 5), "Pixel Size", " \u00c5", p.pix_size, (0.001, 1000.0), 3, False, choose_pixel, self)
-        diam_selector = num_selector((1, 5), "Object Diameter", " \u00c5", p.obj_diam, (0.01, 10000.0), 2, False, choose_diameter, self)
+        pixel_selector = num_selector((0, 5), "Pixel Size", " \u00c5", p.ms_pixel_size, (0.001, 1000.0), 3, False, choose_pixel, self)
+        diam_selector = num_selector((1, 5), "Object Diameter", " \u00c5", p.particle_diameter, (0.01, 10000.0), 2, False, choose_diameter, self)
         shannon_entry = num_selector((2, 5), "Shannon Angle", " rad", p.sh, None, 3, True, None, self)
-        resolution_selector = num_selector((0, 6), "Resolution", " \u00c5", p.resol_est, (0.01, 1000.0), 2, False, choose_resolution, self)
-        aperture_selector = num_selector((1, 6), "Aperture Index", "", p.ap_index, (1, 1000), 0, False, choose_aperture, self)
+        resolution_selector = num_selector((0, 6), "Resolution", " \u00c5", p.ms_estimated_resolution, (0.01, 1000.0), 2, False, choose_resolution, self)
+        aperture_selector = num_selector((1, 6), "Aperture Index", "", p.aperture_index, (1, 1000), 0, False, choose_aperture, self)
         ang_width_entry = num_selector((2, 6), "Angle Width", " rad", p.ang_width, None, 3, True, None, self)
 
         for selector in (pixel_selector, diam_selector, resolution_selector, aperture_selector):
@@ -216,7 +216,7 @@ class ImportTab(QWidget):
         self.finalize_button.setDisabled(True)
 
         if (p.avg_vol_file and p.img_stack_file and p.align_param_file and p.sh and p.ang_width):
-            if os.path.exists(p.out_dir) or os.path.exists(f'params_{p.proj_name}.toml'):
+            if os.path.exists(p.out_dir) or os.path.exists(f'params_{p.project_name}.toml'):
                 box = QMessageBox(self)
                 box.setWindowTitle("ManifoldEM Conflict")
                 box.setText("<b>Directory Conflict</b>")
@@ -230,13 +230,13 @@ class ImportTab(QWidget):
                 if reply == QMessageBox.Yes:
                     if os.path.exists(p.out_dir):
                         shutil.rmtree(p.out_dir)
-                    if os.path.exists(f"params_{p.proj_name}.toml"):
-                        os.remove(f"params_{p.proj_name}.toml")
+                    if os.path.exists(f"params_{p.project_name}.toml"):
+                        os.remove(f"params_{p.project_name}.toml")
                 else:
                     self.finalize_button.setDisabled(False)
                     return
 
-            p.nPix = get_image_width_from_stack(p.img_stack_file)
+            p.ms_num_pixels = get_image_width_from_stack(p.img_stack_file)
             p.save()
             p.create_dir()
 

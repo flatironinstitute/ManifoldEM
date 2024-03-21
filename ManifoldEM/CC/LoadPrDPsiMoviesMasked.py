@@ -16,9 +16,9 @@ def getMask2D(prD, maskType, radius):
 
 
     if maskType == 'annular':  #annular mask
-        N = p.nPix
-        diam_angst = p.obj_diam
-        diam_pix = diam_angst / p.pix_size
+        N = p.ms_num_pixels
+        diam_angst = p.particle_diameter
+        diam_pix = diam_angst / p.ms_pixel_size
         if radius == None:  # if no input is provided
             N2 = N / 2. - .25 * (N - diam_pix) * 0.30
         else:
@@ -112,7 +112,7 @@ def op(prD):
         radius = None  # for volumetric we don't need any radius
 
     psi2_file = p.psi2_file
-    NumPsis = p.num_psis
+    NumPsis = p.num_psi
 
     moviePrDPsis = [None] * NumPsis
     tauPrDPsis = [None] * NumPsis
@@ -152,7 +152,7 @@ def op(prD):
         moviePrDPsis[psinum] = Mpsi_masked
         tauPrDPsis[psinum] = tau
 
-        if p.findBadPsiTau:
+        if p.find_bad_psi_tau:
             b, tauIQR, tauOcc = findBadNodePsiTau(tau, p.tau_occ_thresh)
             tauPsisIQR.append(tauIQR)
             tauPsisOcc.append(tauOcc)

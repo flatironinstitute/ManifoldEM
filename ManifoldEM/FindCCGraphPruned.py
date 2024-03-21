@@ -253,7 +253,7 @@ def op(CC_graph_file_pruned):
 
     print("Number of isolated nodes in the graph after pruning:", num_pruned_nodes)
 
-    maxState = 2 * p.num_psis  # Up and Down
+    maxState = 2 * p.num_psi  # Up and Down
 
     if numNodes > 1:
 
@@ -261,7 +261,7 @@ def op(CC_graph_file_pruned):
         data = myio.fin1(p.CC_graph_file)
         G = data['G']
         epsilon = G['epsilon']  # save it later after update
-        G.update(nPsiModes=p.num_psis)
+        G.update(nPsiModes=p.num_psi)
 
         print('Number of Graph Edges before prunning:', G['nEdges'])
         # prune edges corresponding to the bad nodes with actually removing those bad nodes by disconnecting the edges

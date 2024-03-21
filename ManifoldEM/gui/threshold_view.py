@@ -16,8 +16,8 @@ from ManifoldEM.data_store import data_store
 class ThresholdView(QMainWindow):
     def __init__(self):
         super(ThresholdView, self).__init__()
-        self.thresh_low = p.PDsizeThL
-        self.thresh_high = p.PDsizeThH
+        self.thresh_low = p.prd_thres_low
+        self.thresh_high = p.prd_thres_high
 
         self.initUI()
 
@@ -108,8 +108,8 @@ class ThresholdView(QMainWindow):
             reply = box.exec_()
             if reply == QMessageBox.Yes:
                 self.thresh_all_tab.confirmed = 1
-                self.thresh_low = p.PDsizeThL
-                self.thresh_high = p.PDsizeThH
+                self.thresh_low = p.prd_thres_low
+                self.thresh_high = p.prd_thres_high
                 self.close()
             else:
                 ce.ignore()
@@ -148,8 +148,8 @@ class ThreshAllCanvas(QDialog):
                                      linewidth=.5,
                                      label='High Threshold')  #green
         x = np.arange(self.xlimLo, self.xlimHi + 1)
-        self.lineL.set_data(x, [p.PDsizeThL])
-        self.lineH.set_data(x, [p.PDsizeThH])
+        self.lineL.set_data(x, [p.prd_thres_low])
+        self.lineH.set_data(x, [p.prd_thres_high])
 
         self.axes.axvline(n_pds + 1, color='#7f7f7f', linestyle='-', linewidth=.5)
 
@@ -205,13 +205,13 @@ class ThreshAllCanvas(QDialog):
         self.entry_low.setDecimals(0)
         self.entry_low.setMinimum(5)
         self.entry_low.setMaximum(np.amax(prds.occupancy_no_duplication))
-        self.entry_low.setValue(int(p.PDsizeThL))
+        self.entry_low.setValue(int(p.prd_thres_low))
 
         self.entry_high = QDoubleSpinBox(self)
         self.entry_high.setDecimals(0)
         self.entry_high.setMinimum(90)
         self.entry_high.setMaximum(10000)
-        self.entry_high.setValue(int(p.PDsizeThH))
+        self.entry_high.setValue(int(p.prd_thres_high))
 
         self.entry_low.valueChanged.connect(choose_thresholds)
         self.entry_high.valueChanged.connect(choose_thresholds)
@@ -242,14 +242,14 @@ class ThreshAllCanvas(QDialog):
 
     def confirmThresh(self):
         if self.in_thres_count > 2:
-            p.PDsizeThL = self.thresh_container.thresh_low
-            p.PDsizeThH = self.thresh_container.thresh_high
+            p.prd_thres_low = self.thresh_container.thresh_low
+            p.prd_thres_high = self.thresh_container.thresh_high
             p.save()  #send new GUI data to parameters file
 
             print('')
             print('New thresholds set:')
-            print('high:', p.PDsizeThH)
-            print('low:', p.PDsizeThL)
+            print('high:', p.prd_thres_high)
+            print('low:', p.prd_thres_low)
             print('')
 
             self.confirmed = True

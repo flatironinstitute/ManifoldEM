@@ -207,12 +207,12 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
         num = DD.shape[1]  # number of images in PD (duplicate of nS?)
         k = num - con_order
 
-        NLSAPar = dict(num=num, ConOrder=con_order, k=k, tune=p.tune, nS=nS, save=False, psiTrunc=psi_trunc)
+        NLSAPar = dict(num=num, ConOrder=con_order, k=k, tune=p.nlsa_tune, nS=nS, save=False, psiTrunc=psi_trunc)
         IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau = _NLSA(NLSAPar, DD, pos_path, pos_psi1, imgAll, msk2, CTF,
                                                                    extra_params)
 
         n_s_recon = min(IMGT.shape)
-        numclass = min(p.nClass, n_s_recon // 2)
+        numclass = min(p.states_per_coord, n_s_recon // 2)
 
         tau = (tau - min(tau)) / (max(tau) - min(tau))
         tauinds = []
@@ -257,8 +257,8 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
 
 def _construct_input_data(prd_list: Union[List[int], None], N):
     ll = []
-    psi_nums_all = np.tile(np.array(range(p.num_psis)), (N, 1))  # numberofJobs x num_psis
-    senses_all = np.tile(np.ones(p.num_psis), (N, 1))  # numberofJobs x num_psis
+    psi_nums_all = np.tile(np.array(range(p.num_psi)), (N, 1))  # numberofJobs x num_psis
+    senses_all = np.tile(np.ones(p.num_psi), (N, 1))  # numberofJobs x num_psis
 
     valid_prds = set(range(N))
     if prd_list is not None:
@@ -287,14 +287,14 @@ def op(prd_list: Union[List[int], None], *argv):
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    input_data = _construct_input_data(prd_list, p.numberofJobs)
+    input_data = _construct_input_data(prd_list, p.prd_n_active)
     n_jobs = len(input_data)
     progress3 = argv[0] if use_gui_progress else NullEmitter()
     local_psi_func = partial(psi_analysis_single,
-                             con_order_range=p.conOrderRange,
-                             traj_name=p.trajName,
+                             con_order_range=p.con_order_range,
+                             traj_name=p.traj_name,
                              is_full=0,
-                             psi_trunc=p.num_psiTrunc)
+                             psi_trunc=p.num_psi_truncated)
 
     if p.ncpu == 1:
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):

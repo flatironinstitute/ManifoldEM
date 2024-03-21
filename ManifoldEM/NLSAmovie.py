@@ -48,7 +48,7 @@ def movie(input_data, psi2_file, fps):
     prD = input_data[0]
     dist_file1 = p.get_dist_file(prD)
     # Fetching NLSA outputs and making movies
-    for psinum in range(p.num_psis):
+    for psinum in range(p.num_psi):
         psi_file1 = psi2_file + 'prD_{}'.format(prD) + '_psi_{}'.format(psinum)
         data = myio.fin1(psi_file1)
         # make movie
@@ -77,7 +77,7 @@ def op(prd_list: Union[List[int], None], *argv):
     multiprocessing.set_start_method('fork', force=True)
     use_gui_progress = len(argv) > 0
 
-    input_data = _construct_input_data(prd_list, p.numberofJobs)
+    input_data = _construct_input_data(prd_list, p.prd_n_active)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
     movie_local = partial(movie, psi2_file=p.psi2_file, fps=p.fps)

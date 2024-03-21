@@ -60,7 +60,7 @@ def transformFunction(M, elist, printPotFig):
 
     Mt = np.exp(-M / (2.0 * sigma**2))  #modified kernel
 
-    nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psis)).astype(int)
+    nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psi)).astype(int)
 
     showPlot = 0  #printPotFig
     if showPlot or printPotFig:
@@ -75,7 +75,7 @@ def transformFunction(M, elist, printPotFig):
         #plt.yticks(np.arange(0,p.num_psis,1),yticklabels)
         plt.rcParams.update({'font.size': 18})
         plt.colorbar()
-        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, p.num_psis))  # n2 : 1 indexing
+        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, p.num_psi))  # n2 : 1 indexing
         plt.ylabel('PD-{}, psi'.format(n1 + 1))  # n1:1 indexing
 
         if showPlot:
@@ -101,7 +101,7 @@ def transformFunction_tblock(M, elist, label, printPotFig):
 
     Mt = np.exp(-M / (2.0 * sigma**2))  #modified kernel
 
-    nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psis)).astype(int)
+    nBlocks = np.ceil(M.shape[1] / (2.0 * p.num_psi)).astype(int)
 
 
     showPlot = 0  #only show for checking
@@ -115,10 +115,10 @@ def transformFunction_tblock(M, elist, label, printPotFig):
         xticklabels = np.arange(0, M.shape[1], nBlocks) + 1  # 1 indexing
         plt.xticks(np.arange(0, M.shape[1], nBlocks), xticklabels)
         yticklabels = np.arange(0, M.shape[1]) + 1  # 1 indexing
-        plt.yticks(np.arange(0, p.num_psis, 1), yticklabels)
+        plt.yticks(np.arange(0, p.num_psi, 1), yticklabels)
         plt.rcParams.update({'font.size': 18})
         plt.colorbar()
-        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, p.num_psis))  # n2: 1 indexing
+        plt.xlabel('Frame-blocks of {}, PD-{}, psi 1 to {}'.format(nBlocks, n2 + 1, p.num_psi))  # n2: 1 indexing
         plt.ylabel('PD-{}, psi'.format(n1 + 1))  # n1:1 indexing
 
         if showPlot:
@@ -137,7 +137,7 @@ def transformFunction_tblock(M, elist, label, printPotFig):
 
 def op(G, anchorNodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock):
     Edges = G['Edges']
-    NumPsis = p.num_psis
+    NumPsis = p.num_psi
     maxState = 2 * NumPsis
     nNodes = G['nNodes']
     nEdges = Edges.shape[0]

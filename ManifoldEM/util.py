@@ -25,7 +25,7 @@ def remote_runner(hostname, cmd, progress_callback):
     with Connection(hostname, inline_ssh_env=True) as c:
         c.config.run.env = {k: v for k, v in os.environ.items()
                             if k.startswith(('PATH', 'PYTHON', 'VIRTUAL_ENV'))}
-        param_file = os.path.join(os.getcwd(), f'params_{p.proj_name}.toml')
+        param_file = os.path.join(os.getcwd(), f'params_{p.project_name}.toml')
         c.run(f'{cmd} {param_file}')
         progress_callback.emit(100)
 

@@ -16,7 +16,7 @@ import os
 from pprint import pprint
 import toml
 import traceback
-from typing import Annotated, Dict, List, get_type_hints, get_args
+from typing import Annotated, get_type_hints, get_args
 
 
 class ProjectLevel(Enum):
@@ -36,7 +36,7 @@ class ProjectLevel(Enum):
 class ParamInfo():
     description: str = ''
     user_param: bool = False
-    affects: List[ProjectLevel] = field(default_factory=list)
+    affects: list[ProjectLevel] = field(default_factory=list)
 
 
 class Params():
@@ -45,35 +45,35 @@ class Params():
             cls.instance = super(Params, cls).__new__(cls)
         return cls.instance
 
-    proj_name: Annotated[str, ParamInfo('Name of the project', False, [ProjectLevel.INIT])] = ''
+    project_name: Annotated[str, ParamInfo('Name of the project', False, [ProjectLevel.INIT])] = ''
     project_level: Annotated[ProjectLevel, ParamInfo('Current analysis level of project')] = ProjectLevel.INIT
-    relion_data: Annotated[bool, ParamInfo('Is the code analyzing relion data?')] = True
+    is_relion_data: Annotated[bool, ParamInfo('Is the code analyzing relion data?')] = True
     ncpu: Annotated[int, ParamInfo('Number of processes to use for multiprocessing', True)] = 1
     avg_vol_file: Annotated[str, ParamInfo('Average volume file (e.g., .mrc)')] = ''
     img_stack_file: Annotated[str, ParamInfo('Image stack file (e.g., .mrcs)')] = ''
     align_param_file: Annotated[str, ParamInfo('Alignment file (e.g., .star)')] = ''
     mask_vol_file: Annotated[str, ParamInfo('Mask volume file (e.g., .mrc)')] = ''
     num_part: Annotated[int, ParamInfo('Total number of particles in stack')] = 0
-    Cs: Annotated[float, ParamInfo('Spherical Aberration [mm] (from alignment file)')] = 0.0
-    EkV: Annotated[float, ParamInfo('Voltage [kV] (from alignment file)')] = 0.0
-    AmpContrast: Annotated[float, ParamInfo('Amplitude Contrast [ratio](from alignment file)')] = 0.0
     eps: Annotated[float, ParamInfo('Small fraction to be added if divide-by-zero errors occur', True,
                                     [ProjectLevel.BINNING])] = 1E-10
-    gaussEnv: Annotated[float, ParamInfo('Envelope of CTF')] = float("inf")
 
     # microscopy parameters:
-    nPix: Annotated[int, ParamInfo('Window size of image (e.g., for 100x100 image, nPix=100)')] = 0
-    pix_size: Annotated[float, ParamInfo('Pixel size of image [Angstroms] (known via rln_DetectorPixelSize*10e6 / rln_Magnification)')] = 0.0
-    obj_diam: Annotated[float, ParamInfo('Diameter of macromolecule [Angstroms]')] = 0.0
-    resol_est: Annotated[float, ParamInfo('Estimated resolution [Angstroms]')] = 0.0
-    ap_index: Annotated[int, ParamInfo('Aperture index {1,2,3...}; increases tessellated bin size')] = 1
+    ms_spherical_aberration: Annotated[float, ParamInfo('Spherical Aberration [mm] (from alignment file)')] = 0.0
+    ms_kilovolts: Annotated[float, ParamInfo('Voltage [kV] (from alignment file)')] = 0.0
+    ms_amplitude_contrast_ratio: Annotated[float, ParamInfo('Amplitude Contrast [ratio](from alignment file)')] = 0.0
+    ms_ctf_envelope: Annotated[float, ParamInfo('Envelope of CTF')] = float("inf")
+    ms_num_pixels: Annotated[int, ParamInfo('Window size of image (e.g., for 100x100 image, nPix=100)')] = 0
+    ms_pixel_size: Annotated[float, ParamInfo('Pixel size of image [Angstroms] (known via rln_DetectorPixelSize*10e6 / rln_Magnification)')] = 0.0
+    ms_estimated_resolution: Annotated[float, ParamInfo('Estimated resolution [Angstroms]')] = 0.0
+    particle_diameter: Annotated[float, ParamInfo('Diameter of macromolecule [Angstroms]')] = 0.0
+    aperture_index: Annotated[int, ParamInfo('Aperture index {1,2,3...}; increases tessellated bin size')] = 1
 
     # tessellation binning:
-    PDsizeThL: Annotated[int, ParamInfo('Minimum required snapshots in a tessellation for it be admitted', True,
+    prd_thres_low: Annotated[int, ParamInfo('Minimum required snapshots in a tessellation for it be admitted', True,
                                         [ProjectLevel.BINNING])] = 100
-    PDsizeThH: Annotated[int, ParamInfo('Maximum number of snapshots that will be considered within each tessellation', True,
+    prd_thres_high: Annotated[int, ParamInfo('Maximum number of snapshots that will be considered within each tessellation', True,
                                         [ProjectLevel.BINNING])] = 2000
-    numberofJobs: Annotated[int, ParamInfo('Total number of bins to consider for manifold embedding')] = 0
+    prd_n_active: Annotated[int, ParamInfo('Total number of bins to consider for manifold embedding')] = 0
 
     # Distance calculation parameters
     distance_filter_type: Annotated[str, ParamInfo('Filter type for image preprocessing. Valid: {"Butter", "Gauss"}', True,
@@ -83,34 +83,35 @@ class Params():
 
     # eigenfunction parameters:
     num_eigs: Annotated[int, ParamInfo('Number of highest-eigenvalue eigenfunctions to consider in total (max entry of eigenvalue spectrum)')] = 15
-    num_psiTrunc: Annotated[int, ParamInfo('Number of eigenfunctions for truncated views')] = 8
-    num_psis: Annotated[int, ParamInfo('Number of eigenfunctions for analysis', True, [ProjectLevel.BINNING])] = 8
+    num_psi_truncated: Annotated[int, ParamInfo('Number of eigenfunctions for truncated views')] = 8
+    num_psi: Annotated[int, ParamInfo('Number of eigenfunctions for analysis', True, [ProjectLevel.CALC_DISTANCE])] = 8
     rad: Annotated[int, ParamInfo('Manifold pruning'), True, [ProjectLevel.MANIFOLD_ANALYSIS]] = 5
 
     # NLSA parameters:
     fps: Annotated[float, ParamInfo('Frames per second for generated movies', True, [ProjectLevel.NLSA_MOVIE])] = 5.0
-    conOrderRange: Annotated[int, ParamInfo('Coarse-graining factor of energy landscape', True,
-                                            [ProjectLevel.PSI_ANALYSIS,
-                                             ProjectLevel.ENERGY_LANDSCAPE,
-                                             ProjectLevel.TRAJECTORY])] = 50
+    con_order_range: Annotated[int, ParamInfo('Coarse-graining factor of energy landscape', True,
+                                              [ProjectLevel.PSI_ANALYSIS,
+                                               ProjectLevel.ENERGY_LANDSCAPE,
+                                               ProjectLevel.TRAJECTORY])] = 50
     # tune automation suggestion (Ali): larger tune = smaller gaussian width; turns data into
     # islands/chunks (can't see long-range patterns); a good tune should form a 'good' psirec parabola.
     # as well, you can keep using tune to get rid of outliers in data; you want the number of outliers
     # to be around 10%; if higher than this, tune needs to be changed.
-    tune: Annotated[int, ParamInfo('Diffusion map tuning parameter', True,
-                                   [ProjectLevel.MANIFOLD_ANALYSIS, ProjectLevel.PSI_ANALYSIS])] = 3
-
+    nlsa_tune: Annotated[int, ParamInfo('Diffusion map tuning parameter', True,
+                                        [ProjectLevel.MANIFOLD_ANALYSIS, ProjectLevel.PSI_ANALYSIS])] = 3
+    
     # energy landscape parameters:
-    dim: Annotated[int, ParamInfo('Number of reaction coordinates for energy landscape')] = 1
-    temperature: Annotated[int, ParamInfo('User-defined pre-quenching temperature of experiments')] = 25
-    trajName: Annotated[str, ParamInfo('Filename modifier for exported (2D) trajectories')] = '1'
-    nClass: Annotated[int, ParamInfo('Number of states partitioned within each 1D reaction coordinate; results in a nClassx1 1D ELS')] = 50
+    n_reaction_coords: Annotated[int, ParamInfo('Number of reaction coordinates for energy landscape')] = 1
+    temperature: Annotated[int, ParamInfo('User-defined pre-quenching temperature of experiments (Celcius)'), True,
+                           [ProjectLevel.ENERGY_LANDSCAPE]] = 25
+    traj_name: Annotated[str, ParamInfo('Filename modifier for exported (2D) trajectories')] = '1'
+    states_per_coord: Annotated[int, ParamInfo('Number of states partitioned within each 1D reaction coordinate; results in a nClassx1 1D ELS')] = 50
     width_1D: Annotated[int, ParamInfo('Width of trajectory in 1D energy path')] = 1
     width_2D: Annotated[int, ParamInfo('Width of trajectory in 2D energy path')] = 1
 
     #  reaction coordinates parameters:
-    getOpticalFlow: Annotated[bool, ParamInfo('Compute optical flow vectors')] = True
-    getAllEdgeMeasures: Annotated[bool, ParamInfo('Compute "edge measures"')] = True
+    calc_optical_flow: Annotated[bool, ParamInfo('Compute optical flow vectors')] = True
+    calc_all_edge_measures: Annotated[bool, ParamInfo('Compute "edge measures"')] = True
     opt_movie: dict = {'printFig': 0,
                        'OFvisual': 0,
                        'visual_CC': 0,
@@ -118,7 +119,7 @@ class Params():
     opt_mask_type: Annotated[int, ParamInfo('0:None, 1:Annular, 2:Volumetric')] = 0
     opt_mask_param: Annotated[int, ParamInfo('for either none, radius (Int), or iso(Int)')] = 0
 
-    findBadPsiTau: Annotated[bool, ParamInfo('')] = True
+    find_bad_psi_tau: Annotated[bool, ParamInfo('')] = True
     tau_occ_thresh: Annotated[float, ParamInfo('')] = 0.35
     use_pruned_graph: Annotated[bool, ParamInfo('')] = False
 
@@ -131,17 +132,17 @@ class Params():
 
     @property
     def proj_file(self) -> str:
-        return f'params_{self.proj_name}.toml'
+        return f'params_{self.project_name}.toml'
 
     @property
     def ang_width(self) -> float:
-        if not self.obj_diam:
+        if not self.particle_diameter:
             return 0.0
-        return np.min(((self.ap_index * self.resol_est) / self.obj_diam, np.sqrt(4 * np.pi)))
+        return np.min(((self.aperture_index * self.ms_estimated_resolution) / self.particle_diameter, np.sqrt(4 * np.pi)))
 
     @property
     def sh(self) -> float:
-        return self.resol_est / self.obj_diam
+        return self.ms_estimated_resolution / self.particle_diameter
 
 
     @property
@@ -151,7 +152,7 @@ class Params():
 
     @property
     def out_dir(self) -> str:
-        return os.path.join(self.user_dir, self.proj_name)
+        return os.path.join(self.user_dir, self.project_name)
 
 
     @property
@@ -201,7 +202,7 @@ class Params():
 
     @property
     def EL_dir(self) -> str:
-        return os.path.join(self.out_dir, f'ELConc{self.conOrderRange}')
+        return os.path.join(self.out_dir, f'ELConc{self.con_order_range}')
 
 
     @property
@@ -309,15 +310,17 @@ class Params():
         return f'{self.dist_file}prD_{prd_index}'
 
 
-    def get_user_params(self) -> Dict[str, Annotated]:
+    def get_user_params(self) -> dict[str, Annotated]:
         return {k: v for k, v in get_type_hints(self, include_extras=True).items()
                 if hasattr(v, '__metadata__') and v.__metadata__[0].user_param }
 
 
-    def get_params_for_level(self, level: ProjectLevel, first_appearance=True):
-        res = dict()
+    def get_params_for_level(self, level: ProjectLevel, first_appearance=True, user_only=True) -> dict[str, tuple[type, ParamInfo]]:
+        res: dict[str, tuple[type, ParamInfo]] = dict()
         for k, v in get_type_hints(self, include_extras=True).items():
             if not hasattr(v, '__metadata__') or level not in v.__metadata__[0].affects:
+                continue
+            if user_only and not v.__metadata__[0].user_param:
                 continue
 
             if not first_appearance or level.value == min([a.value for a in v.__metadata__[0].affects], default=-1):
@@ -344,7 +347,7 @@ class Params():
 
     def save(self, outfile: str = ''):
         if outfile == '':
-            outfile = f'params_{self.proj_name}.toml'
+            outfile = f'params_{self.project_name}.toml'
         res = {'params': self.asdict()}
         with open(outfile, 'w') as f:
             toml.dump(res, f)
@@ -353,7 +356,7 @@ class Params():
 
     def load(self, infile: str = ''):
         if infile == '':
-            infile = f'params_{self.proj_name}.toml'
+            infile = f'params_{self.project_name}.toml'
 
         with open(infile, 'r') as f:
             indict = toml.load(f)

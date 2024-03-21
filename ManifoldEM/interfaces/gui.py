@@ -42,17 +42,17 @@ def init(args):
         p.load(args.restore)
         return
 
-    p.proj_name = args.project_name
+    p.project_name = args.project_name
 
     p.avg_vol_file = args.avg_volume
     p.align_param_file = args.alignment
     p.img_stack_file = args.image_stack
     p.mask_vol_file = args.mask_volume
 
-    p.pix_size = args.pixel_size
-    p.obj_diam = args.diameter
-    p.resol_est = args.resolution
-    p.ap_index = args.aperture_index
+    p.ms_pixel_size = args.pixel_size
+    p.particle_diameter = args.diameter
+    p.ms_estimated_resolution = args.resolution
+    p.aperture_index = args.aperture_index
 
 
 def main():

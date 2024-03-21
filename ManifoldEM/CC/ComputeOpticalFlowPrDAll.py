@@ -121,8 +121,8 @@ def ComputePsiMovieOpticalFlow(Mov, opt_movie, prds_psinums):
 def ComputeOptFlowPrDPsiAll1(input_data):
     CC_OF_file = input_data[0]
     currPrD = input_data[1]
-    FlowVecPrD = np.empty(p.num_psis, dtype=object)
-    psiSelcurrPrD = range(p.num_psis)
+    FlowVecPrD = np.empty(p.num_psi, dtype=object)
+    psiSelcurrPrD = range(p.num_psi)
 
     # load movie and tau param first
     moviePrDPsi, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc = LoadPrDPsiMoviesMasked.op(currPrD)
@@ -167,7 +167,7 @@ def op(node_edge_num_range, *argv):
     numberofJobs = len(node_range) + len(edge_num_range)
     input_data = _construct_input_data(node_range)
 
-    if p.findBadPsiTau:
+    if p.find_bad_psi_tau:
         # initialize and write to file badpsis array
         offset_OF_files = len(node_range) - len(input_data)
         if offset_OF_files == 0:  # offset_OF_files=0 when no OF files were generated
@@ -176,11 +176,11 @@ def op(node_edge_num_range, *argv):
                 os.remove(bad_nodes_psis_taufile)
 
         G = data_store.get_prds().neighbor_graph_pruned
-        bad_nodes_psis_tau = np.zeros((G['nNodes'], p.num_psis)).astype(int)
-        nodes_psis_tau_IQR = np.zeros((G['nNodes'], p.num_psis)) + 5.  # any positive real number > 1.0 outside tau range
+        bad_nodes_psis_tau = np.zeros((G['nNodes'], p.num_psi)).astype(int)
+        nodes_psis_tau_IQR = np.zeros((G['nNodes'], p.num_psi)) + 5.  # any positive real number > 1.0 outside tau range
         # tau range is [0,1.0], since a zero or small tau value by default means it will be automatically assigned
         # as a bad tau depending on the cut-off
-        nodes_psis_tau_occ = np.zeros((G['nNodes'], p.num_psis))
+        nodes_psis_tau_occ = np.zeros((G['nNodes'], p.num_psi))
         nodes_psis_tau_vals = [[None]] * G['nNodes']
 
         # the above variables are initialized at the start and also at resume of CC step
@@ -213,7 +213,7 @@ def op(node_edge_num_range, *argv):
                 progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
 
     # for now individual files were written and are being combined here
-    if p.findBadPsiTau:
+    if p.find_bad_psi_tau:
         CC_dir_temp = '{}temp/'.format(p.CC_dir)
 
         # if CC_dir_temp exists and is non-empty  combine the individual files again

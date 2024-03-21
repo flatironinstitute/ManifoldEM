@@ -184,7 +184,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
 
     n_particles = indices.shape[0]  # size of bin; ind are the indexes of particles in that bin
     # auxiliary variables
-    n_pix = p.nPix
+    n_pix = p.ms_num_pixels
 
     # different types of averages of aligned particles of the same view
     img_avg = np.zeros((n_pix, n_pix))  # simple average
@@ -258,7 +258,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         img = rotate_fill(img, -psi_p)
 
         # CTF info
-        ctf_i = ctemh_cryoFrank(Q / (2 * p.pix_size), p.Cs, defocus[i_part], p.EkV, p.gaussEnv, p.AmpContrast)
+        ctf_i = ctemh_cryoFrank(Q / (2 * p.ms_pixel_size), p.ms_spherical_aberration, defocus[i_part], p.ms_kilovolts, p.ms_ctf_envelope, p.ms_amplitude_contrast_ratio)
         CTF[i_part, :, :] = ifftshift(ctf_i)
 
         # Fourier transformed #April 2020, with vol mask msk2, used for distance calc D
@@ -335,7 +335,7 @@ def op(prd_list: Union[List[int], None], *argv):
                                   img_file_name=p.img_stack_file,
                                   image_offsets=prds.microscope_origin,
                                   n_particles_tot=len(prds.defocus),
-                                  relion_data=p.relion_data)
+                                  relion_data=p.is_relion_data)
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()
 

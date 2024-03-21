@@ -32,16 +32,16 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         print('Extracting and writing individual trajectory data from selected projection directions ...')
 
         for num in range(0, numberOfJobs, numberOfWorkers):
-            imgss = [[] for i in range(p.nClass)]
-            phis = [[] for i in range(p.nClass)]
-            thetas = [[] for i in range(p.nClass)]
-            psis = [[] for i in range(p.nClass)]
+            imgss = [[] for i in range(p.states_per_coord)]
+            phis = [[] for i in range(p.states_per_coord)]
+            thetas = [[] for i in range(p.states_per_coord)]
+            psis = [[] for i in range(p.states_per_coord)]
 
             numNext = min(numberOfJobs, num + numberOfWorkers)
 
             xSel = xSelect[num:numNext]
             for x in xSel:
-                fname = f'{p.get_EL_file(x)}_{p.trajName}_1'
+                fname = f'{p.get_EL_file(x)}_{p.traj_name}_1'
                 IMGT = myio.fin1(fname)['IMGT']
 
                 dist_file = p.get_dist_file(x)
@@ -52,7 +52,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                 q = q[:, posPath[psi1Path]]
                 nS = q.shape[1]
 
-                conOrder = nS // p.conOrderRange
+                conOrder = nS // p.con_order_range
                 q = q[:, conOrder - 1:nS - conOrder]
 
                 # scale and flip here. IMGT is now num_images x dim^2
@@ -61,13 +61,13 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                 tau = trajTaus[x]
                 tauEq = util.hist_match(tau, tauAvg)
 
-                for bin in range(p.nClass - pathw + 1):
-                    if bin == p.nClass - pathw:
-                        tauBin = ((tauEq >= (float(bin) / p.nClass)) &
-                                  (tauEq <= (bin + float(pathw)) / p.nClass)).nonzero()[0]
+                for bin in range(p.states_per_coord - pathw + 1):
+                    if bin == p.states_per_coord - pathw:
+                        tauBin = ((tauEq >= (float(bin) / p.states_per_coord)) &
+                                  (tauEq <= (bin + float(pathw)) / p.states_per_coord)).nonzero()[0]
                     else:
-                        tauBin = ((tauEq >= (float(bin) / p.nClass)) &
-                                  (tauEq < (bin + float(pathw)) / p.nClass)).nonzero()[0]
+                        tauBin = ((tauEq >= (float(bin) / p.states_per_coord)) &
+                                  (tauEq < (bin + float(pathw)) / p.states_per_coord)).nonzero()[0]
 
                     if not len(tauBin):
                         continue
@@ -92,7 +92,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
                     thetas[bin].append(theta)
                     psis[bin].append(psi)
 
-            traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file, p.trajName, num, numNext - 1)
+            traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file, p.traj_name, num, numNext - 1)
             myio.fout1(traj_bin_file, imgss=imgss, phis=phis, thetas=thetas, psis=psis)
 
             print('Done saving group.')
@@ -101,13 +101,13 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
     # S.M. June 2020
     # loop through the nClass again and convert each list in the list to array
-    for bin in range(0, p.nClass - pathw + 1):
+    for bin in range(0, p.states_per_coord - pathw + 1):
         print('\nConcatenated bin:', bin)
 
         for num in range(0, numberOfJobs, numberOfWorkers):
             numNext = min(numberOfJobs, num + numberOfWorkers)
 
-            traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file, p.trajName, num, numNext - 1)
+            traj_bin_file = "{}name{}_group_{}_{}".format(p.traj_file, p.traj_name, num, numNext - 1)
 
             data = myio.fin1(traj_bin_file)
             imgss_bin_g = data['imgss']
@@ -138,9 +138,9 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
 
         print('Concatenated imgs, shape', np.shape(imgs))
 
-        traj_file_rel = 'imgsRELION_{}_{}_of_{}.mrcs'.format(p.trajName, bin + 1, p.nClass)
+        traj_file_rel = 'imgsRELION_{}_{}_of_{}.mrcs'.format(p.traj_name, bin + 1, p.states_per_coord)
         traj_file = os.path.join(p.bin_dir, traj_file_rel)
-        ang_file = os.path.join(p.bin_dir, f'EulerAngles_{p.trajName}_{bin + 1}_of_{p.nClass}.star')
+        ang_file = os.path.join(p.bin_dir, f'EulerAngles_{p.traj_name}_{bin + 1}_of_{p.states_per_coord}.star')
 
         if os.path.exists(traj_file):
             mrc = mrcfile.open(traj_file, mode='r+')
@@ -153,4 +153,4 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         star.write_star(ang_file, traj_file_rel, df)
 
     if argv:
-        argv[0].emit(int((bin / p.nClass) * 99))
+        argv[0].emit(int((bin / p.states_per_coord) * 99))

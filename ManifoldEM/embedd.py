@@ -33,7 +33,7 @@ def op(orig_zip, new_zip, PrD):
 
     D1 = D[posPathInd][:, posPathInd]  # distances of the new points only
     k = D1.shape[0]
-    lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(D1, k, p.tune, 60000)  #updated 9/11/21
+    lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(D1, k, p.nlsa_tune, 60000)  #updated 9/11/21
     posPath = posPath[posPathInd]  # update posPath
     lamb = lamb[lamb > 0]
 
@@ -47,7 +47,7 @@ def op(orig_zip, new_zip, PrD):
     myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind)
 
     # remove the existing NLSA and movies etc, so that new ones can be created
-    for psinum in range(p.num_psis):
+    for psinum in range(p.num_psi):
         psi2_file = p.get_psi2_file(PrD) + f'_psi_{psinum}'
         if os.path.exists(psi2_file):
             os.remove(psi2_file)

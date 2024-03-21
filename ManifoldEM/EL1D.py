@@ -36,7 +36,7 @@ def op(*argv):
 
     multiprocessing.set_start_method('fork', force=True)
 
-    R = np.array(range(p.numberofJobs))
+    R = np.array(range(p.prd_n_active))
     R = np.delete(R, list(data_store.get_prds().trash_ids))
 
     print("Recomputing the NLSA snapshots using the found reaction coordinates...")
@@ -56,10 +56,10 @@ def op(*argv):
     print(f"Processing {len(input_data)} projection directions.")
 
     local_func = partial(psi_analysis_single,
-                         con_order_range=p.conOrderRange,
-                         traj_name=p.trajName,
+                         con_order_range=p.con_order_range,
+                         traj_name=p.traj_name,
                          is_full=isFull,
-                         psi_trunc=p.num_psiTrunc)
+                         psi_trunc=p.num_psi_truncated)
 
     if p.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in enumerate(input_data):

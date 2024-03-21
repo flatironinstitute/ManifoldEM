@@ -303,7 +303,7 @@ def op(CG, nG, S20_th):
     #Number of Projection directions
     PrDs = range(numPDs)
 
-    maxState = 2 * p.num_psis  # Up and Down
+    maxState = 2 * p.num_psi  # Up and Down
 
     if numPDs > 1:
         # Setting up the graph structure
@@ -318,7 +318,7 @@ def op(CG, nG, S20_th):
 
         # Updated graph info
         G = CreateGraphStruct(maxState, pwDist, epsilon)
-        G.update(nPsiModes=p.num_psis)
+        G.update(nPsiModes=p.num_psi)
     else:
         G = CreateGraphStruct(maxState, [0], 0)
 

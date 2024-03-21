@@ -34,7 +34,7 @@ class EmbeddingTab(QWidget):
         self.button_dist.setText('Distance Calculation Initiated')
 
         if self.hostname:
-            cmd = f'manifold-cli -n {p.ncpu} calc-distance --num-psis {p.num_psis}'
+            cmd = f'manifold-cli -n {p.ncpu} calc-distance --num_psi {p.num_psi}'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.distance_progress_changed))
         else:
@@ -156,7 +156,7 @@ class EmbeddingTab(QWidget):
             p.ncpu = self.entry_proc.value()
 
         def choose_psi():
-            p.num_psis = self.entry_psi.value()
+            p.num_psi = self.entry_psi.value()
 
         def choose_dimensions():
             pass

@@ -37,7 +37,7 @@ def op(*argv):
     if num_trash_nodes:
         print('Number of trash PDs', num_trash_nodes)
         prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned = \
-            prune(deepcopy(prds.neighbor_graph), prds.trash_ids, p.num_psis)
+            prune(deepcopy(prds.neighbor_graph), prds.trash_ids, p.num_psi)
     else:
         prds.neighbor_graph_pruned, prds.neighbor_subgraph_pruned = \
             deepcopy(prds.neighbor_graph), deepcopy(prds.neighbor_subgraph)
@@ -116,7 +116,7 @@ def op(*argv):
     psinums[0, :] = psinums_cc1
     senses[0, :] = senses_cc1
 
-    if p.dim == 2:
+    if p.n_reaction_coords == 2:
         cc = 2
         print('\nFinding CC for Dim:2')
         nodeStateBP_cc2, psinums_cc2, senses_cc2, OptNodeBel_cc2, nodeBelief_cc2 = runGlobalOptimization.op(
@@ -128,7 +128,7 @@ def op(*argv):
     print('\nFind CC: Writing the output to disk...\n')
     myio.fout1(p.CC_file, psinums=psinums, senses=senses)
 
-    if p.dim == 1:  # 1 dimension
+    if p.n_reaction_coords == 1:  # 1 dimension
         node_list = np.empty((G['nNodes'], 4))
         node_list[:, 0] = np.arange(1, G['nNodes'] + 1)
         node_list[:, 1] = psinums[0, :] + 1
@@ -144,7 +144,7 @@ def op(*argv):
         nodeBels1[:, 1:] = nodeBelief_cc1.T
         np.savetxt(nodeBelFile1, nodeBels1, fmt='%f', delimiter='\t')
 
-    elif p.dim == 2:  # 2 dimension
+    elif p.n_reaction_coords == 2:  # 2 dimension
         node_list = np.empty((G['nNodes'], 7))
         node_list[:, 0] = np.arange(1, G['nNodes'] + 1)
         node_list[:, 1:3] = (psinums + 1).T

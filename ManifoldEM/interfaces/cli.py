@@ -81,14 +81,14 @@ def load_state(args):
         return
     fname_front = args.input_file.split('params_', 1)[1]
     fname_sans = os.path.splitext(fname_front)[0]
-    p.proj_name = fname_sans
+    p.project_name = fname_sans
 
     p.load(args.input_file)
 
     p.ncpu = args.ncpu
     if args.command == "threshold":
-        p.PDsizeThL = args.low
-        p.PDsizeThH = args.high
+        p.prd_thres_low = args.low
+        p.prd_thres_high = args.high
     if hasattr(args, "path_width"):
         if args.path_width is None:
             return
@@ -104,8 +104,8 @@ def init(args):
     import shutil
     from ManifoldEM.util import get_image_width_from_stack
 
-    p.proj_name = args.project_name
-    proj_file = f'params_{p.proj_name}.toml'
+    p.project_name = args.project_name
+    proj_file = f'params_{p.project_name}.toml'
 
     if os.path.isfile(proj_file) or os.path.isdir(p.out_dir):
         response = 'y' if args.overwrite else None
@@ -123,13 +123,13 @@ def init(args):
     p.img_stack_file = os.path.expanduser(args.image_stack)
     p.mask_vol_file = os.path.expanduser(args.mask_volume)
 
-    p.pix_size = args.pixel_size
-    p.obj_diam = args.diameter
-    p.resol_est = args.resolution
-    p.ap_index = args.aperture_index
-    p.relion_data = args.alignment.endswith('.star')
+    p.ms_pixel_size = args.pixel_size
+    p.particle_diameter = args.diameter
+    p.ms_estimated_resolution = args.resolution
+    p.aperture_index = args.aperture_index
+    p.is_relion_data = args.alignment.endswith('.star')
 
-    p.nPix = get_image_width_from_stack(p.img_stack_file)
+    p.ms_num_pixels = get_image_width_from_stack(p.img_stack_file)
 
     p.create_dir()
     p.save()
@@ -143,8 +143,8 @@ def _parse_prd_list(prd_list: str):
 
 
 def threshold(args):
-    p.PDsizeThL = args.low
-    p.PDsizeThH = args.high
+    p.prd_thres_low = args.low
+    p.prd_thres_high = args.high
     p.project_level = ProjectLevel.BINNING
     p.save()
 

@@ -192,11 +192,11 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     #Generate the node and edge potentials for the Markov Random Field
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     '''
-    NumPsis = p.num_psis
+    NumPsis = p.num_psi
     #always make sure that the number of states maxState = 2*nPsiModes, because
     #we have two levels: up and down state for each psiMode.
     maxState = 2 * NumPsis
-    G.update(nPsiModes=p.num_psis)  # update the nPsiModes in case p.num_psis is changed in the later steps
+    G.update(nPsiModes=p.num_psi)  # update the nPsiModes in case p.num_psis is changed in the later steps
     G.update(maxState=maxState)
 
     # if cc == 1:

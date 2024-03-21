@@ -181,7 +181,7 @@ def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
     currentPrDPsiFile = '{}{}'.format(p.CC_OF_file, currPrD)
     nbrPrDPsiFile = '{}{}'.format(p.CC_OF_file, nbrPrD)
 
-    NumPsis = p.num_psis
+    NumPsis = p.num_psi
     # load the data for the current and neighbor prds
     data = myio.fin1(currentPrDPsiFile)
     FlowVecCurrPrD = data['FlowVecPrD']

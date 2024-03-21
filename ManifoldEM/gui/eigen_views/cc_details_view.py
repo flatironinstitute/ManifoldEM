@@ -49,7 +49,7 @@ def _backup_restore(prd_index, backup=True):
     shutil.copy(srcfile, dstfile)
 
     # psianalysis
-    for psi in range(p.num_psis):
+    for psi in range(p.num_psi):
         srcfile = os.path.join(srcprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
         dstfile = os.path.join(dstprefix, 'psi_analysis', f'S2_prD_{prd_index}_psi_{psi}')
         shutil.copy(srcfile, dstfile)
@@ -85,7 +85,7 @@ class TauCanvas(QDialog):
             idx += 1
 
         self.ax1.scatter(taus_val, taus_num, linewidths=.1, s=1, edgecolors='k', c=taus_num, cmap='jet')
-        self.ax2.hist(tau, bins=p.nClass, color='#1f77b4')  #C0
+        self.ax2.hist(tau, bins=p.states_per_coord, color='#1f77b4')  #C0
 
         for tick in self.ax1.xaxis.get_major_ticks():
             tick.label1.set_fontsize(4)
@@ -199,7 +199,7 @@ class PsiCanvas(QDialog):
         self.combo_Z = QComboBox(self)
         self.combo_Z.setDisabled(False)
 
-        for psi in range(p.num_psiTrunc):
+        for psi in range(p.num_psi_truncated):
             self.combo_X.addItem('Psi %s' % (int(psi + 1)))
             self.combo_Y.addItem('Psi %s' % (int(psi + 1)))
             self.combo_Z.addItem('Psi %s' % (int(psi + 1)))
@@ -299,7 +299,7 @@ class PsiCanvas(QDialog):
         self.psiC1 = self.psiC[:, x]
         self.psirec1 = self.psirec[:, x]
 
-        for i in range(p.num_psiTrunc):
+        for i in range(p.num_psi_truncated):
             self.combo_Y.model().item(i).setEnabled(True)
             self.combo_Z.model().item(i).setEnabled(True)
 
@@ -317,7 +317,7 @@ class PsiCanvas(QDialog):
         self.psiC2 = self.psiC[:, y]
         self.psirec2 = self.psirec[:, y]
 
-        for i in range(p.num_psiTrunc):
+        for i in range(p.num_psi_truncated):
             self.combo_X.model().item(i).setEnabled(True)
             self.combo_Z.model().item(i).setEnabled(True)
 
@@ -335,7 +335,7 @@ class PsiCanvas(QDialog):
         self.psiC3 = self.psiC[:, z]
         self.psirec3 = self.psirec[:, z]
 
-        for i in range(p.num_psiTrunc):
+        for i in range(p.num_psi_truncated):
             self.combo_X.model().item(i).setEnabled(True)
             self.combo_Y.model().item(i).setEnabled(True)
 
@@ -897,14 +897,14 @@ class Manifold2dCanvas(QDialog):
         psi_file = p.get_psi_file(prd)
         psi2_file = p.get_psi2_file(prd)
         EL_file = p.get_EL_file(prd)
-        psinums = list(range(p.num_psis))
-        senses = np.ones(p.num_psis)
-        psi_list = list(range(p.num_psis))  # list of incomplete psi values per PD
+        psinums = list(range(p.num_psi))
+        senses = np.ones(p.num_psi)
+        psi_list = list(range(p.num_psi))  # list of incomplete psi values per PD
         psi_analysis_single([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prd, psi_list],
-                            con_order_range=p.conOrderRange,
-                            traj_name=p.trajName,
+                            con_order_range=p.con_order_range,
+                            traj_name=p.traj_name,
                             is_full=0,
-                            psi_trunc=p.num_psiTrunc)
+                            psi_trunc=p.num_psi_truncated)
 
         print(f"Re-making NLSA movie for prd {self.prd_index - 1}")
         from ManifoldEM.NLSAmovie import movie
