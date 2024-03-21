@@ -121,7 +121,7 @@ class _Mayavi_Rho(HasTraits):
             y = np.sin(phi) * np.sin(theta)
             z = np.cos(phi)
             testPlot = mlab.mesh(x, y, z, representation='wireframe', color=(1, 1, 1))
-            scale_vec = params.visualization_params['S2_scale'] * len(df_vol) / np.sqrt(2.0) * np.ones(3)
+            scale_vec = params.vis_s2_scale * len(df_vol) / np.sqrt(2.0) * np.ones(3)
 
             testPlot.actor.actor.scale = scale_vec
             testPlot.actor.property.opacity = 0

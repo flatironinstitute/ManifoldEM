@@ -90,7 +90,7 @@ class Params():
     rad: Annotated[int, ParamInfo('Manifold pruning'), True, [ProjectLevel.MANIFOLD_ANALYSIS]] = 5
 
     # NLSA parameters:
-    fps: Annotated[float, ParamInfo('Frames per second for generated movies', True, [ProjectLevel.NLSA_MOVIE])] = 5.0
+    nlsa_fps: Annotated[float, ParamInfo('Frames per second for generated movies', True, [ProjectLevel.NLSA_MOVIE])] = 5.0
     con_order_range: Annotated[int, ParamInfo('Coarse-graining factor of energy landscape', True,
                                               [ProjectLevel.PSI_ANALYSIS,
                                                ProjectLevel.ENERGY_LANDSCAPE,
@@ -121,15 +121,13 @@ class Params():
     opt_mask_type: Annotated[int, ParamInfo('0:None, 1:Annular, 2:Volumetric')] = 0
     opt_mask_param: Annotated[int, ParamInfo('for either none, radius (Int), or iso(Int)')] = 0
 
-    find_bad_psi_tau: Annotated[bool, ParamInfo('')] = True
-    tau_occ_thresh: Annotated[float, ParamInfo('')] = 0.35
-    use_pruned_graph: Annotated[bool, ParamInfo('')] = False
+    find_bad_psi_tau: Annotated[bool, ParamInfo()] = True
+    tau_occ_thresh: Annotated[float, ParamInfo()] = 0.35
+    use_pruned_graph: Annotated[bool, ParamInfo()] = False
 
-    visualization_params: dict = {
-        'S2_scale': 1.0,
-        'S2_density': 1000,
-        'S2_isosurface_level': 3,
-    }
+    vis_s2_scale: Annotated[float, ParamInfo()] = 1.0
+    vis_s2_density: Annotated[int, ParamInfo()] = 1000
+    vis_s2_isosurface_level: Annotated[int, ParamInfo()] = 3
 
 
     @property

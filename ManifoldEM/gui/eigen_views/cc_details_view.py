@@ -907,7 +907,7 @@ class Manifold2dCanvas(QDialog):
 
         print(f"Re-making NLSA movie for prd {self.prd_index - 1}")
         from ManifoldEM.NLSAmovie import movie
-        movie([prd], None, None, params.psi2_file, params.fps)
+        movie([prd], None, None, params.psi2_file, params.nlsa_fps)
 
         msg = f'The manifold for PD {self.prd_index} has been successfully re-embedded.'
         box = QMessageBox(self)

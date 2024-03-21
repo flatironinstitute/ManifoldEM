@@ -80,7 +80,7 @@ def op(prd_list: Union[List[int], None], *argv):
     input_data = _construct_input_data(prd_list, params.prd_n_active)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
-    movie_local = partial(movie, psi2_file=params.psi2_file, fps=params.fps)
+    movie_local = partial(movie, psi2_file=params.psi2_file, fps=params.nlsa_fps)
 
     if params.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):

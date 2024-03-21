@@ -56,9 +56,9 @@ class S2ViewBase:
                 self.df_vol = mrc.data
 
     def update_S2_params(self):
-        self.isosurface_level = int(params.visualization_params['S2_isosurface_level'])
-        self.S2_scale = float(params.visualization_params['S2_scale'])
-        self.S2_density = int(params.visualization_params['S2_density'])
+        self.isosurface_level = params.vis_s2_isosurface_level
+        self.S2_scale = params.vis_s2_scale
+        self.S2_density = params.vis_s2_density
 
 
 class S2ViewMayavi(HasTraits, S2ViewBase):
@@ -88,9 +88,9 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
         return self.edit_traits(parent=self, kind='subpanel').control
 
     def sync_params(self):
-        params.visualization_params['S2_scale'] = self.S2_scale
-        params.visualization_params['S2_density'] = self.S2_density
-        params.visualization_params['S2_isosurface_level'] = self.isosurface_level
+        params.vis_s2_scale = self.S2_scale
+        params.vis_s2_density = self.S2_density
+        params.vis_s2_isosurface_level = self.isosurface_level
         params.save()
 
 
