@@ -9,12 +9,12 @@ from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QWidget, QMessageBox, QGri
 from matplotlib.figure import Figure
 
 import numpy as np
-from ManifoldEM.PrepareOutputS2 import op as PrepareOutputS2
+from ManifoldEM.trajectory import op as trajectory
 from ManifoldEM.params import params
 
 
 class Erg1dMain(QDialog):
-    reprepare = 0  #F/T: if PrepareOutputS2 has already been computed (0 if not)
+    reprepare = 0  #F/T: if trajectory has already been computed (0 if not)
 
     # threading:
     progress7Changed = QtCore.pyqtSignal(int)
@@ -177,7 +177,7 @@ class Erg1dMain(QDialog):
                 pass
 
             self.progress7.setValue(0)
-            # hard-remove pre-existing PrepareOutputS2 outputs:
+            # hard-remove pre-existing trajectory outputs:
             if os.path.isdir(params.bin_dir):
                 shutil.rmtree(params.bin_dir)
                 os.makedirs(params.bin_dir)
@@ -189,11 +189,11 @@ class Erg1dMain(QDialog):
 
             params.save()  #send new GUI data to parameters file
 
-            task7 = threading.Thread(target=PrepareOutputS2, args=(self.progress7Changed, ))
+            task7 = threading.Thread(target=trajectory, args=(self.progress7Changed, ))
             task7.daemon = True
             task7.start()
 
-        else:  #if first time running PrepareOutputS2
+        else:  #if first time running trajectory
             self.progress7.setValue(0)
             self.button_traj.setDisabled(True)
             self.button_traj.setText('Computing 3D Trajectories')
@@ -202,7 +202,7 @@ class Erg1dMain(QDialog):
 
             params.save()  #send new GUI data to parameters file
 
-            task7 = threading.Thread(target=PrepareOutputS2, args=(self.progress7Changed, ))
+            task7 = threading.Thread(target=trajectory, args=(self.progress7Changed, ))
             task7.daemon = True
             task7.start()
 

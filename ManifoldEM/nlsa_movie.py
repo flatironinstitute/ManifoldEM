@@ -13,7 +13,7 @@ from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.util import NullEmitter
 from ManifoldEM.core import makeMovie
 '''
-% scriptPsiNLSAmovie
+% scriptPsinlsa_movie
 % Matlab Version V1.2
 % Copyright(c) UWM, Ali Dashti 2016
 % This script makes the NLSA movies along each reaction coordinate.

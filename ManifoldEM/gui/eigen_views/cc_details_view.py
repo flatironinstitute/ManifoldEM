@@ -890,7 +890,7 @@ class Manifold2dCanvas(QDialog):
     def redo_prd_analysis(self):
         params.save()  #send new GUI data to parameters file
         print(f"Re-running spectral analysis for prd {self.prd_index - 1}")
-        from ManifoldEM.psiAnalysis import psi_analysis_single
+        from ManifoldEM.psi_analysis import psi_analysis_single
         prd = self.prd_index - 1
         dist_file = params.get_dist_file(prd)
         psi_file = params.get_psi_file(prd)
@@ -906,7 +906,7 @@ class Manifold2dCanvas(QDialog):
                             psi_trunc=params.num_psi_truncated)
 
         print(f"Re-making NLSA movie for prd {self.prd_index - 1}")
-        from ManifoldEM.NLSAmovie import movie
+        from ManifoldEM.nlsa_movie import movie
         movie([prd], None, None, params.psi2_file, params.nlsa_fps)
 
         msg = f'The manifold for PD {self.prd_index} has been successfully re-embedded.'

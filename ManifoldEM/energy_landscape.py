@@ -7,7 +7,7 @@ from functools import partial
 from ManifoldEM import myio, ComputeEnergy1D
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
-from ManifoldEM.psiAnalysis import psi_analysis_single
+from ManifoldEM.psi_analysis import psi_analysis_single
 from ManifoldEM.util import NullEmitter
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)

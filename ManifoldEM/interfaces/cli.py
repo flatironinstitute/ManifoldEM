@@ -150,42 +150,42 @@ def threshold(args):
 
 
 def calc_distance(args):
-    from ManifoldEM import GetDistancesS2
+    from ManifoldEM import calc_distance
     prd_list = _parse_prd_list(args.prds)
-    GetDistancesS2.op(prd_list)
+    calc_distance.op(prd_list)
 
 
 def manifold_analysis(args):
-    from ManifoldEM import manifoldAnalysis
+    from ManifoldEM import manifold_analysis
     prd_list = _parse_prd_list(args.prds)
-    manifoldAnalysis.op(prd_list)
+    manifold_analysis.op(prd_list)
 
 
 def psi_analysis(args):
-    from ManifoldEM import psiAnalysis
+    from ManifoldEM import psi_analysis
     prd_list = _parse_prd_list(args.prds)
-    psiAnalysis.op(prd_list)
+    psi_analysis.op(prd_list)
 
 
 def nlsa_movie(args):
-    from ManifoldEM import NLSAmovie
+    from ManifoldEM import nlsa_movie
     prd_list = _parse_prd_list(args.prds)
-    NLSAmovie.op(prd_list)
+    nlsa_movie.op(prd_list)
 
 
 def find_conformational_coordinates(_):
-    from ManifoldEM import FindConformationalCoord
-    FindConformationalCoord.op()
+    from ManifoldEM import find_conformational_coords
+    find_conformational_coords.op()
 
 
 def energy_landscape(_):
-    from ManifoldEM import EL1D
-    EL1D.op()
+    from ManifoldEM import energy_landscape
+    energy_landscape.op()
 
 
 def compute_trajectory(_):
-    from ManifoldEM import PrepareOutputS2
-    PrepareOutputS2.op()
+    from ManifoldEM import trajectory
+    trajectory.op()
 
 
 _funcs = {

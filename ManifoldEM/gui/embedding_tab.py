@@ -36,8 +36,8 @@ class EmbeddingTab(QWidget):
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.distance_progress_changed))
         else:
-            from ManifoldEM.GetDistancesS2 import op as GetDistancesS2
-            task = threading.Thread(target=GetDistancesS2, args=(None, self.distance_progress_changed, ))
+            from ManifoldEM.calc_distance import op as calc_distance
+            task = threading.Thread(target=calc_distance, args=(None, self.distance_progress_changed, ))
 
         task.daemon = True
         task.start()
@@ -67,7 +67,7 @@ class EmbeddingTab(QWidget):
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.eigenvector_progress_changed))
         else:
-            from ManifoldEM.manifoldAnalysis import op as calculate_eigenvectors
+            from ManifoldEM.manifold_analysis import op as calculate_eigenvectors
             task = threading.Thread(target=calculate_eigenvectors, args=(None, self.eigenvector_progress_changed, ))
         
         task.daemon = True
@@ -98,7 +98,7 @@ class EmbeddingTab(QWidget):
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.psi_progress_changed))
         else:
-            from ManifoldEM.psiAnalysis import op as psi_analysis
+            from ManifoldEM.psi_analysis import op as psi_analysis
             task = threading.Thread(target=psi_analysis, args=(None, self.psi_progress_changed, ))
 
         task.daemon = True
@@ -128,7 +128,7 @@ class EmbeddingTab(QWidget):
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.nlsa_progress_changed))
         else:
-            from ManifoldEM.NLSAmovie import op as nlsa_movie
+            from ManifoldEM.nlsa_movie import op as nlsa_movie
             task = threading.Thread(target=nlsa_movie, args=(None, self.nlsa_progress_changed, ))
         
         task.daemon = True

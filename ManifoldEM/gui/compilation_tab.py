@@ -39,8 +39,8 @@ class CompilationTab(QWidget):
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.find_cc_progress_changed))
         else:
-            from ManifoldEM.FindConformationalCoord import op as FindConformationalCoord
-            task = threading.Thread(target=FindConformationalCoord, args=(self.find_cc_progress_changed, ))
+            from ManifoldEM.find_conformational_coords import op as find_conformational_coords
+            task = threading.Thread(target=find_conformational_coords, args=(self.find_cc_progress_changed, ))
 
         task.daemon = True
         task.start()
@@ -69,8 +69,8 @@ class CompilationTab(QWidget):
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.compute_landscape_progress_changed))
         else:
-            from ManifoldEM.EL1D import op as EL1D
-            task = threading.Thread(target=EL1D, args=(self.compute_landscape_progress_changed, ))
+            from ManifoldEM.energy_landscape import op as energy_landscape
+            task = threading.Thread(target=energy_landscape, args=(self.compute_landscape_progress_changed, ))
 
         task.daemon = True
         task.start()
