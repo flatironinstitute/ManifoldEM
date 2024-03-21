@@ -16,8 +16,8 @@ def get_parser():
     subparsers = parser.add_subparsers(help=None, dest="command")
 
     def add_relevant_params(subparser, level: ProjectLevel, prefix: str = ""):
-        params = params.get_params_for_level(level)
-        for param, (paramtype, paraminfo) in params.items():
+        annotated_params = params.get_params_for_level(level)
+        for param, (paramtype, paraminfo) in annotated_params.items():
             if paraminfo.user_param:
                 subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, help=f'{prefix}{paraminfo.description}')
 
