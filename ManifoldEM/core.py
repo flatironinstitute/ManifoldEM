@@ -6,10 +6,12 @@ import imageio
 import warnings
 import numpy as np
 
+from scipy.ndimage import affine_transform
 from scipy.optimize import curve_fit, OptimizeWarning
 
 from ManifoldEM import myio
 from ManifoldEM.params import params
+from ManifoldEM.quaternion import q2Spider
 
 warnings.simplefilter(action='ignore', category=OptimizeWarning)
 
@@ -165,7 +167,7 @@ def fergusonE(D, logEps, a0=None):
     return (popt, logSumWij, resnorm, R_squared)
 
 
-def annularMask(a: float, b: float, N: int, M: int):
+def annular_mask(a: float, b: float, N: int, M: int):
     """
     returns a N x M matrix with an annular (donut) mask of inner
     radius a and outer radius b. Pixels outside the donut or inside the hole
@@ -254,3 +256,84 @@ def get_wiener(CTF, posPath, posPsi1, ConOrder, num):
     wiener_dom = wiener_dom + 1. / SNR
 
     return (wiener_dom, CTF1)
+
+
+#Euler angles to rotation matrix
+def euler_rot_matrix_3D_spider(Phi, Theta, Psi, deg):
+    if deg:
+        Phi = np.radians(Phi)
+        Theta = np.radians(Theta)
+        Psi = np.radians(Psi)
+
+    R = np.array([
+        [
+            np.cos(Phi) * np.cos(Psi) * np.cos(Theta) + (-1) * np.sin(Phi) * np.sin(Psi),
+            np.cos(Psi) * np.cos(Theta) * np.sin(Phi) + np.cos(Phi) * np.sin(Psi),
+            (-1) * np.cos(Psi) * np.sin(Theta)
+        ],
+        [
+            (-1) * np.cos(Psi) * np.sin(Phi) + (-1) * np.cos(Phi) * np.cos(Theta) * np.sin(Psi),
+            np.cos(Phi) * np.cos(Psi) + (-1) * np.cos(Theta) * np.sin(Phi) * np.sin(Psi),
+            np.sin(Psi) * np.sin(Theta)
+        ],
+        [
+            np.cos(Phi) * np.sin(Theta),
+            np.sin(Phi) * np.sin(Theta),
+            np.cos(Theta)
+        ]
+    ])
+
+    return R
+
+
+## this usage of affine transform function with separate rotation and translation (offset)
+def rotate_volume_euler(vol, sym, deg):
+    dims = vol.shape
+    rotmat = euler_rot_matrix_3D_spider(sym[2], sym[1], sym[0], deg)
+
+    # if input euler angles are not already negative, then we have to take the inverse.
+    T_inv = rotmat
+
+    c_in = 0.5 * np.array(dims)
+    c_out = 0.5 * np.array(dims)
+    cen_offset = c_in - np.dot(T_inv, c_out)
+    rho = affine_transform(input=vol, matrix=T_inv, offset=cen_offset, output_shape=dims, mode='nearest')
+    return rho
+
+
+# get the euler angles from PD
+def get_euler_from_PD(PD, deg):
+    Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
+    q1 = Qr / np.sqrt(sum(Qr**2))
+
+    phi, theta, psi = q2Spider(q1)
+
+    if deg == 1:
+        phi = phi * 180 / np.pi
+        theta = theta * 180 / np.pi
+        psi = psi * 180 / np.pi
+    elif deg == 2:
+        phi = (phi % (2 * np.pi)) * 180 / np.pi
+        theta = (theta % (2 * np.pi)) * 180 / np.pi
+        psi = (psi % (2 * np.pi)) * 180 / np.pi
+
+    sym = np.array([phi, theta, psi])
+
+    return sym, q1
+
+
+def project_mask(vol, PD):
+    vol = np.swapaxes(vol, 0, 2)
+    nPix = vol.shape[0]
+    deg = 0
+
+    sym, q = get_euler_from_PD(PD, deg)
+    sym[2] = 0  # as psi=0 , the input images have already been inplane rotated
+    sym = sym * (-1.)  # for inverse transformation
+
+    rho = rotate_volume_euler(vol, sym, deg)
+
+    msk = np.sum(rho, axis=2)  # axis= 2 is z slice after swapping axes(0,2)
+    msk = msk.reshape(nPix, nPix).T
+    msk = msk > 1
+    return msk

@@ -14,8 +14,8 @@ from scipy.ndimage import shift
 from nptyping import NDArray, Shape, Float64, Int
 from typing import Tuple, Union, List
 
-from ManifoldEM import myio, projectMask
-from ManifoldEM.core import annularMask
+from ManifoldEM import myio
+from ManifoldEM.core import annular_mask, project_mask
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.quaternion import q2Spider
@@ -194,7 +194,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     CTF = np.zeros((n_particles, n_pix, n_pix))  # each (i,:,:) is the CTF
     distances = np.zeros((n_particles, n_particles))  # distances among the particles in the bin
 
-    msk = annularMask(0, n_pix / 2., n_pix, n_pix)
+    msk = annular_mask(0, n_pix / 2., n_pix, n_pix)
 
     # create grid for filter G
     Q = create_grid(n_pix)
@@ -212,7 +212,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     if params.mask_vol_file:
         with mrcfile.open(params.mask_vol_file) as mrc:
             mask3D = mrc.data
-        msk2 = projectMask.op(mask3D, avg_orientation_vec)
+        msk2 = project_mask(mask3D, avg_orientation_vec)
     else:
         msk2 = 1
 
