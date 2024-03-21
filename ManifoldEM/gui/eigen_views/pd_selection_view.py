@@ -2,8 +2,6 @@ import os
 import numpy as np
 
 import matplotlib.cm as cm
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
 from PyQt5 import QtCore

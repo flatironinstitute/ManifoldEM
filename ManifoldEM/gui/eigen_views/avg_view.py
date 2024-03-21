@@ -2,8 +2,6 @@ import os
 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.image as mpimg
 

@@ -4,8 +4,6 @@ import numpy as np
 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox
 
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
-                                                NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 

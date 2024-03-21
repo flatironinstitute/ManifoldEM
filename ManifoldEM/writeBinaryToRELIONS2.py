@@ -5,7 +5,6 @@ import pandas
 import numpy as np
 
 from ManifoldEM import star
-from ManifoldEM.quaterion import q2Spider
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

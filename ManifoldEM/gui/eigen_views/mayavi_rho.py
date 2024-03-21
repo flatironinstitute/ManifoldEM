@@ -3,8 +3,6 @@ import numpy as np
 from traits.api import HasTraits, Instance, on_trait_change, Str, Range, Enum
 from traitsui.api import View, Item, Group, HGroup, VGroup, TextEditor
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
 from ManifoldEM.params import p
 from ManifoldEM.data_store import data_store
 

@@ -1,6 +1,4 @@
-import gc
 import os
-import time
 
 import numpy as np
 
@@ -75,9 +73,7 @@ def op(*argv):
     traj_file_vars = f"{p.traj_file}name{p.traj_name}_vars"
     myio.fout1(traj_file_vars, trajTaus=trajTaus, posPsi1All=posPsi1All,
                posPathAll=posPathAll, xSelect=xSelect, tauAvg=tauAvg)
-    gc.collect()
 
-    p.hUn = hUn
     OM_file = f'{p.OM_file}OM'
     hUn.astype('int').tofile(OM_file)
 

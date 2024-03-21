@@ -1,16 +1,11 @@
 import math
-import sys
-import mrcfile
 
 import numpy as np
 from numpy import cos, sin
 
-from scipy.ndimage import affine_transform, map_coordinates, rotate
-
-from ManifoldEM import myio
 from ManifoldEM.params import p
 from ManifoldEM.quaternion import q2Spider
-from ManifoldEM.CC.transformations import euler_from_quaternion, quaternion_from_euler, quaternion_matrix
+from ManifoldEM.CC.transformations import quaternion_matrix
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

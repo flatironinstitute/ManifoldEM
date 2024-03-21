@@ -6,8 +6,6 @@ from PyQt5.QtWidgets import (QMainWindow, QMessageBox, QTabWidget, QDialog, QLab
 
 import matplotlib.cm as colormap
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
-                                                NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.ticker import MaxNLocator, FixedLocator
 
 from ManifoldEM.params import p

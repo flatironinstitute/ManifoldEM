@@ -6,7 +6,6 @@ import shutil
 import numpy as np
 
 from matplotlib.path import Path as PlotPath
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 

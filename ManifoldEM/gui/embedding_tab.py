@@ -1,5 +1,3 @@
-import multiprocessing
-import os
 import threading
 
 from PyQt5 import QtCore
