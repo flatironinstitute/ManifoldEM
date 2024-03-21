@@ -112,20 +112,20 @@ def slaplacian(*arg):
     return (l, sigmaTune)
 
 
-def get_yColVal(params):
+def get_yColVal(input_params):
 
-    yVal = params[0]
-    yVal1 = params[1]
-    yCol = params[2]
-    yInd1 = params[3]
-    nB = params[4]
-    nN = params[5]
-    nNIn = params[6]
-    jStart = params[7]
-    jEnd = params[8]
-    indStart = params[9]
-    indEnd = params[10]
-    iBatch = params[11]
+    yVal = input_params[0]
+    yVal1 = input_params[1]
+    yCol = input_params[2]
+    yInd1 = input_params[3]
+    nB = input_params[4]
+    nN = input_params[5]
+    nNIn = input_params[6]
+    jStart = input_params[7]
+    jEnd = input_params[8]
+    indStart = input_params[9]
+    indEnd = input_params[10]
+    iBatch = input_params[11]
 
     DataBatch = yVal1
     DataBatch = DataBatch.reshape(nB, nNIn).T
@@ -194,8 +194,8 @@ def op(D, k, tune, prefsigma):  #*arg
         # diffraction pattern indices (jStart, jEnd):
         jStart = iBatch * nB
         jEnd = (iBatch + 1) * nB
-        params = (yVal, yVal1, yCol, yInd1, nB, nN, nNIn, jStart, jEnd, indStart, indEnd, iBatch)
-        yCol, yVal = get_yColVal(params)
+        myparams = (yVal, yVal1, yCol, yInd1, nB, nN, nNIn, jStart, jEnd, indStart, indEnd, iBatch)
+        yCol, yVal = get_yColVal(myparams)
 
     # symmetrizing the distance matrix:
     yRow = np.ones((nN, 1)) * range(nS)
