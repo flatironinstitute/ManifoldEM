@@ -4,6 +4,8 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QMessageBox, QTabWidget, QDialog, QLabel,
                              QDoubleSpinBox, QAbstractSpinBox, QPushButton, QGridLayout, QLayout)
 
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
+                                                NavigationToolbar2QT as NavigationToolbar)
 import matplotlib.cm as colormap
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator, FixedLocator
