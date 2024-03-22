@@ -22,7 +22,7 @@ def get_parser():
                 subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, help=f'{prefix}{paraminfo.description}')
 
 
-    init_parser = subparsers.add_parser("init", help="Initialize new project")
+    init_parser = subparsers.add_parser("init", help="0: Initialize new project")
     init_parser.add_argument('-p', "--project-name", type=str, metavar="STR", help="Name of project to create", required=True)
     init_parser.add_argument('-v', "--avg-volume", type=str, metavar="FILEPATH", default="")
     init_parser.add_argument('-a', "--alignment", type=str, metavar="FILEPATH", default="")
@@ -37,41 +37,48 @@ def get_parser():
     for level in ProjectLevel:
         add_relevant_params(init_parser, level, f"[{level.name}] ")
 
-    threshold_parser = subparsers.add_parser("threshold", help="Set upper/lower thresholds for principal direction detection")
+    threshold_parser = subparsers.add_parser("threshold", help="1: Set upper/lower thresholds for principal direction detection")
     threshold_parser.add_argument("input_file", type=str)
     add_relevant_params(threshold_parser, ProjectLevel.BINNING)
 
-    distance_parser = subparsers.add_parser("calc-distance", help="Calculate S2 distances")
+    distance_parser = subparsers.add_parser("calc-distance", help="2: Calculate S2 distances")
     distance_parser.add_argument("input_file", type=str)
     distance_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(distance_parser, ProjectLevel.CALC_DISTANCE)
 
-    manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="Initial embedding")
+    manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="4: Initial embedding")
     manifold_analysis_parser.add_argument("input_file", type=str)
     manifold_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(manifold_analysis_parser, ProjectLevel.MANIFOLD_ANALYSIS)
 
-    psi_analysis_parser = subparsers.add_parser("psi-analysis", help="Analyze images to get psis")
+    psi_analysis_parser = subparsers.add_parser("psi-analysis", help="5: Analyze images to get psis")
     psi_analysis_parser.add_argument("input_file", type=str)
     psi_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(psi_analysis_parser, ProjectLevel.PSI_ANALYSIS)
 
-    nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="Create 2D psi movies")
+    nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="6: Create 2D psi movies")
     nlsa_movie_parser.add_argument("input_file", type=str)
     nlsa_movie_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(nlsa_movie_parser, ProjectLevel.NLSA_MOVIE)
 
-    cc_parser = subparsers.add_parser("find-ccs", help="Find conformational coordinates")
+    cc_parser = subparsers.add_parser("find-ccs", help="7: Find conformational coordinates")
     cc_parser.add_argument("input_file", type=str)
     add_relevant_params(cc_parser, ProjectLevel.FIND_CCS)
 
-    el_parser = subparsers.add_parser("energy-landscape", help="Calculate energy landscape")
+    el_parser = subparsers.add_parser("energy-landscape", help="8: Calculate energy landscape")
     el_parser.add_argument("input_file", type=str)
     add_relevant_params(el_parser, ProjectLevel.ENERGY_LANDSCAPE)
 
-    traj_parser = subparsers.add_parser("trajectory", help="Calculate trajectory")
+    traj_parser = subparsers.add_parser("trajectory", help="9: Calculate trajectory")
     traj_parser.add_argument("input_file", type=str)
     add_relevant_params(traj_parser, ProjectLevel.TRAJECTORY)
+
+    utility_parser = subparsers.add_parser("utility", help="Utility functions")
+    utility_subparsers = utility_parser.add_subparsers(help=None, dest="command")
+
+    mrcs2mrc_parser = utility_subparsers.add_parser("mrcs2mrc",
+                                                    help="Convert output of trajectory step from mrcs to mrc [requires working relion install in PATH]")
+    mrcs2mrc_parser.add_argument("input_file", type=str)
 
     return parser
 
@@ -188,6 +195,42 @@ def compute_trajectory(_):
     trajectory.op()
 
 
+def relion_reconstruct(star_file: str, relion_command: str, output_path: str):
+    import subprocess
+    mrc_file = os.path.join(output_path, star_file.removesuffix('.star') + '.mrc')
+    subprocess.run([relion_command, '--i', star_file, '--o', mrc_file], capture_output=True)
+
+
+def mrcs2mrc(_):
+    import shutil, subprocess, glob, multiprocessing, tqdm
+    from functools import partial
+
+    relion_command = shutil.which('relion_reconstruct')
+    if not relion_command:
+        print("Can't find relion command 'relion_reconstruct'. Please verify that it is in your path")
+        return
+
+    print(f"Found relion command: '{relion_command}'")
+
+    curr_path = os.getcwd()
+    os.chdir(params.bin_dir)
+
+    reconstruct_local = partial(relion_reconstruct, relion_command=relion_command, output_path=curr_path)
+    star_files = glob.glob('*.star')
+    if not star_files:
+        print("No star files found for project. Have you run the 'trajectory' step?")
+        return
+
+    print(f"Converting {len(star_files)} star+mrcs files to mrc")
+    with multiprocessing.Pool(processes=params.ncpu) as pool:
+        for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(reconstruct_local, star_files)),
+                              total=len(star_files)):
+            pass
+
+
+    os.chdir(curr_path)
+
+
 _funcs = {
     "init": init,
     "threshold": threshold,
@@ -198,6 +241,7 @@ _funcs = {
     "find-ccs": find_conformational_coordinates,
     "energy-landscape": energy_landscape,
     "trajectory": compute_trajectory,
+    "mrcs2mrc": mrcs2mrc,
 }
 
 
