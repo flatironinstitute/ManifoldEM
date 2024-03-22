@@ -59,7 +59,7 @@ def op(*argv):
 
             for id, anchor in prds.anchors.items():
                 psinums[0, id] = anchor.CC - 1
-                senses[0, id] = anchor.sense
+                senses[0, id] = anchor.sense.value
 
             for trash_index in prds.trash_ids:
                 psinums[0, trash_index] = -1
