@@ -58,6 +58,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(CompilationTab(self), 'Compilation')
         self.tabs.addTab(EnergeticsTab(self), 'Energetics')
 
+        self.tabs.currentChanged.connect(self.on_tab_change)
+
         groupscroll = QHBoxLayout()
         groupscrollbox = QGroupBox()
         tablist = QVBoxLayout()
@@ -77,6 +79,10 @@ class MainWindow(QMainWindow):
         self.show()
 
 
+    def on_tab_change(self):
+        self.tabs.widget(self.tabs.currentIndex()).activate()
+
+
     def reload_tab_states(self):
         self.set_tab_state(False)
         for tabi in range(params.project_level.value + 1):
@@ -88,7 +94,6 @@ class MainWindow(QMainWindow):
         index = self.tab_indices.get(tab_name, None)
 
         if index is not None:
-            self.tabs.widget(index).activate()
             self.tabs.setCurrentIndex(index)
         else:
             print(f"Invalid tab name: {tab_name}")
