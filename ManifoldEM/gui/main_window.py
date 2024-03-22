@@ -58,6 +58,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(CompilationTab(self), 'Compilation')
         self.tabs.addTab(EnergeticsTab(self), 'Energetics')
 
+        self.tabs.blockSignals(True)
         self.tabs.currentChanged.connect(self.on_tab_change)
 
         groupscroll = QHBoxLayout()
@@ -76,6 +77,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(scroll)
         self.reload_tab_states()
+        self.tabs.blockSignals(False)
         self.show()
 
 
