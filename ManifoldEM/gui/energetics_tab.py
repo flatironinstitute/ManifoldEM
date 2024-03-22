@@ -10,7 +10,6 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
 from matplotlib.figure import Figure
 
 import numpy as np
-from ManifoldEM.trajectory import op as trajectory
 from ManifoldEM.params import params
 
 
@@ -125,7 +124,7 @@ class Erg1dMain(QDialog):
 
         # 3d trajectories progress:
         self.button_traj = QPushButton('Compute 3D Trajectories', self)
-        self.button_traj.clicked.connect(self.start_task7)
+        self.button_traj.clicked.connect(self.start_task)
         layout.addWidget(self.button_traj, 11, 0, 1, 2)
         self.button_traj.setDisabled(False)
         self.button_traj.show()
@@ -171,10 +170,10 @@ class Erg1dMain(QDialog):
             params.save()
 
 
-    ##########
-    # Task 7:
     @QtCore.pyqtSlot()
-    def start_task7(self):
+    def start_task(self):
+        from ManifoldEM.trajectory import op as trajectory
+
         if self.reprepare == 1:  #ZULU
             # overwrite warning:
             msg = 'Final outputs have already been computed for a previous\
@@ -207,9 +206,9 @@ class Erg1dMain(QDialog):
 
             params.save()  #send new GUI data to parameters file
 
-            task7 = threading.Thread(target=trajectory, args=(self.progress_changed, ))
-            task7.daemon = True
-            task7.start()
+            task = threading.Thread(target=trajectory, args=(self.progress_changed, ))
+            task.daemon = True
+            task.start()
 
         else:  #if first time running trajectory
             self.progress.setValue(0)
@@ -220,9 +219,9 @@ class Erg1dMain(QDialog):
 
             params.save()  #send new GUI data to parameters file
 
-            task7 = threading.Thread(target=trajectory, args=(self.progress_changed, ))
-            task7.daemon = True
-            task7.start()
+            task = threading.Thread(target=trajectory, args=(self.progress_changed, ))
+            task.daemon = True
+            task.start()
 
 
     @QtCore.pyqtSlot(int)
