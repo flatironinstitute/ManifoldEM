@@ -18,7 +18,7 @@ class Erg1dMain(QDialog):
     reprepare = 0  #F/T: if trajectory has already been computed (0 if not)
 
     # threading:
-    progress7Changed = QtCore.pyqtSignal(int)
+    progress_changed = QtCore.pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(Erg1dMain, self).__init__(parent)
@@ -131,7 +131,7 @@ class Erg1dMain(QDialog):
         self.button_traj.show()
 
         self.progress = QProgressBar(minimum=0, maximum=100, value=0)
-        self.progress7Changed.connect(self.on_progress7Changed)
+        self.progress_changed.connect(self.on_progress_changed)
         layout.addWidget(self.progress, 11, 2, 1, 6)
         self.progress.show()
 
@@ -207,7 +207,7 @@ class Erg1dMain(QDialog):
 
             params.save()  #send new GUI data to parameters file
 
-            task7 = threading.Thread(target=trajectory, args=(self.progress7Changed, ))
+            task7 = threading.Thread(target=trajectory, args=(self.progress_changed, ))
             task7.daemon = True
             task7.start()
 
@@ -220,13 +220,13 @@ class Erg1dMain(QDialog):
 
             params.save()  #send new GUI data to parameters file
 
-            task7 = threading.Thread(target=trajectory, args=(self.progress7Changed, ))
+            task7 = threading.Thread(target=trajectory, args=(self.progress_changed, ))
             task7.daemon = True
             task7.start()
 
 
     @QtCore.pyqtSlot(int)
-    def on_progress7Changed(self, val):
+    def on_progress_changed(self, val):
         self.progress.setValue(val)
         if val == 100:
             params.save()  #send new GUI data to user parameters file
