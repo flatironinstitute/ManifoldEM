@@ -4,7 +4,7 @@ import threading
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QWidget, QMessageBox, QGridLayout, QDialog,
-                             QLabel, QFrame, QComboBox, QPushButton, QProgressBar)
+                             QLabel, QFrame, QComboBox, QPushButton, QProgressBar, QSpinBox)
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
@@ -27,6 +27,9 @@ class Erg1dMain(QDialog):
         layout.addWidget(self.plot_erg1d, 1, 0, 8, 8)
         toolbar = NavigationToolbar(self.plot_erg1d, self)
         layout.addWidget(toolbar, 0, 0, 1, 8)
+
+        def choose_processors():
+            params.ncpu = self.entry_proc.value()
 
         self.label_edge1 = QLabel('')
         self.label_edge1.setMargin(20)
@@ -106,6 +109,20 @@ class Erg1dMain(QDialog):
         layout.addWidget(self.label_edge4, 9, 6, 1, 2)
         self.label_edge4.show()
 
+        self.label_ncpu = QLabel('Processes:')
+        self.label_ncpu.setMargin(20)
+        self.label_ncpu.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        layout.addWidget(self.label_ncpu, 9, 6, 1, 1)
+
+        self.entry_proc = QSpinBox(self)
+        self.entry_proc.setMinimum(1)
+        self.entry_proc.setMaximum(256)
+        self.entry_proc.setValue(params.ncpu)
+        self.entry_proc.valueChanged.connect(choose_processors)
+        self.entry_proc.setToolTip('The number of processors to use in parallel.')
+        layout.addWidget(self.entry_proc, 9, 7, 1, 1, QtCore.Qt.AlignLeft)
+        self.entry_proc.show()
+
         # 3d trajectories progress:
         self.button_traj = QPushButton('Compute 3D Trajectories', self)
         self.button_traj.clicked.connect(self.start_task7)
@@ -113,10 +130,10 @@ class Erg1dMain(QDialog):
         self.button_traj.setDisabled(False)
         self.button_traj.show()
 
-        self.progress7 = QProgressBar(minimum=0, maximum=100, value=0)
+        self.progress = QProgressBar(minimum=0, maximum=100, value=0)
         self.progress7Changed.connect(self.on_progress7Changed)
-        layout.addWidget(self.progress7, 11, 2, 1, 6)
-        self.progress7.show()
+        layout.addWidget(self.progress, 11, 2, 1, 6)
+        self.progress.show()
 
 
     def update_selection(self):
@@ -177,7 +194,7 @@ class Erg1dMain(QDialog):
             if reply == QMessageBox.No:
                 pass
 
-            self.progress7.setValue(0)
+            self.progress.setValue(0)
             # hard-remove pre-existing trajectory outputs:
             if os.path.isdir(params.bin_dir):
                 shutil.rmtree(params.bin_dir)
@@ -195,7 +212,7 @@ class Erg1dMain(QDialog):
             task7.start()
 
         else:  #if first time running trajectory
-            self.progress7.setValue(0)
+            self.progress.setValue(0)
             self.button_traj.setDisabled(True)
             self.button_traj.setText('Computing 3D Trajectories')
             self.erg2occ.setDisabled(True)
@@ -210,7 +227,7 @@ class Erg1dMain(QDialog):
 
     @QtCore.pyqtSlot(int)
     def on_progress7Changed(self, val):
-        self.progress7.setValue(val)
+        self.progress.setValue(val)
         if val == 100:
             params.save()  #send new GUI data to user parameters file
 
