@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import numpy as np
 import os
-from pprint import pprint
+from pprint import pprint, pformat
 import toml
 import traceback
 from typing import Annotated, get_type_hints, get_args
@@ -404,6 +404,10 @@ class Params():
         os.makedirs(self.euler_dir, exist_ok=True)
         os.makedirs(self.postproc_mrcs2mrc_dir, exist_ok=True)
         os.makedirs(self.postproc_denoise_dir, exist_ok=True)
+
+
+    def __repr__(self):
+        return pformat(self.asdict())
 
 
 params = Params()

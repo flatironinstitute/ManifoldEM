@@ -20,6 +20,18 @@ class NullEmitter:
         pass
 
 
+def get_tqdm():
+    """Get jupyter version of tqdm function if in jupyter notebook, otherwise terminal variant"""
+    try:
+        if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
+            from tqdm.notebook import tqdm
+            return tqdm
+    except NameError: #  get_ipython not defined on base python...
+        pass
+    from tqdm import tqdm
+    return tqdm
+
+
 def remote_runner(hostname, cmd, progress_callback):
     from fabric import Connection
     with Connection(hostname, inline_ssh_env=True) as c:

@@ -1,6 +1,5 @@
 import os
 import multiprocessing
-import tqdm
 
 import imageio
 import numpy as np
@@ -10,7 +9,7 @@ from typing import List, Union
 
 from ManifoldEM import myio
 from ManifoldEM.params import params, ProjectLevel
-from ManifoldEM.util import NullEmitter
+from ManifoldEM.util import NullEmitter, get_tqdm
 from ManifoldEM.core import makeMovie
 '''
 % scriptPsinlsa_movie
@@ -71,7 +70,7 @@ def movie(input_data, psi2_file, fps):
     imageio.imwrite(image_file, img)
 
 
-def op(prd_list: Union[List[int], None], *argv):
+def op(prd_list: Union[List[int], None] = None, *argv):
     print("Making the 2D movies...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)
@@ -81,15 +80,15 @@ def op(prd_list: Union[List[int], None], *argv):
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
     movie_local = partial(movie, psi2_file=params.psi2_file, fps=params.nlsa_fps)
-
+    tqdm = get_tqdm()
     if params.ncpu == 1:  # avoids the multiprocessing package
-        for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+        for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
             movie_local(datai)
             progress4.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(movie_local, input_data)),
-                                  total=n_jobs, disable=use_gui_progress):
+            for i, _ in tqdm(enumerate(pool.imap_unordered(movie_local, input_data)),
+                             total=n_jobs, disable=use_gui_progress):
                 progress4.emit(int(99 * i / n_jobs))
 
     if not prd_list:

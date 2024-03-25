@@ -17,8 +17,7 @@ from ManifoldEM import myio, DMembeddingII
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
-from ManifoldEM.util import NullEmitter
-import tqdm
+from ManifoldEM.util import NullEmitter, get_tqdm
 
 
 def _corr(a, b, n, m):
@@ -281,7 +280,7 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
     return ll
 
 
-def op(prd_list: Union[List[int], None], *argv):
+def op(prd_list: Union[List[int], None] = None, *argv):
     print("Computing the NLSA snapshots...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)
@@ -296,15 +295,16 @@ def op(prd_list: Union[List[int], None], *argv):
                              is_full=0,
                              psi_trunc=params.num_psi_truncated)
 
+    tqdm = get_tqdm()
     if params.ncpu == 1:
-        for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+        for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
             local_psi_func(datai)
             progress3.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(local_psi_func, input_data)),
-                                  total=n_jobs,
-                                  disable=use_gui_progress):
+            for i, _ in tqdm(enumerate(pool.imap_unordered(local_psi_func, input_data)),
+                             total=n_jobs,
+                             disable=use_gui_progress):
                 progress3.emit(int(99 * i / n_jobs))
 
     if not prd_list:

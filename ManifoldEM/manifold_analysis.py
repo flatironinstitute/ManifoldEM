@@ -6,9 +6,7 @@ from typing import List, Union
 
 from ManifoldEM import manifoldTrimmingAuto
 from ManifoldEM.params import params, ProjectLevel
-from ManifoldEM.util import NullEmitter
-
-import tqdm
+from ManifoldEM.util import NullEmitter, get_tqdm
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +36,7 @@ def _construct_input_data(prd_list, N):
     return ll
 
 
-def op(prd_list: Union[List[int], None], *argv):
+def op(prd_list: Union[List[int], None] = None, *argv):
     print("Computing the eigenfunctions...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)
@@ -60,15 +58,16 @@ def op(prd_list: Union[List[int], None], *argv):
                               visual=False,
                               doSave=dict(outputFile='', Is=True))
 
+    tqdm = get_tqdm()
     if params.ncpu == 1:
-        for i, datai in tqdm.tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+        for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
             local_trim_func(datai)
             progress2.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(local_trim_func, input_data)),
-                                  total=n_jobs,
-                                  disable=use_gui_progress):
+            for i, _ in tqdm(enumerate(pool.imap_unordered(local_trim_func, input_data)),
+                             total=n_jobs,
+                             disable=use_gui_progress):
                 progress2.emit(int(99 * i / n_jobs))
 
     if prd_list is None:
