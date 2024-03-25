@@ -80,6 +80,12 @@ def get_parser():
                                                     help="Convert output of trajectory step from mrcs to mrc [requires working relion install in PATH]")
     mrcs2mrc_parser.add_argument("input_file", type=str)
 
+    denoise_parser = utility_subparsers.add_parser("denoise", help="Denoise output of mrcs2mrc postprocessing step")
+    denoise_parser.add_argument("input_file", type=str)
+    denoise_parser.add_argument("-k", "--window_size", type=int, metavar="INT", default=5, help="Kernel/window size")
+    denoise_parser.add_argument("-f", "--frame", type=int, metavar="INT", default=5, help="Beginning and ending frames affected")
+    denoise_parser.add_argument("--filter", type=str, metavar="STR", default="Gaussian", help="Filter type: {Gaussian, Median}")
+
     return parser
 
 
@@ -202,7 +208,7 @@ def relion_reconstruct(star_file: str, relion_command: str, output_path: str):
 
 
 def mrcs2mrc(_):
-    import shutil, subprocess, glob, multiprocessing, tqdm
+    import shutil, glob, multiprocessing, tqdm
     from functools import partial
 
     relion_command = shutil.which('relion_reconstruct')
@@ -213,9 +219,11 @@ def mrcs2mrc(_):
     print(f"Found relion command: '{relion_command}'")
 
     curr_path = os.getcwd()
+    output_path = os.path.realpath(params.postproc_mrcs2mrc_dir)
+    os.makedirs(output_path, exist_ok=True)
     os.chdir(params.bin_dir)
 
-    reconstruct_local = partial(relion_reconstruct, relion_command=relion_command, output_path=curr_path)
+    reconstruct_local = partial(relion_reconstruct, relion_command=relion_command, output_path=output_path)
     star_files = glob.glob('*.star')
     if not star_files:
         print("No star files found for project. Have you run the 'trajectory' step?")
@@ -223,12 +231,55 @@ def mrcs2mrc(_):
 
     print(f"Converting {len(star_files)} star+mrcs files to mrc")
     with multiprocessing.Pool(processes=params.ncpu) as pool:
-        for i, _ in tqdm.tqdm(enumerate(pool.imap_unordered(reconstruct_local, star_files)),
+        for _ in tqdm.tqdm(enumerate(pool.imap_unordered(reconstruct_local, star_files)),
                               total=len(star_files)):
             pass
 
+    print(f"Output in: {output_path}")
 
     os.chdir(curr_path)
+
+
+def denoise_helper(i_bin: int, f: int, k: int, filter_type: str):
+    import mrcfile
+    import numpy as np
+    from scipy import ndimage
+
+    rec_file = os.path.join(params.postproc_mrcs2mrc_dir, 'EulerAngles_{}_{}_of_{}.mrc'.format(params.traj_name, i_bin + 1, params.states_per_coord))
+    with mrcfile.open(rec_file) as mrc:
+        vol = mrc.data
+        vol = vol.astype(np.float64)
+    if filter_type == 'gaussian':
+        vol = ndimage.gaussian_filter(vol,k)
+    elif filter_type == 'median':
+        vol = ndimage.median_filter(vol, k)
+    else:
+        return
+
+    rec1_file = os.path.join(params.postproc_denoise_dir, 'DenoiseimgsRELION_{}_{}_of_{}.mrc'.format(params.traj_name, i_bin + 1, params.states_per_coord))
+    mrc = mrcfile.new(rec1_file)
+    mrc.set_data(vol.astype(np.float32))
+
+
+def denoise(args):
+    from functools import partial
+    import multiprocessing
+    import tqdm
+    f = args.frame
+    k = args.window_size
+    filter_type = args.filter.lower()
+
+    bins = list(range(f)) + list(range(params.states_per_coord - f, params.states_per_coord))
+    denoise_local = partial(denoise_helper, f=f, k=k, filter_type=filter_type)
+
+    os.makedirs(params.postproc_denoise_dir, exist_ok=True)
+
+    with multiprocessing.Pool(processes=params.ncpu) as pool:
+        for _ in tqdm.tqdm(enumerate(pool.imap_unordered(denoise_local, bins)),
+                           total=len(bins)):
+            pass
+
+    print(f"Output in: {os.path.realpath(params.postproc_denoise_dir)}")
 
 
 _funcs = {
@@ -242,6 +293,7 @@ _funcs = {
     "energy-landscape": energy_landscape,
     "trajectory": compute_trajectory,
     "mrcs2mrc": mrcs2mrc,
+    "denoise": denoise,
 }
 
 

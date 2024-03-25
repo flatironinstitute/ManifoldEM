@@ -101,7 +101,7 @@ class Params():
     # to be around 10%; if higher than this, tune needs to be changed.
     nlsa_tune: Annotated[int, ParamInfo('Diffusion map tuning parameter', True,
                                         [ProjectLevel.MANIFOLD_ANALYSIS, ProjectLevel.PSI_ANALYSIS])] = 3
-    
+
     # energy landscape parameters:
     n_reaction_coords: Annotated[int, ParamInfo('Number of reaction coordinates for energy landscape')] = 1
     temperature: Annotated[int, ParamInfo('User-defined pre-quenching temperature of experiments (Celcius)'), True,
@@ -286,6 +286,16 @@ class Params():
         return 1
 
 
+    @property
+    def postproc_mrcs2mrc_dir(self) -> str:
+        return os.path.join(self.out_dir, 'postproc', 'vols')
+
+
+    @property
+    def postproc_denoise_dir(self) -> str:
+        return os.path.join(self.out_dir, 'postproc', 'denoise')
+
+
     def get_topos_path(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
 
@@ -392,6 +402,8 @@ class Params():
         os.makedirs(self.CC_OF_dir, exist_ok=True)
         os.makedirs(self.CC_meas_dir, exist_ok=True)
         os.makedirs(self.euler_dir, exist_ok=True)
+        os.makedirs(self.postproc_mrcs2mrc_dir, exist_ok=True)
+        os.makedirs(self.postproc_denoise_dir, exist_ok=True)
 
 
 params = Params()
