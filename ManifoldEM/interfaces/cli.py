@@ -3,7 +3,7 @@ if not 'OMP_NUM_THREADS' in os.environ:
     os.environ['OMP_NUM_THREADS'] = '1'
 
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import ManifoldEM
 from ManifoldEM.params import params, ProjectLevel
 
@@ -11,6 +11,7 @@ def get_parser():
     parser = ArgumentParser(
         prog="manifold-cli",
         description="Command-line interface for ManifoldEM package",
+        formatter_class=ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument('-n', '--ncpu', type=int, default=1)
     subparsers = parser.add_subparsers(help=None, dest="command")
@@ -19,10 +20,12 @@ def get_parser():
         annotated_params = params.get_params_for_level(level)
         for param, (paramtype, paraminfo) in annotated_params.items():
             if paraminfo.user_param:
-                subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, help=f'{prefix}{paraminfo.description}')
+                default = getattr(params, param)
+                subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, default=default,
+                                       help=f'{prefix}{paraminfo.description}')
 
 
-    init_parser = subparsers.add_parser("init", help="0: Initialize new project")
+    init_parser = subparsers.add_parser("init", help="0: Initialize new project", formatter_class=ArgumentDefaultsHelpFormatter)
     init_parser.add_argument('-p', "--project-name", type=str, metavar="STR", help="Name of project to create", required=True)
     init_parser.add_argument('-v', "--avg-volume", type=str, metavar="FILEPATH", default="")
     init_parser.add_argument('-a', "--alignment", type=str, metavar="FILEPATH", default="")
@@ -37,50 +40,61 @@ def get_parser():
     for level in ProjectLevel:
         add_relevant_params(init_parser, level, f"[{level.name}] ")
 
-    threshold_parser = subparsers.add_parser("threshold", help="1: Set upper/lower thresholds for principal direction detection")
+    threshold_parser = subparsers.add_parser("threshold", help="1: Set upper/lower thresholds for principal direction detection",
+                                             formatter_class=ArgumentDefaultsHelpFormatter)
     threshold_parser.add_argument("input_file", type=str)
     add_relevant_params(threshold_parser, ProjectLevel.BINNING)
 
-    distance_parser = subparsers.add_parser("calc-distance", help="2: Calculate S2 distances")
+    distance_parser = subparsers.add_parser("calc-distance", help="2: Calculate S2 distances",
+                                            formatter_class=ArgumentDefaultsHelpFormatter)
     distance_parser.add_argument("input_file", type=str)
     distance_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(distance_parser, ProjectLevel.CALC_DISTANCE)
 
-    manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="4: Initial embedding")
+    manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="4: Initial embedding",
+                                                     formatter_class=ArgumentDefaultsHelpFormatter)
     manifold_analysis_parser.add_argument("input_file", type=str)
     manifold_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(manifold_analysis_parser, ProjectLevel.MANIFOLD_ANALYSIS)
 
-    psi_analysis_parser = subparsers.add_parser("psi-analysis", help="5: Analyze images to get psis")
+    psi_analysis_parser = subparsers.add_parser("psi-analysis", help="5: Analyze images to get psis",
+                                                formatter_class=ArgumentDefaultsHelpFormatter)
     psi_analysis_parser.add_argument("input_file", type=str)
     psi_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(psi_analysis_parser, ProjectLevel.PSI_ANALYSIS)
 
-    nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="6: Create 2D psi movies")
+    nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="6: Create 2D psi movies",
+                                              formatter_class=ArgumentDefaultsHelpFormatter)
     nlsa_movie_parser.add_argument("input_file", type=str)
     nlsa_movie_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(nlsa_movie_parser, ProjectLevel.NLSA_MOVIE)
 
-    cc_parser = subparsers.add_parser("find-ccs", help="7: Find conformational coordinates")
+    cc_parser = subparsers.add_parser("find-ccs", help="7: Find conformational coordinates",
+                                      formatter_class=ArgumentDefaultsHelpFormatter)
     cc_parser.add_argument("input_file", type=str)
     add_relevant_params(cc_parser, ProjectLevel.FIND_CCS)
 
-    el_parser = subparsers.add_parser("energy-landscape", help="8: Calculate energy landscape")
+    el_parser = subparsers.add_parser("energy-landscape", help="8: Calculate energy landscape",
+                                      formatter_class=ArgumentDefaultsHelpFormatter)
     el_parser.add_argument("input_file", type=str)
     add_relevant_params(el_parser, ProjectLevel.ENERGY_LANDSCAPE)
 
-    traj_parser = subparsers.add_parser("trajectory", help="9: Calculate trajectory")
+    traj_parser = subparsers.add_parser("trajectory", help="9: Calculate trajectory",
+                                        formatter_class=ArgumentDefaultsHelpFormatter)
     traj_parser.add_argument("input_file", type=str)
     add_relevant_params(traj_parser, ProjectLevel.TRAJECTORY)
 
-    utility_parser = subparsers.add_parser("utility", help="Utility functions")
+    utility_parser = subparsers.add_parser("utility", help="Utility functions",
+                                           formatter_class=ArgumentDefaultsHelpFormatter)
     utility_subparsers = utility_parser.add_subparsers(help=None, dest="command")
 
     mrcs2mrc_parser = utility_subparsers.add_parser("mrcs2mrc",
-                                                    help="Convert output of trajectory step from mrcs to mrc [requires working relion install in PATH]")
+                                                    help="Convert output of trajectory step from mrcs to mrc [requires working relion install in PATH]",
+                                                    formatter_class=ArgumentDefaultsHelpFormatter)
     mrcs2mrc_parser.add_argument("input_file", type=str)
 
-    denoise_parser = utility_subparsers.add_parser("denoise", help="Denoise output of mrcs2mrc postprocessing step")
+    denoise_parser = utility_subparsers.add_parser("denoise", help="Denoise output of mrcs2mrc postprocessing step",
+                                                   formatter_class=ArgumentDefaultsHelpFormatter)
     denoise_parser.add_argument("input_file", type=str)
     denoise_parser.add_argument("-k", "--window_size", type=int, metavar="INT", default=5, help="Kernel/window size")
     denoise_parser.add_argument("-f", "--frame", type=int, metavar="INT", default=5, help="Beginning and ending frames affected")
