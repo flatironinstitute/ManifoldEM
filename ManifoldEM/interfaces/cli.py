@@ -3,9 +3,11 @@ if not 'OMP_NUM_THREADS' in os.environ:
     os.environ['OMP_NUM_THREADS'] = '1'
 
 import sys
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+from typing import Union
 import ManifoldEM
 from ManifoldEM.params import params, ProjectLevel
+from . import interactive as mem
 
 def get_parser():
     parser = ArgumentParser(
@@ -127,92 +129,58 @@ def load_state(args):
     params.save()
 
 
-def init(args):
-    import shutil
-    from ManifoldEM.util import get_image_width_from_stack
-
-    params.project_name = args.project_name
-    proj_file = f'params_{params.project_name}.toml'
-
-    if os.path.isfile(proj_file) or os.path.isdir(params.out_dir):
-        response = 'y' if args.overwrite else None
-        while response not in ('y', 'n'):
-            response = input("Project appears to exist. Overwrite? y/n\n").lower()
-        if response == 'n':
-            print("Aborting")
-            return 1
-        print("Removing previous project")
-        if os.path.isdir(params.out_dir):
-            shutil.rmtree(params.out_dir)
-
-    params.avg_vol_file = os.path.expanduser(args.avg_volume)
-    params.align_param_file = os.path.expanduser(args.alignment)
-    params.img_stack_file = os.path.expanduser(args.image_stack)
-    params.mask_vol_file = os.path.expanduser(args.mask_volume)
-
-    params.ms_pixel_size = args.pixel_size
-    params.particle_diameter = args.diameter
-    params.ms_estimated_resolution = args.resolution
-    params.aperture_index = args.aperture_index
-    params.is_relion_data = args.alignment.endswith('.star')
-
-    params.ms_num_pixels = get_image_width_from_stack(params.img_stack_file)
-
-    params.create_dir()
-    params.save()
-
-
-def _parse_prd_list(prd_list: str):
+def _parse_prd_list(prd_list: str) -> Union[list[int], None]:
     if prd_list:
         return [int(i) for i in prd_list.split(',')]
 
     return None
 
 
-def threshold(args):
-    params.prd_thres_low = args.low
-    params.prd_thres_high = args.high
-    params.project_level = ProjectLevel.BINNING
-    params.save()
+def args_to_dict(args: Namespace) -> dict:
+    kwargs = vars(args)
+    if 'prds' in kwargs.keys():
+        kwargs['prd_list'] = _parse_prd_list(kwargs.pop('prds'))
+    if 'ncpu' in kwargs.keys():
+        params.ncpu = kwargs.pop('ncpu')
+        params.save()
+
+    return kwargs
 
 
-def calc_distance(args):
-    from ManifoldEM import calc_distance
-    prd_list = _parse_prd_list(args.prds)
-    calc_distance.op(prd_list)
+def init(args: Namespace):
+    mem.init(**args_to_dict(args))
 
 
-def manifold_analysis(args):
-    from ManifoldEM import manifold_analysis
-    prd_list = _parse_prd_list(args.prds)
-    manifold_analysis.op(prd_list)
+def threshold(args: Namespace):
+    mem.threshold(**args_to_dict(args))
 
 
-def psi_analysis(args):
-    from ManifoldEM import psi_analysis
-    prd_list = _parse_prd_list(args.prds)
-    psi_analysis.op(prd_list)
+def calc_distance(args: Namespace):
+    mem.calc_distance(**args_to_dict(args))
 
 
-def nlsa_movie(args):
-    from ManifoldEM import nlsa_movie
-    prd_list = _parse_prd_list(args.prds)
-    nlsa_movie.op(prd_list)
+def manifold_analysis(args: Namespace):
+    mem.manifold_analysis(**args_to_dict(args))
 
 
-def find_conformational_coordinates(_):
-    from ManifoldEM import find_conformational_coords
-    find_conformational_coords.op()
+def psi_analysis(args: Namespace):
+    mem.psi_analysis(**args_to_dict(args))
 
 
-def energy_landscape(_):
-    from ManifoldEM import energy_landscape
-    energy_landscape.op()
+def nlsa_movie(args: Namespace):
+    mem.nlsa_movie(**args_to_dict(args))
 
 
-def compute_trajectory(_):
-    from ManifoldEM import trajectory
-    trajectory.op()
+def find_conformational_coordinates(args: Namespace):
+    mem.find_conformational_coordinates(**args_to_dict(args))
+
+
+def energy_landscape(args: Namespace):
+    mem.energy_landscape(**args_to_dict(args))
+
+
+def compute_trajectory(args: Namespace):
+    mem.compute_trajectory(**args_to_dict(args))
 
 
 def relion_reconstruct(star_file: str, relion_command: str, output_path: str):
