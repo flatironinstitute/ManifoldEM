@@ -115,9 +115,6 @@ def load_state(args):
     params.load(args.input_file)
 
     params.ncpu = args.ncpu
-    if args.command == "threshold":
-        params.prd_thres_low = args.low
-        params.prd_thres_high = args.high
     if hasattr(args, "path_width"):
         if args.path_width is None:
             return
@@ -145,6 +142,11 @@ def args_to_dict(args: Namespace) -> dict:
         params.save()
 
     return kwargs
+
+
+def threshold(args):
+    params.project_level = ProjectLevel.BINNING
+    params.save()
 
 
 def init(args: Namespace):
@@ -222,7 +224,7 @@ def mrcs2mrc(_):
     os.chdir(curr_path)
 
 
-def denoise_helper(i_bin: int, f: int, k: int, filter_type: str):
+def denoise_helper(i_bin: int, k: int, filter_type: str):
     import mrcfile
     import numpy as np
     from scipy import ndimage
@@ -232,7 +234,7 @@ def denoise_helper(i_bin: int, f: int, k: int, filter_type: str):
         vol = mrc.data
         vol = vol.astype(np.float64)
     if filter_type == 'gaussian':
-        vol = ndimage.gaussian_filter(vol,k)
+        vol = ndimage.gaussian_filter(vol, k)
     elif filter_type == 'median':
         vol = ndimage.median_filter(vol, k)
     else:
@@ -252,7 +254,7 @@ def denoise(args):
     filter_type = args.filter.lower()
 
     bins = list(range(f)) + list(range(params.states_per_coord - f, params.states_per_coord))
-    denoise_local = partial(denoise_helper, f=f, k=k, filter_type=filter_type)
+    denoise_local = partial(denoise_helper, k=k, filter_type=filter_type)
 
     os.makedirs(params.postproc_denoise_dir, exist_ok=True)
 
@@ -262,6 +264,18 @@ def denoise(args):
             pass
 
     print(f"Output in: {os.path.realpath(params.postproc_denoise_dir)}")
+
+
+def set_params(args):
+    for attr in dir(args):
+        if attr.startswith('_') or not hasattr(params, attr):
+            continue
+
+        curr_value = getattr(params, attr)
+        new_value = getattr(args, attr)
+        if new_value != curr_value:
+            print(f"Changing param {attr} from {curr_value} to {new_value}")
+            setattr(params, attr, new_value)
 
 
 _funcs = {
@@ -288,6 +302,7 @@ def main():
     main_args = parser.parse_args()
 
     load_state(main_args)
+    set_params(main_args)
     _funcs[main_args.command](main_args)
 
 

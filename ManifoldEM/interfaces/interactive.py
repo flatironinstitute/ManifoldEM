@@ -46,9 +46,7 @@ def load(project_file: str):
     params.load(project_file)
 
 
-def threshold(low: int, high: int, **kwargs):
-    params.prd_thres_low = low
-    params.prd_thres_high = high
+def threshold(**kwargs):
     params.project_level = ProjectLevel.BINNING
     params.save()
 
