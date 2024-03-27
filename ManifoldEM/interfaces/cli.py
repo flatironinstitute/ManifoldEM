@@ -249,7 +249,7 @@ def mrcs2mrc(_):
     os.chdir(curr_path)
 
 
-def denoise_helper(i_bin: int, f: int, k: int, filter_type: str):
+def denoise_helper(i_bin: int, k: int, filter_type: str):
     import mrcfile
     import numpy as np
     from scipy import ndimage
@@ -259,7 +259,7 @@ def denoise_helper(i_bin: int, f: int, k: int, filter_type: str):
         vol = mrc.data
         vol = vol.astype(np.float64)
     if filter_type == 'gaussian':
-        vol = ndimage.gaussian_filter(vol,k)
+        vol = ndimage.gaussian_filter(vol, k)
     elif filter_type == 'median':
         vol = ndimage.median_filter(vol, k)
     else:
@@ -279,7 +279,7 @@ def denoise(args):
     filter_type = args.filter.lower()
 
     bins = list(range(f)) + list(range(params.states_per_coord - f, params.states_per_coord))
-    denoise_local = partial(denoise_helper, f=f, k=k, filter_type=filter_type)
+    denoise_local = partial(denoise_helper, k=k, filter_type=filter_type)
 
     os.makedirs(params.postproc_denoise_dir, exist_ok=True)
 
