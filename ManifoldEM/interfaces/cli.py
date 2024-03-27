@@ -113,9 +113,6 @@ def load_state(args):
     params.load(args.input_file)
 
     params.ncpu = args.ncpu
-    if args.command == "threshold":
-        params.prd_thres_low = args.low
-        params.prd_thres_high = args.high
     if hasattr(args, "path_width"):
         if args.path_width is None:
             return
@@ -170,8 +167,6 @@ def _parse_prd_list(prd_list: str):
 
 
 def threshold(args):
-    params.prd_thres_low = args.low
-    params.prd_thres_high = args.high
     params.project_level = ProjectLevel.BINNING
     params.save()
 
@@ -296,6 +291,18 @@ def denoise(args):
     print(f"Output in: {os.path.realpath(params.postproc_denoise_dir)}")
 
 
+def set_params(args):
+    for attr in dir(args):
+        if attr.startswith('_') or not hasattr(params, attr):
+            continue
+
+        curr_value = getattr(params, attr)
+        new_value = getattr(args, attr)
+        if new_value != curr_value:
+            print(f"Changing param {attr} from {curr_value} to {new_value}")
+            setattr(params, attr, new_value)
+
+
 _funcs = {
     "init": init,
     "threshold": threshold,
@@ -320,6 +327,7 @@ def main():
     main_args = parser.parse_args()
 
     load_state(main_args)
+    set_params(main_args)
     _funcs[main_args.command](main_args)
 
 
