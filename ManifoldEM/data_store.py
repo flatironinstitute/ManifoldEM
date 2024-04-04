@@ -5,11 +5,11 @@ import numpy as np
 import pickle
 
 from typing import List, Any, Tuple, Dict, Set
-from nptyping import NDArray, Shape, Int, Int64, Float64
+from nptyping import NDArray, Shape, Int, Int64, Float64, Bool
 
 from ManifoldEM.params import params
 from ManifoldEM.star import get_align_data
-from ManifoldEM.util import augment
+from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
 
@@ -40,17 +40,19 @@ class _ProjectionDirections:
     def __init__(self):
         self.thres_low: int = params.prd_thres_low
         self.thres_high: int = params.prd_thres_high
-        self.bin_centers: NDArray[Shape["3,*", Any], Float64] = np.empty(shape=(3, 0))
+        self.bin_centers: NDArray[Shape["3,*"], Float64] = np.empty(shape=(3, 0))
 
         self.defocus: NDArray[Shape["*"], Float64] = np.empty(0)
         self.microscope_origin: Tuple[NDArray[Shape["*"], Float64],
                                       NDArray[Shape["*"], Float64]] = (np.empty(0), np.empty(0))
 
-        self.pos_full: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3,0))
-        self.quats_full: NDArray[Shape["4", Any], Float64] = np.empty(shape=(4,0))
+        self.pos_raw: NDArray[Shape["3,*"], Float64] = np.empty(shape=(3,0))
+        self.pos_full: NDArray[Shape["3,*"], Float64] = np.empty(shape=(3,0))
+        self.quats_raw: NDArray[Shape["4,*"], Float64] = np.empty(shape=(4,0))
+        self.quats_full: NDArray[Shape["4,*"], Float64] = np.empty(shape=(4,0))
 
-        self.image_indices_full: NDArray[Shape["*"], List[Int]] = np.empty(0, dtype=object)
-        self.thres_ids: NDArray[Shape["*"], Int64] = np.empty(0, dtype=np.int64)
+        self.image_indices_full: NDArray[Shape["*"], Any] = np.empty(0, dtype=object)
+        self.thres_ids: list[int] = []
         self.occupancy_full: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
 
         self.anchors: Dict[int, Anchor] = {}
@@ -63,10 +65,12 @@ class _ProjectionDirections:
         self.neighbor_graph_pruned: Dict[str, Any] = {}
         self.neighbor_subgraph_pruned: List[Dict[str, Any]] = []
 
-        self.pos_thresholded: NDArray[Shape["3", Any], Float64] = np.empty(shape=(3,0))
+        self.pos_thresholded: NDArray[Shape["3,*"], Float64] = np.empty(shape=(3,0))
         self.theta_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
         self.phi_thresholded: NDArray[Shape["*"], Float64] = np.empty(0)
         self.cluster_ids: NDArray[Shape["*"], Int] = np.empty(0, dtype=int)
+
+        self.image_is_mirrored: NDArray[Shape["*"], Bool] = np.empty(0, dtype=bool)
 
 
     def load(self, pd_file=None):
@@ -95,28 +99,29 @@ class _ProjectionDirections:
                 os.environ.pop('MANIFOLD_REBUILD_DS')
 
             print("Calculating projection direction information")
-            sh, q, U, V = get_align_data(params.align_param_file, flip=True)
+            self.microscope_origin, self.quats_raw, U, V = get_align_data(params.align_param_file, flip=True)
             df = (U + V) / 2
 
+            plane_vec = np.array(params.tess_hemisphere_vec)
+            self.quats_raw = self.quats_raw
+            self.quats_full, self.image_is_mirrored = collapse_to_half_space(self.quats_raw, plane_vec)
+            self.pos_raw = quaternion_to_S2(self.quats_raw)
+            self.pos_full = quaternion_to_S2(self.quats_full)
+
             # double the number of data points by augmentation
-            q = augment(q)
             df = np.concatenate((df, df))
 
-            image_indices, pos_full, bin_centers, occupancy, conjugate_bin_ids = \
-                bin_and_threshold(q, params.ang_width, params.prd_thres_low, params.prd_thres_high)
+            image_indices, bin_centers, occupancy, bin_ids = \
+                bin_and_threshold(self.pos_full, params.ang_width, params.prd_thres_low, tessellator=params.tess_hemisphere_type, plane_vec=plane_vec)
 
             self.thres_low = params.prd_thres_low
             self.thres_high = params.prd_thres_high
 
             self.bin_centers = bin_centers
             self.defocus = df
-            self.microscope_origin = sh
-
-            self.pos_full = pos_full
-            self.quats_full = q
 
             self.image_indices_full = image_indices
-            self.thres_ids = conjugate_bin_ids
+            self.thres_ids = bin_ids
             self.occupancy_full = occupancy
 
             self.anchors = {}
@@ -151,27 +156,6 @@ class _ProjectionDirections:
     def remove_anchor(self, id: int):
         if id in self.anchors:
             self.anchors.pop(id)
-
-
-    def deduplicate(self, arr):
-        mid = arr.shape[-1] // 2
-        if 2 * mid == arr.shape[-1]:
-            return arr[:mid]
-        else:
-            return arr[mid:]
-
-    @property
-    def occupancy_no_duplication(self):
-        return self.deduplicate(self.occupancy_full)
-
-
-    @property
-    def bin_centers_no_duplication(self):
-        mid = self.bin_centers.shape[1] // 2
-        if 2 * mid == self.bin_centers.shape[1]:
-            return self.bin_centers[:, :mid]
-        else:
-            return self.bin_centers[:, mid:]
 
 
     @property

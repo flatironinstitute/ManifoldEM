@@ -21,6 +21,8 @@ def get_parser():
         for param, (paramtype, paraminfo) in annotated_params.items():
             if paraminfo.user_param:
                 default = getattr(params, param)
+                if paramtype.__name__ == 'list':
+                    paramtype = str
                 subparser.add_argument(f"--{param}", metavar=paramtype.__name__.upper(), type=paramtype, default=default,
                                        help=f'{prefix}{paraminfo.description}')
 
@@ -297,7 +299,14 @@ def set_params(args):
             continue
 
         curr_value = getattr(params, attr)
+        typeinfo = params.get_param_info(attr)
         new_value = getattr(args, attr)
+
+        if typeinfo[0].__name__ == 'list':
+            innertype = typeinfo[0].__args__[0]
+            new_value = str(new_value).replace('[', '').replace(']', '')
+            new_value = [innertype(v) for v in new_value.split(',')]
+
         if new_value != curr_value:
             print(f"Changing param {attr} from {curr_value} to {new_value}")
             setattr(params, attr, new_value)

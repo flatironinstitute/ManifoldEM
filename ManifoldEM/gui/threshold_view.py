@@ -72,16 +72,15 @@ class ThresholdView(QMainWindow):
 
     def onTabChange(self, i):
         prds = data_store.get_prds()
-        prd_mask = (prds.occupancy_no_duplication >= self.thresh_low) & \
-            (prds.occupancy_no_duplication <= self.thresh_high)
-        occupancies = prds.occupancy_no_duplication[prd_mask]
+        prd_mask = prds.thres_ids
+        occupancies = prds.occupancy
 
         if i == 1:  #signals when view switched to tab 2
-            bin_centers = prds.bin_centers_no_duplication[:, prd_mask]
+            bin_centers = prds.bin_centers[:, prd_mask]
             phis = np.arctan2(bin_centers[1, :], bin_centers[0, :]) - np.pi
             thetas = np.arccos(bin_centers[2, :]) * 180. / np.pi
 
-            self.thresh_polar_tab.plot(phis, thetas, occupancies)
+            self.thresh_polar_tab.plot(phis, thetas, prds.occupancy)
 
         if i == 2:
             n_unique = len(set(occupancies))
@@ -160,7 +159,7 @@ class ThreshAllCanvas(QDialog):
             tick.label1.set_fontsize(6)
         self.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         self.axes.set_xlim(xmin=1, xmax=n_pds)
-        self.axes.set_ylim(ymin=0, ymax=1.1 * np.max(prds.occupancy_no_duplication))
+        self.axes.set_ylim(ymin=0, ymax=1.1 * np.max(prds.occupancy))
         self.axes.set_xlabel('PD Numbers', fontsize=6)
         self.axes.set_ylabel('Occupancy', fontsize=6)
         #self.axes.autoscale()

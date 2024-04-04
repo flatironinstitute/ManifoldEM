@@ -1,8 +1,9 @@
 import numpy as np
+from nptyping import NDArray, Shape, Float64
 import pandas as pd
 
-from ManifoldEM import util
 from ManifoldEM.params import params
+from ManifoldEM.util import eul_to_quat
 
 '''
 Copyright (c) Columbia University Sonya Hanson 2018
@@ -83,7 +84,12 @@ def parse_star_optics(starfile, keep_index=False):  #added by E. Seitz -- 10/23/
     return (star, ln + 1)
 
 
-def get_align_data(align_star_file, flip):
+def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shape["*"], Float64],
+                                                                    NDArray[Shape["*"], Float64]],
+                                                              NDArray[Shape["4,*"], Float64],
+                                                              NDArray[Shape["*"], Float64],
+                                                              NDArray[Shape["*"], Float64],
+                                                              ]:
     relion_old = True
     with open(align_star_file, 'r') as f:
         for line in f:
@@ -135,6 +141,6 @@ def get_align_data(align_star_file, flip):
         print("missing Euler angles")
         exit(1)
 
-    q = util.eul_to_quat(phi, theta, psi, flip)
+    q = eul_to_quat(phi, theta, psi, flip)
 
     return (sh, q, U, V)
