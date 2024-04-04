@@ -179,6 +179,8 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     out_file = input_data.dist_file
 
     n_particles = indices.shape[0]  # size of bin; ind are the indexes of particles in that bin
+    image_is_mirrored = data_store.get_prds().image_is_mirrored
+
     # auxiliary variables
     n_pix = params.ms_num_pixels
 
@@ -210,21 +212,18 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     else:
         mask = annular_mask(0, n_pix / 2., n_pix, n_pix)
 
-
     # read images with conjugates
     for i_part in range(n_particles):
-        if indices[i_part] < n_particles_tot / 2:  # first half data set; i.e., before augmentation
-            raw_particle_index = indices[i_part]
-        else:  # second half data set; i.e., the conjugates
-            raw_particle_index = int(indices[i_part] - n_particles_tot / 2)
+        particle_index = indices[i_part]
         if not relion_data:  # spider data
-            start = n_pix**2 * raw_particle_index * 4
+            start = n_pix**2 * particle_index * 4
             img = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix)).T
         else:  # relion data
-            img = mrcfile.mmap(img_file_name, 'r').data[raw_particle_index]
-            shi = (image_offsets[1][raw_particle_index] - 0.5, image_offsets[0][raw_particle_index] - 0.5)
+            img = mrcfile.mmap(img_file_name, 'r').data[particle_index]
+            shi = (image_offsets[1][particle_index] - 0.5, image_offsets[0][particle_index] - 0.5)
             img = shift(img, shi, order=3, mode='wrap')
-        if indices[i_part] >= n_particles_tot / 2:  # second half data set
+
+        if image_is_mirrored[particle_index]:
             img = np.flipud(img)
 
         # store each flatted image in y and filter

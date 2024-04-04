@@ -1,6 +1,10 @@
+import copy
 import numba
 import numpy as np
 from scipy import optimize
+
+from typing import Any
+from nptyping import NDArray, Shape, Float64, Bool
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,7 +19,7 @@ def _q_product_single(q1, q2):
         q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
         q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1],
         q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0],
-        ])
+    ])
 
 
 @numba.jit(nopython=True)
@@ -25,6 +29,28 @@ def _optfunc(a, q):
     q2 = np.array([np.cos(b[1]), 0., -np.sin(b[1]), 0.])
     q3 = np.array([np.cos(b[2]), 0., 0., -np.sin(b[2])])
     return q - _q_product_single(q3, _q_product_single(q2, q1))
+
+
+def quaternion_to_S2(q: NDArray[Shape["4,*"], Float64]) -> NDArray[Shape["3,*"], Float64]:
+    # TODO: Understand how this magically gets rid of final psi rotation
+    S2 = 2 * np.vstack(
+        (q[1, :] * q[3, :] - q[0, :] * q[2, :], q[0, :] * q[1, :] + q[2, :] * q[3, :], q[0, :]**2 + q[3, :]**2 - 0.5))
+    return S2
+
+
+def collapse_to_half_space(
+    q: NDArray[Shape["4,*"], Float64], plane_vec=np.array([1.0, 0.0, 0.0])
+) -> tuple[NDArray[Shape["4,*"], Float64], NDArray[Shape["*"], Bool]]:
+    n_particles = q.shape[1]
+    q = copy.copy(q)
+    S2 = quaternion_to_S2(q)
+    is_mirrored = np.zeros(shape=(n_particles), dtype=bool)
+    for i in range(n_particles):
+        if np.dot(S2[:, i], plane_vec) < 0.0:
+            q[:, i] = np.array([-q[1, i], q[0, i], -q[3, i], q[2, i]])
+            is_mirrored[i] = True
+
+    return (q, is_mirrored)
 
 
 def q2Spider(q):
