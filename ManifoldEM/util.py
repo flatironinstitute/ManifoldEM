@@ -43,7 +43,7 @@ def is_valid_host(hostname):
 
 def get_image_width_from_stack(stack_file: str):
     img_width = 0
-    if stack_file.endswith('.mrcs'):
+    if stack_file.endswith('.mrcs') or stack_file.endswith('.mrc'):
         mrc = mrcfile.mmap(params.img_stack_file, mode='r')
         if not mrc.is_image_stack():
             mrc.close()
@@ -53,7 +53,7 @@ def get_image_width_from_stack(stack_file: str):
         img_width = mrc.data[0].shape[0]
         mrc.close()
     else:
-        img_width = int(np.sqrt(os.path.getsize(stack_file) / (4 * params.num_part)))
+        raise ValueError('Particles must be in mrc or mrcs format.')
 
     return img_width
 
