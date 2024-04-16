@@ -51,19 +51,19 @@ def get_parser():
     distance_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(distance_parser, ProjectLevel.CALC_DISTANCE)
 
-    manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="4: Initial embedding",
+    manifold_analysis_parser = subparsers.add_parser("manifold-analysis", help="3: Initial embedding",
                                                      formatter_class=ArgumentDefaultsHelpFormatter)
     manifold_analysis_parser.add_argument("input_file", type=str)
     manifold_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(manifold_analysis_parser, ProjectLevel.MANIFOLD_ANALYSIS)
 
-    psi_analysis_parser = subparsers.add_parser("psi-analysis", help="5: Analyze images to get psis",
+    psi_analysis_parser = subparsers.add_parser("psi-analysis", help="4: Analyze images to get psis",
                                                 formatter_class=ArgumentDefaultsHelpFormatter)
     psi_analysis_parser.add_argument("input_file", type=str)
     psi_analysis_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
     add_relevant_params(psi_analysis_parser, ProjectLevel.PSI_ANALYSIS)
 
-    nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="6: Create 2D psi movies",
+    nlsa_movie_parser = subparsers.add_parser("nlsa-movie", help="5: Create 2D psi movies",
                                               formatter_class=ArgumentDefaultsHelpFormatter)
     nlsa_movie_parser.add_argument("input_file", type=str)
     nlsa_movie_parser.add_argument("--prds", type=str, metavar="INT,INT,...", help="Comma delineated list of prds you wish to calculate -- useful for debugging")
