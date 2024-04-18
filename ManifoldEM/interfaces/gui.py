@@ -34,6 +34,7 @@ parser.add_argument('-d', "--diameter", type=float, default=150.0)
 parser.add_argument('-r', "--resolution", type=float, default=1.0)
 parser.add_argument('-x', "--aperture-index", type=int, default=1)
 parser.add_argument('-R', "--restore", type=str, default="")
+parser.add_argument('-V', "--disable-viz", action='store_true')
 
 
 def init(args):
@@ -53,6 +54,9 @@ def init(args):
     params.particle_diameter = args.diameter
     params.ms_estimated_resolution = args.resolution
     params.aperture_index = args.aperture_index
+
+    if args.disable_viz:
+        os.environ['MANIFOLD_DISABLE_VIZ'] = '1'
 
 
 def main():
