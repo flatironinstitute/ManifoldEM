@@ -305,19 +305,19 @@ class Params():
 
 
     def get_EL_file(self, prd_index: int):
-        return f'{self.EL_file}prD_{prd_index}'
+        return f'{self.EL_file}prD_{prd_index}.pkl'
 
 
     def get_psi_file(self, prd_index: int):
-        return f'{self.psi_file}prD_{prd_index}'
+        return f'{self.psi_file}prD_{prd_index}.pkl'
 
 
-    def get_psi2_file(self, prd_index: int):
-        return f'{self.psi2_file}prD_{prd_index}'
+    def get_psi2_file(self, prd_index: int, psi_index: int):
+        return f'{self.psi2_file}prD_{prd_index}_psi_{psi_index}.pkl'
 
 
     def get_dist_file(self, prd_index: int):
-        return f'{self.dist_file}prD_{prd_index}'
+        return f'{self.dist_file}prD_{prd_index}.pkl'
 
 
     def get_user_params(self) -> dict[str, Annotated]:

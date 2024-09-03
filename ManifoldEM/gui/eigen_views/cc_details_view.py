@@ -895,12 +895,11 @@ class Manifold2dCanvas(QDialog):
         prd = self.prd_index - 1
         dist_file = params.get_dist_file(prd)
         psi_file = params.get_psi_file(prd)
-        psi2_file = params.get_psi2_file(prd)
         EL_file = params.get_EL_file(prd)
         psinums = list(range(params.num_psi))
         senses = np.ones(params.num_psi)
         psi_list = list(range(params.num_psi))  # list of incomplete psi values per PD
-        psi_analysis_single([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prd, psi_list],
+        psi_analysis_single([dist_file, psi_file, EL_file, psinums, senses, prd, psi_list],
                             con_order_range=params.con_order_range,
                             traj_name=params.traj_name,
                             is_full=0,
@@ -908,7 +907,7 @@ class Manifold2dCanvas(QDialog):
 
         print(f"Re-making NLSA movie for prd {self.prd_index - 1}")
         from ManifoldEM.nlsa_movie import movie
-        movie([prd], None, None, params.psi2_file, params.nlsa_fps)
+        movie([prd], params.nlsa_fps)
 
         msg = f'The manifold for PD {self.prd_index} has been successfully re-embedded.'
         box = QMessageBox(self)
