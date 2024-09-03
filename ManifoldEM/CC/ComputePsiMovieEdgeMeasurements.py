@@ -402,7 +402,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
         currPrD = G['Edges'][e, 0]
         nbrPrD = G['Edges'][e, 1]
 
-        CC_meas_file = '{}{}_{}_{}'.format(params.CC_meas_file, e, currPrD, nbrPrD)
+        CC_meas_file = params.get_CC_meas_file(e, currPrD, nbrPrD)
         data = myio.fin1(CC_meas_file)
         measureOFCurrNbrEdge = data['measureOFCurrNbrEdge']
         measureOFCurrNbrEdge_tblock = data['measureOFCurrNbrEdge_tblock']

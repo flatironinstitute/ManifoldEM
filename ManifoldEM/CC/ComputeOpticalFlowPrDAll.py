@@ -18,7 +18,7 @@ from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 def _construct_input_data(R):
     ll = []
     for prD in R:
-        CC_OF_file = f'{params.CC_OF_file}{prD}'
+        CC_OF_file = params.get_CC_OF_file(prD)
         if os.path.exists(CC_OF_file) and os.path.getsize(CC_OF_file):
             continue
         ll.append([CC_OF_file, prD])
@@ -153,7 +153,6 @@ def ComputeOptFlowPrDPsiAll1(input_data):
         FlowVecPrDPsi = ComputePsiMovieOpticalFlow(IMGcurrPrD, params.opt_movie, prds_psinums)
         FlowVecPrD[psinum_currPrD] = FlowVecPrDPsi
 
-    CC_OF_file = '{}'.format(CC_OF_file)
     myio.fout1(CC_OF_file, FlowVecPrD=FlowVecPrD)
 
 

@@ -177,7 +177,7 @@ class Params():
 
     @property
     def pd_file(self) -> str:
-        return os.path.join(self.out_dir, 'pd_data')
+        return os.path.join(self.out_dir, 'pd_data.pkl')
 
 
     @property
@@ -232,7 +232,7 @@ class Params():
 
     @property
     def CC_file(self) -> str:
-        return os.path.join(self.CC_dir,  'CC_file')
+        return os.path.join(self.CC_dir,  'CC_file.pkl')
 
 
     @property
@@ -241,18 +241,8 @@ class Params():
 
 
     @property
-    def CC_meas_file(self) -> str:
-        return os.path.join(self.CC_meas_dir, 'meas_edge_prDs_')
-
-
-    @property
     def CC_OF_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_OF')
-
-
-    @property
-    def CC_OF_file(self) -> str:
-        return os.path.join(self.CC_OF_dir, 'OF_prD_')
 
 
     @property
@@ -306,6 +296,14 @@ class Params():
 
     def get_EL_file(self, prd_index: int):
         return f'{self.EL_file}prD_{prd_index}.pkl'
+
+
+    def get_CC_OF_file(self, prd_index: int):
+        return os.path.join(self.CC_OF_dir, f'OF_prD_{prd_index}.pkl')
+
+
+    def get_CC_meas_file(self, edge_index: int, prd_index: int, nbr_index: int) -> str:
+        return os.path.join(self.CC_meas_dir, f'meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.pkl')
 
 
     def get_psi_file(self, prd_index: int):
