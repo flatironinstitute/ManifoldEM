@@ -51,7 +51,7 @@ def op(*argv):
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # added June 2020, S.M.
-    traj_file2 = "{}name{}_vars".format(params.traj_file, params.traj_name)
+    traj_file2 = "{}name{}_vars.pkl".format(params.traj_file, params.traj_name)
     myio.fout1(traj_file2, trajTaus=trajTaus, posPsi1All=posPsi1All, posPathAll=posPathAll,
                xSelect=xSelect, tauAvg=tauAvg)
 

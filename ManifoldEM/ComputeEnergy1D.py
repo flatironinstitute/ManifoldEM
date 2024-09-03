@@ -65,11 +65,11 @@ def op(*argv):
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # Section III
-    traj_file = "{}name{}".format(params.traj_file, params.traj_name)
+    traj_file = "{}name{}.pkl".format(params.traj_file, params.traj_name)
     myio.fout1(traj_file, hUn=hUn)
 
     # added June 2020, S.M.
-    traj_file_vars = f"{params.traj_file}name{params.traj_name}_vars"
+    traj_file_vars = f"{params.traj_file}name{params.traj_name}_vars.pkl"
     myio.fout1(traj_file_vars, trajTaus=trajTaus, posPsi1All=posPsi1All,
                posPathAll=posPathAll, xSelect=xSelect, tauAvg=tauAvg)
 

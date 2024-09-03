@@ -84,7 +84,7 @@ def concatenate_bin(i_bin, numberOfJobs, batch_size):
     for istart in range(0, numberOfJobs, batch_size):
         numNext = min(numberOfJobs, istart + batch_size)
 
-        traj_bin_file = "{}name{}_group_{}_{}".format(params.traj_file, params.traj_name, istart, numNext - 1)
+        traj_bin_file = "{}name{}_group_{}_{}.pkl".format(params.traj_file, params.traj_name, istart, numNext - 1)
 
         data = myio.fin1(traj_bin_file)
         imgss_bin_g = data['imgss']
@@ -148,7 +148,7 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
     for istart in range(0, numberOfJobs, batch_size):
         numNext = min(numberOfJobs, istart + batch_size)
         xSel = xSelect[istart:numNext]
-        traj_bin_file = f"{params.traj_file}name{params.traj_name}_group_{istart}_{numNext - 1}"
+        traj_bin_file = f"{params.traj_file}name{params.traj_name}_group_{istart}_{numNext - 1}.pkl"
         input_data.append((xSel, traj_bin_file))
 
     with multiprocessing.Pool(processes=params.ncpu) as pool:
