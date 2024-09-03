@@ -166,11 +166,6 @@ class Params():
 
 
     @property
-    def OM1_file(self) -> str:
-        return os.path.join(self.OM_dir, 'S2_')
-
-
-    @property
     def rho_file(self) -> str:
         return os.path.join(self.OM_dir, 'rho')
 
@@ -211,13 +206,13 @@ class Params():
 
 
     @property
-    def EL_file(self) -> str:
-        return os.path.join(self.EL_dir, 'S2_')
+    def OM_file(self) -> str:
+        return os.path.join(self.OM_dir, 'S2_OM.npy')
 
 
     @property
-    def OM_file(self) -> str:
-        return os.path.join(self.OM_dir, 'S2_')
+    def OM1_file(self) -> str:
+        return os.path.join(self.EL_dir, 'S2_EL.npy')
 
 
     @property
@@ -228,6 +223,16 @@ class Params():
     @property
     def CC_dir(self) -> str:
         return os.path.join(self.out_dir, 'CC')
+
+
+    @property
+    def CC_dir_temp(self) -> str:
+        return os.path.join(self.CC_dir, 'temp')
+
+
+    @property
+    def bad_nodes_psis_tau_file(self) -> str:
+        return os.path.join(self.CC_dir, 'bad_nodes_psis_tau.pkl')
 
 
     @property
@@ -295,7 +300,7 @@ class Params():
 
 
     def get_EL_file(self, prd_index: int):
-        return f'{self.EL_file}prD_{prd_index}.pkl'
+        return f'S2_prD_{prd_index}.pkl'
 
 
     def get_CC_OF_file(self, prd_index: int):
@@ -316,6 +321,10 @@ class Params():
 
     def get_dist_file(self, prd_index: int):
         return f'{self.dist_file}prD_{prd_index}.pkl'
+
+
+    def get_bad_nodes_psis_tau_file_prd(self, prd_index: int):
+        return os.path.join(self.CC_dir_temp, f'bad_nodes_tau_prD_{prd_index}.pkl')
 
 
     def get_user_params(self) -> dict[str, Annotated]:

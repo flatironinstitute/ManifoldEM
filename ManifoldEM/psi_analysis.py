@@ -243,7 +243,7 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
             if (senses[0] == -1 and dc > 0) or senses[0] == 1 and dc < 0:
                 tau = 1 - tau
 
-            out_file = f'{EL_file}_{traj_name}_1'
+            out_file = EL_file
             myio.fout1(out_file, IMG1=IMG1, IMGT=IMGT, posPath=pos_path, PosPsi1=pos_psi1, psirec=psirec,
                        tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag, Topo_mean=Topo_mean, tauinds=tauinds)
 

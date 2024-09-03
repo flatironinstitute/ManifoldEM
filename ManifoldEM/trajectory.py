@@ -29,8 +29,8 @@ def op(*argv):
     posPsi1All = [None] * params.prd_n_active
 
     for x in xSelect:
-        EL_file = params.get_EL_file(x)
-        File = '{}_{}_{}'.format(EL_file, params.traj_name, 1)
+        File = params.get_EL_file(x)
+
         if os.path.exists(File):
             data = myio.fin1(File)
             trajTaus[x] = data['tau']

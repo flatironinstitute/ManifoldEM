@@ -1,6 +1,7 @@
 import pickle
 
 import numpy as np
+import os
 
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store, Sense
@@ -243,7 +244,7 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     nodePot, edgePot = MRFGeneratePotentials.op(G, anchor_nodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock)
 
     # Set potential value to small number <= 1e-16 for bad psi-movies
-    badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
+    badNodesPsisTaufile = params.bad_nodes_psis_tau_file
     badNodesPsisTau = readBadNodesPsisTau(badNodesPsisTaufile)
 
     # from bad taus (badNodesPsisTau) and split block movies (badNodesPsis)
@@ -277,8 +278,8 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
     # so , printing it out as *_bp.txt , the *_of.txt files will have just the badNodesPsisTau
     nodesAllBadPsis = np.array(nodesAllBadPsis)
     print('nodesAllBadPsis', len(nodesAllBadPsis))
-    np.savetxt('{}badNodePsis_bp.txt'.format(params.CC_dir), badNodesPsis2, fmt="%d", newline="\n")
-    np.savetxt('{}nodesAllBadPsis_bp.txt'.format(params.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
+    np.savetxt(os.path.join(params.CC_dir, 'badNodePsis_bp.txt'), badNodesPsis2, fmt="%d", newline="\n")
+    np.savetxt(os.path.join(params.CC_dir, 'nodesAllBadPsis_bp.txt'), nodesAllBadPsis + 1, fmt="%d", newline="\n")
 
     # if cc == 2:
     #     for n in range(nodeStateBP_cc1.shape[0]):  # as nodeStateBP_cc1 is row vector so shape is (num_prds,)

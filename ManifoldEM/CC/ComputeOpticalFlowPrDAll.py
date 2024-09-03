@@ -128,11 +128,10 @@ def ComputeOptFlowPrDPsiAll1(input_data):
     moviePrDPsi, badPsis, tauPrDPsis, tauPsisIQR, tauPsisOcc = LoadPrDPsiMoviesMasked.op(currPrD)
 
     badPsis = np.array(badPsis)
-    CC_dir_temp = '{}temp/'.format(params.CC_dir)
 
-    os.makedirs(CC_dir_temp, exist_ok=True)
+    os.makedirs(params.CC_dir_temp, exist_ok=True)
 
-    badNodesPsisTaufile_pd = '{}badNodesPsisTauFile_PD_{}'.format(CC_dir_temp, currPrD)
+    badNodesPsisTaufile_pd = params.get_bad_nodes_psis_tau_file_prd(currPrD)
 
     badNodesPsisTau = np.copy(badPsis)
     NodesPsisTauIQR = tauPsisIQR
@@ -170,7 +169,7 @@ def op(node_edge_num_range, *argv):
         # initialize and write to file badpsis array
         offset_OF_files = len(node_range) - len(input_data)
         if offset_OF_files == 0:  # offset_OF_files=0 when no OF files were generated
-            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
+            bad_nodes_psis_taufile = params.bad_nodes_psis_tau_file
             if os.path.exists(bad_nodes_psis_taufile):
                 os.remove(bad_nodes_psis_taufile)
 
@@ -213,12 +212,12 @@ def op(node_edge_num_range, *argv):
 
     # for now individual files were written and are being combined here
     if params.find_bad_psi_tau:
-        CC_dir_temp = '{}temp/'.format(params.CC_dir)
+        CC_dir_temp = params.CC_dir_temp
 
         # if CC_dir_temp exists and is non-empty  combine the individual files again
         if os.path.exists(CC_dir_temp) and len(os.listdir(CC_dir_temp)) > 0:
             for currPrD in node_range:
-                badNodesPsisTaufile_pd = '{}badNodesPsisTauFile_PD_{}'.format(CC_dir_temp, currPrD)
+                badNodesPsisTaufile_pd = params.get_bad_nodes_psis_tau_file_prd(currPrD)
                 dataR = myio.fin1(badNodesPsisTaufile_pd)
 
                 badPsis = dataR['badNodesPsisTau']  # based on a specific tau-iqr cutoff in LoadPrDPsiMoviesMasked
@@ -232,7 +231,7 @@ def op(node_edge_num_range, *argv):
                 nodes_psis_tau_occ[currPrD, :] = tauPsisOcc
                 nodes_psis_tau_vals[currPrD] = tauPrDPsis
 
-            bad_nodes_psis_taufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
+            bad_nodes_psis_taufile = params.bad_nodes_psis_tau_file
             myio.fout1(bad_nodes_psis_taufile,
                        badNodesPsisTau=bad_nodes_psis_tau,
                        NodesPsisTauIQR=nodes_psis_tau_IQR,

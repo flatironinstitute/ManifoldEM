@@ -26,7 +26,7 @@ def extract_traj_data_by_prd(prds_filename, trajTaus, tauAvg, posPathAll, posPsi
     psis = [[] for _ in range(params.states_per_coord)]
 
     for x in prds:
-        fname = f'{params.get_EL_file(x)}_{params.traj_name}_1'
+        fname = params.get_EL_file(x)
         IMGT = myio.fin1(fname)['IMGT']
 
         dist_file = params.get_dist_file(x)

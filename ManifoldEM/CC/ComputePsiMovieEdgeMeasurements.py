@@ -211,7 +211,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     # it is there in case, the threshold needs to be modified to exclude or include more bad psi-movies
     #
     # the graph edges can be pruned here
-    badNodesPsisTaufile = '{}badNodesPsisTauFile'.format(params.CC_dir)
+    badNodesPsisTaufile = params.bad_nodes_psis_tau_file
     dataR = myio.fin1(badNodesPsisTaufile)
 
     badNodesPsisTau = dataR['badNodesPsisTau']  # this was pre-calculated using some tau-cutoff, here we are update it
@@ -278,7 +278,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
 
     #previously was generating a separate file *_of but now just adding an extra variable to the same file
     #badNodesPsisTau_of which should used at BP step
-    badNodesPsisTaufile_of = '{}'.format(badNodesPsisTaufile)
+    badNodesPsisTaufile_of = badNodesPsisTaufile
     myio.fout1(badNodesPsisTaufile_of, **dataR)
 
     # sort of redundant to set -100 and not bad_idx directly but for consistency, we leave it like this for now
@@ -288,10 +288,10 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     num_nodesAllBadPsis = len(nodesAllBadPsis)
     print('Number of trash PDs detected using auto tau-cutoff:', num_nodesAllBadPsis)
 
-    np.savetxt('{}NodeTauPsis_of.txt'.format(params.CC_dir), TausMat_IQR, fmt="%f", newline="\n")
-    np.savetxt('{}NodeTauPsisOcc_of.txt'.format(params.CC_dir), TausMat_Occ, fmt="%f", newline="\n")
-    np.savetxt('{}badNodePsis_of.txt'.format(params.CC_dir), badNodesPsisTau, fmt="%d", newline="\n")
-    np.savetxt('{}nodesAllBadPsis_of.txt'.format(params.CC_dir), nodesAllBadPsis + 1, fmt="%d", newline="\n")
+    np.savetxt(os.path.join(params.CC_dir, 'NodeTauPsis_of.txt'), TausMat_IQR, fmt="%f", newline="\n")
+    np.savetxt(os.path.join(params.CC_dir, 'NodeTauPsisOcc_of.txt'), TausMat_Occ, fmt="%f", newline="\n")
+    np.savetxt(os.path.join(params.CC_dir, 'badNodePsis_of.txt'), badNodesPsisTau, fmt="%d", newline="\n")
+    np.savetxt(os.path.join(params.CC_dir, 'nodesAllBadPsis_of.txt'), nodesAllBadPsis + 1, fmt="%d", newline="\n")
     
     trash_list_out = trash_list
     if nodesAllBadPsis.shape[0] > 0:

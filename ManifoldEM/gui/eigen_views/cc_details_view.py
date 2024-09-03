@@ -61,7 +61,7 @@ class TauCanvas(QDialog):
         super(TauCanvas, self).__init__(parent)
 
         # tau from psi analsis:
-        tau_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        tau_fname = params.get_psi2_file(prd_index - 1, psi_index - 1)
         with open(tau_fname, 'rb') as f:
             tau_data = pickle.load(f)
 
@@ -125,7 +125,7 @@ class PsiCanvas(QDialog):
         self.rec_on = 1
 
         # psis from psi analsis:
-        psi_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        psi_fname = params.get_psi2_file(prd_index - 1, psi_index - 1)
         with open(psi_fname, 'rb') as f:
             psi_data = pickle.load(f)
 
@@ -371,7 +371,7 @@ class ChronosCanvas(QDialog):
         self.psi_index = psi_index
 
         # chronos from psi analsis:
-        chr_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (self.prd_index - 1, self.psi_index - 1))
+        chr_fname = params.get_psi2_file(self.prd_index - 1, self.psi_index - 1)
         with open(chr_fname, 'rb') as f:
             chr_data = pickle.load(f)
 
