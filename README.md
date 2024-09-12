@@ -181,8 +181,7 @@ At this point, if you wanted to visualize and manually manipulate the principle 
 associated data, you could simply `manifold-gui -R params_my_J310_analysis.toml`. Here you could set
 the anchor directions, manually control the sense of each direction, remove directions, and other
 various things. Once you hit the "Compile Results" command, you can continue using the command
-line. Here I set a few anchors and will continue on, though note that the trajectory ignores the
-`-n` flag as of this writing...
+line. Here I set a few anchors and will continue on...
 
 ```
 % manifold-cli -n 16 find-ccs params_my_J310_analysis.toml &> /dev/null
