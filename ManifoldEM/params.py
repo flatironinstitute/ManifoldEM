@@ -166,18 +166,13 @@ class Params():
 
 
     @property
-    def OM1_file(self) -> str:
-        return os.path.join(self.OM_dir, 'S2_')
-
-
-    @property
     def rho_file(self) -> str:
         return os.path.join(self.OM_dir, 'rho')
 
 
     @property
     def pd_file(self) -> str:
-        return os.path.join(self.out_dir, 'pd_data')
+        return os.path.join(self.out_dir, 'pd_data.pkl')
 
 
     @property
@@ -211,13 +206,13 @@ class Params():
 
 
     @property
-    def EL_file(self) -> str:
-        return os.path.join(self.EL_dir, 'S2_')
+    def OM_file(self) -> str:
+        return os.path.join(self.OM_dir, 'S2_OM.npy')
 
 
     @property
-    def OM_file(self) -> str:
-        return os.path.join(self.OM_dir, 'S2_')
+    def OM1_file(self) -> str:
+        return os.path.join(self.EL_dir, 'S2_EL.npy')
 
 
     @property
@@ -231,8 +226,18 @@ class Params():
 
 
     @property
+    def CC_dir_temp(self) -> str:
+        return os.path.join(self.CC_dir, 'temp')
+
+
+    @property
+    def bad_nodes_psis_tau_file(self) -> str:
+        return os.path.join(self.CC_dir, 'bad_nodes_psis_tau.pkl')
+
+
+    @property
     def CC_file(self) -> str:
-        return os.path.join(self.CC_dir,  'CC_file')
+        return os.path.join(self.CC_dir,  'CC_file.pkl')
 
 
     @property
@@ -241,18 +246,8 @@ class Params():
 
 
     @property
-    def CC_meas_file(self) -> str:
-        return os.path.join(self.CC_meas_dir, 'meas_edge_prDs_')
-
-
-    @property
     def CC_OF_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_OF')
-
-
-    @property
-    def CC_OF_file(self) -> str:
-        return os.path.join(self.CC_OF_dir, 'OF_prD_')
 
 
     @property
@@ -305,19 +300,31 @@ class Params():
 
 
     def get_EL_file(self, prd_index: int):
-        return f'{self.EL_file}prD_{prd_index}'
+        return f'S2_prD_{prd_index}.pkl'
+
+
+    def get_CC_OF_file(self, prd_index: int):
+        return os.path.join(self.CC_OF_dir, f'OF_prD_{prd_index}.pkl')
+
+
+    def get_CC_meas_file(self, edge_index: int, prd_index: int, nbr_index: int) -> str:
+        return os.path.join(self.CC_meas_dir, f'meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.pkl')
 
 
     def get_psi_file(self, prd_index: int):
-        return f'{self.psi_file}prD_{prd_index}'
+        return f'{self.psi_file}prD_{prd_index}.pkl'
 
 
-    def get_psi2_file(self, prd_index: int):
-        return f'{self.psi2_file}prD_{prd_index}'
+    def get_psi2_file(self, prd_index: int, psi_index: int):
+        return f'{self.psi2_file}prD_{prd_index}_psi_{psi_index}.pkl'
 
 
     def get_dist_file(self, prd_index: int):
-        return f'{self.dist_file}prD_{prd_index}'
+        return f'{self.dist_file}prD_{prd_index}.pkl'
+
+
+    def get_bad_nodes_psis_tau_file_prd(self, prd_index: int):
+        return os.path.join(self.CC_dir_temp, f'bad_nodes_tau_prD_{prd_index}.pkl')
 
 
     def get_user_params(self) -> dict[str, Annotated]:

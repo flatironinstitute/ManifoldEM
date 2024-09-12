@@ -174,11 +174,11 @@ def ComputeMeasuresPsiMoviesOpticalFlow(FlowVecSelAFWD, FlowVecSelBFWD, FlowVecS
 def ComputeEdgeMeasurePairWisePsiAll(input_data, G, flowVecPctThresh):
     currPrD = input_data[0]
     nbrPrD = input_data[1]
-    CC_meas_file = input_data[2]
-    edgeNum = input_data[3]
+    edgeNum = input_data[2]
+    CC_meas_file = params.get_CC_meas_file(edgeNum, currPrD, nbrPrD)
 
-    currentPrDPsiFile = '{}{}'.format(params.CC_OF_file, currPrD)
-    nbrPrDPsiFile = '{}{}'.format(params.CC_OF_file, nbrPrD)
+    currentPrDPsiFile = params.get_CC_OF_file(currPrD)
+    nbrPrDPsiFile = params.get_CC_OF_file(nbrPrD)
 
     NumPsis = params.num_psi
     # load the data for the current and neighbor prds
@@ -262,8 +262,7 @@ def divide1(N, G):
     for e in N:
         currPrD = G['Edges'][e, 0]
         nbrPrD = G['Edges'][e, 1]
-        CC_meas_file = '{}{}_{}_{}'.format(params.CC_meas_file, e, currPrD, nbrPrD)
-        ll.append([currPrD, nbrPrD, CC_meas_file, e])
+        ll.append([currPrD, nbrPrD, e])
 
     return ll
 
