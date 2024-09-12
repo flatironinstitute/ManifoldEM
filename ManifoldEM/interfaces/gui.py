@@ -39,6 +39,9 @@ parser.add_argument('-V', "--disable-viz", action='store_true')
 
 def init(args):
     from ManifoldEM.params import params
+    if args.disable_viz:
+        os.environ['MANIFOLD_DISABLE_VIZ'] = '1'
+
     if (args.restore):
         params.load(args.restore)
         return
@@ -54,9 +57,6 @@ def init(args):
     params.particle_diameter = args.diameter
     params.ms_estimated_resolution = args.resolution
     params.aperture_index = args.aperture_index
-
-    if args.disable_viz:
-        os.environ['MANIFOLD_DISABLE_VIZ'] = '1'
 
 
 def main():
