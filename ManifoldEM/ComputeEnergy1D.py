@@ -39,8 +39,7 @@ def op(*argv):
     posPsi1All = [None] * params.prd_n_active
 
     for x in xSelect:
-        EL_file = params.get_EL_file(x)
-        File = '{}_{}_{}'.format(EL_file, params.traj_name, 1)
+        File = params.get_EL_file(x)
 
         if os.path.exists(File):
             data = myio.fin1(File)
@@ -66,16 +65,15 @@ def op(*argv):
         tauAvg = np.concatenate((tauAvg, tau.flatten()))
 
     # Section III
-    traj_file = "{}name{}".format(params.traj_file, params.traj_name)
+    traj_file = "{}name{}.pkl".format(params.traj_file, params.traj_name)
     myio.fout1(traj_file, hUn=hUn)
 
     # added June 2020, S.M.
-    traj_file_vars = f"{params.traj_file}name{params.traj_name}_vars"
+    traj_file_vars = f"{params.traj_file}name{params.traj_name}_vars.pkl"
     myio.fout1(traj_file_vars, trajTaus=trajTaus, posPsi1All=posPsi1All,
                posPathAll=posPathAll, xSelect=xSelect, tauAvg=tauAvg)
 
-    OM_file = f'{params.OM_file}OM'
-    hUn.astype('int').tofile(OM_file)
+    hUn.astype('int').tofile(params.OM_file)
 
     #################
     # compute energy:
@@ -85,8 +83,7 @@ def op(*argv):
     kT = kB * (T + 273.15)  # Kelvin
     E = -kT * np.log(rho)
     E = E - np.amin(E)  # shift so that lowest energy is zero
-    OM1_file = '{}EL'.format(params.OM1_file)
-    E.astype('float').tofile(OM1_file)
+    E.astype('float').tofile(params.OM1_file)
 
     params.save()
 

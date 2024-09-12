@@ -255,9 +255,9 @@ class Erg1dCanvas(FigureCanvas):
 
     def update_figure(self, plot_occupancies=False, CC_coord=1):
         if plot_occupancies:
-            LS1d = np.fromfile(f'{params.OM_file}OM', dtype=int)
+            LS1d = np.fromfile(params.OM_file, dtype=int)
         else:  # plot energies
-            LS1d = np.fromfile(f'{params.OM1_file}EL')  #energy path for plot
+            LS1d = np.fromfile(params.OM1_file)  #energy path for plot
 
         self.axes.clear()
         for tick in self.axes.xaxis.get_major_ticks():

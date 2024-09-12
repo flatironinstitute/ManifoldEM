@@ -185,16 +185,12 @@ class Params():
         return os.path.join(self.psi2_dir, 'S2_')
 
     @property
-    def OM1_file(self) -> str:
-        return os.path.join(self.OM_dir, 'S2_')
-
-    @property
     def rho_file(self) -> str:
         return os.path.join(self.OM_dir, 'rho')
 
     @property
     def pd_file(self) -> str:
-        return os.path.join(self.out_dir, 'pd_data')
+        return os.path.join(self.out_dir, 'pd_data.pkl')
 
     @property
     def dist_dir(self) -> str:
@@ -221,12 +217,12 @@ class Params():
         return os.path.join(self.EL_dir, 'OM')
 
     @property
-    def EL_file(self) -> str:
-        return os.path.join(self.EL_dir, 'S2_')
+    def OM_file(self) -> str:
+        return os.path.join(self.OM_dir, 'S2_OM.npy')
 
     @property
-    def OM_file(self) -> str:
-        return os.path.join(self.OM_dir, 'S2_')
+    def OM1_file(self) -> str:
+        return os.path.join(self.EL_dir, 'S2_EL.npy')
 
     @property
     def traj_dir(self) -> str:
@@ -237,24 +233,24 @@ class Params():
         return os.path.join(self.out_dir, 'CC')
 
     @property
+    def CC_dir_temp(self) -> str:
+        return os.path.join(self.CC_dir, 'temp')
+
+    @property
+    def bad_nodes_psis_tau_file(self) -> str:
+        return os.path.join(self.CC_dir, 'bad_nodes_psis_tau.pkl')
+
+    @property
     def CC_file(self) -> str:
-        return os.path.join(self.CC_dir, 'CC_file')
+        return os.path.join(self.CC_dir,  'CC_file.pkl')
 
     @property
     def CC_meas_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_meas')
 
     @property
-    def CC_meas_file(self) -> str:
-        return os.path.join(self.CC_meas_dir, 'meas_edge_prDs_')
-
-    @property
     def CC_OF_dir(self) -> str:
         return os.path.join(self.CC_dir, 'CC_OF')
-
-    @property
-    def CC_OF_file(self) -> str:
-        return os.path.join(self.CC_OF_dir, 'OF_prD_')
 
     @property
     def traj_file(self) -> str:
@@ -289,23 +285,41 @@ class Params():
     def postproc_denoise_dir(self) -> str:
         return os.path.join(self.out_dir, 'postproc', 'denoise')
 
+
     def get_topos_path(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'topos_{index}.png')
+
 
     def get_psi_gif(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, 'topos', f'PrD_{prd}', f'psi_{index}.gif')
 
+
     def get_EL_file(self, prd_index: int):
-        return f'{self.EL_file}prD_{prd_index}'
+        return os.path.join(self.EL_dir, f'S2_prD_{prd_index}.pkl')
+
+
+    def get_CC_OF_file(self, prd_index: int):
+        return os.path.join(self.CC_OF_dir, f'OF_prD_{prd_index}.pkl')
+
+
+    def get_CC_meas_file(self, edge_index: int, prd_index: int, nbr_index: int) -> str:
+        return os.path.join(self.CC_meas_dir, f'meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.pkl')
+
 
     def get_psi_file(self, prd_index: int):
-        return f'{self.psi_file}prD_{prd_index}'
+        return f'{self.psi_file}prD_{prd_index}.pkl'
 
-    def get_psi2_file(self, prd_index: int):
-        return f'{self.psi2_file}prD_{prd_index}'
+
+    def get_psi2_file(self, prd_index: int, psi_index: int):
+        return f'{self.psi2_file}prD_{prd_index}_psi_{psi_index}.pkl'
+
 
     def get_dist_file(self, prd_index: int):
-        return f'{self.dist_file}prD_{prd_index}'
+        return f'{self.dist_file}prD_{prd_index}.pkl'
+
+
+    def get_bad_nodes_psis_tau_file_prd(self, prd_index: int):
+        return os.path.join(self.CC_dir_temp, f'bad_nodes_tau_prD_{prd_index}.pkl')
 
     def get_user_params(self) -> dict[str, Annotated]:
         return {

@@ -28,7 +28,7 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
    conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+, though `mayavi` and
+Should be installable in any modern python/conda environment (python 3.9+, though `mayavi` and
 `pyqt` packages don't always immediately work with the most recent version of python).
 
 python:
@@ -62,10 +62,11 @@ recommended to keep an environment purely for `ManifoldEM`.
 ## Running without 3D acceleration
 Some environments might not allow hardware 3D acceleration, such as via X forwarding or most
 VNC/virtual desktop environments. To work around this, you can disable any 3D visualization
-widgets in the GUI. This can be done by setting the environment variable `MANIFOLD_DISABLE_VIZ`
-to anything 'truthy'. I.e.
+widgets in the GUI. This can be done by setting the environment variable by providing the `-V`
+flag to `manifold-gui`
+
 ```bash
-MANIFOLD_DISABLE_VIZ=1 manifold-gui
+manifold-gui -V
 ```
 
 
@@ -180,8 +181,7 @@ At this point, if you wanted to visualize and manually manipulate the principle 
 associated data, you could simply `manifold-gui -R params_my_J310_analysis.toml`. Here you could set
 the anchor directions, manually control the sense of each direction, remove directions, and other
 various things. Once you hit the "Compile Results" command, you can continue using the command
-line. Here I set a few anchors and will continue on, though note that the trajectory ignores the
-`-n` flag as of this writing...
+line. Here I set a few anchors and will continue on...
 
 ```
 % manifold-cli -n 16 find-ccs params_my_J310_analysis.toml &> /dev/null

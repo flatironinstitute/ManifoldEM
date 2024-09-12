@@ -83,8 +83,8 @@ class CompilationTab(QWidget):
         if val == 100:
             self.button_erg.setText('Energy Landscape Complete')
 
-            # fnameOM = f'{p.OM_file}OM'
-            # fnameEL = f'{p.OM_file}EL'
+            # fnameOM = p.OM_file
+            # fnameEL = p.OM1_file
             # P4.Occ1d = np.fromfile(fnameOM, dtype=int)
             # P4.Erg1d = np.fromfile(fnameEL)
 

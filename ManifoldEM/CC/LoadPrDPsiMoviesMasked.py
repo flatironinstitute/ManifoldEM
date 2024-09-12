@@ -126,7 +126,7 @@ def op(prD):
         mask2D = getMask2D(prD, maskType, radius)
 
     for psinum in range(NumPsis):
-        imgPsiFileName = params.get_psi2_file(prD) + f'_psi_{psinum}'
+        imgPsiFileName = params.get_psi2_file(prD, psinum)
         data_IMG = myio.fin1(imgPsiFileName)
         #IMG1 = data_IMG["IMG1"].T
 

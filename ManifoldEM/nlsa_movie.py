@@ -43,12 +43,12 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
     return ll
 
 
-def movie(input_data, psi2_file, fps):
+def movie(input_data, fps):
     prD = input_data[0]
     dist_file1 = params.get_dist_file(prD)
     # Fetching NLSA outputs and making movies
     for psinum in range(params.num_psi):
-        psi_file1 = psi2_file + 'prD_{}'.format(prD) + '_psi_{}'.format(psinum)
+        psi_file1 = params.get_psi2_file(prD, psinum)
         data = myio.fin1(psi_file1)
         # make movie
         makeMovie(data['IMG1'], prD, psinum, fps)
@@ -79,7 +79,7 @@ def op(prd_list: Union[List[int], None] = None, *argv):
     input_data = _construct_input_data(prd_list, params.prd_n_active)
     n_jobs = len(input_data)
     progress4 = argv[0] if use_gui_progress else NullEmitter()
-    movie_local = partial(movie, psi2_file=params.psi2_file, fps=params.nlsa_fps)
+    movie_local = partial(movie, fps=params.nlsa_fps)
     tqdm = get_tqdm()
     if params.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):

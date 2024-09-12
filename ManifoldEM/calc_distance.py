@@ -212,6 +212,9 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     else:
         mask = annular_mask(0, n_pix / 2., n_pix, n_pix)
 
+    if relion_data:
+        img_data = mrcfile.mmap(img_file_name, 'r').data
+
     # read images with conjugates
     for i_part in range(n_particles):
         particle_index = indices[i_part]
@@ -219,9 +222,8 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
             start = n_pix**2 * particle_index * 4
             img = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix)).T
         else:  # relion data
-            img = mrcfile.mmap(img_file_name, 'r').data[particle_index]
             shi = (image_offsets[1][particle_index] - 0.5, image_offsets[0][particle_index] - 0.5)
-            img = shift(img, shi, order=3, mode='wrap')
+            img = shift(img_data[particle_index], shi, order=3, mode='wrap')
 
         if image_is_mirrored[particle_index]:
             img = np.flipud(img)

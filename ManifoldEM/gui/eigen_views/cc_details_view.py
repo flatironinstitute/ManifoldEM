@@ -61,7 +61,7 @@ class TauCanvas(QDialog):
         super(TauCanvas, self).__init__(parent)
 
         # tau from psi analsis:
-        tau_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        tau_fname = params.get_psi2_file(prd_index - 1, psi_index - 1)
         with open(tau_fname, 'rb') as f:
             tau_data = pickle.load(f)
 
@@ -125,7 +125,7 @@ class PsiCanvas(QDialog):
         self.rec_on = 1
 
         # psis from psi analsis:
-        psi_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (prd_index - 1, psi_index - 1))
+        psi_fname = params.get_psi2_file(prd_index - 1, psi_index - 1)
         with open(psi_fname, 'rb') as f:
             psi_data = pickle.load(f)
 
@@ -371,7 +371,7 @@ class ChronosCanvas(QDialog):
         self.psi_index = psi_index
 
         # chronos from psi analsis:
-        chr_fname = os.path.join(params.psi2_dir, 'S2_prD_%s_psi_%s' % (self.prd_index - 1, self.psi_index - 1))
+        chr_fname = params.get_psi2_file(self.prd_index - 1, self.psi_index - 1)
         with open(chr_fname, 'rb') as f:
             chr_data = pickle.load(f)
 
@@ -895,12 +895,11 @@ class Manifold2dCanvas(QDialog):
         prd = self.prd_index - 1
         dist_file = params.get_dist_file(prd)
         psi_file = params.get_psi_file(prd)
-        psi2_file = params.get_psi2_file(prd)
         EL_file = params.get_EL_file(prd)
         psinums = list(range(params.num_psi))
         senses = np.ones(params.num_psi)
         psi_list = list(range(params.num_psi))  # list of incomplete psi values per PD
-        psi_analysis_single([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prd, psi_list],
+        psi_analysis_single([dist_file, psi_file, EL_file, psinums, senses, prd, psi_list],
                             con_order_range=params.con_order_range,
                             traj_name=params.traj_name,
                             is_full=0,
@@ -908,7 +907,7 @@ class Manifold2dCanvas(QDialog):
 
         print(f"Re-making NLSA movie for prd {self.prd_index - 1}")
         from ManifoldEM.nlsa_movie import movie
-        movie([prd], None, None, params.psi2_file, params.nlsa_fps)
+        movie([prd], params.nlsa_fps)
 
         msg = f'The manifold for PD {self.prd_index} has been successfully re-embedded.'
         box = QMessageBox(self)

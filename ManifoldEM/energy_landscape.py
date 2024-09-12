@@ -22,11 +22,10 @@ def divide1(R, psiNumsAll, sensesAll):
     for prD in R:
         dist_file = params.get_dist_file(prD)
         psi_file = params.get_psi_file(prD)
-        psi2_file = params.get_psi2_file(prD)
         EL_file = params.get_EL_file(prD)
         psinums = [psiNumsAll[0, prD]]
         senses = [sensesAll[0, prD]]
-        ll.append([dist_file, psi_file, psi2_file, EL_file, psinums, senses, prD])
+        ll.append([dist_file, psi_file, EL_file, psinums, senses, prD])
 
     return ll
 

@@ -48,7 +48,7 @@ def op(orig_zip, new_zip, PrD):
 
     # remove the existing NLSA and movies etc, so that new ones can be created
     for psinum in range(params.num_psi):
-        psi2_file = params.get_psi2_file(PrD) + f'_psi_{psinum}'
+        psi2_file = params.get_psi2_file(PrD, psinum)
         if os.path.exists(psi2_file):
             os.remove(psi2_file)
 
