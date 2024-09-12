@@ -62,10 +62,11 @@ recommended to keep an environment purely for `ManifoldEM`.
 ## Running without 3D acceleration
 Some environments might not allow hardware 3D acceleration, such as via X forwarding or most
 VNC/virtual desktop environments. To work around this, you can disable any 3D visualization
-widgets in the GUI. This can be done by setting the environment variable `MANIFOLD_DISABLE_VIZ`
-to anything 'truthy'. I.e.
+widgets in the GUI. This can be done by setting the environment variable by providing the `-V`
+flag to `manifold-gui`
+
 ```bash
-MANIFOLD_DISABLE_VIZ=1 manifold-gui
+manifold-gui -V
 ```
 
 
