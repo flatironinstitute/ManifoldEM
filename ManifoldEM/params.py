@@ -300,7 +300,7 @@ class Params():
 
 
     def get_EL_file(self, prd_index: int):
-        return f'S2_prD_{prd_index}.pkl'
+        return os.path.join(self.EL_dir, f'S2_prD_{prd_index}.pkl')
 
 
     def get_CC_OF_file(self, prd_index: int):
