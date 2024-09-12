@@ -28,7 +28,7 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
    conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.7+, though `mayavi` and
+Should be installable in any modern python/conda environment (python 3.9+, though `mayavi` and
 `pyqt` packages don't always immediately work with the most recent version of python).
 
 python:
