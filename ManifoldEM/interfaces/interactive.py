@@ -7,6 +7,48 @@ from threadpoolctl import threadpool_limits
 def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, mask_volume: str,
          pixel_size: float, diameter: float, resolution: float, aperture_index: int, overwrite: bool,
          **kwargs):
+    """
+    Initializes a new project with specified parameters, including project directory creation
+    and parameter storage.
+
+    Parameters
+    ----------
+    project_name : str
+        The name of the project.
+    avg_volume : str
+        Path to the file containing the average volume data.
+    alignment : str
+        Path to the file containing alignment parameters.
+    image_stack : str
+        Path to the file containing the image stack.
+    mask_volume : str
+        Path to the file containing the volume mask.
+    pixel_size : float
+        The pixel size of each image in Å.
+    diameter : float
+        The diameter of the object in Å.
+    resolution : float
+        The resolution estimate for the images in Å.
+    aperture_index : int
+        The index of the aperture used. Larger apertures increase area associated with a PrD.
+    overwrite : bool
+        Whether to overwrite an existing project with the same name.
+
+    Notes
+    -----
+    - The function sets project parameters in a global variable `params`, which is an
+      instance of a class with attributes corresponding to the project parameters and methods
+      for directory creation (`create_dir`) and parameter storage (`save`).
+    - It checks if the project directory already exists and handles it based on the `overwrite`
+      option. If `overwrite` is True, the existing directory is removed; otherwise, the function
+      exits without creating a new project.
+    - The function determines whether the alignment file is in RELION's STAR format based on its
+      file extension and sets a flag accordingly.
+    - The image width is determined from the image stack file using the `get_image_width_from_stack`
+      function.
+    - Project parameters are saved to a TOML file using the `save` method of the global variable `params`.
+    """
+
     from ManifoldEM.util import get_image_width_from_stack
     import multiprocessing
 

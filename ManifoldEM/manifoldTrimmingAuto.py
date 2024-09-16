@@ -2,7 +2,7 @@
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
-Copyright (c) Columbia University Evan Seitz 2019 (python version)    
+Copyright (c) Columbia University Evan Seitz 2019 (python version)
 """
 
 import numpy as np
@@ -12,6 +12,29 @@ from ManifoldEM import DMembeddingII, myio
 
 
 def get_psiPath(psi, rad, plotNum):
+    """
+    Identifies the indices of points in the embedded space within a specified radius from the origin.
+
+    Parameters
+    ----------
+    psi : ndarray
+        The matrix of embedded coordinates, where each column represents a dimension.
+    rad : float
+        The radius within which to consider points as being part of the path.
+    plotNum : int
+        The starting dimension in the embedded space for calculating distances.
+
+    Returns
+    -------
+    ndarray
+        An array of indices of points within the specified radius from the origin in the
+        embedded space defined by the dimensions starting at plotNum.
+
+    Notes:
+    - This function calculates the Euclidean distance from the origin in a 3-dimensional space
+      defined by the dimensions plotNum, plotNum+1, and plotNum+2 of the embedded coordinates.
+    - Points with a distance less than 'rad' from the origin are considered part of the path.
+    """
     psinum1 = plotNum
     psinum2 = plotNum + 1
     psinum3 = plotNum + 2
@@ -33,6 +56,36 @@ def show_plot(lamb, psi, string):
 
 
 def op(input_data, posPath, tune, rad, visual, doSave):
+    """
+    Performs manifold learning and trimming based on spectral embedding, iteratively refining
+    the embedding by trimming points outside a specified radius.
+
+    Parameters
+    ----------
+    input_data : tuple
+        str : Path to the file containing the distance matrix.
+        str : Path to the file where the psi (embedding coordinates) will be saved.
+        str : Path to the file where the eigenvalues will be saved.
+        int : An identifier for the current projection direction.
+    posPath : Union[int, np.ndarray[int]]
+        Initial positions/path of points to consider. If 0, all points are considered.
+    tune : float
+        A tuning parameter for adjusting the Gaussian kernel width in the embedding process.
+    rad : float
+        The radius within which points are considered part of the manifold.
+    visual : bool
+        A flag indicating whether to visualize the embedding and trimming process.
+    doSave : dict
+        A dictionary indicating whether to save the results ('Is' key) and the output file path.
+
+    Notes
+    -----
+    - The function starts by loading the distance matrix and optionally filters it based on `posPath`.
+    - It then performs spectral embedding using `DMembeddingIIop` and trims points outside the specified `rad`.
+    - This process is repeated until the set of points within the radius no longer changes significantly.
+    - Visualization of the embedding before and after trimming is optional and controlled by the `visual` flag.
+    - Results, including the final set of points, embedding coordinates, and eigenvalues, can be saved to files.
+    """
     dist_file = input_data[0]
     psi_file = input_data[1]
     eig_file = input_data[2]

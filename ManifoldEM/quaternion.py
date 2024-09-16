@@ -8,12 +8,33 @@ from nptyping import NDArray, Shape, Float64, Bool
 '''
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Copyright (c) Columbia University Hstau Liao 2018 (python version)    
+Copyright (c) Columbia University Hstau Liao 2018 (python version)
 '''
 
 
 @numba.jit(nopython=True)
 def _q_product_single(q1, q2):
+    """
+    Computes the product of two quaternions using Numba for JIT compilation.
+
+    Parameters
+    ----------
+    q1 : np.ndarray
+        The first quaternion as a NumPy array.
+    q2 : np.ndarray
+        The second quaternion as a NumPy array.
+
+    Returns
+    -------
+    np.ndarray
+        The product of the two quaternions as a new NumPy array.
+
+    Notes
+    -----
+    This function is optimized for performance with Numba's nopython mode, ensuring
+    that the computation is compiled to machine code for faster execution. Designed
+    for use with the `q2Spider` function.
+    """
     return np.array([
         q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
         q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
@@ -24,6 +45,25 @@ def _q_product_single(q1, q2):
 
 @numba.jit(nopython=True)
 def _optfunc(a, q):
+    """
+    Optimized function to compute a quaternion operation, intended for use for the optimizer in `q2Spider`.
+
+    Parameters
+    ----------
+    a : np.ndarray
+        A NumPy array representing angles.
+    q : np.ndarray
+        A target quaternion for the operation.
+
+    Returns
+    -------
+    np.ndarray
+        The result of the quaternion operation as a NumPy array.
+
+    This function constructs three quaternions based on the input angles 'a', performs
+    quaternion multiplication, and compares the result to the target quaternion 'q'.
+    It is optimized with Numba's nopython mode for faster execution.
+    """
     b = 0.5 * a
     q1 = np.array([np.cos(b[0]), 0., 0., -np.sin(b[0])])
     q2 = np.array([np.cos(b[1]), 0., -np.sin(b[1]), 0.])
@@ -32,6 +72,35 @@ def _optfunc(a, q):
 
 
 def quaternion_to_S2(q: NDArray[Shape["4,*"], Float64]) -> NDArray[Shape["3,*"], Float64]:
+    """
+    Converts a set of quaternions to points on the 2-sphere (S2) in three-dimensional space. The
+    function effectively rotates the z unit vector by each quaternion to a new unit vector on the unit
+    sphere. The rotation about the final axis (a.k.a. psi rotation) is ignored.
+
+    Parameters
+    ----------
+    q : np.ndarray
+        A numpy array of shape (4, N) where each column represents a quaternion. The quaternion
+        is expected to be in the form [q0, q1, q2, q3] with q0 as the real part and q1, q2, q3 as
+        the imaginary parts.
+
+    Returns
+    -------
+    np.ndarray
+        A numpy array of shape (3, N) where each column represents the 3D coordinates [x, y, z] of
+        a point on the unit sphere (S2). These coordinates correspond to the orientation represented
+        by the input quaternions.
+
+    Notes
+    -----
+    - The conversion formula used in this function maps the quaternion's rotation to a point on
+      the sphere by selecting specific combinations of the quaternion components. This mapping
+      focuses on the spatial orientation and ignores the final rotation around the axis, which
+      is not represented on the 2-sphere.
+    - The function is useful in contexts where the orientation needs to be visualized or analyzed
+      without the complexity of handling full quaternion rotations, such as in computer graphics,
+      robotics, and orientation tracking.
+    """
     # TODO: Understand how this magically gets rid of final psi rotation
     S2 = 2 * np.vstack(
         (q[1, :] * q[3, :] - q[0, :] * q[2, :], q[0, :] * q[1, :] + q[2, :] * q[3, :], q[0, :]**2 + q[3, :]**2 - 0.5))
@@ -54,15 +123,29 @@ def collapse_to_half_space(
 
 
 def q2Spider(q):
-    '''Converts a quaternion to corresponding rotation sequence in Spider 3D convention
-    Due to the 3D convention for all angles there is no need to negate psi
-    q: 4x1
-    Implementation by optimization
-    Copyright(c) UWM, Peter Schwander Jan. 31, 2014, Mar. 19, 2014 matlab version
-    version = 'q2Spider, V1.1'
+    """
+    Converts a quaternion to a rotation sequence in the Spider 3D convention.
 
-    Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    '''
+    Parameters
+    ----------
+    q : np.ndarray
+        A quaternion represented as a 1D NumPy array of shape [4].
+
+    Returns
+    -------
+    tuple[float]
+        A tuple (phi, theta, psi) representing the rotation sequence in radians.
+
+    The function normalizes the input quaternion to ensure it represents a valid rotation.
+    It then uses an optimization process to find the Euler angles (phi, theta, psi) that correspond
+    to the given quaternion. The Spider 3D convention is used, which is common in cryo-EM for
+    representing 3D orientations.
+
+    Note:
+    - This function assumes the input quaternion is a unit quaternion.
+    - The optimization process uses the Levenberg-Marquardt algorithm through scipy's least_squares method.
+    - Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
     # assert unit quaternion
     q = q / np.linalg.norm(q)
 
@@ -85,10 +168,32 @@ def q2Spider(q):
 
 
 def q_product(q, s):
-    """import globfunction p = qMult_bsx(q,s)
-    for any number of quaternions N
-    q is 4xN or 4x1
-    s is 4xN or 4x1
+    """
+    Calculates the quaternion product of two quaternions or arrays of quaternions.
+
+    Parameters
+    ----------
+    q : np.ndarray
+        A 4xN or 4x1 numpy array representing the first quaternion(s),
+        where N is the number of quaternions.
+    s : np.ndarray
+        A 4xN or 4x1 numpy array representing the second quaternion(s),
+        matching the dimensions of q.
+
+    Returns
+    -------
+    np.ndarray
+        The quaternion product, in the same format as the inputs (4xN or 4x1).
+
+    Notes
+    -----
+    - Quaternions are represented as [q0, q1, q2, q3], where q0 is the scalar part,
+      and [q1, q2, q3] represent the vector part.
+    - The function supports broadcasting, allowing for the multiplication of a single
+      quaternion with an array of quaternions and vice versa.
+    - Quaternion multiplication is not commutative; the order of operands affects the result.
+    - This function reshapes 1-dimensional input arrays to 2D for consistent processing
+      and uses assertions to ensure proper input dimensions.
     """
     # if 1-dim vector
     if len(q.shape) < 2:

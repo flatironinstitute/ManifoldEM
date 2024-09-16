@@ -17,7 +17,7 @@ from ManifoldEM import myio
 from ManifoldEM.core import annular_mask, project_mask
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
-from ManifoldEM.quaternion import q2Spider
+from ManifoldEM.quaternion import q2Spider, quaternion_to_S2
 from ManifoldEM.util import NullEmitter, get_tqdm
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
@@ -33,16 +33,45 @@ _logger.setLevel(logging.DEBUG)
 @dataclass
 class FilterParams:
     """
-    Class to assist in creation of image filters
-    method:      'Butter' or 'Gauss'
-    cutoff_freq: Nyquist cutoff freq
-    order:       Filter order (for 'Butter' only)
+    Class to assist in the creation of image filters.
+
+    Attributes
+    ----------
+    method : str
+        The type of filter, either 'Butter' for Butterworth or 'Gauss' for Gaussian.
+    cutoff_freq : float
+        The Nyquist cutoff frequency, determining the filter's cutoff threshold.
+    order : int
+        The filter order, applicable only for the 'Butter' method.
+
+    Methods
+    -------
+    create_filter(Q)
+        Generates a filter based on the specified parameters and a frequency array Q.
     """
     method: str
     cutoff_freq: float
     order: int
 
     def create_filter(self, Q: NDArray[Shape["*,*"], Float64]) -> NDArray[Shape["*,*"], Float64]:
+        """
+        Creates a filter based on the instance's method, cutoff frequency, and order.
+
+        Parameters
+        ----------
+        Q : ndarray
+            A 2D array of spatial frequencies for which the filter is calculated.
+
+        Returns
+        -------
+        ndarray
+            A 2D array representing the filter in the frequency domain.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported filter method is specified.
+        """
         if self.method.lower() == 'gauss':
             G = np.exp(-(np.log(2) / 2.) * (Q / self.cutoff_freq)**2)
         elif self.method.lower() == 'butter':
@@ -56,26 +85,65 @@ class FilterParams:
 
 
 def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
+    """
+    Rotates an image by a given angle and fills the output image by repeating the input image.
+
+    Parameters
+    ----------
+    img : ndarray
+        The input image as a 2D NumPy array.
+    angle :
+        The rotation angle in degrees.
+
+    Returns
+    -------
+    ndarray
+        The rotated image as a 2D NumPy array.
+    """
     return rotate(img, angle, reshape=False, mode='grid-wrap')
 
 
 def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
-    """Create NxN grid centered grid around (0, 0)"""
+    """
+    Creates an NxN grid centered around (0, 0).
+
+    The function generates an NxN grid where each point's value is proportional to its distance from the center,
+    normalized by the grid size. This can be used for generating spatial frequency grids or other applications
+    where a centered grid is required.
+
+    Parameters
+    ----------
+    N : int
+        The linear size of the grid (i.e. width).
+
+    Returns
+    -------
+    ndarray
+        An `NxN` NumPy array representing the grid
+    """
     a = np.arange(N) - N // 2
     X, Y = np.meshgrid(a, a)
 
     return 2 * np.sqrt(X**2 + Y**2) / N
 
 
-def quats_to_unit_vecs(q: NDArray[Shape["4,*"], Float64]) -> NDArray[Shape["3,*"], Float64]:
-    # Calculate average projection directions (from matlab code)
-    PDs = 2 * np.vstack((q[1, :] * q[3, :] - q[0, :] * q[2, :], q[0, :] * q[1, :] + q[2, :] * q[3, :],
-                         q[0, :]**2 + q[3, :]**2 - np.ones((1, q.shape[1])) / 2.0))
-
-    return PDs
-
-
 def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float64]) -> float:
+    """
+    Calculates the psi angle from a quaternion and a reference vector.
+
+    Parameters
+    ----------
+    q : ndarray
+        A quaternion represented as a 1D NumPy array of shape [4].
+    ref_vec : ndarray
+        A reference vector represented as a 1D NumPy array of shape [3].
+
+    Returns
+    -------
+    float
+        The psi angle in radians, in the interval [-pi, pi].
+    """
+    # FIXME: Doc needs way more clarity
     s = -(1 + ref_vec[2]) * q[3] - ref_vec[0] * q[1] - ref_vec[1] * q[2]
     c = (1 + ref_vec[2]) * q[0] + ref_vec[1] * q[1] - ref_vec[0] * q[2]
     if c == 0.0:
@@ -87,6 +155,20 @@ def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float6
 
 
 def psi_ang(ref_vec: NDArray[Shape["3"], Float64]) -> float:
+    """
+    Calculates the psi angle from a reference vector.
+
+    Parameters
+    ----------
+    ref_vec : ndarray
+        A reference vector represented as a 1D NumPy array of shape [3].
+
+    Returns
+    -------
+    float
+        The psi angle in degrees.
+    """
+    # FIXME: Doc needs way more clarity
     Qr = np.array([1 + ref_vec[2], ref_vec[1], -ref_vec[0], 0])
     L2 = np.sum(Qr**2)
     if L2 == 0.0:
@@ -98,36 +180,65 @@ def psi_ang(ref_vec: NDArray[Shape["3"], Float64]) -> float:
     return psi
 
 
-def get_wiener1(CTF1):
-    SNR = 5
+def get_wiener(ctf, snr=5.0):
+    """
+    Computes the Wiener filter domain from a given Contrast Transfer Function (CTF).
+
+    Parameters
+    ----------
+    ctf : ndarray
+        The Contrast Transfer Function represented as a 2D or 3D NumPy array.
+    snr : float, default=5.0
+        Signal to noise ratio.
+
+    Returns
+    -------
+    ndarray
+        The Wiener filter domain as a NumPy array of the same shape as the input CTF.
+    """
     wiener_dom = 0.
-    for i in range(CTF1.shape[0]):
-        wiener_dom = wiener_dom + CTF1[i, :, :]**2
+    for i in range(ctf.shape[0]):
+        wiener_dom = wiener_dom + ctf[i, :, :]**2
 
-    wiener_dom = wiener_dom + 1. / SNR
+    wiener_dom = wiener_dom + 1. / snr
 
-    return (wiener_dom)
+    return wiener_dom
 
 
 def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: float, defocus: float,
                     electron_energy: float, gauss_env_halfwidth: float, amplitude_contrast_ratio: float):
     """
-    from Kirkland, adapted for cryo (EMAN1) by P. Schwander
-    Version V 1.1
+    Calculates the contrast transfer function (CTF) for cryo-EM imaging.
+
+    Parameters
+    ----------
+    k : ndarray
+        A 2D array of spatial frequencies.
+    spherical_aberration : float
+        Spherical aberration (Cs) in mm.
+    defocus : float
+        Defocus in Angstroms. A positive value indicates underfocus.
+    electron_energy : float
+        Electron energy in keV.
+    gauss_env_halfwidth : float
+        Half-width of the Gaussian envelope in A^-2.
+    amplitude_contrast_ratio : float
+        Amplitude contrast ratio obtained from the alignment file.
+
+    Returns
+    -------
+    ndarray
+        A 2D array representing the CTF of shape `k`.
+
+    Notes
+    -----
+    - we assume |k| = s
+    - from Kirkland, adapted for cryo (EMAN1) by P. Schwander
+    - Here, the damping envelope is characterized by a single parameter B (gauss_env)
+    - see J. Frank
+
     Copyright (c) UWM, Peter Schwander 2010 MATLAB version
-
     Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    Here, the damping envelope is characterized by a single parameter B (gauss_env)
-    see J. Frank
-    spherical_abberation (Cs) in mm
-    defocus (df) in Angstrom, a positive value is underfocus
-    electron_energy in keV
-    gauss_env (B) in A^-2
-    amplitude_constrast_ratio from alignment file
-
-    Note: we assume |k| = s
     """
     spherical_aberration *= 1.0e7
     mo = 511.0
@@ -146,32 +257,61 @@ def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: flo
 
 @dataclass
 class LocalInput:
-    indices: NDArray[Shape["*"], Int]     #  Global image indexes
-    quats: NDArray[Shape["4,*"], Float64] #  Rotation quaternions of all images, 4xN
-    defocus: NDArray[Shape["*"], Float64] #  Defocus values of all images
-    dist_file: str                        #  Output file for results
+    """
+    A helper class to encapsulate local input data for use with python multiprocessing.
+
+    Attributes
+    ----------
+    indices : ndarray[int]
+        A 1D NumPy array of global image indices.
+    quats : ndarray
+        A 2D NumPy array (4xN) of rotation quaternions for all images.
+    defocus : ndarray
+        A 1D NumPy array of defocus values for all images.
+    dist_file : str
+        Path to the output file where results will be stored.
+
+    Notes
+    -----
+    This class is designed to organize input data for image processing tasks,
+    making it easier to pass multiple related data items as a single object.
+    """
+    indices: NDArray[Shape["*"], Int]
+    quats: NDArray[Shape["4,*"], Float64]
+    defocus: NDArray[Shape["*"], Float64]
+    dist_file: str
 
 
 def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, img_file_name: str,
                            image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
-                           n_particles_tot: int, relion_data: bool):
+                           relion_data: bool):
     """
-    Calculates squared Euclidian distances for snapshots in similar
-    projection directions. Includes CTF correction of microscope.
-    Version with conjugates, effectively double number of data points
+    This function calculates squared Euclidean distances between images in similar projection directions,
+    incorporating Contrast Transfer Function (CTF) correction. It handles both original images and their conjugates,
+    effectively doubling the number of data points for analysis.
 
-    Input parameters
-    input_data     see LocalInput
-    filter_params  Filter Gaussian width [pixel]
-    image_offsets  Image origins (from star files, usually. aka "sh")
-    img_file_name  Image file with all raw images
+    Parameters
+    ----------
+    input_data : LocalInput
+         An object containing indices, quaternions, defocus values, and the output file path.
+    filter_params : FilterParams
+        Parameters for the filter [default gaussian], including cutoff frequency and order.
+    img_file_name : str
+        Path to the file containing all raw images.
+    image_offsets : tuple
+        Offsets for each image, typically extracted from STAR files.
+    relion_data : bool
+        Flag indicating whether the data format is RELION (True) or another format (False).
 
-    Uses the following microscope data from global params:
-        Cs         Spherical aberration [mm]
-        EkV        Acceleration voltage [kV]
-        gaussEnv   Gaussian damping envelope [A^-1]
-        nPix       lateral pixel count
-        dPix       Pixel size [A]
+    The function processes each image based on its index, applying normalization, filtering, and CTF correction.
+    It aligns images in-plane using calculated psi angles and computes distances between all pairs of images in the
+    given subset. The results, including distances and other relevant data, are saved to the specified output file.
+
+    Notes
+    -----
+    - Function uses global prd store information, specifically the `image_is_mirrored` array, which is a trick to take prds
+    opposite the S2 division plane and place their mirrored version in the appropriate bin, effectively doubling the available
+    particles per bin.
     """
     indices = input_data.indices
     quats = input_data.quats
@@ -198,7 +338,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     G = ifftshift(G)
 
     # reference PR is the average
-    avg_orientation_vec = np.sum(quats_to_unit_vecs(quats), axis=1)
+    avg_orientation_vec = np.sum(quaternion_to_S2(quats), axis=1)
     avg_orientation_vec /= np.linalg.norm(avg_orientation_vec)
 
     # angle for in-plane rotation alignment
@@ -255,7 +395,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
 
     # use wiener filter
     img_avg = 0
-    wiener_dom = -get_wiener1(CTF)
+    wiener_dom = -get_wiener(CTF)
     for i_part in range(n_particles):
         img = img_all[i_part, :, :]
         img = (img - img.mean()) / img.std()
@@ -289,6 +429,26 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
 
 
 def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
+    """
+    Constructs a list of LocalInput objects from given indices, quaternions, and defocus values.
+
+    Parameters
+    ----------
+    prd_list : Union[None, List[int]]
+        List of prds to process. If `None`, use `thresholded_indices`, otherwise use the intersection of `prd_list` and
+        `thresholded_indices`.
+    thresholded_indices : List[int]
+        Indices of prds that meet the user input threshold requirements from earlier in the Manifold pipeline.
+    quats_full : ndarray
+        A 2D array of shape [4, N] containing the rotation quaternions for all prds.
+    defocus : ndarray
+        A 1D array containing the defocus values for all prds.
+
+    Returns
+    -------
+    List[LocalInput]
+        A list of LocalInput objects for processing (one for each prd).
+    """
     n_prds = len(thresholded_indices)
     valid_prds = set(range(n_prds))
     if prd_list is not None:
@@ -307,6 +467,19 @@ def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
 
 
 def op(prd_list: Union[List[int], None] = None, *argv):
+    """
+    This function calculates squared Euclidean distances between images within each prd bin,
+    incorporating Contrast Transfer Function (CTF) correction. `params.ncpu` prds are run
+    in parallel.
+
+    Parameters
+    ----------
+    prd_list : Union[List[int], None], default=None
+        List of prds to process. If `None`, use `thresholded_indices`, otherwise use the intersection of `prd_list` and
+        `thresholded_indices`. When `None`, also increments the `params.project_level` when complete.
+    *argv : tuple
+        If another argument is supplied, it's assumed to be for progress tracking when using the QT gui. Not for users.
+    """
     print("Computing the distances...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)
@@ -324,7 +497,6 @@ def op(prd_list: Union[List[int], None] = None, *argv):
                                   filter_params=filter_params,
                                   img_file_name=params.img_stack_file,
                                   image_offsets=prds.microscope_origin,
-                                  n_particles_tot=len(prds.defocus),
                                   relion_data=params.is_relion_data)
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()

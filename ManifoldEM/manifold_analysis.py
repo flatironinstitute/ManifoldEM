@@ -37,6 +37,32 @@ def _construct_input_data(prd_list, N):
 
 
 def op(prd_list: Union[List[int], None] = None, *argv):
+    """
+    Orchestrates the processing of multiple datasets for manifold learning and trimming,
+    utilizing multiprocessing for parallel execution.
+
+    Parameters
+    ----------
+    prd_list : Union[List[int], None]
+        If `None`, process all available prds and update project level.
+        Otherwise process only those in the list without updating the project level.
+    - *argv: Variable length argument list. If provided, the first argument is expected to
+      be an object capable of emitting progress updates (e.g., a GUI progress bar emitter).
+      If no arguments are provided, a NullEmitter is used which does not perform any action
+      on progress updates.
+
+    Notes:
+    - The function begins by loading configuration parameters using `p.load()`.
+    - It sets the multiprocessing start method to 'fork' to optimize for certain environments.
+    - The presence of any arguments in `argv` indicates the use of a GUI progress emitter.
+    - It constructs input data configurations for each dataset using `_construct_input_data`.
+    - Depending on the number of CPUs specified in the configuration (`p.ncpu`), it either
+      processes the datasets sequentially or in parallel using a multiprocessing pool.
+    - Progress updates are emitted based on the processing state, with a final update to
+      indicate completion.
+    - Configuration parameters are saved after processing using `p.save()`.
+    """
+
     print("Computing the eigenfunctions...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)

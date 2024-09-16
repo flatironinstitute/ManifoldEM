@@ -26,12 +26,40 @@ def write_star(star_file, traj_file, df):
             # ...since it may be obtained via calibration (see user manual); since Pixel Size = Detector Pixel Size [um] / Magnification --> [Angstroms]
 
 
-'''
-This parse_star function is from version 0.1 of pyem by Daniel Asarnow at UCSF
-'''
-
 
 def parse_star(starfile, skip, keep_index=False):
+    """
+    Parses a STAR file and returns the data as a pandas DataFrame.
+
+    Parameters
+    ----------
+    starfile : str
+        The path to the STAR file to be parsed.
+    skip : int
+        The number of lines to skip at the beginning of the file before starting.
+        to look for headers. This is useful for skipping comments or metadata at the top of the file.
+    keep_index : bool, default=False
+        If True, keeps the original index (column number) in the header names. Defaults to False.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A pandas DataFrame containing the data from the STAR file, with columns named according to the
+        headers found in the file.
+
+    Notes
+    -----
+    - The function first scans the file to find headers (lines starting with "_rln"). It records
+      these headers and determines where the data section starts.
+    - If `keep_index` is False, the function strips the leading "_rln" and trailing index number
+      from the header names, leaving a more readable column name.
+    - After identifying the headers and the start of the data section, the function reads the
+      data into a pandas DataFrame, using the headers as column names.
+    - This function is specifically tailored for STAR files used in cryo-EM data processing and
+      may not be suitable for STAR files with a significantly different format.
+    - This parse_star function is from version 0.1 of pyem by Daniel Asarnow at UCSF
+    """
+
     headers = []
     foundheader = False
     ln = 0
@@ -59,7 +87,39 @@ def parse_star(starfile, skip, keep_index=False):
     return star
 
 
-def parse_star_optics(starfile, keep_index=False):  #added by E. Seitz -- 10/23/21
+def parse_star_optics(starfile:str, keep_index: bool=False):
+    """
+    Parses the optics section of a STAR file and returns the data as a pandas DataFrame.
+
+    Parameters
+    ----------
+    starfile : str
+        The path to the STAR file to be parsed.
+    keep_index : bool, default=False
+        If True, keeps the original index (column number) in the header names. Defaults to False.
+
+    Returns
+    -------
+    tuple
+        pd.DataFrame
+            A pandas DataFrame containing the first row of data from the optics section
+            of the STAR file, with columns named according to the headers found in the file.
+        int
+            The line number where the data section ends, useful for further parsing.
+
+    Notes
+    -----
+    - The function scans the file for headers starting with "_rln". These headers define the columns
+      of the optics section.
+    - If `keep_index` is False, the function cleans the header names by removing the leading "_rln"
+      and any trailing index number, making the column names more readable.
+    - The function reads only the first row of data under the headers into a DataFrame, assuming
+      that the optics section contains a single set of parameters.
+    - This function is useful for extracting optics-related metadata from STAR files used in
+      cryo-EM data processing.
+    - This implementation was added by E. Seitz -- 10/23/21
+    """
+
     headers = []
     foundheader = False
     ln = 0
@@ -90,6 +150,44 @@ def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shap
                                                               NDArray[Shape["*"], Float64],
                                                               NDArray[Shape["*"], Float64],
                                                               ]:
+    """
+    Extracts alignment data and microscope parameters from a RELION STAR file.
+
+    Parameters
+    ----------
+    align_star_file : str
+        Path to the STAR file containing alignment and microscope parameters.
+    flip : bool
+        Indicates whether to flip the sign of the psi component when converting
+        Euler angles to quaternions.
+
+    Returns
+    -------
+    tuple
+        tuple
+            A tuple of numpy arrays (shx, shy) representing the shifts in `X` and `Y`.
+        np.ndarray
+            A 4xN numpy array of quaternions representing the rotations in (phi, ux, uy, uz) form.
+        np.ndarray
+            A numpy array containing the defocus `U` values.
+        np.ndarray
+            A numpy array containing the defocus `V` values.
+
+    Notes:
+    - The function first checks if the STAR file is in the old or new RELION format by looking
+      for the "data_optics" section.
+    - It then parses the optics and particles sections accordingly using `parse_star` and
+      `parse_star_optics` functions to extract the required data.
+    - Microscope parameters such as voltage, spherical aberration, and amplitude contrast are
+      extracted from the optics section.
+    - Alignment parameters including defocus values, shifts, and Euler angles are extracted from
+      the particles section.
+    - Shifts are adjusted based on available columns and pixel size, and Euler angles are
+      converted to quaternions.
+    - The function is designed to work with RELION STAR files and may need adjustments for
+      compatibility with other formats or versions.
+    """
+
     relion_old = True
     with open(align_star_file, 'r') as f:
         for line in f:
