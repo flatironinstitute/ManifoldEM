@@ -10,6 +10,7 @@ Changes made prior to the Flatiron fork not included.
     * Collect outputs more systematically, multiple projects in a single directory more feasable
     * Can disable 3D visualizations for running remotely via X forwarding (manifold-gui -V)
     * Optimize various plotting routines
+    * User selectable division planes to exploit symmetry in image collection
     * Various bugfixes
   * Optimizations (Net ~10x or greater speedup across pipeline)
     * Considerable optimizations not listed below by using numba when helpful, more efficient
@@ -29,3 +30,4 @@ Changes made prior to the Flatiron fork not included.
     * Unify parameters implementation
     * Automatically generate help information for CLI
     * Add central store for project metadata (information on rotation, prd indices, image indices, etc)
+    * Conjugate images are now handled via transformation flags and halving S2, rather than duplication. I.e. the number of images directly maps to the input stack, rather than relying on duplication and deduplication logic
