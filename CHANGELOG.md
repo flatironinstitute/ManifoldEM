@@ -22,7 +22,7 @@ Changes made prior to the Flatiron fork not included.
     * Replace Hornschunck convolution implementation (~5x)
     * Reduce storage requirements, both size and filecount
     * Considerably reduce file open/close operations
-    * Use imageio over matlab for image output
+    * Use imageio rather than matplotlib for image output when applicable
   * Developer improvements
     * Delete thousands of lines of dead/redundant code
     * Improve tidiness of nearly every routine, with more consistent naming
