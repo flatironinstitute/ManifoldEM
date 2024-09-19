@@ -156,8 +156,6 @@ class _ProjectionDirections:
         Inserts an anchor point into the dataset.
     remove_anchor(id: int)
         Removes an anchor point from the dataset.
-    deduplicate(arr)
-        Removes duplicate entries from an array.
 
     Properties
     ----------
