@@ -243,11 +243,13 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
                 tau = 1 - tau
 
             out_file = EL_file
-            myio.fout1(out_file, IMG1=IMG1, IMGT=IMGT, posPath=pos_path, PosPsi1=pos_psi1, psirec=psirec,
-                       tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag, Topo_mean=Topo_mean, tauinds=tauinds)
+            myio.fout1(out_file, IMG1=IMG1.astype(np.float16), IMGT=IMGT.astype(np.float16), posPath=pos_path, PosPsi1=pos_psi1, psirec=psirec,
+                       tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag, Topo_mean=Topo_mean.astype(np.float16), tauinds=tauinds)
 
         else:  # first pass
             out_file = params.get_psi2_file(prD, psinum)
+            IMG1 = IMG1.astype(np.float16)
+            Topo_mean = Topo_mean.astype(np.float16)
             myio.fout1(out_file, IMG1=IMG1, psirec=psirec, tau=tau, psiC1=psiC1, mu=mu, VX=VX, sdiag=sdiag,
                        Topo_mean=Topo_mean, tauinds=tauinds)
 

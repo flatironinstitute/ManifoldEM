@@ -399,12 +399,11 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     for i_part in range(n_particles):
         img = img_all[i_part, :, :]
         img = (img - img.mean()) / img.std()
-        img_f = fft2(img)  #.reshape(dim, dim)) T only for matlab
+        img_f = fft2(img)
         fourier_images[i_part, :, :] = img_f
         CTF_i = CTF[i_part, :, :]
         img_f_wiener = img_f * (CTF_i / wiener_dom)
         img_avg = img_avg + ifft2(img_f_wiener).real
-
 
     # plain and phase-flipped averages
     # April 2020, msk2 = 1 when there is no volume mask
@@ -413,19 +412,24 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     fourier_images = fourier_images.reshape(n_particles, n_pix**2)
     CTF = CTF.reshape(n_particles, n_pix**2)
 
+    # fancy BLAS way to do D[i,j] = np.sum(np.abs(CTF[i, :] * fourier_image[j,:] - CTF[j, :] * fourier_image[i, :])**2)
+    # FIXME (RB): Numba could, in theory, avoid all of these large temporaries, but I was struggling to make it actually work efficiently
+    # The test C++ code is considerably faster with no temporaries and large numbers of particles, so should revisit
     CTFfy = CTF.conj() * fourier_images
     distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
     distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
+
+    img_all = img_all.astype(np.float16)
 
     myio.fout1(out_file,
                D=distances,
                ind=indices,
                q=quats,
-               CTF=CTF,
-               imgAll=img_all,
-               msk2=mask,
+               CTF=CTF.astype(np.float16),
+               imgAll=img_all.astype(np.float16),
+               msk2=mask.astype(np.float16),
                PD=avg_orientation_vec,
-               imgAvg=img_avg)
+               imgAvg=img_avg.astype(np.float16))
 
 
 def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):

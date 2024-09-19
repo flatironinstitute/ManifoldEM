@@ -37,8 +37,8 @@ def HOGOpticalFlowPy(flowVec):
 
         tempH = []
         for d in range(0, VxStackDim):
-            gx = flowVec['Vx'][:, :, d]
-            gy = flowVec['Vy'][:, :, d]
+            gx = flowVec['Vx'][:, :, d].astype(np.float64)
+            gy = flowVec['Vy'][:, :, d].astype(np.float64)
 
             tH = histogram_from_gradients(gx,
                                           gy,
@@ -56,8 +56,8 @@ def HOGOpticalFlowPy(flowVec):
             H = np.moveaxis(H, 0, -1)
     else:
 
-        gx = flowVec['Vx']
-        gy = flowVec['Vy']
+        gx = flowVec['Vx'].astype(np.float64)
+        gy = flowVec['Vy'].astype(np.float64)
         H = histogram_from_gradients(gx,
                                      gy,
                                      cell_size=cell_size,

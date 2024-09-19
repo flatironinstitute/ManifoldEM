@@ -1,4 +1,5 @@
 import numpy as np
+# FIXME: rework this whole file
 
 eps = 1e-4
 
@@ -23,6 +24,7 @@ class _Params:
     a_b_tau_result : str
         The filename or path to save the result of the optimization or fitting process, specifically the optimized parameters 'a', 'b', and 'tau'. Defaults to 'a_b_tau_result.pkl'.
     """
+    # FIXME: missing doc for p/x/x_fit
     def __init__(self):
         self.nDim: int = 3
         self.maxIter: int = 100

@@ -538,8 +538,8 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
         # store the flow vectors in a dictionary
         FlowVec = dict(Vx=[], Vy=[], Orient=[], Mag=[])
-        FlowVec['Vx'] = VxM
-        FlowVec['Vy'] = VyM
+        FlowVec['Vx'] = VxM.astype(np.float16)
+        FlowVec['Vy'] = VyM.astype(np.float16)
 
     else:
         # read input FWD vectors when available
@@ -554,14 +554,14 @@ def op(Mov, prd_psinum, blockSize_avg, label, OFvisualPrint, *argv):
 
         VxM = copy.deepcopy(-1.0 * VxM)
         VyM = copy.deepcopy(-1.0 * VyM)
-        FlowVec['Vx'] = VxM
-        FlowVec['Vy'] = VyM
+        FlowVec['Vx'] = VxM.astype(np.float16)
+        FlowVec['Vy'] = VyM.astype(np.float16)
 
     # get orientation and magnitude of the flow vectors
     FOrientMat, FMagMat = getOrientMag(VxM, VyM)
 
-    FlowVec['Orient'] = FOrientMat
-    FlowVec['Mag'] = FMagMat
+    FlowVec['Orient'] = FOrientMat.astype(np.float16)
+    FlowVec['Mag'] = FMagMat.astype(np.float16)
 
     if OFvisualPrint[0] or OFvisualPrint[1]:
         # uses indexing 1 for user output
