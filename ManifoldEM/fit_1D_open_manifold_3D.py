@@ -3,6 +3,26 @@ import numpy as np
 eps = 1e-4
 
 class _Params:
+    """
+    A class to hold configuration parameters for an iterative fitting or optimization process.
+
+    This class encapsulates various parameters that control the behavior of an iterative process, such as fitting a model to data or optimizing a function. It is designed to be flexible, allowing for the easy adjustment of key parameters affecting the convergence and accuracy of the process.
+
+    Attributes
+    ----------
+    nDim : int
+        The dimensionality of the data or parameter space. Defaults to 3.
+    maxIter : int
+        The maximum number of iterations to perform in the optimization or fitting process. Defaults to 100.
+    delta_a_max : float
+        The maximum allowed change in parameter 'a' between iterations, controlling convergence criteria. Defaults to 1.0.
+    delta_b_max : float
+        The maximum allowed change in parameter 'b' between iterations, controlling convergence criteria. Defaults to 1.0.
+    delta_tau_max : float
+        The maximum allowed change in parameter 'tau' between iterations, controlling convergence criteria. Defaults to 0.01.
+    a_b_tau_result : str
+        The filename or path to save the result of the optimization or fitting process, specifically the optimized parameters 'a', 'b', and 'tau'. Defaults to 'a_b_tau_result.pkl'.
+    """
     def __init__(self):
         self.nDim: int = 3
         self.maxIter: int = 100
@@ -13,7 +33,6 @@ class _Params:
         self.p = None
         self.x = None
         self.x_fit = None
-
 
 
 def _R_p(tau_p, a):
@@ -242,6 +261,7 @@ def fit_1D_open_manifold_3D(psi):
         #% calculate the changes in fitting parameters %
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         '''
+
         delta_a = np.fabs(a.a - a_old) / (np.fabs(a.a) + eps)
         delta_b = np.fabs(a.b - b_old) / (np.fabs(a.b) + eps)
         delta_tau = np.fabs(tau - tau_old)

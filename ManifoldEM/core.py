@@ -32,30 +32,41 @@ def clusterAvg(clust, PrD):
 
 
 def L2_distance(a, b):
-    """Computes the Euclidean distance matrix between a and b.
-    Inputs:
-        A: D x M array.
-        B: D x N array.
-    Returns:
-        E: M x N Euclidean distances between vectors in A and B.
-    Author   : Roland Bunschoten
-               University of Amsterdam
-               Intelligent Autonomous Systems (IAS) group
-               Kruislaan 403  1098 SJ Amsterdam
-               tel.(+31)20-5257524
-               bunschot@wins.uva.nl
-    Last Rev : Wed Oct 20 08:58:08 MET DST 1999
-    Tested   : PC Matlab v5.2 and Solaris Matlab v5.3
-    Copyright notice: You are free to modify, extend and distribute
-       this code granted that the author of the original code is
-       mentioned as the original author of the code.
-    Fixed by JBT (3/18/00) to work for 1-dimensional vectors
-    and to warn for imaginary numbers.  Also ensures that
-    output is all real, and allows the option of forcing diagonals to
-    be zero.
-    Basic functionality ported to Python 2.7 by JCS (9/21/2013).
+    """
+    Computes the Euclidean distance matrix between two sets of vectors.
 
-    Copyright (c) Columbia University Hstau Liao 2019
+    This function calculates the pairwise Euclidean (L2) distances between vectors in two sets,
+    represented by matrices A and B. The computation is vectorized for efficiency, making use
+    of broadcasting and matrix operations to avoid explicit loops over elements.
+
+    Parameters
+    ----------
+        a : ndarray
+            D x M array where D is the dimensionality of each vector and M is the number
+            of vectors in the first set.
+        b : ndarray
+            D x N array where D is the dimensionality of each vector (matching the first set)
+            and N is the number of vectors in the second set.
+
+    Returns
+    -------
+    ndarray
+        M x N array containing the Euclidean distances between each pair of vectors
+        from the first set to the second set.
+
+    Raises
+    ------
+    ValueError
+        If the input matrices A and B do not have the same dimensionality (i.e., the number
+        of rows D does not match).
+
+    Notes
+    -----
+    - The function ensures numerical stability by setting very small negative values (which can
+      arise due to floating point arithmetic errors) to zero before taking the square root.
+    - This implementation assumes that both input matrices are real-valued.
+    - Basic functionality ported to Python 2.7 by JCS (9/21/2013).
+    - Copyright (c) Columbia University Hstau Liao 2019
     """
     eps = 1e-8
 
@@ -71,25 +82,65 @@ def L2_distance(a, b):
 
 
 def svdRF(A):
-    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
+    Performs a singular value decomposition-like operation on matrix A using eigenvalue decomposition.
+
+    This function is tailored for matrices that are not necessarily square, calculating the eigendecomposition
+    of A^T*A or A*A^T as appropriate based on the shape of A. It then tidies up the eigenvalues and eigenvectors
+    to align with the conventional output of SVD, providing matrices U, S, and V such that A ≈ U*S*V^T.
+
+    Parameters
+    ----------
+    A : ndarray
+        D1 x D2 matrix for which the SVD-like decomposition is to be performed.
+        `A` can be of any shape, not necessarily square.
+
+    Returns
+    -------
+    tuple
+        ndarray
+            An orthogonal matrix containing the left singular vectors of A.
+        ndarray
+            A diagonal matrix with the square roots of the eigenvalues of A^T*A or A*A^T
+            along the diagonal, representing the singular values of A.
+        ndarray
+            An orthogonal matrix containing the right singular vectors of A.
+
+    Details
+    -------
+    The function internally defines a `tidyUp` helper function to sort the eigenvalues and eigenvectors,
+    and to calculate the matrices S (singular values) and invS (inverse of S). The choice of decomposing
+    A^T*A or A*A^T is based on the dimensions of A to ensure computational efficiency.
+
+    Notes
+    -----
+    - This function does not directly use the SVD function from numpy.linalg but achieves a similar result
+      through eigenvalue decomposition, which can be more efficient or numerically stable in certain contexts.
+    - Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    - Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
 
     def tidyUp(D, EV):
+        # Sort the eigenvalues and eigenvectors in descending order
         order = np.argsort(D)[::-1]
         D = np.sort(D)[::-1]
         EV = EV[:, order]
+
+        # Calculate the matrices for singular values and their inverses
         sqrtD = np.sqrt(D)
         S = np.diag(sqrtD)
         invS = np.diag(1. / sqrtD)
+
         return (D, EV, S, invS)
 
     D1, D2 = A.shape
     if D1 > D2:
+        # For tall matrices, decompose A^T*A
         D, V = np.linalg.eigh(np.matmul(A.T, A))
         D, V, S, invS = tidyUp(D, V)
         U = np.matmul(A, np.matmul(V, invS))
     else:
+        # For wide matrices, decompose A*A^T
         D, U = np.linalg.eigh(np.matmul(A, A.T))
         D, U, S, invS = tidyUp(D, U)
         V = np.matmul(A.T, np.matmul(U, invS))
@@ -126,10 +177,46 @@ def makeMovie(IMG1, prD, psinum, fps):
 
 
 def fergusonE(D, logEps, a0=None):
-    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    # Copyright (c) Columbia University Evan Seitz 2019 (python version)
+    """
+    Fits a curve using a hyperbolic tangent function to the data provided and returns the optimized parameters.
+
+    .. math:: f(x) = d + c * \tanh(a * x + b)
+
+    Parameters
+    ----------
+    D : ndarray
+        An array of distances between data points.
+    logEps : ndarray
+        An array of logarithmic epsilon values to be used for curve fitting.
+    a0 : ndarray, default=None
+        Initial guess for the parameters of the hyperbolic tangent function. If None, a default value of ones(4) is used.
+
+    Returns
+    -------
+    tuple
+        ndarray
+            Optimal values for the parameters so that the sum of the squared residuals
+            of fun(xdata, *popt) - ydata is minimized.
+        ndarray
+            Logarithm of the sum of weighted distances for each logEps value.
+        float
+            The sum of the square roots of the absolute values of the diagonal of the
+            covariance matrix of the parameters.
+        R_squared (float): Coefficient of determination, indicating the proportion of the variance in
+          the dependent variable that is predictable from the independent variable(s).
+
+    Notes:
+    - The function internally defines a `fun` function representing a hyperbolic tangent model and a
+      `find_thres` function to calculate a threshold for weighting the data points.
+    - The curve fitting process iterates until the residual norm (resnorm) is less than 100, adjusting
+      the initial guess for the parameters (a0) in each iteration if necessary.
+    - This function uses scipy's curve_fit method, which may not converge to a solution; in such cases,
+      it prints the residual norm, the parameters attempted, and the error identifier (ier).
+    - Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    - Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    - Copyright (c) Columbia University Evan Seitz 2019 (python version)
+    """
+
     if a0 is None:
         a0 = np.ones(4)
 
@@ -169,12 +256,27 @@ def fergusonE(D, logEps, a0=None):
 
 def annular_mask(a: float, b: float, N: int, M: int):
     """
-    returns a N x M matrix with an annular (donut) mask of inner
-    radius a and outer radius b. Pixels outside the donut or inside the hole
-    are filled with 0, and the rest with 1.
+    Generates an N x M matrix representing an annular (donut-shaped) mask.
 
-    The circles with radii a and b are centered on pixel (N/2,M/2).
+    Parameters
+    ----------
+    a : float
+        The inner radius of the annulus.
+    b : float
+        The outer radius of the annulus.
+    N : int
+        The number of rows in the output matrix.
+    M : int
+        The number of columns in the output matrix.
 
+    Returns
+    -------
+    np.ndarray
+        A 2D NumPy array of shape (N, M) where pixels within the annular region
+        are marked with 1, and all other pixels are marked with 0.
+
+    Notes
+    -----
     Programmed December 2007, modified by Peter Schwander December 2008 (Python version by Hstau Liao 2018)
     Copyright (c) Russell Fung 2007
     """
@@ -193,57 +295,54 @@ def annular_mask(a: float, b: float, N: int, M: int):
     return mask
 
 
-def distribute3Sphere(numPts: int):
-    """
-    distributes numPts points roughly uniformly on a unit 3-sphere and
-    returns the coordinates in results. Number of iterations required is
-    returned in iter.
-
-    Algorithm adapted from L. Lovisolo and E.A.B. da Silva, Uniform
-    distribution of points on a hyper-sphere with applications to vector
-    bit-plane encoding, IEE Proc.-Vis. Image Signal Process., Vol. 148, No.
-    3, June 2001
-
-    Programmed February 2009
-    Copyright (c) Russell Fung 2009
-    Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    """
-    maxIter = 100
-    K = numPts
-    A3 = 4 * np.pi  # surface area of a unit 3-sphere
-    delta = np.exp(np.log(A3 / K) / 2.)
-    results = np.zeros((2 * K, 3))
-    # algorithm sometimes returns more/ less points
-    it = 0
-    id = 0
-
-    while id != K and it < maxIter:
-        it = it + 1
-        id = 0
-        dw1 = delta
-        for w1 in np.arange(0.5 * dw1, np.pi, dw1):
-            cw1 = np.cos(w1)
-            sw1 = np.sin(w1)
-            x1 = cw1
-            dw2 = dw1 / sw1
-            for w2 in np.arange(0.5 * dw2, 2 * np.pi, dw2):
-                cw2 = np.cos(w2)
-                sw2 = np.sin(w2)
-                x2 = sw1 * cw2
-                x3 = sw1 * sw2
-
-                results[id, :] = np.hstack((x1, x2, x3))
-                id = id + 1
-
-        delta = delta * np.exp(np.log(float(id) / K) / 2.)
-
-    results = results[0:K, :]
-    return (results, it)
-
-
 def get_wiener(CTF, posPath, posPsi1, ConOrder, num):
-    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
-    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
+    Computes the Wiener filter domain for a set of CTF values.
+
+    This function calculates the Wiener filter domain based on the given CTF values, taking into account
+    the position path, the position in the Psi coordinate, the continuity order, and the total number of
+    elements. It is particularly useful in cryo-EM image processing for deconvolving images with known
+    CTF distortions under a specified signal-to-noise ratio (SNR).
+
+    Parameters
+    ----------
+    CTF : ndarray
+        A 3D array of CTF values with shape (N, dim, dim), where N is the number of CTF
+        patterns, and 'dim' is the dimensionality of each CTF pattern.
+    posPath : ndarray
+        An array of indices specifying the order in which CTF patterns are considered
+        in the analysis.
+    posPsi1 : int
+        The position index within the Psi coordinate, indicating the specific CTF pattern
+        to start with in the computation.
+    ConOrder : int
+        The continuity order, specifying how many adjacent CTF patterns to consider for
+        averaging in the Wiener domain calculation.
+    num : int
+        The total number of elements or CTF patterns to include in the computation from the
+        arting position `posPsi1`.
+
+    Returns
+    -------
+    tuple
+        ndarray
+            The computed Wiener filter domain, a 3D array with shape
+            (num - ConOrder, dim, dim), representing the filtered domain for
+            each considered CTF pattern.
+        ndarray
+            The subset of CTF patterns used in the Wiener domain calculation,
+            with shape (num - ConOrder, dim, dim).
+
+    Notes
+    -----
+    - The function assumes a constant signal-to-noise ratio (SNR) for the simplification of the Wiener
+      filter calculation. The SNR is hardcoded as 5, but this value can be adjusted based on specific
+      requirements or experimental data.
+    - The Wiener filter domain is calculated by summing the squares of the selected CTF patterns and
+      then adjusting for the SNR, following the principles of Wiener deconvolution in the frequency domain.
+    - Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    - Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
     dim = CTF.shape[1]
     SNR = 5
     CTF1 = CTF[posPath[posPsi1], :, :]
@@ -258,8 +357,28 @@ def get_wiener(CTF, posPath, posPsi1, ConOrder, num):
     return (wiener_dom, CTF1)
 
 
-#Euler angles to rotation matrix
 def euler_rot_matrix_3D_spider(Phi, Theta, Psi, deg):
+    """
+    This function calculates the rotation matrix for a given set of Euler angles
+    following the SPIDER convention. If 'deg' is True, the angles are first converted
+    to radians.
+
+    Parameters
+    ----------
+    Phi : float
+        Euler angle phi
+    Theta : float
+        Euler angle theta
+    Psi : float
+        Euler angle psi
+    deg : bool
+        If True, angles are given in degrees; otherwise, in radians.
+
+    Returns
+    -------
+    np.ndarray
+        A 3x3 rotation matrix.
+    """
     if deg:
         Phi = np.radians(Phi)
         Theta = np.radians(Theta)
@@ -288,6 +407,28 @@ def euler_rot_matrix_3D_spider(Phi, Theta, Psi, deg):
 
 ## this usage of affine transform function with separate rotation and translation (offset)
 def rotate_volume_euler(vol, sym, deg):
+    """
+    Rotates a 3D volume using Euler angles.
+
+    Parameters
+    ----------
+    vol : np.ndarray
+        The input 3D volume to be rotated.
+    sym : list or np.ndarray
+        Euler angles [Phi, Theta, Psi] for the rotation.
+    deg : bool
+        Specifies if the Euler angles are in degrees.
+
+    Returns
+    -------
+    np.ndarray
+        The rotated 3D volume.
+
+    Notes
+    -----
+    The function computes the rotation matrix from the Euler angles and applies it to the input volume.
+    The 'nearest' mode is used for interpolation during the affine transformation.
+    """
     dims = vol.shape
     rotmat = euler_rot_matrix_3D_spider(sym[2], sym[1], sym[0], deg)
 
@@ -301,8 +442,26 @@ def rotate_volume_euler(vol, sym, deg):
     return rho
 
 
-# get the euler angles from PD
 def get_euler_from_PD(PD, deg):
+    """
+    Converts projection direction (PD) to Euler angles and the associated quaternion.
+
+    Parameters
+    ----------
+    PD : np.ndarray
+        The projection direction (unit vector array (x, y, z)).
+    deg : int
+        Specifies the output format of the Euler angles. If 1, angles are in degrees;
+        if 2, angles are in degrees and normalized to [0, 360), otherwise it's returned in radians.
+
+    Returns
+    -------
+    tuple
+        tuple
+            Euler angles [Phi, Theta, Psi]
+        np.ndarray
+            The quaternion representation of the orientation.
+    """
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
     q1 = Qr / np.sqrt(sum(Qr**2))
 
@@ -323,11 +482,41 @@ def get_euler_from_PD(PD, deg):
 
 
 def project_mask(vol, PD):
+    """
+    Projects a 3D volume onto a 2D plane using a given projection direction (PD) and generates a mask.
+
+    The function rotates the volume according to the projection direction, sums up the intensity
+    along the z-axis to create a 2D projection, and then thresholds the projection to create a binary mask.
+
+    Parameters
+    ----------
+    vol : np.ndarray
+        The input 3D volume.
+    PD : np.ndarray
+        The projection direction: unit vector (x, y, z).
+
+    Returns
+    -------
+    np.ndarray
+        A 2D mask generated from the projected volume.
+
+    Note:
+    - This function relies on `np.swapaxes` to rearrange the axes of the volume for proper orientation.
+    - `getEuler_from_PD` is an external function that converts the projection direction into Euler angles.
+      This function is assumed to be defined elsewhere and is crucial for determining the rotation needed.
+    - `rotateVolumeEuler` applies the rotation to the volume. This function computes the rotation matrix
+      from Euler angles and uses `affine_transform` from `scipy.ndimage` for the rotation.
+    - The rotation is based on the inverse transformation principle, where the volume is rotated in the opposite
+      direction of the given Euler angles to simulate the projection from that direction.
+    - After rotation, the volume is summed along the z-axis to create a 2D projection. The resulting projection
+      is then thresholded to generate a binary mask, where pixels with values greater than 1 are set to True.
+    """
+
     vol = np.swapaxes(vol, 0, 2)
     nPix = vol.shape[0]
     deg = 0
 
-    sym, q = get_euler_from_PD(PD, deg)
+    sym, _ = get_euler_from_PD(PD, deg)
     sym[2] = 0  # as psi=0 , the input images have already been inplane rotated
     sym = sym * (-1.)  # for inverse transformation
 

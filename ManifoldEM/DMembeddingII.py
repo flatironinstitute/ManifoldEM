@@ -16,11 +16,44 @@ Copyright (c) Columbia University Evan Seitz 2019 (python version)
 
 def sembedding(yVal, yCol, yRow, nS, options1):
     """
-     Laplacian eigenfunction embedding using sparse arrays
-    """
-    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
-    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    Laplacian eigenfunction embedding using sparse arrays.
 
+    This function computes the eigenvalues and eigenvectors of the Laplacian matrix of a graph,
+    which represents the dataset. The Laplacian matrix is constructed based on the input sparse
+    matrix components (values, column indices, row pointers) and options specifying the embedding
+    parameters.
+
+    Parameters
+    ----------
+    yVal : ndarray
+        The values of the non-zero elements in the sparse matrix representation.
+    yCol : ndarray[int]
+        The column indices of the non-zero elements in the sparse matrix.
+    yRow : ndarray[int]
+        The row indices of the non-zero elements in the sparse matrix.
+    nS : int
+        The number of samples or nodes in the graph.
+    options1 : namedtuple
+        A namedtuple containing the options for the embedding. Expected fields
+        are sigma (float), alpha (float), visual (bool), nEigs (int), and autotune (int).
+
+    Returns
+    -------
+    tuple
+        ndarray
+            The computed eigenvalues of the Laplacian matrix.
+        ndarray
+            The computed eigenvectors of the Laplacian matrix, corresponding to the eigenvalues.
+
+    Notes
+    -----
+    - The function attempts to compute the specified number of eigenvalues and eigenvectors using
+      the ARPACK solver via scipy.sparse.linalg.eigsh. If the solver does not converge within the
+      specified maximum number of iterations, it catches the ArpackNoConvergence exception and
+      returns the eigenvalues and eigenvectors that were computed up to that point.
+    - Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
+    - Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
     options = namedtuple('options', 'sigma alpha visual nEigs autotune')
     options.sigma = options1.sigma
     options.alpha = options1.alpha
@@ -113,6 +146,55 @@ def slaplacian(*arg):
 
 
 def get_yColVal(input_params):
+    """
+    Processes and updates arrays for values and column indices in a sparse matrix representation.
+
+    This function takes a set of parameters related to the sparse matrix construction, including
+    arrays of values and indices, and updates these arrays based on the provided batch of data.
+    It is typically used in the context of constructing or updating a sparse representation of a
+    graph or matrix, especially when dealing with large datasets that require batching.
+
+    Parameters
+    ----------
+    params : tuple
+        ndarray
+            The values of the non-zero elements in the sparse matrix.
+        ndarray[int]
+            The original values from which yVal will be updated.
+        ndarray
+            The column indices of the non-zero elements in the sparse matrix.
+        ndarray
+            The original indices from which yCol will be updated.
+        int
+            The batch size, indicating the number of data points processed in this batch.
+        int
+            The number of nearest neighbors considered for each data point.
+        int
+            The initial number of nearest neighbors before filtering.
+        int
+            The start index of the current batch.
+        int
+            The end index of the current batch.
+        int
+            The start index for updating yVal and yCol.
+        int
+            The end index for updating yVal and yCol.
+        int
+            The current batch number.
+
+    Returns
+    -------
+    tuple
+        ndarray[int] : The updated column indices for the sparse matrix.
+        ndarray : The updated values for the sparse matrix.
+
+    Notes:
+    - The function reshapes and filters the input arrays yVal1 and yInd1 based on the batch
+      information and the number of nearest neighbors. It then updates the yVal and yCol arrays
+      with the processed data for the current batch.
+    - This function is part of a larger process of constructing or updating sparse matrices and
+      is designed to handle data in batches for efficiency and scalability.
+    """
 
     yVal = input_params[0]
     yVal1 = input_params[1]
@@ -141,6 +223,40 @@ def get_yColVal(input_params):
 
 
 def initialize(nS, nN, D):
+    """
+    Initializes the arrays of indices and values for constructing a sparse matrix
+    representation of distances between data points.
+
+    This function processes a distance matrix to identify the nearest neighbors for each
+    data point. It then creates arrays that store the indices of these neighbors and the
+    corresponding distance values. The first distance value for each data point is set to
+    zero to indicate self-distance, ensuring the diagonal of the distance matrix is zero.
+
+    Parameters
+    ----------
+    nS : int
+        The number of samples or data points.
+    nN : int
+        The number of nearest neighbors to consider for each data point.
+    D : ndarray
+        A square distance matrix of shape (nS, nS) where D[i, j] represents
+        the distance between the i-th and j-th data points.
+
+    Returns
+    tuple
+        ndarray
+            A flattened array of indices of the nearest neighbors for each data point.
+        yVal1 : ndarray
+            A flattened array of the corresponding distance values to the nearest neighbors.
+
+    Notes:
+    - The function modifies the input distance matrix D by setting the diagonal elements to
+      negative infinity to ensure that each data point's self-distance does not affect the
+      nearest neighbors' calculation.
+    - After identifying the nearest neighbors and their distances, the function resets the
+      first distance value for each data point to zero, effectively ignoring self-distance
+      in the sparse matrix representation.
+    """
     yInd1 = np.zeros((nN, nS), dtype='int32')
     yVal1 = np.zeros((nN, nS), dtype='float64')
 
@@ -157,7 +273,43 @@ def initialize(nS, nN, D):
     return (yInd1, yVal1)
 
 
-def construct_matrix0(Row, Col, Val, nZ, nS):
+def construct_matrix0(Row, Col, Val, nS):
+    """
+    Constructs a symmetric matrix from given row indices, column indices, and values,
+    specifically designed for handling squared distances.
+
+    This function first creates a sparse matrix from the given row indices, column indices,
+    and values. It then converts this sparse matrix to a dense array and performs operations
+    to ensure that the resulting matrix is symmetric and represents squared distances
+    correctly.
+
+    Parameters
+    ----------
+    Row : ndarray
+        An array of row indices for the non-zero elements in the matrix.
+    Col : ndarray
+        An array of column indices for the non-zero elements in the matrix.
+    Val : ndarray
+        An array of values corresponding to the non-zero elements in the matrix.
+    nS : int
+        The size of the square matrix to be constructed, indicating both the number
+        of rows and columns.
+
+    Returns
+    -------
+    ndarray
+        A symmetric matrix of shape [nS, nS] constructed from the input parameters, with adjustments
+        to ensure correct representation of squared distances.
+
+    Notes:
+    - The function first constructs a sparse CSR (Compressed Sparse Row) matrix from the input
+      indices and values. It then converts this sparse matrix to a dense array.
+    - It computes the square of the dense array and its transpose to handle squared distances.
+    - The final matrix is adjusted by adding the original matrix and its transpose, then
+      subtracting a matrix that contains the squares of the distances, to ensure symmetry
+      and correct distance representation.
+    """
+
     y = csr_matrix((Val, (Row, Col)), shape=(nS, nS)).toarray()
     y2 = y * y.T  #y2 contains the squares of the distances
     y = y**2
@@ -165,7 +317,39 @@ def construct_matrix0(Row, Col, Val, nZ, nS):
     return y
 
 
-def construct_matrix1(Row, Col, Val, nZ, nS):
+def construct_matrix1(Row, Col, Val, nS):
+    """
+    Constructs a symmetric matrix from given row indices, column indices, and values.
+    This version simplifies the process by directly adjusting for symmetry without explicitly
+    squaring the matrix values.
+
+    Parameters
+    ----------
+    Row : ndarray
+        An array of row indices for the non-zero elements in the matrix.
+    Col : ndarray
+        An array of column indices for the non-zero elements in the matrix.
+    Val : ndarray
+        An array of values corresponding to the non-zero elements in the matrix.
+    nS : int
+        The size of the square matrix to be constructed, indicating both the number
+        of rows and columns.
+
+    Returns
+    -------
+    ndarray
+        A symmetric matrix constructed from the input parameters. The symmetry is
+        achieved by adding the matrix to its transpose and then subtracting the element-wise
+        product of the matrix and its transpose.
+
+    Notes:
+    - The function first constructs a sparse CSR (Compressed Sparse Row) matrix from the input
+      indices and values. It then converts this sparse matrix to a dense array.
+    - It ensures the symmetry of the resulting matrix by adding it to its transpose and
+      subtracting the element-wise product of the matrix and its transpose, which contains
+      the squares of the original distances. This operation corrects for any asymmetries
+      that might arise from the input data or the sparse matrix construction process.
+    """
     y = csr_matrix((Val, (Row, Col)), shape=(nS, nS)).toarray()
     y2 = y * y.T  #y2 contains the squares of the distances
     y = y + y.T - y2
@@ -209,13 +393,13 @@ def op(D, k, tune, prefsigma):  #*arg
     yCol = yCol[ifZero]
     nZ = len(yRow)  #number of zero elements in the non-sym matrix
 
-    y = construct_matrix0(yRowNZ, yColNZ, yValNZ, nZ, nS)
+    y = construct_matrix0(yRowNZ, yColNZ, yValNZ, nS)
     yRowNZ = y.nonzero()[0]
     yColNZ = y.nonzero()[1]
     yValNZ = y[y.nonzero()]
     nNZ = len(y.nonzero()[0])  #number of nonzero elements in the sym matrix
 
-    y = construct_matrix1(yRow, yCol, np.ones((nZ, 1)).flatten(), nZ, nS)
+    y = construct_matrix1(yRow, yCol, np.ones((nZ, 1)).flatten(), nS)
     y = csr_matrix((np.ones((nZ, 1)).flatten(), (yRow, yCol)), shape=(nS, nS)).toarray()
     yRow = y.nonzero()[0]
     yCol = y.nonzero()[1]

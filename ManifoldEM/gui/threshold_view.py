@@ -72,16 +72,15 @@ class ThresholdView(QMainWindow):
 
     def onTabChange(self, i):
         prds = data_store.get_prds()
-        prd_mask = (prds.occupancy_no_duplication >= self.thresh_low) & \
-            (prds.occupancy_no_duplication <= self.thresh_high)
-        occupancies = prds.occupancy_no_duplication[prd_mask]
+        prd_mask = prds.thres_ids
+        occupancies = prds.occupancy
 
         if i == 1:  #signals when view switched to tab 2
-            bin_centers = prds.bin_centers_no_duplication[:, prd_mask]
+            bin_centers = prds.bin_centers[:, prd_mask]
             phis = np.arctan2(bin_centers[1, :], bin_centers[0, :]) - np.pi
             thetas = np.arccos(bin_centers[2, :]) * 180. / np.pi
 
-            self.thresh_polar_tab.plot(phis, thetas, occupancies)
+            self.thresh_polar_tab.plot(phis, thetas, prds.occupancy)
 
         if i == 2:
             n_unique = len(set(occupancies))
@@ -130,8 +129,8 @@ class ThreshAllCanvas(QDialog):
         self.axes = self.figure.add_subplot(1, 1, 1)
 
         prds = data_store.get_prds()
-        n_pds = len(prds.occupancy_no_duplication)
-        self.axes.bar(range(n_pds), prds.occupancy_no_duplication, align='center',
+        n_pds = prds.occupancy_full.size
+        self.axes.bar(range(n_pds), prds.occupancy_full, align='center',
                       edgecolor='none', color='#1f77b4', snap=False)
 
         self.xlimLo = self.axes.get_xlim()[0]
@@ -160,7 +159,7 @@ class ThreshAllCanvas(QDialog):
             tick.label1.set_fontsize(6)
         self.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         self.axes.set_xlim(xmin=1, xmax=n_pds)
-        self.axes.set_ylim(ymin=0, ymax=1.1 * np.max(prds.occupancy_no_duplication))
+        self.axes.set_ylim(ymin=0, ymax=1.1 * np.max(prds.occupancy_full))
         self.axes.set_xlabel('PD Numbers', fontsize=6)
         self.axes.set_ylabel('Occupancy', fontsize=6)
         #self.axes.autoscale()
@@ -174,8 +173,8 @@ class ThreshAllCanvas(QDialog):
             self.confirmed = False
 
             prds = data_store.get_prds()
-            self.in_thres_count = np.sum((prds.occupancy_no_duplication >= self.thresh_container.thresh_low) &
-                                         (prds.occupancy_no_duplication <= self.thresh_container.thresh_high))
+            self.in_thres_count = np.sum((prds.occupancy_full >= self.thresh_container.thresh_low) &
+                                         (prds.occupancy_full <= self.thresh_container.thresh_high))
 
             self.entry_prd.setValue(self.in_thres_count)
 
@@ -184,8 +183,8 @@ class ThreshAllCanvas(QDialog):
         label_low = QLabel('Low Threshold:')
         label_high = QLabel('High Threshold:')
 
-        self.in_thres_count = np.sum((prds.occupancy_no_duplication >= self.thresh_container.thresh_low) &
-                                     (prds.occupancy_no_duplication <= self.thresh_container.thresh_high))
+        self.in_thres_count = np.sum((prds.occupancy_full >= self.thresh_container.thresh_low) &
+                                     (prds.occupancy_full <= self.thresh_container.thresh_high))
         self.entry_prd = QDoubleSpinBox(self)
         self.entry_prd.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.entry_prd.setDecimals(0)
@@ -204,7 +203,7 @@ class ThreshAllCanvas(QDialog):
         self.entry_low = QDoubleSpinBox(self)
         self.entry_low.setDecimals(0)
         self.entry_low.setMinimum(5)
-        self.entry_low.setMaximum(np.amax(prds.occupancy_no_duplication))
+        self.entry_low.setMaximum(np.amax(prds.occupancy_full))
         self.entry_low.setValue(int(params.prd_thres_low))
 
         self.entry_high = QDoubleSpinBox(self)

@@ -5,6 +5,7 @@ import sys
 import pickle
 import traceback
 
+from nptyping import NDArray, Shape, Float64
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import q_product
 
@@ -16,8 +17,49 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
 
 class NullEmitter:
+    """
+    A class that provides a no-operation (no-op) implementation of an emmitter for progress tracking
+    for tqdm/QT progress bars.
+
+    This class is designed to be used in contexts where an emitter is required by the interface,
+    but no actual emitting action is desired.
+    """
+
     def emit(self, percent):
+        """
+        No-op method that does nothing.
+
+        Parameters
+        ----------
+        percent : int
+            The percentage of the progress that has been completed. Ignored.
+
+        Returns
+        -------
+        None
+        """
         pass
+
+
+def get_tqdm():
+    """
+    Get jupyter version of tqdm function if in jupyter notebook, otherwise returns the terminal variant.
+    Exploits the fact that the get_ipython function is only defined in jupyter/ipython processes and that its
+    class name is 'ZMQInteractiveShell' in jupyter.
+
+    Returns
+    -------
+    tqdm
+        The tqdm function to use for progress tracking.
+    """
+    try:
+        if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
+            from tqdm.notebook import tqdm
+            return tqdm
+    except NameError: #  get_ipython not defined on base python...
+        pass
+    from tqdm import tqdm
+    return tqdm
 
 
 def remote_runner(hostname, cmd, progress_callback):
@@ -42,6 +84,25 @@ def is_valid_host(hostname):
 
 
 def get_image_width_from_stack(stack_file: str):
+    """
+    Determines the width of images in a file stack (pixels per row). Images assumed square.
+
+    Parameters
+    ----------
+    stack_file :  str
+        The path to the stack file. Works on .mrc and .mrcs files.
+
+    Returns
+    -------
+    int
+        The number of pixels per row of the images contained in the stack file.
+
+    Raises
+    ------
+    ValueError
+        If the file is not an MRC or MRCs file.
+
+    """
     img_width = 0
     if stack_file.endswith('.mrcs') or stack_file.endswith('.mrc'):
         mrc = mrcfile.mmap(params.img_stack_file, mode='r')
@@ -77,6 +138,19 @@ def debug_trace():
 
 
 def debug_print(msg: str=""):
+    """
+    Prints a debug message along with the caller's stack trace.
+
+    Parameters
+    ----------
+    msg : str
+        The debug message to print. If empty, only the stack trace is printed.
+
+    Returns
+    -------
+    None
+    """
+
     if msg:
         print(msg)
     stack = traceback.format_stack()
@@ -145,6 +219,35 @@ def histeq(src, thist):  # by Zagurskin; does not work well,
 
 
 def eul_to_quat(phi, theta, psi, flip=True):
+    """
+    Converts Euler angles to quaternions.
+
+    Parameters
+    ----------
+    phi : np.ndarray
+        Array of rotations around the z-axis.
+    theta : np.ndarray
+        Array of rotations around the y-axis.
+    psi : np.ndarray
+        Array of rotations around the x-axis.
+    flip : bool, default=True
+        If True, flips the sign of the psi component. Defaults to True.
+
+    Returns
+    -------
+    np.ndarray
+        An array of quaternions representing the rotations. Each quaternion is
+        represented as a column in a 4xN array, where N is the number of sets of Euler angles.
+
+    Notes
+    -----
+    - The function constructs individual quaternions for rotations around the z, y, and x axes
+      (qz, qy, qzs respectively) and then combines them through quaternion multiplication to
+      obtain the final quaternion representing the combined rotation.
+    - The `flip` parameter can be used to adjust for different conventions in the definition
+      of rotations.
+    """
+
     zros = np.zeros(phi.shape[0])
     qz = np.vstack((np.cos(phi / 2), zros, zros, -np.sin(phi / 2)))
     qy = np.vstack((np.cos(theta / 2), zros, -np.sin(theta / 2), zros))
@@ -154,7 +257,35 @@ def eul_to_quat(phi, theta, psi, flip=True):
     return q
 
 
-def augment(q):
+def augment(q: NDArray[Shape["4,*"], Float64]):
+    """
+    Augments a set of quaternions by adding their conjugates to the set.
+
+    Parameters
+    ----------
+    q : np.ndarray
+        A numpy array of shape (4, N) representing a set of quaternions,
+        where N is the number of quaternions.
+
+    Returns
+    -------
+    ndarray
+        An augmented numpy array of shape (4, 2N) containing the original
+        set of quaternions followed by their conjugates.
+
+    Raises
+    ------
+    AssertionError
+        If the input array does not have the correct shape (i.e., does not
+        have 4 rows representing quaternions).
+
+    Notes
+    -----
+    - The conjugate of a quaternion [q0, q1, q2, q3] is defined as [-q1, q0, -q3, -q2].
+    - This function is useful for operations that require both a quaternion and its inverse,
+      such as applying rotations and their reversals.
+    """
+
     try:
         assert (q.shape[0] > 3)
     except AssertionError:
