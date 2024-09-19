@@ -27,7 +27,9 @@ Changes made prior to the Flatiron fork not included.
     * Delete thousands of lines of dead/redundant code
     * Improve tidiness of nearly every routine, with more consistent naming
     * Re-write GUI nearly from scratch (manifold-gui) to be more easily modifiable
-    * Unify parameters implementation
+    * Unify parameters implementation (remove code duplication in filenames -- easier to change where to store data)
     * Automatically generate help information for CLI
     * Add central store for project metadata (information on rotation, prd indices, image indices, etc)
     * Conjugate images are now handled via transformation flags and halving S2, rather than duplication. I.e. the number of images directly maps to the input stack, rather than relying on duplication and deduplication logic
+    * Add thousands of lines of function documentation
+    * Add type hints to many routines
