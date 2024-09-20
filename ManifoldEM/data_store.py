@@ -110,12 +110,12 @@ class PrdInfo:
         The index of the bin on the unit sphere. This is the index before thresholding.
     bin_center : ndarray
         The coordinates of center of the bin on the unit sphere.
-    defocus : float
-        The defocus value for the projection direction.
     occupancy : int
         The number of images in the bin of this projection direction.
     trash : bool
         Whether the projection direction is marked as trash. Trash projection directions are not used in analysis.
+    anchor : bool
+        Whether the projection direction is marked as an anchor node. Anchor nodes propogate 'sense' to cluster neighbors.
     cluster_id : int
         The cluster ID. Projection directions in one cluster use optical flow to detect 'senses' for neighboring prds in the same cluster.
     n_images : int
@@ -130,9 +130,9 @@ class PrdInfo:
     prd_index: int
     S2_bin_index: int
     bin_center: NDArray[Shape["3"], Float64]
-    defocus: float
     occupancy: int
     trash: bool
+    anchor: bool
     cluster_id: int
     n_images: int
     raw_image_indices: NDArray[Shape["Any"], Int]
@@ -140,7 +140,8 @@ class PrdInfo:
     image_quats: NDArray[Shape["Any,4"], Float64]
 
     def __repr__(self):
-        relevant_fields = ['prd_index', 'S2_bin_index', 'bin_center', 'n_images', 'defocus', 'occupancy', 'trash', 'cluster_id']
+        relevant_fields = ['prd_index', 'S2_bin_index', 'bin_center', 'n_images',
+                           'occupancy', 'trash', 'anchor', 'cluster_id']
         info_str = '\n'.join([f'{field}: {getattr(self, field)}' for field in relevant_fields])
 
         return info_str
@@ -172,9 +173,9 @@ class PrdData:
         self._info = PrdInfo(prd_index=prd_index,
                              S2_bin_index=prds.thres_ids[prd_index],
                              bin_center=prds.bin_centers[:, prds.thres_ids[prd_index]],
-                             defocus=prds.defocus[prd_index],
                              occupancy=prds.occupancy[prd_index],
                              trash=prd_index in prds.trash_ids,
+                             anchor=prd_index in prds.anchor_ids,
                              cluster_id=prds.cluster_ids[prd_index],
                              n_images=len(self._image_indices),
                              raw_image_indices=self._image_indices,
