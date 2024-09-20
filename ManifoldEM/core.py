@@ -159,7 +159,7 @@ def makeMovie(IMG1, prD, psinum, fps):
     images = -IMG1
     gif_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')
     zip_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.zip')
-    frame_dt = 1.0/fps
+    frame_dt = 1000.0 / fps
     with zipfile.ZipFile(zip_path, 'w') as fzip:
         with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
             movie_min, movie_max = np.min(images), np.max(images)
