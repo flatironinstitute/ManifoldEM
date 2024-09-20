@@ -56,7 +56,7 @@ def movie(input_data, fps):
         # write topos
         topo = data['Topo_mean'][:, 1]
         dim = int(np.sqrt(topo.shape[0]))
-        image_file = '{}/topos/PrD_{}/topos_{}.png'.format(params.out_dir, prD + 1, psinum + 1)
+        image_file = params.get_topos_path(prD + 1, psinum + 1)
         topo = topo.reshape(dim, dim)
         topo = (255. * (topo - topo.min()) / (topo.max() - topo.min())).astype(np.uint8)
         imageio.imwrite(image_file, topo)
