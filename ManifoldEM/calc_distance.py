@@ -129,7 +129,7 @@ def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
 
 def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float64]) -> float:
     """
-    Calculates the psi angle from a quaternion and a reference vector.
+    Calculates the psi angle in degrees from a quaternion and a reference vector.
 
     Parameters
     ----------
@@ -151,12 +151,18 @@ def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float6
     else:
         psi = 2 * np.arctan(s / c)  # note that the Psi are in the interval [-pi,pi]
 
+    psi *= 180 / np.pi
+
+    # this happens only for a rotation of pi about an axis perpendicular to the projection direction
+    if np.isnan(psi):
+        psi = 0.0
+
     return psi
 
 
 def psi_ang(ref_vec: NDArray[Shape["3"], Float64]) -> float:
     """
-    Calculates the psi angle from a reference vector.
+    Calculates the psi angle in degrees from a reference vector.
 
     Parameters
     ----------
@@ -361,36 +367,30 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         if not relion_data:  # spider data
             start = n_pix**2 * particle_index * 4
             img = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix)).T
-        else:  # relion data
+        else:
             shi = (image_offsets[1][particle_index] - 0.5, image_offsets[0][particle_index] - 0.5)
             img = shift(img_data[particle_index], shi, order=3, mode='wrap')
 
+        # flip images when opposite the S2 division plane
         if image_is_mirrored[particle_index]:
             img = np.flipud(img)
 
-        # store each flatted image in y and filter
-        img = img.flatten('F')
-        img = img.reshape(-1, n_pix).transpose()
-        img = ifft2(fft2(img) * G).real.flatten('F')
+        # Apply the filter
+        img = ifft2(fft2(img) * G).real
 
         # Get the psi angle
         psi = get_psi(quats[:, i_part], avg_orientation_vec)
 
-        # this happens only for a rotation of pi about an axis perpendicular to the projection direction
-        if np.isnan(psi):
-            psi = 0.
-
         # inplane align the images
-        img = img.reshape(-1, n_pix).transpose()  # convert to matlab convention prior to rotation
-        img = rotate_fill(img, -(180 / np.pi) * psi)
-        img = rotate_fill(img, -psi_p)
+        img = rotate_fill(img, -psi - psi_p)
 
-        # CTF info
-        ctf_i = ctemh_cryoFrank(Q / (2 * params.ms_pixel_size), params.ms_spherical_aberration, defocus[i_part], params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
-        CTF[i_part, :, :] = ifftshift(ctf_i)
-
-        # just go ahead and mask it
+        # Apply mask and store for distance calculation
         img_all[i_part, :, :] = img * mask
+
+        # Calculate and store CTF for distance calculation
+        ctf_i = ctemh_cryoFrank(Q / (2 * params.ms_pixel_size), params.ms_spherical_aberration,
+                                defocus[i_part], params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
+        CTF[i_part, :, :] = ifftshift(ctf_i)
 
 
     # use wiener filter
