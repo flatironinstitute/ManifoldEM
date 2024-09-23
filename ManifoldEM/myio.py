@@ -1,4 +1,4 @@
-import pickle
+import h5py, pickle
 from typing import Dict, Any
 
 
@@ -16,8 +16,12 @@ def fin1(filename: str) -> Dict[str, Any]:
     dict
         A dictionary containing the data loaded from the file.
     """
-    with open(filename, 'rb') as f:
-        return pickle.load(f)
+    if filename.endswith(".h5"):
+        with h5py.File(filename, "r") as f:
+            return {key: f[key][()] for key in f.keys()}
+    else:
+        with open(filename, "rb") as f:
+            return pickle.load(f)
 
 
 def fout1(filename: str, **kwargs) -> None:
@@ -32,5 +36,10 @@ def fout1(filename: str, **kwargs) -> None:
         Arbitrary keyword arguments to be saved.
     """
 
-    with open(filename, 'wb') as f:
-        pickle.dump(kwargs, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if filename.endswith(".h5"):
+        with h5py.File(filename, "w") as f:
+            for key, value in kwargs.items():
+                f.create_dataset(key, data=value)
+    else:
+        with open(filename, "wb") as f:
+            pickle.dump(kwargs, f, protocol=pickle.HIGHEST_PROTOCOL)

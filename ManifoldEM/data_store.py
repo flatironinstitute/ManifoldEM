@@ -14,7 +14,7 @@ from ManifoldEM.star import get_align_data
 from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
-
+import ManifoldEM.myio as myio
 
 class Sense(Enum):
     """
@@ -213,8 +213,7 @@ class PrdData:
         if self._psi_data is None:
             psi_file = params.get_psi_file(self._info.prd_index)
             if os.path.isfile(psi_file):
-                with open(psi_file, "rb") as f:
-                    self._psi_data = pickle.load(f)
+                self._psi_data = myio.fin1(psi_file)
             else:
                 msg = f"Embedding data file not found: {psi_file}"
                 raise FileNotFoundError(msg)
@@ -225,8 +224,7 @@ class PrdData:
         if self._EL_data is None:
             EL_file = params.get_EL_file(self._info.prd_index)
             if os.path.isfile(EL_file):
-                with open(EL_file, "rb") as f:
-                    self._EL_data = pickle.load(f)
+                self._EL_data = myio.fin1(EL_file)
             else:
                 msg = f"EL data file not found: {EL_file}"
                 raise FileNotFoundError(msg)
@@ -237,8 +235,7 @@ class PrdData:
         if self._dist_data is None:
             dist_file = params.get_dist_file(self._info.prd_index)
             if os.path.isfile(dist_file):
-                with open(dist_file, "rb") as f:
-                    self._dist_data = pickle.load(f)
+                self._dist_data = myio.fin1(dist_file)
             else:
                 msg = f"Distance data file not found: {dist_file}"
                 raise FileNotFoundError(msg)
