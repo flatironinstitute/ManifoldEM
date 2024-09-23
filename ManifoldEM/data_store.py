@@ -175,6 +175,9 @@ class PrdData:
         The filtered and "in-plane" rotated images associated with the projection direction.
     ctf_images : ndarray
         The Contrast Transfer Function (CTF) images associated with the projection direction.
+    dist_data : dict
+        The distance information between images in the projection direction, including transformed images
+        in the `transformed_images` attribute, and the CTF images in the `ctf_images` attribute.
     psi_data : dict
         The embedding data associated with the projection direction.
     EL_data : dict
