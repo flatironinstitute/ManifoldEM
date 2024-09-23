@@ -353,14 +353,6 @@ class Params:
         return os.path.join(self.CC_dir, "bad_nodes_psis_tau.pkl")
 
     @property
-    def CC_dir_temp(self) -> str:
-        return os.path.join(self.CC_dir, "temp")
-
-    @property
-    def bad_nodes_psis_tau_file(self) -> str:
-        return os.path.join(self.CC_dir, "bad_nodes_psis_tau.pkl")
-
-    @property
     def CC_file(self) -> str:
         return os.path.join(self.CC_dir, "CC_file.pkl")
 
@@ -419,14 +411,14 @@ class Params:
 
     def get_CC_meas_file(self, edge_index: int, prd_index: int, nbr_index: int) -> str:
         return os.path.join(
-            self.CC_meas_dir, f"meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.pkl"
+            self.CC_meas_dir, f"meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.h5"
         )
 
     def get_psi_file(self, prd_index: int):
         return f"{self.psi_file}prD_{prd_index}.h5"
 
     def get_psi2_file(self, prd_index: int, psi_index: int):
-        return f"{self.psi2_file}prD_{prd_index}_psi_{psi_index}.pkl"
+        return f"{self.psi2_file}prD_{prd_index}_psi_{psi_index}.h5"
 
     def get_dist_file(self, prd_index: int):
         return f"{self.dist_file}prD_{prd_index}.h5"
