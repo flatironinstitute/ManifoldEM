@@ -121,8 +121,6 @@ class PrdInfo:
         Whether the projection direction is marked as an anchor node. Anchor nodes propogate 'sense' to cluster neighbors.
     cluster_id : int
         The cluster ID. Projection directions in one cluster use optical flow to detect 'senses' for neighboring prds in the same cluster.
-    n_images : int
-        The number of images in the bin of this projection direction.
     raw_image_indices : ndarray
         The `n_image` indices of the raw images in the image stack file.
     image_centers : ndarray
@@ -138,7 +136,6 @@ class PrdInfo:
     trash: bool
     anchor: bool
     cluster_id: int
-    n_images: int
     raw_image_indices: NDArray[Shape["Any"], Int]
     image_centers: NDArray[Shape["Any,3"], Int]
     image_quats: NDArray[Shape["Any,4"], Float64]
@@ -148,7 +145,6 @@ class PrdInfo:
             "prd_index",
             "S2_bin_index",
             "bin_center",
-            "n_images",
             "occupancy",
             "trash",
             "anchor",
@@ -203,7 +199,6 @@ class PrdData:
             trash=prd_index in prds.trash_ids,
             anchor=prd_index in prds.anchor_ids,
             cluster_id=prds.cluster_ids[prd_index],
-            n_images=len(self._image_indices),
             raw_image_indices=self._image_indices,
             image_centers=prds.pos_full[:, self._image_indices].T,
             image_quats=prds.quats_full[:, self._image_indices].T,
