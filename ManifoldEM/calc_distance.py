@@ -361,6 +361,9 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     if relion_data:
         img_data = mrcfile.mmap(img_file_name, 'r').data
 
+    # Total in-plane rotation for each particle
+    rotations = np.zeros(n_particles)
+
     # read images with conjugates
     for i_part in range(n_particles):
         particle_index = indices[i_part]
@@ -379,10 +382,10 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         img = ifft2(fft2(img) * G).real
 
         # Get the psi angle
-        psi = get_psi(quats[:, i_part], avg_orientation_vec)
+        rotations[i_part] = -get_psi(quats[:, i_part], avg_orientation_vec) - psi_p
 
         # inplane align the images
-        img = rotate_fill(img, -psi - psi_p)
+        img = rotate_fill(img, rotations[i_part])
 
         # Apply mask and store for distance calculation
         img_all[i_part, :, :] = img * mask
@@ -394,7 +397,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
 
 
     # use wiener filter
-    img_avg = 0
+    img_avg = np.zeros((n_pix, n_pix))
     wiener_dom = -get_wiener(CTF)
     for i_part in range(n_particles):
         img = img_all[i_part, :, :]
@@ -429,7 +432,9 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
                imgAll=img_all.astype(np.float16),
                msk2=mask.astype(np.float16),
                PD=avg_orientation_vec,
-               imgAvg=img_avg.astype(np.float16))
+               imgAvg=img_avg.astype(np.float16),
+               rotations=rotations,
+               )
 
 
 def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):

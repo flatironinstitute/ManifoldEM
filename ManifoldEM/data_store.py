@@ -4,6 +4,7 @@ from enum import Enum
 import mrcfile
 import numpy as np
 import pickle
+import h5py
 from dataclasses import dataclass
 
 from typing import List, Any, Tuple, Dict, Set
@@ -122,11 +123,13 @@ class PrdInfo:
     cluster_id : int
         The cluster ID. Projection directions in one cluster use optical flow to detect 'senses' for neighboring prds in the same cluster.
     raw_image_indices : ndarray
-        The `n_image` indices of the raw images in the image stack file.
+        The `occupancy` indices of the raw images in the image stack file.
     image_centers : ndarray
-        The `n_image` centers of the images on the unit sphere.
+        The `occupancy` centers of the images on the unit sphere.
     image_quats : ndarray
-        The `n_image` quaternions of the images representing rotations from the z-axis to their position and rotation on the unit sphere.
+        The `occupancy` quaternions of the images representing rotations from the z-axis to their position and rotation on the unit sphere.
+    rotations : ndarray
+        The `occupancy` rotations of the images in the image stack file in degrees.
     """
 
     prd_index: int
@@ -139,6 +142,7 @@ class PrdInfo:
     raw_image_indices: NDArray[Shape["Any"], Int]
     image_centers: NDArray[Shape["Any,3"], Int]
     image_quats: NDArray[Shape["Any,4"], Float64]
+    rotations: NDArray[Shape["Any"], Float64]
 
     def __repr__(self):
         relevant_fields = [
@@ -191,6 +195,9 @@ class PrdData:
         self._psi_data = None
         self._EL_data = None
 
+        with h5py.File(params.get_dist_file(prd_index), "r") as f:
+            rotations = np.array(f["rotations"])
+
         self._info = PrdInfo(
             prd_index=prd_index,
             S2_bin_index=prds.thres_ids[prd_index],
@@ -202,6 +209,7 @@ class PrdData:
             raw_image_indices=self._image_indices,
             image_centers=prds.pos_full[:, self._image_indices].T,
             image_quats=prds.quats_full[:, self._image_indices].T,
+            rotations=rotations,
         )
 
     def _load_psi_data(self):
