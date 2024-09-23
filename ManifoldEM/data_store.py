@@ -255,6 +255,10 @@ class PrdData:
         return self._load_EL_data()
 
     @property
+    def dist_data(self):
+        return self._load_dist_data()
+
+    @property
     def raw_images(self):
         if self._raw_images is None:
             img_stack_data = data_store.get_image_stack_data()

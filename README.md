@@ -190,6 +190,101 @@ line. Here I set a few anchors and will continue on...
 ```
 
 
+### Python/Jupyter interface
+Researchers/the curious are possibly interested in various things "under the hood" in
+`ManifoldEM`. We've provided a basic interface for accessing some of the internal data
+calculated/written during various stages of the `ManifoldEM` pipeline. Most internal state
+isn't fully documented, and is likely to change, so it might take some sleuthing/educated
+guesswork to figure out what you're actually looking at, and that might disappear in future
+versions. Regardless, all exposed data can be accessed via the `data_store` `API`, which is
+documented and accessible via the `python` `help` interface. An example ipython session...
+
+```
+In [1]: from ManifoldEM.data_store import data_store
+   ...: from ManifoldEM.params import params
+   ...: params.load('params_J310.toml')
+   ...: prd = data_store.get_prd_data(117)
+   ...: npix = params.ms_num_pixels
+   ...: print(prd)
+prd_index: 117
+S2_bin_index: 17310
+bin_center: [ 0.01355376 -0.00546575  0.9998932 ]
+n_images: 216
+occupancy: 216
+trash: False
+anchor: True
+cluster_id: 0
+
+In [2]: help(prd)
+...
+class PrdData(builtins.object)
+ |  PrdData(prd_index: int)
+ |
+ |  Represents a single projection direction, providing access to its raw and transformed images, CTF images, and metadata.
+ |
+ |  Attributes
+ |  ----------
+ |  info : PrdInfo
+ |      Metadata about the projection direction.
+ |  raw_images : ndarray
+ |      The raw images from the image stack associated with the projection direction.
+ |  transformed_images : ndarray
+ |      The filtered and "in-plane" rotated images associated with the projection direction.
+ |  ctf_images : ndarray
+ |      The Contrast Transfer Function (CTF) images associated with the projection direction.
+ |  psi_data : dict
+ |      The embedding data associated with the projection direction.
+ |  EL_data : dict
+ |      The NLSA/eigenvalue data associated with the projection direction.
+ |  dist_data : dict
+ |      The distance information between images in the projection direction, including transformed images
+ |      in the `transformed_images` attribute.
+ |
+ |  ...
+ |
+ |  ----------------------------------------------------------------------
+ |  Readonly properties defined here:
+ |
+ |  EL_data
+ |
+ |  ctf_images
+ |
+ |  info
+ |
+ |  psi_data
+ |
+ |  raw_images
+ |
+ |  transformed_images
+ |
+ |  ----------------------------------------------------------------------
+...
+
+In [3]: import matplotlib.pyplot as plt
+
+In [4]: plt.imshow(prd.EL_data['IMG1'][:,-1].reshape(npix, npix))
+Out[4]: <matplotlib.image.AxesImage at 0x7fde924838b0>
+
+In [5]: plt.show()
+
+In [6]: prd.EL_data.keys()
+Out[6]: dict_keys(['IMG1', 'IMGT', 'posPath', 'PosPsi1', 'psirec', 'tau', 'psiC1', 'mu', 'VX', 'sdiag', 'Topo_mean', 'tauinds'])
+
+In [7]: prd.psi_data.keys()
+Out[7]: dict_keys(['lamb', 'psi', 'sigma', 'mu', 'posPath', 'ind', 'logEps', 'logSumWij', 'popt', 'R_squared'])
+
+In [8]: prd.raw_images.shape
+Out[8]: (216, 192, 192)
+
+In [9]: plt.imshow(prd.raw_images[10]); plt.show()
+
+In [10]: plt.imshow(prd.transformed_images[10]); plt.show()
+
+In [11]: prd.transformed_images.shape
+Out[11]: (216, 192, 192)
+```
+
+
 ### Contributions
 Original ManifoldEM Python team (alphabetically ordered):
 
