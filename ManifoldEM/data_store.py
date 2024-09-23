@@ -15,6 +15,7 @@ from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
 
+
 class Sense(Enum):
     """
     An enumeration to represent the direction of projection or alignment.
@@ -33,11 +34,12 @@ class Sense(Enum):
     to_index() -> int
         Converts the Sense enum to an integer index.
     """
+
     FWD = 1
     REV = -1
 
     @staticmethod
-    def from_index(idx: int) -> 'Sense':
+    def from_index(idx: int) -> "Sense":
         """
         Converts an integer index to a Sense enum.
 
@@ -92,6 +94,7 @@ class Anchor:
     sense : Sense
         Direction of the projection.
     """
+
     def __init__(self, CC: int = 1, sense: Sense = Sense.FWD):
         self.CC: int = CC
         self.sense: Sense = sense
@@ -127,6 +130,7 @@ class PrdInfo:
     image_quats : ndarray
         The `n_image` quaternions of the images representing rotations from the z-axis to their position and rotation on the unit sphere.
     """
+
     prd_index: int
     S2_bin_index: int
     bin_center: NDArray[Shape["3"], Float64]
@@ -140,9 +144,19 @@ class PrdInfo:
     image_quats: NDArray[Shape["Any,4"], Float64]
 
     def __repr__(self):
-        relevant_fields = ['prd_index', 'S2_bin_index', 'bin_center', 'n_images',
-                           'occupancy', 'trash', 'anchor', 'cluster_id']
-        info_str = '\n'.join([f'{field}: {getattr(self, field)}' for field in relevant_fields])
+        relevant_fields = [
+            "prd_index",
+            "S2_bin_index",
+            "bin_center",
+            "n_images",
+            "occupancy",
+            "trash",
+            "anchor",
+            "cluster_id",
+        ]
+        info_str = "\n".join(
+            [f"{field}: {getattr(self, field)}" for field in relevant_fields]
+        )
 
         return info_str
 
@@ -161,7 +175,12 @@ class PrdData:
         The filtered and "in-plane" rotated images associated with the projection direction.
     ctf_images : ndarray
         The Contrast Transfer Function (CTF) images associated with the projection direction.
+    psi_data : dict
+        The embedding data associated with the projection direction.
+    EL_data : dict
+        The NLSA/eigenvalue data associated with the projection direction.
     """
+
     def __init__(self, prd_index: int):
         prds = data_store.get_prds()
         if prd_index >= prds.n_bins:
@@ -170,24 +189,52 @@ class PrdData:
         self._image_indices = prds.thresholded_image_indices[prd_index]
         self._dist_data = None
         self._raw_images = None
-        self._info = PrdInfo(prd_index=prd_index,
-                             S2_bin_index=prds.thres_ids[prd_index],
-                             bin_center=prds.bin_centers[:, prds.thres_ids[prd_index]],
-                             occupancy=prds.occupancy[prd_index],
-                             trash=prd_index in prds.trash_ids,
-                             anchor=prd_index in prds.anchor_ids,
-                             cluster_id=prds.cluster_ids[prd_index],
-                             n_images=len(self._image_indices),
-                             raw_image_indices=self._image_indices,
-                             image_centers=prds.pos_full[:, self._image_indices].T,
-                             image_quats=prds.quats_full[:, self._image_indices].T)
+        self._psi_data = None
+        self._EL_data = None
 
+        self._info = PrdInfo(
+            prd_index=prd_index,
+            S2_bin_index=prds.thres_ids[prd_index],
+            bin_center=prds.bin_centers[:, prds.thres_ids[prd_index]],
+            occupancy=prds.occupancy[prd_index],
+            trash=prd_index in prds.trash_ids,
+            anchor=prd_index in prds.anchor_ids,
+            cluster_id=prds.cluster_ids[prd_index],
+            n_images=len(self._image_indices),
+            raw_image_indices=self._image_indices,
+            image_centers=prds.pos_full[:, self._image_indices].T,
+            image_quats=prds.quats_full[:, self._image_indices].T,
+        )
+
+    def _load_psi_data(self):
+        if self._psi_data is None:
+            psi_file = params.get_psi_file(self._info.prd_index)
+            if os.path.isfile(psi_file):
+                with open(psi_file, "rb") as f:
+                    self._psi_data = pickle.load(f)
+            else:
+                msg = f"Embedding data file not found: {psi_file}"
+                raise FileNotFoundError(msg)
+
+        return self._psi_data
+
+    def _load_EL_data(self):
+        if self._EL_data is None:
+            EL_file = params.get_EL_file(self._info.prd_index)
+            if os.path.isfile(EL_file):
+                with open(EL_file, "rb") as f:
+                    self._EL_data = pickle.load(f)
+            else:
+                msg = f"EL data file not found: {EL_file}"
+                raise FileNotFoundError(msg)
+
+        return self._EL_data
 
     def _load_dist_data(self):
         if self._dist_data is None:
             dist_file = params.get_dist_file(self._info.prd_index)
             if os.path.isfile(dist_file):
-                with open(dist_file, 'rb') as f:
+                with open(dist_file, "rb") as f:
                     self._dist_data = pickle.load(f)
             else:
                 msg = f"Distance data file not found: {dist_file}"
@@ -195,33 +242,45 @@ class PrdData:
 
         return self._dist_data
 
-
     @property
     def info(self):
         return self._info
 
+    @property
+    def psi_data(self):
+        return self._load_psi_data()
+
+    @property
+    def EL_data(self):
+        return self._load_EL_data()
 
     @property
     def raw_images(self):
         if self._raw_images is None:
             img_stack_data = data_store.get_image_stack_data()
-            self._raw_images = np.empty(shape=(len(self._image_indices), params.ms_num_pixels, params.ms_num_pixels), dtype=np.float32)
+            self._raw_images = np.empty(
+                shape=(
+                    len(self._image_indices),
+                    params.ms_num_pixels,
+                    params.ms_num_pixels,
+                ),
+                dtype=np.float32,
+            )
             for i, idx in enumerate(self._image_indices):
                 self._raw_images[i] = img_stack_data[idx]
 
         return self._raw_images
 
-
     @property
     def transformed_images(self):
-        return self._load_dist_data()['imgAll']
-
+        return self._load_dist_data()["imgAll"]
 
     @property
     def ctf_images(self):
         self._load_dist_data()
-        return self._load_dist_data()['CTF'].reshape(-1, params.ms_num_pixels, params.ms_num_pixels)
-
+        return self._load_dist_data()["CTF"].reshape(
+            -1, params.ms_num_pixels, params.ms_num_pixels
+        )
 
     def __repr__(self) -> str:
         return self._info.__repr__()
@@ -255,19 +314,21 @@ class _ProjectionDirections:
     bin centers without duplication, anchor IDs, thresholded image indices, occupancy for thresholded IDs,
     the number of bins, and the number of thresholded entries.
     """
+
     def __init__(self):
         self.thres_low: int = params.prd_thres_low
         self.thres_high: int = params.prd_thres_high
         self.bin_centers: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3, 0))
 
         self.defocus: NDArray[Shape["Any"], Float64] = np.empty(0)
-        self.microscope_origin: Tuple[NDArray[Shape["Any"], Float64],
-                                      NDArray[Shape["Any"], Float64]] = (np.empty(0), np.empty(0))
+        self.microscope_origin: Tuple[
+            NDArray[Shape["Any"], Float64], NDArray[Shape["Any"], Float64]
+        ] = (np.empty(0), np.empty(0))
 
-        self.pos_raw: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3,0))
-        self.pos_full: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3,0))
-        self.quats_raw: NDArray[Shape["4,Any"], Float64] = np.empty(shape=(4,0))
-        self.quats_full: NDArray[Shape["4,Any"], Float64] = np.empty(shape=(4,0))
+        self.pos_raw: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3, 0))
+        self.pos_full: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3, 0))
+        self.quats_raw: NDArray[Shape["4,Any"], Float64] = np.empty(shape=(4, 0))
+        self.quats_full: NDArray[Shape["4,Any"], Float64] = np.empty(shape=(4, 0))
 
         self.image_indices_full: NDArray[Shape["Any"], Any] = np.empty(0, dtype=object)
         self.thres_ids: list[int] = []
@@ -283,13 +344,12 @@ class _ProjectionDirections:
         self.neighbor_graph_pruned: Dict[str, Any] = {}
         self.neighbor_subgraph_pruned: List[Dict[str, Any]] = []
 
-        self.pos_thresholded: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3,0))
+        self.pos_thresholded: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3, 0))
         self.theta_thresholded: NDArray[Shape["Any"], Float64] = np.empty(0)
         self.phi_thresholded: NDArray[Shape["Any"], Float64] = np.empty(0)
         self.cluster_ids: NDArray[Shape["Any"], Int] = np.empty(0, dtype=int)
 
         self.image_is_mirrored: NDArray[Shape["Any"], Bool] = np.empty(0, dtype=bool)
-
 
     def load(self, pd_file=None):
         """
@@ -303,17 +363,15 @@ class _ProjectionDirections:
         if pd_file is None:
             pd_file = params.pd_file
 
-        with open(pd_file, 'rb') as f:
+        with open(pd_file, "rb") as f:
             self.__dict__.update(pickle.load(f))
-
 
     def save(self):
         """
         Saves the current projection direction metadata (this object) to a file.
         """
-        with open(params.pd_file, 'wb') as f:
+        with open(params.pd_file, "wb") as f:
             pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
-
 
     def update(self):
         """
@@ -327,27 +385,41 @@ class _ProjectionDirections:
             self.load(params.pd_file)
 
         # If uninitialized or things have changed, actually update
-        force_rebuild = bool(os.environ.get('MANIFOLD_REBUILD_DS', 0))
-        if force_rebuild or self.pos_full.size == 0 or self.thres_low != params.prd_thres_low or self.thres_high != params.prd_thres_high:
+        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", 0))
+        if (
+            force_rebuild
+            or self.pos_full.size == 0
+            or self.thres_low != params.prd_thres_low
+            or self.thres_high != params.prd_thres_high
+        ):
             if force_rebuild:
                 print("Rebuilding data store")
-                os.environ.pop('MANIFOLD_REBUILD_DS')
+                os.environ.pop("MANIFOLD_REBUILD_DS")
 
             print("Calculating projection direction information")
-            self.microscope_origin, self.quats_raw, U, V = get_align_data(params.align_param_file, flip=True)
+            self.microscope_origin, self.quats_raw, U, V = get_align_data(
+                params.align_param_file, flip=True
+            )
             df = (U + V) / 2
 
             plane_vec = np.array(params.tess_hemisphere_vec)
             self.quats_raw = self.quats_raw
-            self.quats_full, self.image_is_mirrored = collapse_to_half_space(self.quats_raw, plane_vec)
+            self.quats_full, self.image_is_mirrored = collapse_to_half_space(
+                self.quats_raw, plane_vec
+            )
             self.pos_raw = quaternion_to_S2(self.quats_raw)
             self.pos_full = quaternion_to_S2(self.quats_full)
 
             # double the number of data points by augmentation
             df = np.concatenate((df, df))
 
-            image_indices, bin_centers, occupancy, bin_ids = \
-                bin_and_threshold(self.pos_full, params.ang_width, params.prd_thres_low, tessellator=params.tess_hemisphere_type, plane_vec=plane_vec)
+            image_indices, bin_centers, occupancy, bin_ids = bin_and_threshold(
+                self.pos_full,
+                params.ang_width,
+                params.prd_thres_low,
+                tessellator=params.tess_hemisphere_type,
+                plane_vec=plane_vec,
+            )
 
             self.thres_low = params.prd_thres_low
             self.thres_high = params.prd_thres_high
@@ -363,15 +435,22 @@ class _ProjectionDirections:
             self.trash_ids = set()
 
             self.pos_thresholded = self.bin_centers[:, self.thres_ids]
-            self.phi_thresholded = np.arctan2(self.pos_thresholded[1, :], self.pos_thresholded[0, :]) * 180. / np.pi
-            self.theta_thresholded = np.arccos(self.pos_thresholded[2, :]) * 180. / np.pi
+            self.phi_thresholded = (
+                np.arctan2(self.pos_thresholded[1, :], self.pos_thresholded[0, :])
+                * 180.0
+                / np.pi
+            )
+            self.theta_thresholded = (
+                np.arccos(self.pos_thresholded[2, :]) * 180.0 / np.pi
+            )
 
-            self.neighbor_graph, self.neighbor_subgraph = \
-                FindCCGraph(self.thresholded_image_indices, self.n_bins, self.pos_thresholded)
+            self.neighbor_graph, self.neighbor_subgraph = FindCCGraph(
+                self.thresholded_image_indices, self.n_bins, self.pos_thresholded
+            )
 
             def get_cluster_ids(G):
-                nodesColor = np.zeros(G['nNodes'], dtype='int')
-                for i, nodesCC in enumerate(G['NodesConnComp']):
+                nodesColor = np.zeros(G["nNodes"], dtype="int")
+                for i, nodesCC in enumerate(G["NodesConnComp"]):
                     nodesColor[nodesCC] = i
 
                 return nodesColor
@@ -382,7 +461,6 @@ class _ProjectionDirections:
 
             params.save()
             self.save()
-
 
     def insert_anchor(self, id: int, anchor: Anchor):
         """
@@ -397,7 +475,6 @@ class _ProjectionDirections:
         """
         self.anchors[id] = anchor
 
-
     def remove_anchor(self, id: int):
         """
         Untags an anchor point in the dataset. Does nothing if the anchor point does not exist.
@@ -409,7 +486,6 @@ class _ProjectionDirections:
         """
         if id in self.anchors:
             self.anchors.pop(id)
-
 
     def get_prd_data(self, id: int):
         """
@@ -429,11 +505,10 @@ class _ProjectionDirections:
             raise TypeError("Invalid prd index type")
 
         if id < 0 or id >= self.n_bins:
-            msg = f'Invalid prd index: {id}. Valid indices on [0, {self.n_bins})'
+            msg = f"Invalid prd index: {id}. Valid indices on [0, {self.n_bins})"
             raise ValueError(msg)
 
         return PrdData(id)
-
 
     @property
     def anchor_ids(self):
@@ -446,7 +521,6 @@ class _ProjectionDirections:
             The sorted list of anchor IDs.
         """
         return sorted(list(self.anchors.keys()))
-
 
     @property
     def thresholded_image_indices(self):
@@ -463,10 +537,9 @@ class _ProjectionDirections:
         thres_images = self.image_indices_full[self.thres_ids]
         for i in range(thres_images.size):
             if len(thres_images[i]) > self.thres_high:
-                thres_images[i] = thres_images[i][:self.thres_high]
+                thres_images[i] = thres_images[i][: self.thres_high]
 
         return thres_images
-
 
     @property
     def occupancy(self):
@@ -480,7 +553,6 @@ class _ProjectionDirections:
         """
         return self.occupancy_full[self.thres_ids]
 
-
     @property
     def n_bins(self):
         """
@@ -492,7 +564,6 @@ class _ProjectionDirections:
             Number of bins on S2.
         """
         return self.bin_centers.shape[1]
-
 
     @property
     def n_thresholded(self):
@@ -520,14 +591,14 @@ class _DataStore:
     get_image_stack_data()
         Returns the image stack data from the associated project mrcs file.
     """
+
     _projection_directions = _ProjectionDirections()
     _image_stack_data = None
 
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls.instance = super(_DataStore, cls).__new__(cls)
         return cls.instance
-
 
     def get_prds(self):
         """
@@ -539,11 +610,9 @@ class _DataStore:
         self._projection_directions.update()
         return self._projection_directions
 
-
     def get_prd_data(self, prd_index: int):
         self._projection_directions.update()
         return self._projection_directions.get_prd_data(prd_index)
-
 
     def get_image_stack_data(self):
         """
@@ -554,7 +623,7 @@ class _DataStore:
         """
 
         if self._image_stack_data is None:
-            self._image_stack_data = mrcfile.mmap(params.img_stack_file, 'r').data
+            self._image_stack_data = mrcfile.mmap(params.img_stack_file, "r").data
 
         return self._image_stack_data
 
