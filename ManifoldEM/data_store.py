@@ -16,6 +16,8 @@ from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
 import ManifoldEM.myio as myio
+from ManifoldEM.util import get_CTFs
+
 
 class Sense(Enum):
     """
@@ -194,6 +196,7 @@ class PrdData:
         self._raw_images = None
         self._psi_data = None
         self._EL_data = None
+        self._CTF = None
 
         with h5py.File(params.get_dist_file(prd_index), "r") as f:
             rotations = np.array(f["rotations"])
@@ -284,10 +287,18 @@ class PrdData:
 
     @property
     def ctf_images(self):
-        self._load_dist_data()
-        return self._load_dist_data()["CTF"].reshape(
-            -1, params.ms_num_pixels, params.ms_num_pixels
-        )
+        if self._CTF is None:
+            prds = data_store.get_prds()
+            self._CTF = get_CTFs(
+                params.ms_num_pixels,
+                prds.get_defocus_by_prd(self._info.prd_index),
+                params.ms_spherical_aberration,
+                params.ms_kilovolts,
+                params.ms_ctf_envelope,
+                params.ms_amplitude_contrast_ratio,
+            )
+
+        return self._CTF
 
     def __repr__(self) -> str:
         return self._info.__repr__()
@@ -516,6 +527,22 @@ class _ProjectionDirections:
             raise ValueError(msg)
 
         return PrdData(id)
+
+    def get_defocus_by_prd(self, prd_index: int):
+        """
+        Returns the defocus value of the images in a given projection direction.
+
+        Parameters
+        ----------
+        prd_index : int
+            The index of the projection direction.
+
+        Returns
+        -------
+        ndarray
+            The defocus values for the images in the given projection direction.
+        """
+        return self.defocus[self.thresholded_image_indices[prd_index]]
 
     @property
     def anchor_ids(self):

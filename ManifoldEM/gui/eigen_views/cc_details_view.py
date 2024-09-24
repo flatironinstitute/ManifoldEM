@@ -892,14 +892,16 @@ class Manifold2dCanvas(QDialog):
         params.save()  #send new GUI data to parameters file
         print(f"Re-running spectral analysis for prd {self.prd_index - 1}")
         from ManifoldEM.psi_analysis import psi_analysis_single
+        prds = data_store.get_prds()
         prd = self.prd_index - 1
         dist_file = params.get_dist_file(prd)
         psi_file = params.get_psi_file(prd)
         EL_file = params.get_EL_file(prd)
         psinums = list(range(params.num_psi))
         senses = np.ones(params.num_psi)
+        defocus = prds.get_defocus_by_prd(prd)
         psi_list = list(range(params.num_psi))  # list of incomplete psi values per PD
-        psi_analysis_single([dist_file, psi_file, EL_file, psinums, senses, prd, psi_list],
+        psi_analysis_single([dist_file, psi_file, EL_file, psinums, senses, prd, defocus, psi_list],
                             con_order_range=params.con_order_range,
                             traj_name=params.traj_name,
                             is_full=0,

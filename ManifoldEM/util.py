@@ -5,15 +5,16 @@ import sys
 import pickle
 import traceback
 
+from typing import Any
 from nptyping import NDArray, Shape, Float64
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import q_product
 
-'''
+"""
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
-'''
+"""
 
 
 class NullEmitter:
@@ -53,30 +54,37 @@ def get_tqdm():
         The tqdm function to use for progress tracking.
     """
     try:
-        if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
+        if get_ipython().__class__.__name__ == "ZMQInteractiveShell":
             from tqdm.notebook import tqdm
+
             return tqdm
-    except NameError: #  get_ipython not defined on base python...
+    except NameError:  #  get_ipython not defined on base python...
         pass
     from tqdm import tqdm
+
     return tqdm
 
 
 def remote_runner(hostname, cmd, progress_callback):
     from fabric import Connection
+
     with Connection(hostname, inline_ssh_env=True) as c:
-        c.config.run.env = {k: v for k, v in os.environ.items()
-                            if k.startswith(('PATH', 'PYTHON', 'VIRTUAL_ENV'))}
-        param_file = os.path.join(os.getcwd(), f'params_{params.project_name}.toml')
-        c.run(f'{cmd} {param_file}')
+        c.config.run.env = {
+            k: v
+            for k, v in os.environ.items()
+            if k.startswith(("PATH", "PYTHON", "VIRTUAL_ENV"))
+        }
+        param_file = os.path.join(os.getcwd(), f"params_{params.project_name}.toml")
+        c.run(f"{cmd} {param_file}")
         progress_callback.emit(100)
 
 
 def is_valid_host(hostname):
     from fabric import Connection
+
     try:
         with Connection(hostname) as c:
-            c.run('true')
+            c.run("true")
     except:
         return False
 
@@ -104,17 +112,17 @@ def get_image_width_from_stack(stack_file: str):
 
     """
     img_width = 0
-    if stack_file.endswith('.mrcs') or stack_file.endswith('.mrc'):
-        mrc = mrcfile.mmap(params.img_stack_file, mode='r')
+    if stack_file.endswith(".mrcs") or stack_file.endswith(".mrc"):
+        mrc = mrcfile.mmap(params.img_stack_file, mode="r")
         if not mrc.is_image_stack():
             mrc.close()
-            mrc = mrcfile.mmap(params.img_stack_file, mode='r+')
+            mrc = mrcfile.mmap(params.img_stack_file, mode="r+")
             mrc.set_image_stack()
 
         img_width = mrc.data[0].shape[0]
         mrc.close()
     else:
-        raise ValueError('Particles must be in mrc or mrcs format.')
+        raise ValueError("Particles must be in mrc or mrcs format.")
 
     return img_width
 
@@ -129,6 +137,7 @@ def calc_ang_width(aperture: int, resolution: float, diameter: float) -> float:
 
 def debug_trace():
     from PyQt5.QtCore import pyqtRemoveInputHook
+
     try:
         from ipdb import set_trace
     except:
@@ -137,7 +146,7 @@ def debug_trace():
     set_trace()
 
 
-def debug_print(msg: str=""):
+def debug_print(msg: str = ""):
     """
     Prints a debug message along with the caller's stack trace.
 
@@ -155,7 +164,7 @@ def debug_print(msg: str=""):
         print(msg)
     stack = traceback.format_stack()
 
-    print(stack[-2].split('\n')[0])
+    print(stack[-2].split("\n")[0])
 
 
 def hist_match(source, template):  # by ali_m
@@ -182,7 +191,9 @@ def hist_match(source, template):  # by ali_m
 
     # get the set of unique pixel values and their corresponding indices and
     # counts
-    s_values, bin_idx, s_counts = np.unique(source, return_inverse=True, return_counts=True)
+    s_values, bin_idx, s_counts = np.unique(
+        source, return_inverse=True, return_counts=True
+    )
     t_values, t_counts = np.unique(template, return_counts=True)
 
     # take the cumsum of the counts and normalize by the number of pixels to
@@ -287,10 +298,10 @@ def augment(q: NDArray[Shape["4,*"], Float64]):
     """
 
     try:
-        assert (q.shape[0] > 3)
+        assert q.shape[0] > 3
     except AssertionError:
-        _logger.error('subroutine augment: q has wrong dimensions')
-        _logger.exception('subroutine augment: q has wrong diemnsions')
+        _logger.error("subroutine augment: q has wrong dimensions")
+        _logger.exception("subroutine augment: q has wrong diemnsions")
         raise
         sys.exit(1)
 
@@ -301,13 +312,12 @@ def augment(q: NDArray[Shape["4,*"], Float64]):
 
 
 def make_indeces(inputGCs):
-
-    with open(inputGCs, 'rb') as f:
+    with open(inputGCs, "rb") as f:
         param = pickle.load(f)
     f.close()
 
-    GCnum = len(param['CGtot'])
-    prDs = len(param['CGtot'][0])
+    GCnum = len(param["CGtot"])
+    prDs = len(param["CGtot"][0])
 
     x1 = np.tile(range(prDs), (1, GCnum))
     x2 = np.array([])
@@ -320,7 +330,7 @@ def make_indeces(inputGCs):
 
 
 def interv(s):
-    #return np.arange(-s/2,s/2)
+    # return np.arange(-s/2,s/2)
     if s % 2 == 0:
         a = -s / 2
         b = s / 2 - 1
@@ -336,14 +346,145 @@ def filter_fourier(inp, sigma):
     nPix1 = inp.shape[1]
     nPix2 = inp.shape[0]
     X, Y = np.meshgrid(interv(nPix1), interv(nPix2))
-    Rgrid = nPix2 / 2.
+    Rgrid = nPix2 / 2.0
     Q = (1 / Rgrid) * np.sqrt(X**2 + Y**2)  # Q in units of Nyquist frequency
 
     N = 4
-    G = np.sqrt(1. / (1 + (Q / sigma)**(2 * N)))  # ButterWorth
+    G = np.sqrt(1.0 / (1 + (Q / sigma) ** (2 * N)))  # ButterWorth
 
     # Filter images in Fourier space
     G = np.fft.ifftshift(G)
     inp = np.real(np.fft.ifft2(G * np.fft.fft2(inp)))
 
     return inp
+
+
+def create_proportional_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
+    """
+    Creates an NxN grid centered around (0, 0).
+
+    The function generates an NxN grid where each point's value is proportional to its distance from the center,
+    normalized by the grid size. This can be used for generating spatial frequency grids or other applications
+    where a centered grid is required.
+
+    Parameters
+    ----------
+    N : int
+        The linear size of the grid (i.e. width).
+
+    Returns
+    -------
+    ndarray
+        An `NxN` NumPy array representing the grid
+    """
+    a = np.arange(N) - N // 2
+    X, Y = np.meshgrid(a, a)
+
+    return 2 * np.sqrt(X**2 + Y**2) / N
+
+
+def ctemh_cryoFrank(
+    k: NDArray[Shape["Any,Any"], Float64],
+    spherical_aberration: float,
+    defocus: float,
+    electron_energy: float,
+    gauss_env_halfwidth: float,
+    amplitude_contrast_ratio: float,
+):
+    """
+    Calculates the contrast transfer function (CTF) for cryo-EM imaging.
+
+    Parameters
+    ----------
+    k : ndarray
+        A 2D array of spatial frequencies.
+    spherical_aberration : float
+        Spherical aberration (Cs) in mm.
+    defocus : float
+        Defocus in Angstroms. A positive value indicates underfocus.
+    electron_energy : float
+        Electron energy in keV.
+    gauss_env_halfwidth : float
+        Half-width of the Gaussian envelope in A^-2.
+    amplitude_contrast_ratio : float
+        Amplitude contrast ratio obtained from the alignment file.
+
+    Returns
+    -------
+    ndarray
+        A 2D array representing the CTF of shape `k`.
+
+    Notes
+    -----
+    - we assume |k| = s
+    - from Kirkland, adapted for cryo (EMAN1) by P. Schwander
+    - Here, the damping envelope is characterized by a single parameter B (gauss_env)
+    - see J. Frank
+
+    Copyright (c) UWM, Peter Schwander 2010 MATLAB version
+    Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    """
+    spherical_aberration *= 1.0e7
+    mo = 511.0
+    hc = 12.3986
+    wav = (2 * mo) + electron_energy
+    wav = hc / np.sqrt(wav * electron_energy)
+    w1 = np.pi * spherical_aberration * wav * wav * wav
+    w2 = np.pi * wav * defocus
+    k2 = k * k
+    sigm = gauss_env_halfwidth / np.sqrt(2 * np.log(2))
+    wi = np.exp(-k2 / (2 * sigm**2))
+    wr = (0.5 * w1 * k2 - w2) * k2  # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2
+
+    return (np.sin(wr) - amplitude_contrast_ratio * np.cos(wr)) * wi
+
+
+def get_CTFs(
+    width: int,
+    defocus: NDArray[Shape["Any"], Float64],
+    spherical_aberration: float,
+    electron_energy: float,
+    gauss_env_halfwidth: float,
+    amplitude_contrast_ratio: float,
+) -> NDArray[Shape["Any,Any,Any"], Float64]:
+    """
+    Calculates the contrast transfer function (CTF) for cryo-EM imaging.
+
+    Parameters
+    ----------
+    width : int
+        The width of the generated image.
+    defocus : ndarray
+        The defocus values of interest.
+    spherical_aberration : float
+        Spherical aberration (Cs) in mm.
+    defocus : float
+        Defocus in Angstroms. A positive value indicates underfocus.
+    electron_energy : float
+        Electron energy in keV.
+    gauss_env_halfwidth : float
+        Half-width of the Gaussian envelope in A^-2.
+    amplitude_contrast_ratio : float
+        Amplitude contrast ratio obtained from the alignment file.
+
+    Returns
+    -------
+    ndarray
+        A 3D array representing the CTF of shape `(len(defocus), width, width)`.
+    """
+
+    k = create_proportional_grid(width) / (2 * width)
+    ctf = np.empty((len(defocus), width, width))
+    for i, df in enumerate(defocus):
+        ctf[i] = np.fft.ifftshift(
+            ctemh_cryoFrank(
+                k,
+                spherical_aberration,
+                df,
+                electron_energy,
+                gauss_env_halfwidth,
+                amplitude_contrast_ratio,
+            )
+        )
+
+    return ctf

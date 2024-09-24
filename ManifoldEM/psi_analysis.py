@@ -16,8 +16,9 @@ from typing import List, Union
 from ManifoldEM import myio, DMembeddingII
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
+from ManifoldEM.data_store import data_store
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
-from ManifoldEM.util import NullEmitter, get_tqdm
+from ManifoldEM.util import NullEmitter, get_tqdm, get_CTFs
 
 
 def _corr(a, b, n, m):
@@ -167,8 +168,9 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
     psinums = input_data[3]
     senses = input_data[4]
     prD = input_data[5]
-    if len(input_data) == 7:
-        psi_list = input_data[6]
+    defocus = input_data[6]
+    if len(input_data) == 8:
+        psi_list = input_data[7]
     else:
         psi_list = psinums
     data_IMG = myio.fin1(dist_file)
@@ -179,7 +181,9 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
 
     msk2 = np.array(data_IMG['msk2'])  # April 2020, vol mask to be used after ctf has been applied
 
-    CTF = np.array(data_IMG['CTF'])
+    CTF = get_CTFs(params.ms_num_pixels, defocus, params.ms_spherical_aberration,
+                   params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
+
     psi = data_psi['psi']  # coordinates of all images in 15-dim space from diffusion map: e.g., shape=(numPDs,15)
     pos_path = data_psi['posPath']  # indices of every image in PD: e.g., shape=(numPDs,); [0,1,2,...(numPDs-1)]
     nS = len(pos_path)  # number of images in PD
@@ -267,14 +271,16 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
             print(f"Warning: requested invalid prds: {invalid_prds}")
         valid_prds = valid_prds.intersection(requested_prds)
 
+    prds = data_store.get_prds()
     for prD in valid_prds:
         dist_file = params.get_dist_file(prD)
         psi_file = params.get_psi_file(prD)
         EL_file = params.get_EL_file(prD)
         psinums = psi_nums_all[prD, :]
         senses = senses_all[prD, :]
+        defocus = prds.get_defocus_by_prd(prD)
         psi_list = list(range(len(psinums)))  # list of incomplete psi values per PD
-        ll.append([dist_file, psi_file, EL_file, psinums, senses, prD, psi_list])
+        ll.append([dist_file, psi_file, EL_file, psinums, senses, prD, defocus, psi_list])
 
     return ll
 

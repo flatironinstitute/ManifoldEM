@@ -9,23 +9,26 @@ from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.psi_analysis import psi_analysis_single
 from ManifoldEM.util import NullEmitter
-'''
+
+"""
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
-'''
+"""
 
 
 def divide1(R, psiNumsAll, sensesAll):
     ll = []
+    prds = data_store.get_prds()
     for prD in R:
         dist_file = params.get_dist_file(prD)
         psi_file = params.get_psi_file(prD)
         EL_file = params.get_EL_file(prD)
         psinums = [psiNumsAll[0, prD]]
         senses = [sensesAll[0, prD]]
-        ll.append([dist_file, psi_file, EL_file, psinums, senses, prD])
+        defocus = prds.get_defocus_by_prd(prD)
+        ll.append([dist_file, psi_file, EL_file, psinums, senses, prD, defocus])
 
     return ll
 
@@ -33,15 +36,15 @@ def divide1(R, psiNumsAll, sensesAll):
 def op(*argv):
     params.load()
 
-    multiprocessing.set_start_method('fork', force=True)
+    multiprocessing.set_start_method("fork", force=True)
 
     R = np.array(range(params.prd_n_active))
     R = np.delete(R, list(data_store.get_prds().trash_ids))
 
     print("Recomputing the NLSA snapshots using the found reaction coordinates...")
     data = myio.fin1(params.CC_file)
-    psiNumsAll = data['psinums']
-    sensesAll = data['senses']
+    psiNumsAll = data["psinums"]
+    sensesAll = data["senses"]
     isFull = 1
     input_data = divide1(R, psiNumsAll, sensesAll)
     if argv:
@@ -54,11 +57,13 @@ def op(*argv):
 
     print(f"Processing {len(input_data)} projection directions.")
 
-    local_func = partial(psi_analysis_single,
-                         con_order_range=params.con_order_range,
-                         traj_name=params.traj_name,
-                         is_full=isFull,
-                         psi_trunc=params.num_psi_truncated)
+    local_func = partial(
+        psi_analysis_single,
+        con_order_range=params.con_order_range,
+        traj_name=params.traj_name,
+        is_full=isFull,
+        psi_trunc=params.num_psi_truncated,
+    )
 
     if params.ncpu == 1:  # avoids the multiprocessing package
         for i, datai in enumerate(input_data):

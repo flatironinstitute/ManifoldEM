@@ -18,7 +18,7 @@ from ManifoldEM.core import annular_mask, project_mask
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.quaternion import q2Spider, quaternion_to_S2
-from ManifoldEM.util import NullEmitter, get_tqdm
+from ManifoldEM.util import NullEmitter, get_tqdm, create_proportional_grid, get_CTFs
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,30 +101,6 @@ def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Sh
         The rotated image as a 2D NumPy array.
     """
     return rotate(img, angle, reshape=False, mode='grid-wrap')
-
-
-def create_grid(N: int) -> NDArray[Shape["*,*"], Float64]:
-    """
-    Creates an NxN grid centered around (0, 0).
-
-    The function generates an NxN grid where each point's value is proportional to its distance from the center,
-    normalized by the grid size. This can be used for generating spatial frequency grids or other applications
-    where a centered grid is required.
-
-    Parameters
-    ----------
-    N : int
-        The linear size of the grid (i.e. width).
-
-    Returns
-    -------
-    ndarray
-        An `NxN` NumPy array representing the grid
-    """
-    a = np.arange(N) - N // 2
-    X, Y = np.meshgrid(a, a)
-
-    return 2 * np.sqrt(X**2 + Y**2) / N
 
 
 def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float64]) -> float:
@@ -211,56 +187,6 @@ def get_wiener(ctf, snr=5.0):
     return wiener_dom
 
 
-def ctemh_cryoFrank(k: NDArray[Shape["*,*"], Float64], spherical_aberration: float, defocus: float,
-                    electron_energy: float, gauss_env_halfwidth: float, amplitude_contrast_ratio: float):
-    """
-    Calculates the contrast transfer function (CTF) for cryo-EM imaging.
-
-    Parameters
-    ----------
-    k : ndarray
-        A 2D array of spatial frequencies.
-    spherical_aberration : float
-        Spherical aberration (Cs) in mm.
-    defocus : float
-        Defocus in Angstroms. A positive value indicates underfocus.
-    electron_energy : float
-        Electron energy in keV.
-    gauss_env_halfwidth : float
-        Half-width of the Gaussian envelope in A^-2.
-    amplitude_contrast_ratio : float
-        Amplitude contrast ratio obtained from the alignment file.
-
-    Returns
-    -------
-    ndarray
-        A 2D array representing the CTF of shape `k`.
-
-    Notes
-    -----
-    - we assume |k| = s
-    - from Kirkland, adapted for cryo (EMAN1) by P. Schwander
-    - Here, the damping envelope is characterized by a single parameter B (gauss_env)
-    - see J. Frank
-
-    Copyright (c) UWM, Peter Schwander 2010 MATLAB version
-    Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    """
-    spherical_aberration *= 1.0e7
-    mo = 511.0
-    hc = 12.3986
-    wav = (2 * mo) + electron_energy
-    wav = hc / np.sqrt(wav * electron_energy)
-    w1 = np.pi * spherical_aberration * wav * wav * wav
-    w2 = np.pi * wav * defocus
-    k2 = k * k
-    sigm = gauss_env_halfwidth / np.sqrt(2 * np.log(2))
-    wi = np.exp(-k2 / (2 * sigm**2))
-    wr = (0.5 * w1 * k2 - w2) * k2  # gam = (pi/2)Cs lam^3 k^4 - pi lam df k^2
-
-    return (np.sin(wr) - amplitude_contrast_ratio * np.cos(wr)) * wi
-
-
 @dataclass
 class LocalInput:
     """
@@ -339,7 +265,7 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     distances = np.zeros((n_particles, n_particles))  # distances among the particles in the bin
 
     # create grid for filter G
-    Q = create_grid(n_pix)
+    Q = create_proportional_grid(n_pix)
     G = filter_params.create_filter(Q)
     G = ifftshift(G)
 
@@ -391,10 +317,9 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         img_all[i_part, :, :] = img * mask
 
         # Calculate and store CTF for distance calculation
-        ctf_i = ctemh_cryoFrank(Q / (2 * params.ms_pixel_size), params.ms_spherical_aberration,
-                                defocus[i_part], params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
-        CTF[i_part, :, :] = ifftshift(ctf_i)
 
+    CTF = get_CTFs(params.ms_num_pixels, defocus, params.ms_spherical_aberration,
+                   params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
 
     # use wiener filter
     img_avg = np.zeros((n_pix, n_pix))
@@ -428,7 +353,6 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
                D=distances,
                ind=indices,
                q=quats,
-               CTF=CTF.astype(np.float16),
                imgAll=img_all.astype(np.float16),
                msk2=mask.astype(np.float16),
                PD=avg_orientation_vec,
