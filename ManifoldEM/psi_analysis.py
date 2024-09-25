@@ -18,7 +18,7 @@ from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.data_store import data_store
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
-from ManifoldEM.util import NullEmitter, get_tqdm, get_CTFs
+from ManifoldEM.util import NullEmitter, get_tqdm, get_CTFs, rotate_fill
 
 
 def _corr(a, b, n, m):
@@ -173,13 +173,12 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
         psi_list = input_data[7]
     else:
         psi_list = psinums
-    data_IMG = myio.fin1(dist_file)
     data_psi = myio.fin1(psi_file)
 
-    D = np.array(data_IMG['D'])  # distance matrix
-    imgAll = np.array(data_IMG['imgAll'])  # every image in PD (and dimensions): e.g., shape=(numPDs,boxSize,boxSize)
-
-    msk2 = np.array(data_IMG['msk2'])  # April 2020, vol mask to be used after ctf has been applied
+    prd_data = data_store.get_prd_data(prD)
+    D = prd_data.dist_data['D']  # distance matrix
+    imgAll = prd_data.transformed_images
+    msk2 = prd_data.info.image_mask
 
     CTF = get_CTFs(params.ms_num_pixels, defocus, params.ms_spherical_aberration,
                    params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)

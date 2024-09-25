@@ -2,6 +2,7 @@ import os
 
 from enum import Enum
 import mrcfile
+import numbers
 import numpy as np
 import pickle
 import h5py
@@ -9,6 +10,7 @@ from dataclasses import dataclass
 
 from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape, Int, Int64, Float64, Bool
+from scipy.fftpack import fft2, ifft2
 
 from ManifoldEM.params import params
 from ManifoldEM.star import get_align_data
@@ -16,7 +18,7 @@ from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
 import ManifoldEM.myio as myio
-from ManifoldEM.util import get_CTFs
+from ManifoldEM.util import get_CTFs, rotate_fill
 
 
 class Sense(Enum):
@@ -130,8 +132,11 @@ class PrdInfo:
         The `occupancy` centers of the images on the unit sphere.
     image_quats : ndarray
         The `occupancy` quaternions of the images representing rotations from the z-axis to their position and rotation on the unit sphere.
-    rotations : ndarray
+    image_rotations : ndarray
         The `occupancy` rotations of the images in the image stack file in degrees.
+    image_mirrored : ndarray[bool]
+        The `occupancy` boolean values indicating whether the image is mirrored (orientation opposite mirror plane).
+
     """
 
     prd_index: int
@@ -144,7 +149,10 @@ class PrdInfo:
     raw_image_indices: NDArray[Shape["Any"], Int]
     image_centers: NDArray[Shape["Any,3"], Int]
     image_quats: NDArray[Shape["Any,4"], Float64]
-    rotations: NDArray[Shape["Any"], Float64]
+    image_rotations: NDArray[Shape["Any"], Float64]
+    image_mirrored: NDArray[Shape["Any"], Bool]
+    image_filter: NDArray[Shape["Any,Any"], Float64]
+    image_mask: NDArray[Shape["Any,Any"], Float64]
 
     def __repr__(self):
         relevant_fields = [
@@ -194,12 +202,15 @@ class PrdData:
         self._image_indices = prds.thresholded_image_indices[prd_index]
         self._dist_data = None
         self._raw_images = None
+        self._transformed_images = None
         self._psi_data = None
         self._EL_data = None
         self._CTF = None
 
         with h5py.File(params.get_dist_file(prd_index), "r") as f:
             rotations = np.array(f["rotations"])
+            mask = np.array(f["msk2"])
+            image_filter = np.array(f["image_filter"])
 
         self._info = PrdInfo(
             prd_index=prd_index,
@@ -212,7 +223,10 @@ class PrdData:
             raw_image_indices=self._image_indices,
             image_centers=prds.pos_full[:, self._image_indices].T,
             image_quats=prds.quats_full[:, self._image_indices].T,
-            rotations=rotations,
+            image_rotations=rotations,
+            image_mirrored=prds.image_is_mirrored[self._image_indices],
+            image_filter=image_filter,
+            image_mask=mask,
         )
 
     def _load_psi_data(self):
@@ -283,7 +297,29 @@ class PrdData:
 
     @property
     def transformed_images(self):
-        return self._load_dist_data()["imgAll"]
+        if self._transformed_images is None:
+            img_stack_data = data_store.get_image_stack_data()
+            imgAll = np.empty(
+                shape=(
+                    len(self._image_indices),
+                    params.ms_num_pixels,
+                    params.ms_num_pixels,
+                ),
+                dtype=np.float32,
+            )
+
+            for i, idx in enumerate(self._image_indices):
+                imgAll[i] = img_stack_data[idx]
+                if self.info.image_mirrored[i]:
+                    imgAll[i] = np.flipud(imgAll[i])
+
+                imgAll[i] = ifft2(fft2(imgAll[i]) * self.info.image_filter).real
+                imgAll[i] = rotate_fill(imgAll[i], self.info.image_rotations[i])
+                imgAll[i] = imgAll[i] * self.info.image_mask
+
+            self._transformed_images = imgAll
+
+        return self._transformed_images
 
     @property
     def ctf_images(self):
@@ -519,7 +555,7 @@ class _ProjectionDirections:
         ValueError
             If the ID is invalid.
         """
-        if not isinstance(id, int):
+        if not isinstance(id, numbers.Integral):
             raise TypeError("Invalid prd index type")
 
         if id < 0 or id >= self.n_bins:

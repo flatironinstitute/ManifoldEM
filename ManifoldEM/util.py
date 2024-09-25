@@ -7,6 +7,9 @@ import traceback
 
 from typing import Any
 from nptyping import NDArray, Shape, Float64
+
+from scipy.ndimage import rotate
+
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import q_product
 
@@ -488,3 +491,22 @@ def get_CTFs(
         )
 
     return ctf
+
+
+def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
+    """
+    Rotates an image by a given angle and fills the output image by repeating the input image.
+
+    Parameters
+    ----------
+    img : ndarray
+        The input image as a 2D NumPy array.
+    angle :
+        The rotation angle in degrees.
+
+    Returns
+    -------
+    ndarray
+        The rotated image as a 2D NumPy array.
+    """
+    return rotate(img, angle, reshape=False, mode='grid-wrap')

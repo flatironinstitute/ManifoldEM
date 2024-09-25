@@ -18,13 +18,20 @@ from ManifoldEM.core import annular_mask, project_mask
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.quaternion import q2Spider, quaternion_to_S2
-from ManifoldEM.util import NullEmitter, get_tqdm, create_proportional_grid, get_CTFs
-'''
+from ManifoldEM.util import (
+    NullEmitter,
+    get_tqdm,
+    create_proportional_grid,
+    get_CTFs,
+    rotate_fill,
+)
+
+"""
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
-'''
+"""
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
@@ -49,11 +56,14 @@ class FilterParams:
     create_filter(Q)
         Generates a filter based on the specified parameters and a frequency array Q.
     """
+
     method: str
     cutoff_freq: float
     order: int
 
-    def create_filter(self, Q: NDArray[Shape["*,*"], Float64]) -> NDArray[Shape["*,*"], Float64]:
+    def create_filter(
+        self, Q: NDArray[Shape["*,*"], Float64]
+    ) -> NDArray[Shape["*,*"], Float64]:
         """
         Creates a filter based on the instance's method, cutoff frequency, and order.
 
@@ -72,38 +82,21 @@ class FilterParams:
         ValueError
             If an unsupported filter method is specified.
         """
-        if self.method.lower() == 'gauss':
-            G = np.exp(-(np.log(2) / 2.) * (Q / self.cutoff_freq)**2)
-        elif self.method.lower() == 'butter':
-            G = np.sqrt(1. / (1 + (Q / self.cutoff_freq)**(2 * self.order)))
+        if self.method.lower() == "gauss":
+            G = np.exp(-(np.log(2) / 2.0) * (Q / self.cutoff_freq) ** 2)
+        elif self.method.lower() == "butter":
+            G = np.sqrt(1.0 / (1 + (Q / self.cutoff_freq) ** (2 * self.order)))
         else:
-            _logger.error('%s filter is unsupported' % (self.method))
-            _logger.exception('%s filter is unsupported' % (self.method))
+            _logger.error("%s filter is unsupported" % (self.method))
+            _logger.exception("%s filter is unsupported" % (self.method))
             raise ValueError("Unsupported filter in distance calculation")
 
         return G
 
 
-def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
-    """
-    Rotates an image by a given angle and fills the output image by repeating the input image.
-
-    Parameters
-    ----------
-    img : ndarray
-        The input image as a 2D NumPy array.
-    angle :
-        The rotation angle in degrees.
-
-    Returns
-    -------
-    ndarray
-        The rotated image as a 2D NumPy array.
-    """
-    return rotate(img, angle, reshape=False, mode='grid-wrap')
-
-
-def get_psi(q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float64]) -> float:
+def get_psi(
+    q: NDArray[Shape["4"], Float64], ref_vec: NDArray[Shape["3"], Float64]
+) -> float:
     """
     Calculates the psi angle in degrees from a quaternion and a reference vector.
 
@@ -178,11 +171,11 @@ def get_wiener(ctf, snr=5.0):
     ndarray
         The Wiener filter domain as a NumPy array of the same shape as the input CTF.
     """
-    wiener_dom = 0.
+    wiener_dom = 0.0
     for i in range(ctf.shape[0]):
-        wiener_dom = wiener_dom + ctf[i, :, :]**2
+        wiener_dom = wiener_dom + ctf[i, :, :] ** 2
 
-    wiener_dom = wiener_dom + 1. / snr
+    wiener_dom = wiener_dom + 1.0 / snr
 
     return wiener_dom
 
@@ -208,15 +201,20 @@ class LocalInput:
     This class is designed to organize input data for image processing tasks,
     making it easier to pass multiple related data items as a single object.
     """
+
     indices: NDArray[Shape["*"], Int]
     quats: NDArray[Shape["4,*"], Float64]
     defocus: NDArray[Shape["*"], Float64]
     dist_file: str
 
 
-def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, img_file_name: str,
-                           image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
-                           relion_data: bool):
+def get_distance_CTF_local(
+    input_data: LocalInput,
+    filter_params: FilterParams,
+    img_file_name: str,
+    image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
+    relion_data: bool,
+):
     """
     This function calculates squared Euclidean distances between images in similar projection directions,
     incorporating Contrast Transfer Function (CTF) correction. It handles both original images and their conjugates,
@@ -250,7 +248,9 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     defocus = input_data.defocus
     out_file = input_data.dist_file
 
-    n_particles = indices.shape[0]  # size of bin; ind are the indexes of particles in that bin
+    n_particles = indices.shape[
+        0
+    ]  # size of bin; ind are the indexes of particles in that bin
     image_is_mirrored = data_store.get_prds().image_is_mirrored
 
     # auxiliary variables
@@ -260,9 +260,13 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     img_avg = np.zeros((n_pix, n_pix))  # simple average
     img_all = np.zeros((n_particles, n_pix, n_pix))
 
-    fourier_images = np.zeros((n_particles, n_pix, n_pix), dtype=np.complex128)  # each (i,:,:) is a Fourier image
+    fourier_images = np.zeros(
+        (n_particles, n_pix, n_pix), dtype=np.complex128
+    )  # each (i,:,:) is a Fourier image
     CTF = np.zeros((n_particles, n_pix, n_pix))  # each (i,:,:) is the CTF
-    distances = np.zeros((n_particles, n_particles))  # distances among the particles in the bin
+    distances = np.zeros(
+        (n_particles, n_particles)
+    )  # distances among the particles in the bin
 
     # create grid for filter G
     Q = create_proportional_grid(n_pix)
@@ -282,10 +286,10 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
             mask3D = mrc.data
         mask = project_mask(mask3D, avg_orientation_vec)
     else:
-        mask = annular_mask(0, n_pix / 2., n_pix, n_pix)
+        mask = annular_mask(0, n_pix / 2.0, n_pix, n_pix)
 
     if relion_data:
-        img_data = mrcfile.mmap(img_file_name, 'r').data
+        img_data = mrcfile.mmap(img_file_name, "r").data
 
     # Total in-plane rotation for each particle
     rotations = np.zeros(n_particles)
@@ -295,10 +299,19 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         particle_index = indices[i_part]
         if not relion_data:  # spider data
             start = n_pix**2 * particle_index * 4
-            img = np.memmap(img_file_name, dtype='float32', offset=start, mode='r', shape=(n_pix, n_pix)).T
+            img = np.memmap(
+                img_file_name,
+                dtype="float32",
+                offset=start,
+                mode="r",
+                shape=(n_pix, n_pix),
+            ).T
         else:
-            shi = (image_offsets[1][particle_index] - 0.5, image_offsets[0][particle_index] - 0.5)
-            img = shift(img_data[particle_index], shi, order=3, mode='wrap')
+            shi = (
+                image_offsets[1][particle_index] - 0.5,
+                image_offsets[0][particle_index] - 0.5,
+            )
+            img = shift(img_data[particle_index], shi, order=3, mode="wrap")
 
         # flip images when opposite the S2 division plane
         if image_is_mirrored[particle_index]:
@@ -316,10 +329,14 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
         # Apply mask and store for distance calculation
         img_all[i_part, :, :] = img * mask
 
-        # Calculate and store CTF for distance calculation
-
-    CTF = get_CTFs(params.ms_num_pixels, defocus, params.ms_spherical_aberration,
-                   params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
+    CTF = get_CTFs(
+        params.ms_num_pixels,
+        defocus,
+        params.ms_spherical_aberration,
+        params.ms_kilovolts,
+        params.ms_ctf_envelope,
+        params.ms_amplitude_contrast_ratio,
+    )
 
     # use wiener filter
     img_avg = np.zeros((n_pix, n_pix))
@@ -344,21 +361,22 @@ def get_distance_CTF_local(input_data: LocalInput, filter_params: FilterParams, 
     # FIXME (RB): Numba could, in theory, avoid all of these large temporaries, but I was struggling to make it actually work efficiently
     # The test C++ code is considerably faster with no temporaries and large numbers of particles, so should revisit
     CTFfy = CTF.conj() * fourier_images
-    distances = np.dot((np.abs(CTF)**2), (np.abs(fourier_images)**2).T)
-    distances = distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
+    distances = np.dot((np.abs(CTF) ** 2), (np.abs(fourier_images) ** 2).T)
+    distances = (
+        distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
+    )
 
-    img_all = img_all.astype(np.float16)
-
-    myio.fout1(out_file,
-               D=distances,
-               ind=indices,
-               q=quats,
-               imgAll=img_all.astype(np.float16),
-               msk2=mask.astype(np.float16),
-               PD=avg_orientation_vec,
-               imgAvg=img_avg.astype(np.float16),
-               rotations=rotations,
-               )
+    myio.fout1(
+        out_file,
+        D=distances,
+        ind=indices,
+        q=quats,
+        msk2=mask.astype(np.float16),
+        PD=avg_orientation_vec,
+        imgAvg=img_avg.astype(np.float16),
+        rotations=rotations,
+        image_filter=G,
+    )
 
 
 def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
@@ -394,7 +412,9 @@ def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
     ll = []
     for prD in valid_prds:
         ind = thresholded_indices[prD]
-        ll.append(LocalInput(ind, quats_full[:, ind], defocus[ind], params.get_dist_file(prD)))
+        ll.append(
+            LocalInput(ind, quats_full[:, ind], defocus[ind], params.get_dist_file(prD))
+        )
 
     return ll
 
@@ -415,34 +435,44 @@ def op(prd_list: Union[List[int], None] = None, *argv):
     """
     print("Computing the distances...")
     params.load()
-    multiprocessing.set_start_method('fork', force=True)
+    multiprocessing.set_start_method("fork", force=True)
     use_gui_progress = len(argv) > 0
 
     prds = data_store.get_prds()
 
-    filter_params = FilterParams(method=params.distance_filter_type,
-                                 cutoff_freq=params.distance_filter_cutoff_freq,
-                                 order=params.distance_filter_order)
+    filter_params = FilterParams(
+        method=params.distance_filter_type,
+        cutoff_freq=params.distance_filter_cutoff_freq,
+        order=params.distance_filter_order,
+    )
 
-    input_data = _construct_input_data(prd_list, prds.thresholded_image_indices, prds.quats_full, prds.defocus)
+    input_data = _construct_input_data(
+        prd_list, prds.thresholded_image_indices, prds.quats_full, prds.defocus
+    )
     n_jobs = len(input_data)
-    local_distance_func = partial(get_distance_CTF_local,
-                                  filter_params=filter_params,
-                                  img_file_name=params.img_stack_file,
-                                  image_offsets=prds.microscope_origin,
-                                  relion_data=params.is_relion_data)
+    local_distance_func = partial(
+        get_distance_CTF_local,
+        filter_params=filter_params,
+        img_file_name=params.img_stack_file,
+        image_offsets=prds.microscope_origin,
+        relion_data=params.is_relion_data,
+    )
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()
     tqdm = get_tqdm()
     if params.ncpu == 1:
-        for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+        for i, datai in tqdm(
+            enumerate(input_data), total=n_jobs, disable=use_gui_progress
+        ):
             local_distance_func(datai)
             progress1.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm(enumerate(pool.imap_unordered(local_distance_func, input_data)),
-                             total=n_jobs,
-                             disable=use_gui_progress):
+            for i, _ in tqdm(
+                enumerate(pool.imap_unordered(local_distance_func, input_data)),
+                total=n_jobs,
+                disable=use_gui_progress,
+            ):
                 progress1.emit(int(99 * i / n_jobs))
 
     if prd_list is None:
