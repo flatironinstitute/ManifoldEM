@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape, Int, Int64, Float64, Bool
+from scipy.ndimage import shift
 from scipy.fftpack import fft2, ifft2
 
 from ManifoldEM.params import params
@@ -147,6 +148,7 @@ class PrdInfo:
     anchor: bool
     cluster_id: int
     raw_image_indices: NDArray[Shape["Any"], Int]
+    image_offsets: NDArray[Shape["Any,2"], Float64]
     image_centers: NDArray[Shape["Any,3"], Int]
     image_quats: NDArray[Shape["Any,4"], Float64]
     image_rotations: NDArray[Shape["Any"], Float64]
@@ -212,6 +214,11 @@ class PrdData:
             mask = np.array(f["msk2"])
             image_filter = np.array(f["image_filter"])
 
+        image_offsets = prds.microscope_origin
+        image_offsets = np.empty((len(self._image_indices), 2))
+        image_offsets[:, 0] = prds.microscope_origin[1][self._image_indices]
+        image_offsets[:, 1] = prds.microscope_origin[0][self._image_indices]
+
         self._info = PrdInfo(
             prd_index=prd_index,
             S2_bin_index=prds.thres_ids[prd_index],
@@ -221,6 +228,7 @@ class PrdData:
             anchor=prd_index in prds.anchor_ids,
             cluster_id=prds.cluster_ids[prd_index],
             raw_image_indices=self._image_indices,
+            image_offsets=image_offsets,
             image_centers=prds.pos_full[:, self._image_indices].T,
             image_quats=prds.quats_full[:, self._image_indices].T,
             image_rotations=rotations,
@@ -310,6 +318,14 @@ class PrdData:
 
             for i, idx in enumerate(self._image_indices):
                 imgAll[i] = img_stack_data[idx]
+
+                imgAll[i] = shift(
+                    imgAll[i],
+                    (self.info.image_offsets[i, 0] - 0.5, self.info.image_offsets[i, 1] - 0.5),
+                    order=3,
+                    mode="wrap",
+                )
+
                 if self.info.image_mirrored[i]:
                     imgAll[i] = np.flipud(imgAll[i])
 

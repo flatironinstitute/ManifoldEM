@@ -366,6 +366,8 @@ def get_distance_CTF_local(
         distances + distances.T - 2 * np.real(np.dot(CTFfy, CTFfy.conj().transpose()))
     )
 
+    distances[np.diag_indices(n_particles)] = 0.0
+
     myio.fout1(
         out_file,
         D=distances,
