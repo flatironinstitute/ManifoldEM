@@ -16,7 +16,7 @@ from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import quaternion_to_S2, q2Spider
 from ManifoldEM.util import create_proportional_grid, get_CTFs, rotate_fill, get_tqdm
-from ManifoldEM.DMembeddingII import op as distance_embedding
+from ManifoldEM.DMembeddingII import op as diffusion_map_embedding
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 
 _logger = logging.getLogger(__name__)
@@ -324,7 +324,7 @@ def get_psiPath(psi, rad, plotNum):
 def auto_trim_manifold(distances):
     n_images = nS = distances.shape[0]
     distances = np.copy(distances)
-    lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = distance_embedding(
+    lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
         distances, distances.shape[0], params.nlsa_tune, 60000
     )
     posPath1 = get_psiPath(psi, params.rad, 0)
@@ -332,7 +332,7 @@ def auto_trim_manifold(distances):
     while len(posPath1) < nS:
         nS = len(posPath1)
         D1 = distances[posPath1][:, posPath1]
-        lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = distance_embedding(
+        lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
             D1, D1.shape[0], params.nlsa_tune, 600000
         )
         lamb = lamb[lamb > 0]
@@ -387,7 +387,7 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF):
         ConD += DD[Ind][:, Ind]
 
     # find the manifold mapping:
-    lambdaC, psiC, _, mu, _, _, _, _ = distance_embedding(ConD, k, tune, 600000)
+    lambdaC, psiC, _, mu, _, _, _, _ = diffusion_map_embedding(ConD, k, tune, 600000)
 
     lambdaC = lambdaC[lambdaC > 0]  ## lambdaC not used? REVIEW
     psiC1 = np.copy(psiC)
@@ -480,7 +480,7 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF):
     Drecon = L2_distance(IMGT, IMGT)
     k = nSrecon
 
-    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = distance_embedding(
+    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
         (Drecon**2), k, tune, 30
     )
 
