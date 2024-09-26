@@ -3,6 +3,7 @@ import numpy as np
 
 eps = 1e-4
 
+
 class _Params:
     """
     A class to hold configuration parameters for an iterative fitting or optimization process.
@@ -21,25 +22,25 @@ class _Params:
         The maximum allowed change in parameter 'b' between iterations, controlling convergence criteria. Defaults to 1.0.
     delta_tau_max : float
         The maximum allowed change in parameter 'tau' between iterations, controlling convergence criteria. Defaults to 0.01.
-    a_b_tau_result : str
-        The filename or path to save the result of the optimization or fitting process, specifically the optimized parameters 'a', 'b', and 'tau'. Defaults to 'a_b_tau_result.pkl'.
     """
+
     # FIXME: missing doc for p/x/x_fit
     def __init__(self):
+        self.a: np.ndarray = None
+        self.b: np.ndarray = None
         self.nDim: int = 3
         self.maxIter: int = 100
-        self.delta_a_max: float = 1.
-        self.delta_b_max: float = 1.
+        self.delta_a_max: float = 1.0
+        self.delta_b_max: float = 1.0
         self.delta_tau_max: float = 0.01
-        self.a_b_tau_result:str = 'a_b_tau_result.pkl'
-        self.p = None
-        self.x = None
+        self.p: int = None
+        self.x: np.ndarray = None
         self.x_fit = None
 
 
 def _R_p(tau_p, a):
-    #global p, nDim, a, b, x
-    jj = np.array(range(1, a.nDim + 1))
+    # global p, nDim, a, b, x
+    jj = np.arange(1, a.nDim + 1)
     j_pi_tau_p = tau_p * jj * np.pi
     a_cos_j_pi_tau_p = a.a * np.cos(j_pi_tau_p)
     err = a.x[a.p, :] - a.b - a_cos_j_pi_tau_p
@@ -49,7 +50,7 @@ def _R_p(tau_p, a):
 
 
 def _solve_d_R_d_tau_p_3D(a: _Params):
-    '''
+    """
     function tau=solve_d_R_d_tau_p_3D()
     %
     % tau = solve_d_R_d_tau_p_3D()
@@ -78,42 +79,41 @@ def _solve_d_R_d_tau_p_3D(a: _Params):
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Copyright (c) Columbia University Hstau Liao 2018 (python version)
 
-    '''
-    d_R_d_beta_3D = np.array([
-        48 * a.a[2]**2, 0, 8 * a.a[1]**2 - 48 * a.a[2]**2, -12 * a.a[2] * (a.x[a.p, 2] - a.b[2]),
-        a.a[0]**2 - 4 * a.a[1]**2 + 9 * a.a[2]**2 - 4 * a.a[1] * (a.x[a.p, 1] - a.b[1]),
-        -a.a[0] * (a.x[a.p, 0] - a.b[0]) + 3 * a.a[2] * (a.x[a.p, 2] - a.b[2])
-    ]).T
+    """
+    d_R_d_beta_3D = np.array(
+        [
+            48 * a.a[2] ** 2,
+            0,
+            8 * a.a[1] ** 2 - 48 * a.a[2] ** 2,
+            -12 * a.a[2] * (a.x[a.p, 2] - a.b[2]),
+            a.a[0] ** 2
+            - 4 * a.a[1] ** 2
+            + 9 * a.a[2] ** 2
+            - 4 * a.a[1] * (a.x[a.p, 1] - a.b[1]),
+            -a.a[0] * (a.x[a.p, 0] - a.b[0]) + 3 * a.a[2] * (a.x[a.p, 2] - a.b[2]),
+        ]
+    ).T
     beta = np.roots(d_R_d_beta_3D)
-
-    # remove elements for which tmp is true
-    tmp = np.absolute(np.imag(beta)) > 0
-    tmp = np.nonzero(tmp)[0]
-    beta1 = np.delete(beta, tmp, None)
-    # remove elements for which tmp is true
-    tmp = np.absolute(beta1) > 1
-    tmp = np.nonzero(tmp)[0]
-    beta = np.real(np.delete(beta1, tmp, None))
+    beta = beta[np.abs(beta.imag) < 1e-10].real
+    beta = beta[np.abs(beta) <= 1]
     tau_candidate = np.vstack((np.arccos(beta.reshape(-1, 1)) / np.pi, 0, 1))
-    id = np.argmin(_R_p(tau_candidate, a))
-    tau = tau_candidate[id]
-    return tau, beta
+    tau = tau_candidate[np.argmin(_R_p(tau_candidate, a))]
 
+    return tau
 
 
 def _get_fit_params(psi):
     a = _Params()
-    a.maxIter = 100  # % maximum number of iterations, each iteration determines
-    #%   optimum sets of {a,b} and {\tau} in turns
-    a.delta_a_max = 1  # % maximum percentage change in amplitudes
-    a.delta_b_max = 1  #% maximum percentage change in offsets
-    a.delta_tau_max = 0.01  #% maximum change in values of tau
-    a.a_b_tau_result = 'a_b_tau_result.pkl'  #% save final results here
+    a.maxIter = 100  # maximum number of iterations, each iteration determines
+    # optimum sets of {a,b} and {\tau} in turns
+    a.delta_a_max = 1  # maximum percentage change in amplitudes
+    a.delta_b_max = 1  # maximum percentage change in offsets
+    a.delta_tau_max = 0.01  # maximum change in values of tau
 
     nS = psi.shape[0]
     a.x = psi[:, 0:3]
-    #% (1) initial guesses for {a,b} obtained by fitting data in 2D
-    #% (2) initial guesses for {tau} obtained by setting d(R)/d(tau) to zero
+    # (1) initial guesses for {a,b} obtained by fitting data in 2D
+    # (2) initial guesses for {tau} obtained by setting d(R)/d(tau) to zero
 
     X = psi[:, 0]
     Z = psi[:, 2]
@@ -132,8 +132,14 @@ def _get_fit_params(psi):
     sumXZ = np.dot(X.T, Z)
     sumX2Z = np.dot(X2.T, Z)
     sumX3Z = np.dot(X3.T, Z)
-    A = np.array([[sumX6, sumX5, sumX4, sumX3], [sumX5, sumX4, sumX3, sumX2], [sumX4, sumX3, sumX2, sumX],
-                  [sumX3, sumX2, sumX, nS]])
+    A = np.array(
+        [
+            [sumX6, sumX5, sumX4, sumX3],
+            [sumX5, sumX4, sumX3, sumX2],
+            [sumX4, sumX3, sumX2, sumX],
+            [sumX3, sumX2, sumX, nS],
+        ]
+    )
     b = np.array([sumX3Z, sumX2Z, sumXZ, sumZ])
 
     coeff = np.linalg.lstsq(A, b, rcond=None)[0]
@@ -143,14 +149,13 @@ def _get_fit_params(psi):
     G = coeff[3]
     disc = E * E - 3 * D * F
     if disc < 0:
-        disc = 0.
+        disc = 0.0
     if np.absolute(D) < 1e-8:
-
         D = 1e-8
-    a1 = (2. * np.sqrt(disc)) / (3. * D)
-    a3 = (2. * disc**(3 / 2.)) / (27. * D * D)
+    a1 = (2.0 * np.sqrt(disc)) / (3.0 * D)
+    a3 = (2.0 * disc ** (3 / 2.0)) / (27.0 * D * D)
     b1 = -E / (3 * D)
-    b3 = (2. * E * E * E) / (27. * D * D) - (E * F) / (3 * D) + G
+    b3 = (2.0 * E * E * E) / (27.0 * D * D) - (E * F) / (3 * D) + G
 
     Xb = X - 2 * b1
     Y = psi[:, 1]
@@ -166,59 +171,51 @@ def _get_fit_params(psi):
 
     A = coeff[0]
     C = coeff[1]
-    a2 = 2. * A * disc / (9. * D * D)
-    b2 = C + (A * E * E) / (9. * D * D) - (2. * A * F) / (3. * D)
+    a2 = 2.0 * A * disc / (9.0 * D * D)
+    b2 = C + (A * E * E) / (9.0 * D * D) - (2.0 * A * F) / (3.0 * D)
     a.a = np.array([a1, a2, a3])
     a.b = np.array([b1, b2, b3])
 
     tau = np.zeros((nS, 1))
 
     for a.p in range(nS):
-        tau[a.p], _ = _solve_d_R_d_tau_p_3D(a)
+        tau[a.p] = _solve_d_R_d_tau_p_3D(a)
 
     return tau, a
 
+
 def fit_1D_open_manifold_3D(psi):
-    '''
+    """
     function [a,b,tau] = fit_1D_open_manifold_3D(psi)
-    %
-    % fit_1D_open_manifold_3D
-    %
-    % fit the eigenvectors for a 1D open manifold to the model
-    % x_ij = a_j cos(j*pi*tau_i) + b_j.
-    %
-    % j goes from 1 to 3 (this is only for 3D systems).
-    %
-    % i goes from 1 to nS where nS is the number of data points to be fitted.
-    %
-    % For a fixed set of a_j and b_j, j=1:3, tau_i for i=1:nS are
-    % obtained by putting dR/d(tau_i) to zero.
-    %
-    % For a fixed set of tau_i, i=1:nS, a_j and b_j for j=1:3 are
-    % obtained by solving 3 sets of 2x2 linear equations.
-    %
-    % Fit parameters and initial set of {\tau} are specified in
-    %
-    %   get_fit_1D_open_manifold_3D_param.m
-    %
-    % copyright (c) Russell Fung 2014
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+    fit_1D_open_manifold_3D
+   
+    fit the eigenvectors for a 1D open manifold to the model
+    x_ij = a_j cos(j*pi*tau_i) + b_j.
+   
+    j goes from 1 to 3 (this is only for 3D systems).
+   
+    i goes from 1 to nS where nS is the number of data points to be fitted.
+   
+    For a fixed set of a_j and b_j, j=1:3, tau_i for i=1:nS are
+    obtained by putting dR/d(tau_i) to zero.
+   
+    For a fixed set of tau_i, i=1:nS, a_j and b_j for j=1:3 are
+    obtained by solving 3 sets of 2x2 linear equations.
+   
+    Fit parameters and initial set of {\tau} are specified in
+   
+      get_fit_1D_open_manifold_3D_param.m
+   
+    copyright (c) Russell Fung 2014
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Copyright (c) Columbia University Hstau Liao 2018 (python version)
-
-      global p nDim a b x x_fit
-
-    '''
+    """
     tau, a = _get_fit_params(psi)
-
-    aux = np.zeros((tau.shape[0], 5))
     nS = a.x.shape[0]
 
-    for iter in range(1, a.maxIter + 1):
-        '''
-        #%%%%%%%%%%%%%%%%%%%%%
-        #% solve for a and b %
-        #%%%%%%%%%%%%%%%%%%%%%
-        '''
+    for _ in range(a.maxIter):
+        # solve for a and b
         a_old = a.a
         b_old = a.b
         j_pi_tau = np.dot(tau, np.pi * np.array([[1, 2, 3]]))
@@ -238,40 +235,33 @@ def fit_1D_open_manifold_3D(psi):
 
         a.a = coeff[0, :]
         a.b = coeff[1, :]
-        '''
-        %%%%%%%%%%%%%%%%%%%%%%%%%
-        #% plot the fitted curve %
-        %%%%%%%%%%%%%%%%%%%%%%%%%
-        '''
-        j_pi_tau = np.dot(np.linspace(0, 1, 1000).reshape(-1, 1), np.array([[1, 2, 3]])) * np.pi
+
+        j_pi_tau = (
+            np.dot(np.linspace(0, 1, 1000).reshape(-1, 1), np.array([[1, 2, 3]]))
+            * np.pi
+        )
         cos_j_pi_tau = np.cos(j_pi_tau)
         tmp = a.a * cos_j_pi_tau
         a.x_fit = tmp + a.b
-        #%plot_fitted_curve(iter)
-        '''
-        %%%%%%%%%%%%%%%%%
-        #% solve for tau %
-        %%%%%%%%%%%%%%%%%
-        '''
+
+        # solve for tau
         tau_old = tau
         for a.p in range(nS):
-            tau[a.p], beta = _solve_d_R_d_tau_p_3D(a)
-            for kk in range(beta.shape[0]):
-                aux[a.p, kk] = beta[kk]
-        '''
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        #% calculate the changes in fitting parameters %
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        '''
+            tau[a.p] = _solve_d_R_d_tau_p_3D(a)
 
+        # calculate the changes in fitting parameters
         delta_a = np.fabs(a.a - a_old) / (np.fabs(a.a) + eps)
         delta_b = np.fabs(a.b - b_old) / (np.fabs(a.b) + eps)
         delta_tau = np.fabs(tau - tau_old)
-        delta_a = max(delta_a) * 100
-        delta_b = max(delta_b) * 100
-        delta_tau = max(delta_tau)
+        delta_a = np.max(delta_a) * 100
+        delta_b = np.max(delta_b) * 100
+        delta_tau = np.max(delta_tau)
 
-        if (delta_a < a.delta_a_max) and (delta_b < a.delta_b_max) and (delta_tau < a.delta_tau_max):
+        if (
+            (delta_a < a.delta_a_max)
+            and (delta_b < a.delta_b_max)
+            and (delta_tau < a.delta_tau_max)
+        ):
             break
 
     return (a.a, a.b, tau)
