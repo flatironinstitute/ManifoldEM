@@ -305,6 +305,10 @@ class Params:
         return os.path.join(self.out_dir, "pd_data.pkl")
 
     @property
+    def analysis_file(self) -> str:
+        return os.path.join(self.out_dir, "prd_analysis.h5")
+
+    @property
     def dist_dir(self) -> str:
         return os.path.join(self.out_dir, "distances")
 

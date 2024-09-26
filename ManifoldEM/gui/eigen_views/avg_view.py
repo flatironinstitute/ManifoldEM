@@ -2,12 +2,16 @@ import os
 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
-                                                NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QT as NavigationToolbar,
+)
 from matplotlib.figure import Figure
 import matplotlib.image as mpimg
 
 from ManifoldEM.params import params
+from ManifoldEM.data_store import data_store
+
 
 # FIXME: Merge these two...
 class _ClusterAvgMain(QMainWindow):
@@ -34,13 +38,12 @@ class _ClusterAvgCanvas(FigureCanvas):
         self.updateGeometry()
         self.plot()
 
-
     def plot(self):
         ax = self.figure.add_subplot(111)
         ax.clear()
-        ax.set_title('Image Average', fontsize=6)
-        ax.imshow(self.img, cmap='gray')
-        ax.axis('off')
+        ax.set_title("Image Average", fontsize=6)
+        ax.imshow(self.img, cmap="gray")
+        ax.axis("off")
         self.draw()
 
 
@@ -59,7 +62,6 @@ class _AverageViewWindow(QMainWindow):
         vbl.addWidget(self.image)
         self.show()
 
-
     def plot(self, index: int):
         self.image.plot(index)
 
@@ -73,13 +75,11 @@ class _AverageViewCanvas(FigureCanvas):
         self.updateGeometry()
         self.plot(index)
 
-
     def plot(self, index: int):
-        fname = os.path.join(params.out_dir, 'topos', f'PrD_{index}', 'class_avg.png')
-        img = mpimg.imread(fname)
+        img = data_store.get_class_avg(index - 1)
         ax = self.figure.add_subplot(111)
         ax.clear()
-        ax.set_title('2D Class Average', fontsize=6)
-        ax.imshow(img, cmap='gray')
-        ax.axis('off')
+        ax.set_title("2D Class Average", fontsize=6)
+        ax.imshow(img, cmap="gray")
+        ax.axis("off")
         self.draw()

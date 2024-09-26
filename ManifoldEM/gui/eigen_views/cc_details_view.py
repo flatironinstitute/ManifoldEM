@@ -70,10 +70,9 @@ class TauCanvas(QDialog):
         super(TauCanvas, self).__init__(parent)
 
         # tau from psi analsis:
-        tau_fname = params.get_psi2_file(prd_index - 1, psi_index - 1)
-        tau_data = myio.fin1(tau_fname)
+        tau_data = data_store.get_nlsa_data(prd_index - 1, psi_index - 1)
 
-        tau = tau_data["tau"]
+        tau = np.array(tau_data["tau"])
         taus_val = []
         taus_num = []
 
@@ -141,8 +140,7 @@ class PsiCanvas(QDialog):
         self.rec_on = 1
 
         # psis from psi analsis:
-        psi_fname = params.get_psi2_file(prd_index - 1, psi_index - 1)
-        psi_data = myio.fin1(psi_fname)
+        psi_data = data_store.get_nlsa_data(prd_index - 1, psi_index - 1)
 
         # PsiC:
         self.psiC = psi_data["psiC1"]
@@ -391,10 +389,8 @@ class ChronosCanvas(QDialog):
         self.psi_index = psi_index
 
         # chronos from psi analsis:
-        chr_fname = params.get_psi2_file(self.prd_index - 1, self.psi_index - 1)
-        chr_data = myio.fin1(chr_fname)
-
-        chronos = chr_data["VX"]
+        chr_data = data_store.get_nlsa_data(prd_index - 1, psi_index - 1)
+        chronos = np.array(chr_data["VX"])
 
         # create canvas and plot data:
         figure = Figure(dpi=200)
@@ -435,10 +431,10 @@ class VidCanvas(QDialog):
     def get_frame_count(self):
         return len(self.imgs)
 
-    def __init__(self, gif_path: str, parent=None):
+    def __init__(self, imgs: np.ndarray, parent=None):
         super(VidCanvas, self).__init__(parent)
 
-        self.imgs = list(imageio.get_reader(gif_path))
+        self.imgs = imgs
         self.run = 0  # switch, {-1,0,1} :: {backwards,pause,forward}
         self.frame_id = 0  # frame index (current frame)
         self.rec = 0  # safeguard for recursion limit
@@ -828,8 +824,7 @@ class Manifold2dCanvas(QDialog):
         self.pts_orig = self.pts_new
 
     def reload_psi_coords(self):
-        psi_file = params.get_psi_file(self.prd_index - 1)  # current embedding
-        data = myio.fin1(psi_file)
+        data = data_store.get_embedding_data(self.prd_index - 1)  # current embedding
 
         x = data["psi"][:, self.eigChoice1]
         y = data["psi"][:, self.eigChoice2]
@@ -971,7 +966,11 @@ class _CCDetailsView(QMainWindow):
 
     def initUI(self):
         gif_path = params.get_psi_gif(self.prd_index, self.psi_index)
-        self.vid_tab1 = VidCanvas(gif_path, parent=self)
+        npix = params.ms_num_pixels
+        imgs = data_store.get_nlsa_data(self.prd_index - 1, self.psi_index - 1)["IMG1"][
+            ()
+        ].T.reshape(-1, npix, npix)
+        self.vid_tab1 = VidCanvas(imgs, parent=self)
         self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
         self.vid_tab3 = QDialog(self)  # Manifold3dCanvas(self)
         self.vid_tab4 = ChronosCanvas(self.prd_index, self.psi_index, self)

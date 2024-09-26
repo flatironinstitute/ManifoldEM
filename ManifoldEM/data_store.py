@@ -1,6 +1,7 @@
 import os
 
 from enum import Enum
+import h5py
 import mrcfile
 import numbers
 import numpy as np
@@ -321,7 +322,10 @@ class PrdData:
 
                 imgAll[i] = shift(
                     imgAll[i],
-                    (self.info.image_offsets[i, 0] - 0.5, self.info.image_offsets[i, 1] - 0.5),
+                    (
+                        self.info.image_offsets[i, 0] - 0.5,
+                        self.info.image_offsets[i, 1] - 0.5,
+                    ),
                     order=3,
                     mode="wrap",
                 )
@@ -680,6 +684,7 @@ class _DataStore:
 
     _projection_directions = _ProjectionDirections()
     _image_stack_data = None
+    _analysis_handle = None
 
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -712,6 +717,32 @@ class _DataStore:
             self._image_stack_data = mrcfile.mmap(params.img_stack_file, "r").data
 
         return self._image_stack_data
+
+    def get_analysis_handle(self):
+        if self._analysis_handle is None:
+            self._analysis_handle = h5py.File(params.analysis_file, "r")
+        return self._analysis_handle
+
+    def close_analysis_handle(self):
+        if self._analysis_handle is not None:
+            self._analysis_handle.close()
+            self._analysis_handle = None
+
+    def analysis_data(self, prd_index: int):
+        f = self.get_analysis_handle()
+        return f.get(f"prd_{prd_index}")
+
+    def distance_data(self, prd_index: int):
+        return self.analysis_data(prd_index).get("distances")
+
+    def get_class_avg(self, prd_index: int):
+        return np.array(self.analysis_data(prd_index)["distances"]["imgAvg"])
+
+    def get_embedding_data(self, prd_index: int):
+        return self.analysis_data(prd_index)["embedding_data"]
+
+    def get_nlsa_data(self, prd_index: int, psi_index: int):
+        return self.analysis_data(prd_index)[f"nlsa_data_{psi_index}"]
 
 
 data_store = _DataStore()
