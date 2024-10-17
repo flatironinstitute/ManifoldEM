@@ -141,7 +141,6 @@ def args_to_dict(args: Namespace) -> dict:
         kwargs['prd_list'] = _parse_prd_list(kwargs.pop('prds'))
     if 'ncpu' in kwargs.keys():
         params.ncpu = kwargs.pop('ncpu')
-        params.save()
 
     return kwargs
 
