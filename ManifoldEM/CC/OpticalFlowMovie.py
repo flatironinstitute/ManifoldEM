@@ -22,7 +22,7 @@ from ManifoldEM.CC.hornschunck_simple import lowpassfilt
 
 
 def getOrientMag(X, Y):
-    orient = np.arctan2(Y, X) % 2 * np.pi
+    orient = np.arctan2(Y, X) % (2 * np.pi)
     mag = np.sqrt(X**2 + Y**2)
     return orient, mag
 

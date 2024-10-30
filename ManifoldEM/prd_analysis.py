@@ -6,7 +6,7 @@ import numpy as np
 import sys
 
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any, Tuple, Iterable
 from nptyping import NDArray, Shape, Float, Int, Bool
 from numpy.fft import fft2, ifft2, ifftshift
 from scipy.ndimage import shift
@@ -217,7 +217,7 @@ def get_transform_info(
     NDArray[Shape["Any"], Float],
     NDArray[Shape["3"], Float],
 ]:
-    if quats.shape[1] != 4:
+    if len(quats.shape) != 2 or quats.shape[1] != 4:
         raise ValueError("Quaternions must be of shape (N, 4)")
 
     n_images = quats.shape[0]
@@ -332,8 +332,8 @@ def auto_trim_manifold(distances):
     while len(posPath1) < nS:
         nS = len(posPath1)
         D1 = distances[posPath1][:, posPath1]
-        lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
-            D1, D1.shape[0], params.nlsa_tune, 600000
+        lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = (
+            diffusion_map_embedding(D1, D1.shape[0], params.nlsa_tune, 600000)
         )
         lamb = lamb[lamb > 0]
         posPathInt = get_psiPath(psi, params.rad, 0)
@@ -480,8 +480,8 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF):
     Drecon = L2_distance(IMGT, IMGT)
     k = nSrecon
 
-    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
-        (Drecon**2), k, tune, 30
+    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = (
+        diffusion_map_embedding((Drecon**2), k, tune, 30)
     )
 
     lamb = lamb[lamb > 0]
@@ -669,7 +669,18 @@ def run_pipeline(prd_index: int):
     return res
 
 
-def recursive_dict_to_hdf5(group, data):
+def recursive_dict_to_hdf5(group: h5py.Group, data: dict[str, Any]):
+    """Recursively writes a dictionary to an HDF5 group.
+    Data must be something convertible to an HDF5 dataset (e.g. a numpy array).
+    Adds groups based on dictionary keys. Existing data will be overwritten.
+
+    Params
+    ------
+    group: h5py.Group
+        Group (including root h5py.File object) to write
+    data: dict[str, Any]
+        Any data you want to dump
+    """
     for key, item in data.items():
         if isinstance(item, dict):
             sub_group = group.create_group(key)
@@ -686,33 +697,62 @@ def recursive_dict_to_hdf5(group, data):
 
 
 def prd_analysis(
-    project_file: str, return_output: bool = True, store_output: bool = False
+    project_file: str,
+    prd_indices: None | Iterable[int] = None,
+    return_output: bool = True,
+    output_handle: None | h5py.Group = None,
 ):
-    if not return_output and not store_output:
-        raise ValueError("Either return_output or output_file must be specified")
+    """Runs the preprocessing analysis pipeline for a set of projection directions.
+
+    Parameters
+    ----------
+    project_file : str
+        The path to the project file containing the parameters
+    prd_indices : None | Iterable[int], optional
+        The indices of the projection directions to analyze. If None, all active projection directions are analyzed
+    return_output : bool, optional
+        Whether to return the output data. More memory intensive, but allows direct manipulation of return data
+    output_handle : None | h5py.Group, optional
+        The HDF5 group to write the output data to. If None, no output data is written
+
+    Returns
+    -------
+    dict[int, Any] | None
+        A dictionary of the output data for each projection direction, indexed by the projection direction index.
+        If return_output is False, this is None.
+
+    Raises
+    ------
+    ValueError
+        If neither return_output nor output_handle is specified.
+    """
+    if not return_output and not output_handle:
+        raise ValueError("Either return_output or output_handle must be specified")
+
     params.load(project_file)
 
-    n_prds = params.prd_n_active
-    tqdm = get_tqdm()
-    prd_data = [{}] * n_prds
-
-    def run(f=None):
-        with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, result in tqdm(
-                enumerate(pool.imap(run_pipeline, np.arange(n_prds))),
-                total=n_prds,
-            ):
-                if return_output:
-                    prd_data[i] = result
-                if f:
-                    sub_group = f.create_group(f"prd_{i}")
-                    recursive_dict_to_hdf5(sub_group, result)
-
-    if store_output:
-        with h5py.File(params.analysis_file, "w") as f:
-            run(f)
+    if prd_indices is None:
+        prd_indices = list(range(params.prd_n_active))
     else:
-        run()
+        prd_indices = list(prd_indices)
+
+    tqdm = get_tqdm()
+    prd_data: dict[int, Any] = {}
+
+    with multiprocessing.Pool(processes=params.ncpu) as pool:
+        for i, result in tqdm(
+            enumerate(pool.imap(run_pipeline, prd_indices)),
+            total=len(prd_indices),
+            desc="Running manifold decomposition...",
+        ):
+            if return_output:
+                prd_data[i] = result
+            if output_handle:
+                group_name = f"prd_{i}"
+                if output_handle.get(group_name):
+                    del output_handle[group_name]
+                sub_group = output_handle.create_group(group_name)
+                recursive_dict_to_hdf5(sub_group, result)
 
     if return_output:
         return prd_data

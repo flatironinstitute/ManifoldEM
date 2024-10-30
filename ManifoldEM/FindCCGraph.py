@@ -254,7 +254,7 @@ def CalcPairwiseDistS2(X, *argv):
     return (pwDotProd, pwDist)
 
 
-def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     n_nodes_tot = G['nNodes']
     n_nodes_left = n_nodes_tot - len(trash_ids)
     print(f"Number of isolated nodes in the graph after pruning: {len(trash_ids)}")

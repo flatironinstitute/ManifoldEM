@@ -1,5 +1,6 @@
 import os
 
+from copy import deepcopy
 from enum import Enum
 import h5py
 import mrcfile
@@ -14,6 +15,7 @@ from nptyping import NDArray, Shape, Int, Int64, Float64, Bool
 from scipy.ndimage import shift
 from scipy.fftpack import fft2, ifft2
 
+from ManifoldEM.FindCCGraph import prune
 from ManifoldEM.params import params
 from ManifoldEM.star import get_align_data
 from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
@@ -360,7 +362,7 @@ class PrdData:
         return self._info.__repr__()
 
 
-class _ProjectionDirections:
+class ProjectionDirections:
     """
     Manages and processes projection direction data, including thresholds, bin centers, defocus values, and more.
 
@@ -408,7 +410,7 @@ class _ProjectionDirections:
         self.thres_ids: list[int] = []
         self.occupancy_full: NDArray[Shape["Any"], Int] = np.empty(0, dtype=int)
 
-        self.anchors: Dict[int, Anchor] = {}
+        self._anchors: Dict[int, Anchor] = {}
         self.trash_ids: Set[int] = set()
         self.reembed_ids: Set[int] = set()
 
@@ -505,7 +507,7 @@ class _ProjectionDirections:
             self.thres_ids = bin_ids
             self.occupancy_full = occupancy
 
-            self.anchors = {}
+            self._anchors = {}
             self.trash_ids = set()
 
             self.pos_thresholded = self.bin_centers[:, self.thres_ids]
@@ -535,6 +537,26 @@ class _ProjectionDirections:
 
             params.save()
             self.save()
+
+    def remove_trashed_anchors(self):
+        for id in self.trash_ids:
+            if id in self.anchors:
+                print(f"Warning: Removing anchor point ({id}) that was trashed")
+                self.anchors.pop(id)
+
+    def prune_graphs(self):
+        if self.trash_ids:
+            print(f"Pruning graph with {len(self.trash_ids)} trash PDs")
+            self.neighbor_graph_pruned, self.neighbor_subgraph_pruned = prune(
+                deepcopy(self.neighbor_graph), self.trash_ids, params.num_psi
+            )
+        else:
+            self.neighbor_graph_pruned, self.neighbor_subgraph_pruned = (
+                deepcopy(self.neighbor_graph),
+                deepcopy(self.neighbor_subgraph),
+            )
+
+        return self.neighbor_graph_pruned, self.neighbor_subgraph_pruned
 
     def insert_anchor(self, id: int, anchor: Anchor):
         """
@@ -599,6 +621,19 @@ class _ProjectionDirections:
             The defocus values for the images in the given projection direction.
         """
         return self.defocus[self.thresholded_image_indices[prd_index]]
+
+    @property
+    def anchors(self):
+        """
+        Returns the dictionary of anchor points.
+
+        Returns
+        -------
+        Dict[int, Anchor]
+            The dictionary of anchor points.
+        """
+        self.remove_trashed_anchors()
+        return self._anchors
 
     @property
     def anchor_ids(self):
@@ -682,7 +717,7 @@ class _DataStore:
         Returns the image stack data from the associated project mrcs file.
     """
 
-    _projection_directions = _ProjectionDirections()
+    _projection_directions = ProjectionDirections()
     _image_stack_data = None
     _analysis_handle = None
 
@@ -720,7 +755,7 @@ class _DataStore:
 
     def get_analysis_handle(self):
         if self._analysis_handle is None:
-            self._analysis_handle = h5py.File(params.analysis_file, "r")
+            self._analysis_handle = h5py.File(params.analysis_file, "a")
         return self._analysis_handle
 
     def close_analysis_handle(self):

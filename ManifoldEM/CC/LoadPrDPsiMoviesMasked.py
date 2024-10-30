@@ -4,6 +4,7 @@ import mrcfile
 import numpy as np
 
 from ManifoldEM import myio
+from ManifoldEM.data_store import data_store
 from ManifoldEM.core import project_mask
 from ManifoldEM.params import params
 from ManifoldEM.core import annular_mask
@@ -126,18 +127,11 @@ def op(prD):
         mask2D = getMask2D(prD, maskType, radius)
 
     for psinum in range(NumPsis):
-        imgPsiFileName = params.get_psi2_file(prD, psinum)
-        data_IMG = myio.fin1(imgPsiFileName)
-        #IMG1 = data_IMG["IMG1"].T
-
-        IMG1 = data_IMG["IMG1"].T
-        tau = data_IMG["tau"]
-        #psirec = data_IMG['psirec']
-        #psiC1 = data_IMG['psiC1']
-
+        data_IMG = data_store.get_nlsa_data(prD, psinum)
+        IMG1 = np.array(data_IMG["IMG1"]).T
+        tau = np.array(data_IMG["tau"])
 
         Mpsi = -IMG1
-
         # checkflip
         if useMask:
             # masked being applied to each frame of the movie M
