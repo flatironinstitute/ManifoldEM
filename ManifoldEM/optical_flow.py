@@ -6,7 +6,7 @@ import warnings
 from cv2 import calcOpticalFlowFarneback
 from fasthog import hog_from_gradient as histogram_from_gradients
 from functools import partial
-from nptyping import NDArray, Float, Shape
+from nptyping import Integer, NDArray, Float, Shape
 from scipy.ndimage import uniform_filter
 from typing import Any, Union
 from numpy import linalg as LA
@@ -833,6 +833,39 @@ def collate_bad_psi_tau(n_nodes: int, n_psi: int, flow_map: dict[int, dict[str, 
     )
 
 
+def calculate_energy_landscape(psinums: NDArray[Shape["Any"], Integer],
+                               senses: NDArray[Shape["Any"], Integer],
+                               taus: list[NDArray[Shape["Any"], Float]]):
+    unused_prds = set(np.nonzero(psinums == -1)[0])
+    unused_prds = unused_prds.union(data_store.get_prds().trash_ids)
+
+    # Section II
+    occupancy = np.zeros((1, params.states_per_coord)).flatten()
+    tau_avg = np.array([])
+
+    active_prds = np.delete(np.arange(params.prd_n_active), list(unused_prds))
+    for x in active_prds:
+        tau = taus[x].flatten()
+        if senses[x] == -1:
+            tau = 1 - tau
+
+        tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
+        h, _ = np.histogram(tau, params.states_per_coord)
+        occupancy = occupancy + h
+        tau_avg = np.concatenate((tau_avg, tau.flatten()))
+
+    #################
+    # compute energy:
+    T = params.temperature  # Celsius, may need to be user-defined
+    kB = 0.0019872041  # Boltzmann constant kcal / Mol / K
+    rho = np.fmax(occupancy, 1)
+    kT = kB * (T + 273.15)  # Kelvin
+    E = -kT * np.log(rho)
+    E = E - np.amin(E)  # shift so that lowest energy is zero
+
+    return E, occupancy
+
+
 def find_conformational_coords(
     prds: ProjectionDirections, allow_empty_clusters: bool = False
 ):
@@ -870,7 +903,16 @@ def find_conformational_coords(
     )
 
     options = BeliefPropagationOptions()
-    node_state_bp, psinums, senses, opt_node_bel, node_belief = \
-        belief_propagation(prds, params.num_psi, G, options, edge_measures, bad_nodes_psis_block)
+    node_state_bp, psinums, senses, opt_node_bel, node_belief = belief_propagation(
+        prds, params.num_psi, G, options, edge_measures, bad_nodes_psis_block
+    )
 
-    return flow_map, edge_measures, edge_measures_tblock, bad_nodes_psis_block, node_belief, psinums, senses
+    return (
+        flow_map,
+        edge_measures,
+        edge_measures_tblock,
+        bad_nodes_psis_block,
+        node_belief,
+        psinums,
+        senses,
+    )
