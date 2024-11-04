@@ -15,6 +15,7 @@ from ManifoldEM.data_store import ProjectionDirections, data_store
 from ManifoldEM.params import params
 from ManifoldEM.util import get_tqdm
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt, op as hornschunk_simple
+from ManifoldEM.belief_propagation import belief_propagation, BeliefPropagationOptions
 
 
 def get_orient_mag(X, Y):
@@ -811,6 +812,27 @@ def compute_edge_measures_all(
     return edge_measures, edge_measures_tblock, bad_nodes_psis_block
 
 
+def collate_bad_psi_tau(n_nodes: int, n_psi: int, flow_map: dict[int, dict[str, Any]]):
+    bad_nodes_psis_tau = np.zeros((n_nodes, n_psi)).astype(int)
+    nodes_psis_tau_IQR = np.zeros((n_nodes, n_psi)) + 5.0
+    nodes_psis_tau_occ = np.zeros((n_nodes, n_psi))
+    nodes_psis_tau_vals = [[None]] * n_nodes
+
+    for prd, data in flow_map.items():
+        if len(data["badNodesPsisTau"]):
+            bad_nodes_psis_tau[prd, np.array(data["badNodesPsisTau"])] = -100
+        nodes_psis_tau_IQR[prd, :] = data["NodesPsisTauIQR"]
+        nodes_psis_tau_occ[prd, :] = data["NodesPsisTauOcc"]
+        nodes_psis_tau_vals[prd] = data["NodesPsisTauVals"]
+
+    return (
+        bad_nodes_psis_tau,
+        nodes_psis_tau_IQR,
+        nodes_psis_tau_occ,
+        nodes_psis_tau_vals,
+    )
+
+
 def find_conformational_coords(
     prds: ProjectionDirections, allow_empty_clusters: bool = False
 ):
@@ -842,4 +864,13 @@ def find_conformational_coords(
         )
     )
 
-    return flow_map, edge_measures, edge_measures_tblock, bad_nodes_psis_block
+    # This data is collected but was not used in the production code (params.use_pruned_graph was False)
+    bad_nodes_psis_tau, nodes_psis_tau_IQR, nodes_psis_tau_occ, nodes_psis_tau_vals = (
+        collate_bad_psi_tau(G["nNodes"], params.num_psi, flow_map)
+    )
+
+    options = BeliefPropagationOptions()
+    node_state_bp, psinums, senses, opt_node_bel, node_belief = \
+        belief_propagation(prds, params.num_psi, G, options, edge_measures, bad_nodes_psis_block)
+
+    return flow_map, edge_measures, edge_measures_tblock, bad_nodes_psis_block, node_belief, psinums, senses

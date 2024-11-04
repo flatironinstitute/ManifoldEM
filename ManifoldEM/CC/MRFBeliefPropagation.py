@@ -79,25 +79,16 @@ def Normalize(M, *argv):
 
 # max product
 def max_product(A, x):
-    #function y = max_product(A,x)
-    #% max_product is like matrix multiplication, but sum gets replaced by max
-    #% function y=max_mult(A,x) y(i) = max_j A(i,j) x(j)
-
-    #% This is faster
+    # function max_mult(A,x) y(i) = max_j A(i,j) x(j)
 
     if len(x.shape) == 1:
-        x = np.reshape(x, (len(x), 1))  # convert a(r,) to a(r,1)
+        x = x.reshape(-1, 1)  # convert a(r,) to a(r,1)
 
     if x.shape[1] == 1:
         X = np.matmul(x, np.ones((1, A.shape[0])))  #% X(i,j) = x(i)
-        y = np.max(A.T * X, axis=0).T  #element wise multiplication At*X
-
-    else:  # this should be checked
-        # this works for arbitrarily sized A and x (but is ugly, and slower than above)
-        X = np.matlib.repmat(x, (1, 1, A.shape[0]))
-        B = np.matlib.repmat(A, (1, 1, x.shape[1]))
-        C = np.transpose(B, [1, 2, 0])
-        y = np.transpose(np.max(C * X, axis=0), [2, 1, 0])
+        y = np.max(A.T * X, axis=0).T
+    else:
+        raise ValueError('x should be a 1d array or column vector')
 
     return y
 
