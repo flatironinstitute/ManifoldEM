@@ -558,6 +558,19 @@ class ProjectionDirections:
 
         return self.neighbor_graph_pruned, self.neighbor_subgraph_pruned
 
+    def guess_and_mark_anchors(self):
+        """
+        Guesses and inserts a single anchor node for each cluster. The anchor node is the projection
+        direction with the highest occupancy. Sense is assumed to be the default 'FWD'.
+        The user should verify the sense manually.
+        """
+        for color in set(self.cluster_ids):
+            anchor_id = int(np.argmax((self.cluster_ids == color) * self.occupancy))
+            print(
+                f"Guessing anchor node {anchor_id} for cluster {color}. Verify the 'sense' manually!"
+            )
+            self.insert_anchor(anchor_id, Anchor())
+
     def insert_anchor(self, id: int, anchor: Anchor):
         """
         Tags a given projection direction as an 'anchor'.
