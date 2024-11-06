@@ -144,7 +144,7 @@ in processing. In most cases you want roughly the output of the `nproc` command.
 commands that don't support parallel processing is harmless.
 
 ```
-% manifold-cli threshold --low 100 --high 4000 params_my_J310_analysis.toml
+% manifold-cli threshold --prd_thres_low 100 --prd_thres_high 4000 params_my_J310_analysis.toml
 ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
 
 % manifold-cli -n 16 calc-distance --num-psis 5 params_my_J310_analysis.toml
