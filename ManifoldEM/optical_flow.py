@@ -1,5 +1,6 @@
 import copy
 import multiprocessing
+import math
 import numpy as np
 import warnings
 
@@ -7,12 +8,10 @@ from cv2 import calcOpticalFlowFarneback
 from fasthog import hog_from_gradient as histogram_from_gradients
 from functools import partial
 from nptyping import Integer, NDArray, Float, Shape
-from scipy.ndimage import uniform_filter
 from typing import Any, Union
 from numpy import linalg as LA
 import numpy.typing as npt
-from ManifoldEM.data_store import ProjectionDirections, data_store
-from ManifoldEM.params import params
+from ManifoldEM.data_store import ProjectionDirections
 from ManifoldEM.util import get_tqdm
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt, op as hornschunk_simple
 from ManifoldEM.belief_propagation import belief_propagation, BeliefPropagationOptions
@@ -192,35 +191,45 @@ def find_bad_node_psi_tau(tau, tau_occ_thresh=0.33):
 
 
 def load_prd_psi_movies_masked(
-    prd_index: int, mask: Union[NDArray[Shape["Any,Any"], Float], None] = None
+    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]],
+    taus: list[NDArray[Shape["Any"], Float]],
+    mask: None | NDArray[Shape["Any,Any"], Float],
+    find_bad_psi_tau: bool,
+    tau_occ_thresh: float,
 ):
-    num_psi = params.num_psi
-    n_pix = params.ms_num_pixels
-
+    num_psi = len(nlsa_movies)
     movie_prd_psis = [np.empty(0)] * num_psi
     tau_prd_psis = [np.empty(0)] * num_psi
     bad_psis = []
     tau_psis_iqr = []
     tau_psis_occ = []
 
-    if mask is None:
-        img_mask = np.ones((n_pix, n_pix))
+    if len(nlsa_movies[0].shape) == 3:
+        n_pix = nlsa_movies[0].shape[1]
+    elif len(nlsa_movies[0].shape) == 2:
+        n_pix = math.isqrt(nlsa_movies[0].shape[0])
+        if n_pix * n_pix != nlsa_movies[0].shape[0]:
+            raise ValueError(
+                "Invalid movie shape. Dimension 0 must be a perfect square"
+            )
     else:
-        img_mask = mask
+        raise ValueError("Invalid movie list")
+
+    if mask is None:
+        mask = np.ones((n_pix, n_pix))
 
     for psinum in range(num_psi):
-        data_IMG = data_store.get_nlsa_data(prd_index, psinum)
-        IMG1 = np.array(data_IMG["IMG1"]).T
-        tau = np.array(data_IMG["tau"])
+        IMG1 = nlsa_movies[psinum]
+        tau = taus[psinum]
 
-        Mpsi = -IMG1.reshape(-1, n_pix, n_pix)
-        Mpsi_masked = Mpsi * img_mask  # broadcast to all frames
+        Mpsi = -IMG1.T.reshape(-1, n_pix, n_pix)
+        Mpsi_masked = Mpsi * mask  # broadcast to all frames
 
         movie_prd_psis[psinum] = Mpsi_masked
         tau_prd_psis[psinum] = tau
 
-        if params.find_bad_psi_tau:
-            b, tauIQR, tauOcc = find_bad_node_psi_tau(tau, params.tau_occ_thresh)
+        if find_bad_psi_tau:
+            b, tauIQR, tauOcc = find_bad_node_psi_tau(tau, tau_occ_thresh)
             tau_psis_iqr.append(tauIQR)
             tau_psis_occ.append(tauOcc)
             if b:
@@ -233,8 +242,6 @@ def load_prd_psi_movies_masked(
 
 def optical_flow_movie(
     movie,
-    prd_index,
-    psi_index,
     blockSize_avg,
     label,
     InitialFlowVec: Union[None, dict] = None,
@@ -268,9 +275,6 @@ def optical_flow_movie(
         OF_Type = "GF-HS"  # GF for initial estimates and then HS
 
         # only print for the first movie
-        if prd_index == 0 and psi_index == 0 and label == "FWD":
-            print("Optical flow method:", OF_Type)
-
         if OF_Type == "GF" or OF_Type == "GF-HS":
             do_filterImage = True
             if OF_Type == "GF-HS":
@@ -358,22 +362,24 @@ def optical_flow_movie(
     return FlowVec
 
 
-def compute_psi_movie_optical_flow(movie, prd_index: int, psi_index: int):
+def compute_psi_movie_optical_flow(movie):
     blockSize_avg = 5  # how many frames will used for normal averaging
     movie_fwd = np.copy(movie)
 
-    flow_vec_fwd = optical_flow_movie(
-        movie_fwd, prd_index, psi_index, blockSize_avg, "FWD"
-    )
+    flow_vec_fwd = optical_flow_movie(movie_fwd, blockSize_avg, "FWD")
     # MFWD is used but due to label of 'REV', the negative vectors will be used after getting the FWD vectors
-    flow_vec_rev = optical_flow_movie(
-        movie_fwd, prd_index, psi_index, blockSize_avg, "REV", flow_vec_fwd
-    )
+    flow_vec_rev = optical_flow_movie(movie_fwd, blockSize_avg, "REV", flow_vec_fwd)
 
     return dict(FWD=flow_vec_fwd, REV=flow_vec_rev)
 
 
-def optical_flow(prd_index: int):
+def optical_flow(
+    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]],
+    taus: list[NDArray[Shape["Any"], Float]],
+    mask: None | NDArray[Shape["Any,Any"], Float] = None,
+    find_bad_psi_tau: bool = True,
+    tau_occ_thresh: float = 0.33,
+):
     # load movie and tau param first
     (
         movie_prd_psi,
@@ -381,15 +387,15 @@ def optical_flow(prd_index: int):
         NodesPsisTauVals,
         NodesPsisTauIQR,
         NodesPsisTauOcc,
-    ) = load_prd_psi_movies_masked(prd_index, mask=None)
+    ) = load_prd_psi_movies_masked(nlsa_movies, taus, mask, find_bad_psi_tau, tau_occ_thresh)
 
+    num_psi = len(nlsa_movies)
     # calculate OF for each psi-movie
-    FlowVecPrD = np.empty(params.num_psi, dtype=object)
-    for psi_index in range(params.num_psi):
-        FlowVecPrDPsi = compute_psi_movie_optical_flow(
-            movie_prd_psi[psi_index], prd_index, psi_index
+    FlowVecPrD = np.empty(num_psi, dtype=object)
+    for psi_index in range(num_psi):
+        FlowVecPrD[psi_index] = compute_psi_movie_optical_flow(
+            movie_prd_psi[psi_index],
         )
-        FlowVecPrD[psi_index] = FlowVecPrDPsi
 
     return dict(
         FlowVecPrD=FlowVecPrD,
@@ -400,17 +406,24 @@ def optical_flow(prd_index: int):
     )
 
 
-def dispatch_func(func, input_data: list[Any], desc: str = ""):
+def dispatch_func(func, input_data: list[Any], desc: str = "", ncpu: int = 1):
     tqdm = get_tqdm()
 
     data: dict[int, Any] = {}
-    with multiprocessing.Pool(processes=params.ncpu) as pool:
-        for i, result in tqdm(
-            enumerate(pool.imap(func, input_data)),
-            total=len(input_data),
+    if ncpu == 1:
+        for i in tqdm(
+            range(len(input_data)),
             desc=desc,
         ):
-            data[i] = result
+            data[i] = func(input_data[i])
+    else:
+        with multiprocessing.Pool(ncpu) as pool:
+            for i, result in tqdm(
+                enumerate(pool.imap(func, input_data)),
+                total=len(input_data),
+                desc=desc,
+            ):
+                data[i] = result
 
     return data
 
@@ -419,8 +432,29 @@ def dispatch_helper(kwargs, func):
     return func(**kwargs)
 
 
-def optical_flow_prd_list(prd_indices: list[int] | npt.NDArray[np.int_]):
-    return dispatch_func(optical_flow, list(prd_indices), "Computing Optical Flow")
+def optical_flow_movie_list(
+    nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]],
+    taus: list[list[NDArray[Shape["Any"], Float]]],
+    mask: None | list[NDArray[Shape["Any,Any"], Float]],
+    find_bad_psi_tau: bool,
+    ncpu: int = 1,
+):
+    input_data = [
+        dict(
+            nlsa_movies=nlsa_movies[i],
+            taus=taus[i],
+            mask=mask[i] if mask else None,
+            find_bad_psi_tau=find_bad_psi_tau,
+        )
+        for i in range(len(nlsa_movies))
+    ]
+
+    return dispatch_func(
+        partial(dispatch_helper, func=optical_flow),
+        input_data,
+        "Computing Optical Flow",
+        ncpu,
+    )
 
 
 def validate_anchor_nodes(G, anchor_list, trash_ids, anchors, allow_empty_clusters):
@@ -565,8 +599,9 @@ def HOGOpticalFlow(flowVec):
 # Compare how similar two Matrices/Images are.
 # TODO: Implement error checking for wrong or, improper inputs
 # Check for NaN or Inf outputs , etc.
-def compare_orient_matrix(flow_vec_a, flow_vec_b):
-    useNorm = "l2"
+def compare_orient_matrix(flow_vec_a, flow_vec_b, norm_type="l2"):
+    if norm_type not in ["l1", "l2"]:
+        raise ValueError("Invalid norm_type. Must be either 'l1' or 'l2'")
 
     HOGFA, hog_params = HOGOpticalFlow(flow_vec_a)
     HOGFB, hog_params = HOGOpticalFlow(flow_vec_b)
@@ -580,63 +615,40 @@ def compare_orient_matrix(flow_vec_a, flow_vec_b):
     distHOGAB = []
     distHOGAB_tblock = []
     isBadPsiAB_block = []
-    hp = np.ceil(float(hogDimA[0]) / hog_params["cell_size"][0]).astype(int)
+    hp = np.ceil(hogDimA[0] / hog_params["cell_size"][0]).astype(int)
     num_hogel_th = np.ceil(0.2 * (hp**2) * hogDimA[2]).astype(int)
 
-    if useNorm == "l1":
-        if len(hogDimA) > 3:
-            distHOGAB_tblock = np.zeros((hogDimA[3], 1))
-            isBadPsiA_block = np.zeros((hogDimA[3], 1))
-            isBadPsiB_block = np.zeros((hogDimA[3], 1))
+    if len(hogDimA) > 3:
+        distHOGAB_tblock = np.zeros((hogDimA[3], 1))
+        isBadPsiA_block = np.zeros((hogDimA[3], 1))
+        isBadPsiB_block = np.zeros((hogDimA[3], 1))
 
-            for j in range(0, hogDimA[3]):
-                if np.count_nonzero(HOGFA[:, :, :, j]) <= num_hogel_th:
-                    HOGFA[:, :, :, j] = (
-                        np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
-                    )
-                    isBadPsiA_block[j] = 1
+        for j in range(hogDimA[3]):
+            if np.count_nonzero(HOGFA[:, :, :, j]) <= num_hogel_th:
+                HOGFA[:, :, :, j] = (
+                    np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
+                )
+                isBadPsiA_block[j] = 1
 
-                if np.count_nonzero(HOGFB[:, :, :, j]) <= num_hogel_th:
-                    HOGFB[:, :, :, j] = (
-                        np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
-                    )
-                    isBadPsiB_block[j] = 1
+            if np.count_nonzero(HOGFB[:, :, :, j]) <= num_hogel_th:
+                HOGFB[:, :, :, j] = (
+                    np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
+                )
+                isBadPsiB_block[j] = 1
 
-                distHOGAB_tblock[j] = sum(abs(HOGFA[:, :, :, j] - HOGFB[:, :, :, j]))
-
-            isBadPsiAB_block = [isBadPsiA_block.T, isBadPsiB_block.T]
-
-        # this should be done after the adjustments of the zero matrix to a matrix with high random numbers
-        distHOGAB = sum(abs(HOGFA - HOGFB))
-
-    if useNorm == "l2":
-        if len(hogDimA) > 3:
-            distHOGAB_tblock = np.zeros((hogDimA[3], 1))
-            isBadPsiA_block = np.zeros((hogDimA[3], 1))
-            isBadPsiB_block = np.zeros((hogDimA[3], 1))
-            for j in range(0, hogDimA[3]):
-                # hog feature matrix difference for A,B HOGFA - HOGFB will be smaller if either of the two matrices are
-                # all zeros, so to produce a maximum difference between a normal feature matrix and such zero
-                # feature matrix we can add some random numbers with a high value
-                if (
-                    np.count_nonzero(HOGFA[:, :, :, j]) <= num_hogel_th
-                ):  # have to check this criteria
-                    HOGFA[:, :, :, j] = (
-                        np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
-                    )
-                    isBadPsiA_block[j] = 1
-
-                if np.count_nonzero(HOGFB[:, :, :, j]) <= num_hogel_th:
-                    HOGFB[:, :, :, j] = (
-                        np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
-                    )
-                    isBadPsiB_block[j] = 1
-
+            if norm_type == "l1":
+                distHOGAB_tblock[j] = np.sum(
+                    np.abs(HOGFA[:, :, :, j] - HOGFB[:, :, :, j])
+                )
+            elif norm_type == "l2":
                 distHOGAB_tblock[j] = LA.norm(HOGFA[:, :, :, j] - HOGFB[:, :, :, j])
 
-            isBadPsiAB_block = [isBadPsiA_block.T, isBadPsiB_block.T]
+        isBadPsiAB_block = [isBadPsiA_block.T, isBadPsiB_block.T]
 
-        # this should be done after the adjustments of the zero matrix to a matrix with high random numbers
+    # this should be done after the adjustments of the zero matrix to a matrix with high random numbers
+    if norm_type == "l1":
+        distHOGAB = np.sum(np.abs(HOGFA - HOGFB))
+    elif norm_type == "l2":
         distHOGAB = LA.norm(HOGFA - HOGFB)
 
     return [distHOGAB, distHOGAB_tblock, isBadPsiAB_block]
@@ -776,6 +788,7 @@ def compute_edge_measures_all(
     n_psi: int,
     flow_map: dict[int, dict[str, Any]],
     flow_vec_pct_thresh: float,
+    ncpu: int = 1,
 ):
     input_data = [
         dict(
@@ -795,6 +808,7 @@ def compute_edge_measures_all(
         partial(dispatch_helper, func=compute_edge_measure_pair_wise_all_psi),
         input_data,
         "Computing Edge Measures",
+        ncpu,
     )
 
     edge_measures = np.empty(len(edges), dtype=object)
@@ -833,33 +847,38 @@ def collate_bad_psi_tau(n_nodes: int, n_psi: int, flow_map: dict[int, dict[str, 
     )
 
 
-def calculate_energy_landscape(psinums: NDArray[Shape["Any"], Integer],
-                               senses: NDArray[Shape["Any"], Integer],
-                               taus: list[NDArray[Shape["Any"], Float]]):
+def calculate_energy_landscape(
+    psinums: NDArray[Shape["Any"], Integer],
+    senses: NDArray[Shape["Any"], Integer],
+    taus: list[NDArray[Shape["Any"], Float]],
+    n_prds_total: int,
+    trash_ids: set[int],
+    states_per_coord: int,
+    temperature: float,
+):
     unused_prds = set(np.nonzero(psinums == -1)[0])
-    unused_prds = unused_prds.union(data_store.get_prds().trash_ids)
+    unused_prds = unused_prds.union(trash_ids)
 
     # Section II
-    occupancy = np.zeros((1, params.states_per_coord)).flatten()
+    occupancy = np.zeros((1, states_per_coord)).flatten()
     tau_avg = np.array([])
 
-    active_prds = np.delete(np.arange(params.prd_n_active), list(unused_prds))
+    active_prds = np.delete(np.arange(n_prds_total), list(unused_prds))
     for x in active_prds:
         tau = taus[x].flatten()
         if senses[x] == -1:
             tau = 1 - tau
 
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
-        h, _ = np.histogram(tau, params.states_per_coord)
+        h, _ = np.histogram(tau, states_per_coord)
         occupancy = occupancy + h
         tau_avg = np.concatenate((tau_avg, tau.flatten()))
 
     #################
     # compute energy:
-    T = params.temperature  # Celsius, may need to be user-defined
     kB = 0.0019872041  # Boltzmann constant kcal / Mol / K
     rho = np.fmax(occupancy, 1)
-    kT = kB * (T + 273.15)  # Kelvin
+    kT = kB * (temperature + 273.15)  # Kelvin
     E = -kT * np.log(rho)
     E = E - np.amin(E)  # shift so that lowest energy is zero
 
@@ -867,7 +886,15 @@ def calculate_energy_landscape(psinums: NDArray[Shape["Any"], Integer],
 
 
 def find_conformational_coords(
-    prds: ProjectionDirections, allow_empty_clusters: bool = False
+    prds: ProjectionDirections,
+    nlsa_movies: list[list[NDArray[Shape["Any"], Float]]],
+    taus: list[list[NDArray[Shape["Any"], Float]]],
+    nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
+    num_psi: int,
+    flow_vec_pct_thresh: float,
+    allow_empty_clusters: bool = False,
+    allow_bad_psi_tau: bool = True,
+    ncpu: int = 1,
 ):
     G, Gsub = prds.prune_graphs()
     num_clusters = len(G["NodesConnComp"])
@@ -876,6 +903,7 @@ def find_conformational_coords(
     psinums, senses = validate_anchor_nodes(
         G, anchor_list, prds.trash_ids, prds.anchors, allow_empty_clusters
     )
+    # FIXME: different return type
     if psinums is not None:
         return dict(psinums=psinums, senses=senses)
 
@@ -884,27 +912,30 @@ def find_conformational_coords(
     )
     G.update(ConnCompNoAnchor=cluster_no_anchor)
 
-    flow_map = optical_flow_prd_list(node_range)
+    flow_map = optical_flow_movie_list(
+        nlsa_movies, taus, nlsa_mask, allow_bad_psi_tau, ncpu
+    )
 
     edge_measures, edge_measures_tblock, bad_nodes_psis_block = (
         compute_edge_measures_all(
             G["nNodes"],
             G["Edges"],
             edge_num_range,
-            params.num_psi,
+            num_psi,
             flow_map,
-            params.opt_movie["flowVecPctThresh"],
+            flow_vec_pct_thresh,
+            ncpu,
         )
     )
 
     # This data is collected but was not used in the production code (params.use_pruned_graph was False)
     bad_nodes_psis_tau, nodes_psis_tau_IQR, nodes_psis_tau_occ, nodes_psis_tau_vals = (
-        collate_bad_psi_tau(G["nNodes"], params.num_psi, flow_map)
+        collate_bad_psi_tau(G["nNodes"], num_psi, flow_map)
     )
 
     options = BeliefPropagationOptions()
     node_state_bp, psinums, senses, opt_node_bel, node_belief = belief_propagation(
-        prds, params.num_psi, G, options, edge_measures, bad_nodes_psis_block
+        prds, num_psi, G, options, edge_measures, bad_nodes_psis_block
     )
 
     return (

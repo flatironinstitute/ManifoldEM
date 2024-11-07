@@ -116,10 +116,10 @@ def get_image_width_from_stack(stack_file: str):
     """
     img_width = 0
     if stack_file.endswith(".mrcs") or stack_file.endswith(".mrc"):
-        mrc = mrcfile.mmap(params.img_stack_file, mode="r")
+        mrc = mrcfile.mmap(stack_file, mode="r")
         if not mrc.is_image_stack():
             mrc.close()
-            mrc = mrcfile.mmap(params.img_stack_file, mode="r+")
+            mrc = mrcfile.mmap(stack_file, mode="r+")
             mrc.set_image_stack()
 
         img_width = mrc.data[0].shape[0]
@@ -443,8 +443,8 @@ def ctemh_cryoFrank(
 
 
 def get_CTFs(
-    width: int,
     defocus: NDArray[Shape["Any"], Float64],
+    width: int,
     spherical_aberration: float,
     electron_energy: float,
     gauss_env_halfwidth: float,
@@ -455,10 +455,10 @@ def get_CTFs(
 
     Parameters
     ----------
-    width : int
-        The width of the generated image.
     defocus : ndarray
         The defocus values of interest.
+    width : int
+        The width of the generated image.
     spherical_aberration : float
         Spherical aberration (Cs) in mm.
     defocus : float

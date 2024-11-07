@@ -321,22 +321,22 @@ def get_psiPath(psi, rad, plotNum):
     return posPathInt
 
 
-def auto_trim_manifold(distances):
+def auto_trim_manifold(distances, nlsa_tune: int, rad: float):
     n_images = nS = distances.shape[0]
     distances = np.copy(distances)
     lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
-        distances, distances.shape[0], params.nlsa_tune, 60000
+        distances, distances.shape[0], nlsa_tune, 60000
     )
-    posPath1 = get_psiPath(psi, params.rad, 0)
+    posPath1 = get_psiPath(psi, rad, 0)
 
     while len(posPath1) < nS:
         nS = len(posPath1)
         D1 = distances[posPath1][:, posPath1]
         lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = (
-            diffusion_map_embedding(D1, D1.shape[0], params.nlsa_tune, 600000)
+            diffusion_map_embedding(D1, D1.shape[0], nlsa_tune, 600000)
         )
         lamb = lamb[lamb > 0]
-        posPathInt = get_psiPath(psi, params.rad, 0)
+        posPathInt = get_psiPath(psi, rad, 0)
         posPath1 = posPath1[posPathInt]
 
     posPath = np.arange(n_images)[posPath1]
@@ -637,8 +637,8 @@ def run_pipeline(prd_index: int):
         True,
     )
     image_CTFs = get_CTFs(
-        params.ms_num_pixels,
         image_defocus,
+        params.ms_num_pixels,
         params.ms_spherical_aberration,
         params.ms_kilovolts,
         params.ms_ctf_envelope,
@@ -646,7 +646,7 @@ def run_pipeline(prd_index: int):
     )
 
     distances_data = calc_distances(transformed_images, image_CTFs)
-    embed_data = auto_trim_manifold(distances_data["D"])
+    embed_data = auto_trim_manifold(distances_data["D"], params.nlsa_tune, params.rad)
     nlsa_data = psi_analysis_single(
         distances_data["D"],
         transformed_images,
@@ -660,7 +660,9 @@ def run_pipeline(prd_index: int):
         params.num_psi_truncated,
     )
 
+    image_data = dict(filter=image_filter, mask=image_mask, rotations=image_rotations, avg_orientation=avg_orientation)
     res = {
+        "image_data": image_data,
         "distances": distances_data,
         "embedding_data": embed_data,
         "nlsa_data": nlsa_data,
@@ -697,7 +699,7 @@ def recursive_dict_to_hdf5(group: h5py.Group, data: dict[str, Any]):
 
 
 def prd_analysis(
-    project_file: str,
+    project_file: None | str,
     prd_indices: None | Iterable[int] = None,
     return_output: bool = True,
     output_handle: None | h5py.Group = None,
@@ -729,7 +731,8 @@ def prd_analysis(
     if not return_output and not output_handle:
         raise ValueError("Either return_output or output_handle must be specified")
 
-    params.load(project_file)
+    if project_file is not None:
+        params.load(project_file)
 
     if prd_indices is None:
         prd_indices = list(range(params.prd_n_active))
