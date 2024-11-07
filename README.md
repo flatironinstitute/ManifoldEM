@@ -147,7 +147,7 @@ commands that don't support parallel processing is harmless.
 % manifold-cli threshold --prd_thres_low 100 --prd_thres_high 4000 params_my_J310_analysis.toml
 ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
 
-% manifold-cli -n 16 calc-distance --num-psis 5 params_my_J310_analysis.toml
+% manifold-cli -n 16 calc-distance --num_psi 5 params_my_J310_analysis.toml
 ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
 
 Computing the distances...
