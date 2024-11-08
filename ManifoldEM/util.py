@@ -1,3 +1,4 @@
+import h5py
 import mrcfile
 import numpy as np
 import os
@@ -493,7 +494,9 @@ def get_CTFs(
     return ctf
 
 
-def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
+def rotate_fill(
+    img: NDArray[Shape["*,*"], Float64], angle: float
+) -> NDArray[Shape["*,*"], Float64]:
     """
     Rotates an image by a given angle and fills the output image by repeating the input image.
 
@@ -509,4 +512,32 @@ def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Sh
     ndarray
         The rotated image as a 2D NumPy array.
     """
-    return rotate(img, angle, reshape=False, mode='grid-wrap')
+    return rotate(img, angle, reshape=False, mode="grid-wrap")
+
+
+def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any]):
+    """Recursively writes a dictionary to an HDF5 group.
+    Data must be something convertible to an HDF5 dataset (e.g. a numpy array).
+    Adds groups based on dictionary keys. Existing data will be overwritten.
+
+    Params
+    ------
+    group: h5py.Group
+        Group (including root h5py.File object) to write
+    data: dict[Any, Any]
+        Any data you want to dump. Key must be trivially convertible to a string.
+        Lists will be converted to have the list key suffixed by the index (i.e. {key}_{i}).
+    """
+    for key, item in data.items():
+        if isinstance(item, dict):
+            sub_group = group.create_group(str(key))
+            recursive_dict_to_hdf5(sub_group, item)
+        elif isinstance(item, list):
+            for i, sub_item in enumerate(item):
+                if isinstance(sub_item, dict):
+                    sub_group = group.create_group(f"{key}_{i}")
+                    recursive_dict_to_hdf5(sub_group, sub_item)
+                else:
+                    group.create_dataset(f"{key}_{i}", data=sub_item)
+        else:
+            group.create_dataset(str(key), data=item)

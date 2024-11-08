@@ -340,6 +340,8 @@ class MRFBeliefPropagation:
                         self.options.alpha_damp,
                     )
 
+                    t += 1
+
             self.check_convergence()
 
             if np.isnan(self.error):
@@ -382,9 +384,8 @@ class MRFBeliefPropagation:
             new_message_prod = e_pot @ msg_prod
 
         enodes = self.G["Edges"][e_idx, :]
-        nt = enodes[enodes != n][
-            0
-        ]  # this works because we have only two elements (nodes) in an edge.
+        # this works because we have only two elements (nodes) in an edge.
+        nt = enodes[enodes != n][0]
 
         # use damping factor
         n_states = self.G["nStates"][nt]
@@ -549,7 +550,6 @@ def belief_propagation(
 
     print("\nDetermining the psinum and senses from node labels ...")
     node_state_bp = node_state_bp + 1  # indexing from 1 as matlab
-
     psinums_bp, senses_bp = get_psi_senses_from_node_labels(node_state_bp, num_psi)
 
     psinums_cc = np.zeros((1, G["nNodes"]), dtype="int")

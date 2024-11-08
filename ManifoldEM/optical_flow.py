@@ -1,4 +1,5 @@
 import copy
+import h5py
 import multiprocessing
 import math
 import numpy as np
@@ -12,7 +13,7 @@ from typing import Any, Union
 from numpy import linalg as LA
 import numpy.typing as npt
 from ManifoldEM.data_store import ProjectionDirections
-from ManifoldEM.util import get_tqdm
+from ManifoldEM.util import get_tqdm, recursive_dict_to_hdf5
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt, op as hornschunk_simple
 from ManifoldEM.belief_propagation import belief_propagation, BeliefPropagationOptions
 
@@ -191,8 +192,8 @@ def find_bad_node_psi_tau(tau, tau_occ_thresh=0.33):
 
 
 def load_prd_psi_movies_masked(
-    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]],
-    taus: list[NDArray[Shape["Any"], Float]],
+    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]] | list[h5py.Group],
+    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Group],
     mask: None | NDArray[Shape["Any,Any"], Float],
     find_bad_psi_tau: bool,
     tau_occ_thresh: float,
@@ -219,8 +220,8 @@ def load_prd_psi_movies_masked(
         mask = np.ones((n_pix, n_pix))
 
     for psinum in range(num_psi):
-        IMG1 = nlsa_movies[psinum]
-        tau = taus[psinum]
+        IMG1 = np.array(nlsa_movies[psinum])
+        tau = np.array(taus[psinum])
 
         Mpsi = -IMG1.T.reshape(-1, n_pix, n_pix)
         Mpsi_masked = Mpsi * mask  # broadcast to all frames
@@ -302,6 +303,8 @@ def optical_flow_movie(
 
         # start Optical flow algorithm
         ImgFrame_prev = AvgMov[0, :, :]
+        if do_filterImage:
+            ImgFrame_prev = lowpassfilt(ImgFrame_prev, sig)
 
         for frameno in range(0, numAvgFrames):
             ImgFrame_curr = AvgMov[frameno, :, :]
@@ -387,11 +390,13 @@ def optical_flow(
         NodesPsisTauVals,
         NodesPsisTauIQR,
         NodesPsisTauOcc,
-    ) = load_prd_psi_movies_masked(nlsa_movies, taus, mask, find_bad_psi_tau, tau_occ_thresh)
+    ) = load_prd_psi_movies_masked(
+        nlsa_movies, taus, mask, find_bad_psi_tau, tau_occ_thresh
+    )
 
     num_psi = len(nlsa_movies)
     # calculate OF for each psi-movie
-    FlowVecPrD = np.empty(num_psi, dtype=object)
+    FlowVecPrD = [{}] * num_psi
     for psi_index in range(num_psi):
         FlowVecPrD[psi_index] = compute_psi_movie_optical_flow(
             movie_prd_psi[psi_index],
@@ -433,8 +438,8 @@ def dispatch_helper(kwargs, func):
 
 
 def optical_flow_movie_list(
-    nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]],
-    taus: list[list[NDArray[Shape["Any"], Float]]],
+    nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]] | list[list[h5py.Group]],
+    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Group]],
     mask: None | list[NDArray[Shape["Any,Any"], Float]],
     find_bad_psi_tau: bool,
     ncpu: int = 1,
@@ -850,7 +855,7 @@ def collate_bad_psi_tau(n_nodes: int, n_psi: int, flow_map: dict[int, dict[str, 
 def calculate_energy_landscape(
     psinums: NDArray[Shape["Any"], Integer],
     senses: NDArray[Shape["Any"], Integer],
-    taus: list[NDArray[Shape["Any"], Float]],
+    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Group],
     n_prds_total: int,
     trash_ids: set[int],
     states_per_coord: int,
@@ -864,9 +869,10 @@ def calculate_energy_landscape(
     tau_avg = np.array([])
 
     active_prds = np.delete(np.arange(n_prds_total), list(unused_prds))
-    for x in active_prds:
-        tau = taus[x].flatten()
-        if senses[x] == -1:
+    for prd in active_prds:
+        psi = psinums[prd]
+        tau = np.array(taus[prd][psi]).flatten()
+        if senses[prd] == -1:
             tau = 1 - tau
 
         tau = (tau - np.min(tau)) / (np.max(tau) - np.min(tau))
@@ -887,11 +893,13 @@ def calculate_energy_landscape(
 
 def find_conformational_coords(
     prds: ProjectionDirections,
-    nlsa_movies: list[list[NDArray[Shape["Any"], Float]]],
-    taus: list[list[NDArray[Shape["Any"], Float]]],
+    nlsa_movies: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Group]],
+    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Group]],
     nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
     num_psi: int,
-    flow_vec_pct_thresh: float,
+    return_all_output: bool = False,
+    output_handle: None | h5py.Group = None,
+    flow_vec_pct_thresh: float = 0.95,
     allow_empty_clusters: bool = False,
     allow_bad_psi_tau: bool = True,
     ncpu: int = 1,
@@ -905,7 +913,9 @@ def find_conformational_coords(
     )
     # FIXME: different return type
     if psinums is not None:
-        return dict(psinums=psinums, senses=senses)
+        if return_all_output:
+            return psinums, senses, None, None, None, None, None
+        return psinums, senses
 
     node_range, edge_num_range, cluster_no_anchor = get_cluster_nodes_edges(
         Gsub, anchor_list, num_clusters, allow_empty_clusters
@@ -938,12 +948,50 @@ def find_conformational_coords(
         prds, num_psi, G, options, edge_measures, bad_nodes_psis_block
     )
 
-    return (
-        flow_map,
-        edge_measures,
-        edge_measures_tblock,
-        bad_nodes_psis_block,
-        node_belief,
-        psinums,
-        senses,
-    )
+    if output_handle:
+        edges = G["Edges"]
+        for index in flow_map.keys():
+            group = output_handle.get(f"prd_{index}")
+            if not isinstance(group, h5py.Group):
+                msg = f"path 'prd_{index}' is not a group in the output handle"
+                raise ValueError(msg)
+            if "flow_data" in group:
+                print(f"Deleting existing 'flow_data' group in 'prd_{index}'")
+                del group["flow_data"]
+                group.create_group("flow_data")
+            else:
+                group = group.create_group("flow_data")
+
+            edge_measure_indices = np.where(
+                (edges[:, 0] == index) | (edges[:, 1] == index)
+            )[0]
+            edge_measures_local = dict()
+            for edge_index in edge_measure_indices:
+                i = edges[edge_index][0]
+                if i == index:
+                    i = edges[edge_index][1]
+
+                edge_measures_local[i] = edge_measures[edge_index]
+
+            recursive_dict_to_hdf5(
+                group,
+                dict(
+                    flow_map=flow_map[index],
+                    node_belief=node_belief[:, index],
+                    edge_measures=edge_measures_local,
+                    bad_nodes_psis=bad_nodes_psis_block[index, :],
+                ),
+            )
+
+    if return_all_output:
+        return (
+            psinums,
+            senses,
+            flow_map,
+            edge_measures,
+            edge_measures_tblock,
+            bad_nodes_psis_block,
+            node_belief,
+        )
+    else:
+        return psinums, senses

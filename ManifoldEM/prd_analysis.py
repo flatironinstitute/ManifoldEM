@@ -18,6 +18,7 @@ from ManifoldEM.quaternion import quaternion_to_S2, q2Spider
 from ManifoldEM.util import create_proportional_grid, get_CTFs, rotate_fill, get_tqdm
 from ManifoldEM.DMembeddingII import op as diffusion_map_embedding
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
+from ManifoldEM.util import recursive_dict_to_hdf5
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
@@ -669,33 +670,6 @@ def run_pipeline(prd_index: int):
     }
 
     return res
-
-
-def recursive_dict_to_hdf5(group: h5py.Group, data: dict[str, Any]):
-    """Recursively writes a dictionary to an HDF5 group.
-    Data must be something convertible to an HDF5 dataset (e.g. a numpy array).
-    Adds groups based on dictionary keys. Existing data will be overwritten.
-
-    Params
-    ------
-    group: h5py.Group
-        Group (including root h5py.File object) to write
-    data: dict[str, Any]
-        Any data you want to dump
-    """
-    for key, item in data.items():
-        if isinstance(item, dict):
-            sub_group = group.create_group(key)
-            recursive_dict_to_hdf5(sub_group, item)
-        elif isinstance(item, list):
-            for i, sub_item in enumerate(item):
-                if isinstance(sub_item, dict):
-                    sub_group = group.create_group(f"{key}_{i}")
-                    recursive_dict_to_hdf5(sub_group, sub_item)
-                else:
-                    group.create_dataset(f"{key}_{i}", data=sub_item)
-        else:
-            group.create_dataset(key, data=item)
 
 
 def prd_analysis(
