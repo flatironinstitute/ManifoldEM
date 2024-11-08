@@ -1,5 +1,3 @@
-import pickle
-
 import numpy as np
 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox
@@ -9,6 +7,7 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
+from ManifoldEM.myio import fin1
 from ManifoldEM.params import params
 
 class _BandwidthMain(QMainWindow):
@@ -69,8 +68,7 @@ class _BandwidthCanvas(FigureCanvas):
 
 
     def plot(self, index: int):
-        with open(params.get_psi_file(index), 'rb') as f:
-            data = pickle.load(f)
+        data = fin1(params.get_psi_file(index))
 
         logEps = data['logEps']
         logSumWij = data['logSumWij']
