@@ -1,20 +1,40 @@
+from nptyping import NDArray, Shape, Float, Int
+from typing import Any
 import numpy as np
 
-from collections import namedtuple
-from scipy.sparse import csr_matrix, csc_matrix
+from dataclasses import dataclass
+from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
 from ManifoldEM.params import params
 from ManifoldEM.core import fergusonE
-'''
+
+"""
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2019 (python version)
 Copyright (c) Columbia University Evan Seitz 2019 (python version)
 
-'''
+"""
 
-def sembedding(yVal, yCol, yRow, nS, options1):
+
+@dataclass
+class EmbeddingOptions:
+    sigma: float
+    alpha: float
+    n_eigs: int
+
+
+def mat_from_indices(row_indices, col_indices, vals, n_rows, sparse=True):
+    if sparse:
+        return csr_matrix((vals, (row_indices, col_indices)), shape=(n_rows, n_rows))
+
+    y = np.zeros((n_rows, n_rows))
+    y[row_indices, col_indices] = vals
+    return y
+
+
+def sembedding(yVal, yCol, yRow, nS, options: EmbeddingOptions):
     """
     Laplacian eigenfunction embedding using sparse arrays.
 
@@ -33,9 +53,9 @@ def sembedding(yVal, yCol, yRow, nS, options1):
         The row indices of the non-zero elements in the sparse matrix.
     nS : int
         The number of samples or nodes in the graph.
-    options1 : namedtuple
+    options : EmbeddingOptions
         A namedtuple containing the options for the embedding. Expected fields
-        are sigma (float), alpha (float), visual (bool), nEigs (int), and autotune (int).
+        are sigma (float), alpha (float), and n_eigs (int).
 
     Returns
     -------
@@ -54,15 +74,15 @@ def sembedding(yVal, yCol, yRow, nS, options1):
     - Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
     - Copyright (c) Columbia University Hstau Liao 2018 (python version)
     """
-    options = namedtuple('options', 'sigma alpha visual nEigs autotune')
-    options.sigma = options1.sigma
-    options.alpha = options1.alpha
-    options.nEigs = options1.nEigs
-    options.autotune = 0
-
-    l, sigmaTune = slaplacian(yVal, yCol, yRow, nS, options)
+    laplacian_mat = slaplacian(yVal, yCol, yRow, nS, options)
     try:
-        vals, vecs = eigsh(l, k=options.nEigs + 1, maxiter=300, v0=np.ones(nS), return_eigenvectors=True)
+        vals, vecs = eigsh(
+            laplacian_mat,
+            k=options.n_eigs + 1,
+            maxiter=300,
+            v0=np.ones(nS),
+            return_eigenvectors=True,
+        )
     except ArpackNoConvergence as e:
         vals = e.eigenvalues
         vecs = e.eigenvectors
@@ -75,7 +95,7 @@ def sembedding(yVal, yCol, yRow, nS, options1):
     return (vals, vecs)
 
 
-def slaplacian(*arg):
+def slaplacian(yVal, yCol, yRow, nS, options: EmbeddingOptions):
     """
     Given a set of nS data points, and the dinstances to nN nearest neighbors
     for each data point, slaplacian computes a sparse, nY by nY symmetric
@@ -96,133 +116,34 @@ def slaplacian(*arg):
 
     alpha : normalization, according to Coifman & Lafon
 
-    nAutotune : number of nearest neighbors for autotuning. Set to zero if no
-    autotuning is to be performed
-
     sigma: width of the Gaussian kernel
 
     Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
     Copyright (c) Columbia University Hstau Liao 2019 (python version)
     Copyright (c) Columbia University Evan Seitz 2019 (python version)
     """
-    yVal = arg[0]
-    yCol = arg[1]
-    yRow = arg[2]
-    nS = arg[3]  #dataset size
-    options = arg[4]  #options.sigma: Gaussian width
-
-    nNZ = len(yVal)  #number of nonzero elements
-
-    # if required, compute autotuning distances:
-    if options.autotune > 0:
-        print('Autotuning is not implemented in this version of slaplacian' + '\n')
-    else:
-        sigmaTune = options.sigma
-
-
-    yVal = yVal / sigmaTune**2
-
     # compute the unnormalized weight matrix:
-    yVal = np.exp(-yVal)  #apply exponential weights (yVal is distance**2)
-    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
-    d = np.array(l.sum(axis=0)).T
+    laplacian_mat = mat_from_indices(
+        yRow, yCol, np.exp(-yVal / options.sigma**2), nS, sparse=True
+    )
 
-    if options.alpha != 1:  #apply non-isotropic normalization
-        d = d**options.alpha
-
-    yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
-    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
+    # apply non-isotropic normalization
+    d = np.array(laplacian_mat.sum(axis=1)) ** options.alpha
+    laplacian_mat[yRow, yCol] /= (d[yRow] * d[yCol]).flatten()
+    # import ipdb
+    # ipdb.set_trace()
 
     # normalize by the degree matrix to form normalized graph Laplacian:
-    d = np.array(l.sum(axis=0))
-    d = np.sqrt(d).T
+    d = np.array(np.sqrt(laplacian_mat.sum(axis=1)))
+    laplacian_mat[yRow, yCol] /= (d[yRow] * d[yCol]).flatten()
 
-    yVal = yVal / (d[yRow].flatten('C') * d[yCol].flatten('C'))
-    l = csc_matrix((yVal, (yRow, yCol)), shape=(nS, nS))
-    l = np.abs(l + l.T) / 2.0  #iron out numerical wrinkles
-    temp = l - l.T
+    # symmetrize the matrix and iron out numerical wrinkles
+    laplacian_mat = np.abs(laplacian_mat + laplacian_mat.T) / 2.0
 
-    return (l, sigmaTune)
+    return laplacian_mat
 
 
-def get_yColVal(input_params):
-    """
-    Processes and updates arrays for values and column indices in a sparse matrix representation.
-
-    This function takes a set of parameters related to the sparse matrix construction, including
-    arrays of values and indices, and updates these arrays based on the provided batch of data.
-    It is typically used in the context of constructing or updating a sparse representation of a
-    graph or matrix, especially when dealing with large datasets that require batching.
-
-    Parameters
-    ----------
-    params : tuple
-        ndarray
-            The values of the non-zero elements in the sparse matrix.
-        ndarray[int]
-            The original values from which yVal will be updated.
-        ndarray
-            The column indices of the non-zero elements in the sparse matrix.
-        ndarray
-            The original indices from which yCol will be updated.
-        int
-            The batch size, indicating the number of data points processed in this batch.
-        int
-            The number of nearest neighbors considered for each data point.
-        int
-            The initial number of nearest neighbors before filtering.
-        int
-            The start index of the current batch.
-        int
-            The end index of the current batch.
-        int
-            The start index for updating yVal and yCol.
-        int
-            The end index for updating yVal and yCol.
-        int
-            The current batch number.
-
-    Returns
-    -------
-    tuple
-        ndarray[int] : The updated column indices for the sparse matrix.
-        ndarray : The updated values for the sparse matrix.
-
-    Notes:
-    - The function reshapes and filters the input arrays yVal1 and yInd1 based on the batch
-      information and the number of nearest neighbors. It then updates the yVal and yCol arrays
-      with the processed data for the current batch.
-    - This function is part of a larger process of constructing or updating sparse matrices and
-      is designed to handle data in batches for efficiency and scalability.
-    """
-
-    yVal = input_params[0]
-    yVal1 = input_params[1]
-    yCol = input_params[2]
-    yInd1 = input_params[3]
-    nB = input_params[4]
-    nN = input_params[5]
-    nNIn = input_params[6]
-    jStart = input_params[7]
-    jEnd = input_params[8]
-    indStart = input_params[9]
-    indEnd = input_params[10]
-    iBatch = input_params[11]
-
-    DataBatch = yVal1
-    DataBatch = DataBatch.reshape(nB, nNIn).T
-    DataBatch = DataBatch[:nN, :]
-    DataBatch[0, :] = 0
-    yVal[indStart:indEnd] = DataBatch.reshape(nN * nB, 1)
-    DataBatch = yInd1
-    DataBatch = DataBatch.reshape(nB, nNIn).T
-    DataBatch = DataBatch[:nN, :]
-    yCol[indStart:indEnd] = DataBatch.reshape(nN * nB, 1).astype(float)
-
-    return (yCol, yVal)
-
-
-def initialize(nS, nN, D):
+def sort_mat_nneighbs(D: NDArray[Shape["Any,Any"], Float], n_neighbs: int):
     """
     Initializes the arrays of indices and values for constructing a sparse matrix
     representation of distances between data points.
@@ -234,19 +155,17 @@ def initialize(nS, nN, D):
 
     Parameters
     ----------
-    nS : int
-        The number of samples or data points.
-    nN : int
-        The number of nearest neighbors to consider for each data point.
     D : ndarray
         A square distance matrix of shape (nS, nS) where D[i, j] represents
         the distance between the i-th and j-th data points.
+    n_neighbs : int
+        The number of nearest neighbors to consider for each data point.
 
     Returns
     tuple
         ndarray
             A flattened array of indices of the nearest neighbors for each data point.
-        yVal1 : ndarray
+        ndarray
             A flattened array of the corresponding distance values to the nearest neighbors.
 
     Notes:
@@ -257,23 +176,26 @@ def initialize(nS, nN, D):
       first distance value for each data point to zero, effectively ignoring self-distance
       in the sparse matrix representation.
     """
-    yInd1 = np.zeros((nN, nS), dtype='int32')
-    yVal1 = np.zeros((nN, nS), dtype='float64')
+    n_rows = D.shape[0]
+    indices = np.zeros((n_neighbs, n_rows), dtype=np.int32)
+    vals = np.zeros((n_neighbs, n_rows), dtype=np.float64)
 
-    for iS in range(nS):
+    for iS in range(n_rows):
         D[iS, iS] = -np.Inf  # force this distance to be the minimal value
-        B = np.sort(D[:, iS])
         IX = np.argsort(D[:, iS])
-        yInd1[:, iS] = IX[:nN]
-        yVal1[:, iS] = B[:nN]
-        yVal1[0, iS] = 0  # set this distance back to zero
+        indices[:, iS] = IX[:n_neighbs]
+        vals[:, iS] = D[IX[:n_neighbs], iS]
+        vals[0, iS] = 0  # set this distance back to zero
 
-    yInd1 = yInd1.flatten('F')
-    yVal1 = yVal1.flatten('F')
-    return (yInd1, yVal1)
+    return (indices.flatten(), vals.flatten())
 
 
-def construct_matrix0(Row, Col, Val, nS):
+def square_symmetrize_matrix(
+    row_indices: NDArray[Shape["Any"], Int],
+    col_indices: NDArray[Shape["Any"], Int],
+    vals: NDArray[Shape["Any"], Float],
+    n_rows: int,
+) -> NDArray[Shape["Any,Any"], Float]:
     """
     Constructs a symmetric matrix from given row indices, column indices, and values,
     specifically designed for handling squared distances.
@@ -285,13 +207,13 @@ def construct_matrix0(Row, Col, Val, nS):
 
     Parameters
     ----------
-    Row : ndarray
+    row_indices : ndarray
         An array of row indices for the non-zero elements in the matrix.
-    Col : ndarray
+    col_indices : ndarray
         An array of column indices for the non-zero elements in the matrix.
-    Val : ndarray
+    vals : ndarray
         An array of values corresponding to the non-zero elements in the matrix.
-    nS : int
+    n_rows : int
         The size of the square matrix to be constructed, indicating both the number
         of rows and columns.
 
@@ -309,148 +231,50 @@ def construct_matrix0(Row, Col, Val, nS):
       subtracting a matrix that contains the squares of the distances, to ensure symmetry
       and correct distance representation.
     """
-
-    y = csr_matrix((Val, (Row, Col)), shape=(nS, nS)).toarray()
-    y2 = y * y.T  #y2 contains the squares of the distances
+    y = mat_from_indices(row_indices, col_indices, vals, n_rows, False)
+    y2 = y * y.T
     y = y**2
-    y = y + y.T - y2
-    return y
+    return y + y.T - y2
 
 
-def construct_matrix1(Row, Col, Val, nS):
-    """
-    Constructs a symmetric matrix from given row indices, column indices, and values.
-    This version simplifies the process by directly adjusting for symmetry without explicitly
-    squaring the matrix values.
+def diffusion_map_embedding(D: NDArray[Shape["Any,Any"], Float], k: int, tune: float, alpha: float = 1.0):
+    # alpha = 1.0: Laplace-Beltrami operator
+    # alpha = 0.5: Fokker-Planck diffusion
+    # alpha = 0.0: graph Laplacian normalization
+    n_rows = D.shape[0]
+    rows = np.tile(np.arange(n_rows), k)
+    cols, vals = sort_mat_nneighbs(D, k)
 
-    Parameters
-    ----------
-    Row : ndarray
-        An array of row indices for the non-zero elements in the matrix.
-    Col : ndarray
-        An array of column indices for the non-zero elements in the matrix.
-    Val : ndarray
-        An array of values corresponding to the non-zero elements in the matrix.
-    nS : int
-        The size of the square matrix to be constructed, indicating both the number
-        of rows and columns.
+    # symmetrizing the distance matrix
+    val_is_zero = vals < 1e-6
+    rows_nonzero, cols_nonzero = rows[~val_is_zero], cols[~val_is_zero]
+    vals_nonzero = np.sqrt(vals[~val_is_zero])
+    rows_zero, cols_zero = rows[val_is_zero], cols[val_is_zero]
 
-    Returns
-    -------
-    ndarray
-        A symmetric matrix constructed from the input parameters. The symmetry is
-        achieved by adding the matrix to its transpose and then subtracting the element-wise
-        product of the matrix and its transpose.
+    y = square_symmetrize_matrix(rows_nonzero, cols_nonzero, vals_nonzero, n_rows)
+    rows_nonzero, cols_nonzero = y.nonzero()
+    vals_nonzero = y[rows_nonzero, cols_nonzero]
 
-    Notes:
-    - The function first constructs a sparse CSR (Compressed Sparse Row) matrix from the input
-      indices and values. It then converts this sparse matrix to a dense array.
-    - It ensures the symmetry of the resulting matrix by adding it to its transpose and
-      subtracting the element-wise product of the matrix and its transpose, which contains
-      the squares of the original distances. This operation corrects for any asymmetries
-      that might arise from the input data or the sparse matrix construction process.
-    """
-    y = csr_matrix((Val, (Row, Col)), shape=(nS, nS)).toarray()
-    y2 = y * y.T  #y2 contains the squares of the distances
-    y = y + y.T - y2
-    return y
+    rows = np.hstack((rows_zero, rows_nonzero))
+    cols = np.hstack((cols_zero, cols_nonzero))
+    vals = np.hstack((np.zeros(len(rows_zero)), vals_nonzero))
+    log_eps = np.linspace(-150.0, 150, 5 * 150 * 2 + 1)
+    popt, log_sum_Wij, _, R_squared = fergusonE(np.sqrt(vals), log_eps)
+    n_eigs = min(params.num_eigs, n_rows - 3)  # number of eigenfunctions to compute
 
+    # Gaussian Kernel width
+    sigma = tune * np.sqrt(2 * np.exp(-popt[1] / popt[0]))
 
-def op(D, k, tune, prefsigma):  #*arg
-    nS = D.shape[0]
-    nN = k  #total number of entries is nS*nN
-    yInd1, yVal1 = initialize(nS, nN, D)
+    options = EmbeddingOptions(sigma=sigma, alpha=alpha, n_eigs=n_eigs)
+    eig_vals, eig_vecs = sembedding(vals, cols, rows, n_rows, options)
 
-    # diffraction patterns:
-    nB = nS  #batch size (number of diff. patterns per batch)
-    nNIn = k  #number of input nearest neighbors
-    nN = k  #number of output nearest neighbors
-    iBatch = 1  #REVIEW THIS SECTION, absurd to keep this here... nB=nS then nBatch = nS/nB ...???
+    eig_count = eig_vecs.shape[1] - 1
+    psi = np.zeros((eig_vecs.shape[0], n_eigs))
+    # note that eig_count could be fewer than n_eigs
+    psi[:, :eig_count] = eig_vecs[:, 1:] / eig_vecs[:, 0].reshape(-1, 1)
 
-    yVal = np.zeros((nS * nN, 1))
-    yCol = np.zeros((nS * nN, 1))
-
-    nBatch = int(nS / nB)
-    for iBatch in range(nBatch):
-        # linear indices in the non-symmetric distance matrix (indStart, indEnd)
-        indStart = iBatch * nB * nN
-        indEnd = (iBatch + 1) * nB * nN
-        # diffraction pattern indices (jStart, jEnd):
-        jStart = iBatch * nB
-        jEnd = (iBatch + 1) * nB
-        myparams = (yVal, yVal1, yCol, yInd1, nB, nN, nNIn, jStart, jEnd, indStart, indEnd, iBatch)
-        yCol, yVal = get_yColVal(myparams)
-
-    # symmetrizing the distance matrix:
-    yRow = np.ones((nN, 1)) * range(nS)
-    yRow = yRow.reshape(nS * nN, 1)
-    ifZero = yVal < 1e-6
-    yRowNZ = yRow[~ifZero]
-    yColNZ = yCol[~ifZero]
-    yValNZ = np.sqrt(yVal[~ifZero])
-    nNZ = len(yRowNZ)  #number of nonzero elements in the non-sym matrix
-    yRow = yRow[ifZero]
-    yCol = yCol[ifZero]
-    nZ = len(yRow)  #number of zero elements in the non-sym matrix
-
-    y = construct_matrix0(yRowNZ, yColNZ, yValNZ, nS)
-    yRowNZ = y.nonzero()[0]
-    yColNZ = y.nonzero()[1]
-    yValNZ = y[y.nonzero()]
-    nNZ = len(y.nonzero()[0])  #number of nonzero elements in the sym matrix
-
-    y = construct_matrix1(yRow, yCol, np.ones((nZ, 1)).flatten(), nS)
-    y = csr_matrix((np.ones((nZ, 1)).flatten(), (yRow, yCol)), shape=(nS, nS)).toarray()
-    yRow = y.nonzero()[0]
-    yCol = y.nonzero()[1]
-    yVal = y[y.nonzero()]
-
-    yVal[:] = 0
-    nZ = len(y.nonzero()[0])  #number of zero elements in the sym matrix
-    yRow = np.hstack((yRow, yRowNZ)).astype(int)
-    yCol = np.hstack((yCol, yColNZ)).astype(int)
-    yVal = np.hstack((yVal, yValNZ))
-
-    count = 0
-    resnorm = np.inf
-
-    logEps = np.arange(-150, 150.2, 0.2)
-    popt, logSumWij, resnorm, R_squared = fergusonE(np.sqrt(yVal), logEps)
-    nS = D.shape[0]
-    nEigs = min(params.num_eigs, nS - 3)  #number of eigenfunctions to compute
-    nA = 0  #autotuning parameter
-    nN = k  #number of nearest neighbors
-    nNA = 0  #number of nearest neighbors used for autotuning
-    if count < 20:
-        alpha = 1  #kernel normalization
-        #alpha = 1.0: Laplace-Beltrami operator
-        #alpha = 0.5: Fokker-Planck diffusion
-        #alpha = 0.0: graph Laplacian normalization
-        sigma = tune * np.sqrt(2 * np.exp(-popt[1] / popt[0]))  #Gaussian Kernel width (=1 for autotuning)
-        #sigma = np.sqrt(2 * np.exp(-popt[1] / popt[0])) #as in Fergusson paper
-    else:
-        print('using prefsigma...')  #does this ever happen or can we delete? REVIEW
-        sigma = prefsigma
-        alpha = 1
-
-    visual = 1
-    options = namedtuple('Options', 'sigma alpha visual nEigs')
-    options.sigma = sigma
-    options.alpha = alpha
-    options.visual = visual
-    options.nEigs = nEigs
-
-    lamb, v = sembedding(yVal, yCol, yRow, nS, options)
-
-    #psi = v[:, 1 : nEigs+1]/np.tile(v[:, 0 ].reshape((-1,1)), (1, nEigs))
-    true_shape = v.shape[1] - 1
-    psi = np.zeros((v.shape[0], nEigs))
-    psi[:, :true_shape] = v[:, 1:] / np.tile(v[:, 0].reshape((-1, 1)), (1, true_shape))  # could be fewer than nEigs
-
-    ##################################
     # the Riemannian measure. Nov 2012
-    mu = v[:, 0]
-    mu = mu * mu  #note: sum(mu)=1
-    ##################################
+    mu = eig_vecs[:, 0]
+    mu = mu * mu  # note: sum(mu)=1
 
-    return (lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared)
+    return (eig_vals, psi, sigma, mu, log_eps, log_sum_Wij, popt, R_squared)

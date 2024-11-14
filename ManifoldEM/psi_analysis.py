@@ -13,7 +13,8 @@ from functools import partial
 from scipy.fftpack import fft2, ifft2
 from typing import List, Union
 
-from ManifoldEM import myio, DMembeddingII
+from ManifoldEM import myio
+from ManifoldEM.DMembeddingII import diffusion_map_embedding
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.data_store import data_store
@@ -52,7 +53,7 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
         ConD += DD[Ind][:, Ind]
 
     # find the manifold mapping:
-    lambdaC, psiC, _, mu, _, _, _, _ = DMembeddingII.op(ConD, k, tune, 600000)
+    lambdaC, psiC, _, mu, _, _, _, _ = diffusion_map_embedding(ConD, k, tune)
 
     lambdaC = lambdaC[lambdaC > 0]  ## lambdaC not used? REVIEW
     psiC1 = np.copy(psiC)
@@ -147,7 +148,7 @@ def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF, ExtPar):
     Drecon = L2_distance(IMGT, IMGT)
     k = nSrecon
 
-    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op((Drecon**2), k, tune, 30)
+    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding((Drecon**2), k, tune)
 
     lamb = lamb[lamb > 0]
     a, b, tau = fit_1D_open_manifold_3D(psirec)

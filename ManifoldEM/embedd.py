@@ -2,7 +2,8 @@ import os
 
 import numpy as np
 
-from ManifoldEM import myio, DMembeddingII
+from ManifoldEM import myio
+from ManifoldEM.DMembeddingII import diffusion_map_embedding
 from ManifoldEM.params import params
 '''
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
@@ -33,7 +34,7 @@ def op(orig_zip, new_zip, PrD):
 
     D1 = D[posPathInd][:, posPathInd]  # distances of the new points only
     k = D1.shape[0]
-    lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = DMembeddingII.op(D1, k, params.nlsa_tune, 60000)  #updated 9/11/21
+    lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(D1, k, params.nlsa_tune)
     posPath = posPath[posPathInd]  # update posPath
     lamb = lamb[lamb > 0]
 

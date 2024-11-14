@@ -16,7 +16,7 @@ from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import quaternion_to_S2, q2Spider
 from ManifoldEM.util import create_proportional_grid, get_CTFs, rotate_fill, get_tqdm
-from ManifoldEM.DMembeddingII import op as diffusion_map_embedding
+from ManifoldEM.DMembeddingII import diffusion_map_embedding
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 from ManifoldEM.util import recursive_dict_to_hdf5
 
@@ -326,7 +326,7 @@ def auto_trim_manifold(distances, nlsa_tune: int, rad: float):
     n_images = nS = distances.shape[0]
     distances = np.copy(distances)
     lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = diffusion_map_embedding(
-        distances, distances.shape[0], nlsa_tune, 60000
+        distances, distances.shape[0], nlsa_tune
     )
     posPath1 = get_psiPath(psi, rad, 0)
 
@@ -334,7 +334,7 @@ def auto_trim_manifold(distances, nlsa_tune: int, rad: float):
         nS = len(posPath1)
         D1 = distances[posPath1][:, posPath1]
         lamb, psi, sigma, mu, logEps, logSumWij, popt, R_squared = (
-            diffusion_map_embedding(D1, D1.shape[0], nlsa_tune, 600000)
+            diffusion_map_embedding(D1, D1.shape[0], nlsa_tune)
         )
         lamb = lamb[lamb > 0]
         posPathInt = get_psiPath(psi, rad, 0)
@@ -354,139 +354,100 @@ def auto_trim_manifold(distances, nlsa_tune: int, rad: float):
     )
 
 
-def _corr(a, b, n, m):
-    A = a[:, n]
-    B = b[:, m]
-    A = A - np.mean(A)
-    B = B - np.mean(B)
-    try:
-        co = np.dot(A, B) / (np.std(A) * np.std(B))
-    except RuntimeError:
-        raise RuntimeError("flat image")
-    return co
-
-
-def _diff_corr(a, b, maxval):
-    return (
-        _corr(a, b, 0, 0)
-        + _corr(a, b, maxval, maxval)
-        - (_corr(a, b, 0, maxval) + _corr(a, b, maxval, 0))
-    )
-
-
-def _NLSA(NLSAPar, DD, posPath, posPsi1, imgAll, msk2, CTF):
-    num = NLSAPar["num"]
-    ConOrder = NLSAPar["ConOrder"]
-    k = NLSAPar["k"]
-    tune = NLSAPar["tune"]
-    nS = NLSAPar["nS"]
-    psiTrunc = NLSAPar["psiTrunc"]
-
-    ConD = np.zeros((num - ConOrder, num - ConOrder))
-    for i in range(ConOrder):
-        Ind = range(i, num - ConOrder + i)
-        ConD += DD[Ind][:, Ind]
+def NLSA(
+    distance_mat,
+    image_indices,
+    posPsi1,
+    all_images,
+    mask,
+    CTF,
+    con_order,
+    tune,
+    psiTrunc,
+):
+    n_images = distance_mat.shape[0]
+    block_size = n_images - con_order
+    con_dist_mat = np.zeros((block_size, block_size))
+    # convolve distance matrix with identity along diagonal (like a blur filter)
+    for i in range(con_order):
+        ind = range(i, i + block_size)
+        con_dist_mat += distance_mat[ind][:, ind]
 
     # find the manifold mapping:
-    lambdaC, psiC, _, mu, _, _, _, _ = diffusion_map_embedding(ConD, k, tune, 600000)
+    _, psiC, _, mu, _, _, _, _ = diffusion_map_embedding(con_dist_mat, block_size, tune)
 
-    lambdaC = lambdaC[lambdaC > 0]  ## lambdaC not used? REVIEW
     psiC1 = np.copy(psiC)
     # rearrange arrays
-    IMG1 = imgAll[posPath[posPsi1], :, :]
+    IMG1 = all_images[image_indices[posPsi1]]
     # Wiener filtering
-    wiener_dom, CTF1 = get_wiener(CTF, posPath, posPsi1, ConOrder, num)
+    wiener_dom, CTF1 = get_wiener(CTF, image_indices, posPsi1, con_order, n_images)
 
-    dim = CTF.shape[1]
+    n_pixels = CTF.shape[1] ** 2
     ell = psiTrunc - 1
-    N = psiC.shape[0]
-    psiC = np.hstack((np.ones((N, 1)), psiC[:, 0:ell]))
+    psiC = np.hstack((np.ones((psiC.shape[0], 1)), psiC[:, 0:ell]))
     mu_psi = mu.reshape((-1, 1)) * psiC
-    A = np.zeros((ConOrder * dim * dim, ell + 1), dtype="float64")
-    tmp = np.zeros((dim * dim, num - ConOrder), dtype="float64")
+    A = np.zeros((con_order * n_pixels, ell + 1), dtype=np.float64)
+    tmp = np.zeros((n_pixels, block_size), dtype=np.float64)
 
-    for ii in range(ConOrder):
-        for i in range(num - ConOrder):
-            ind1 = 0
-            ind2 = dim * dim  # max(IMG1.shape)
-            ind3 = ConOrder - ii + i - 1
-            img = IMG1[ind3, :, :]
-            img_f = fft2(img)  # .reshape(dim, dim)) T only for matlab
-            CTF_i = CTF1[ind3, :, :]
-            img_f_wiener = img_f * (CTF_i / wiener_dom[i, :, :])
-            img = ifft2(img_f_wiener).real
-            img = img * msk2  # April 2020
-            tmp[ind1:ind2, i] = np.squeeze(img.T.reshape(-1, 1))
+    for ii in range(con_order):
+        for i in range(block_size):
+            ind = con_order - ii + i - 1
+            img_f_wiener = fft2(IMG1[ind]) * CTF1[ind] / wiener_dom[i]
+            img = ifft2(img_f_wiener).real * mask
+            tmp[:n_pixels, i] = np.squeeze(img.T.reshape(-1, 1))
 
-        mm = dim * dim  # max(IMG1.shape)
-        ind4 = ii * mm
-        ind5 = ind4 + mm
-        A[ind4:ind5, :] = np.matmul(tmp, mu_psi)
-
-    TF = np.isreal(A)
-    if not TF.any():
-        print("A is an imaginary matrix!")
-        sys.exit()
+        A[ii * n_pixels : (ii + 1) * n_pixels, :] = tmp @ mu_psi
 
     U, S, V = svdRF(A)
-    VX = np.matmul(V.T, psiC.T)
+    VX = V.T @ psiC.T
 
     sdiag = np.diag(S)
 
-    Npixel = dim * dim
-    Topo_mean = np.zeros((Npixel, psiTrunc))
+    Topo_mean = np.zeros((n_pixels, psiTrunc))
     for ii in range(psiTrunc):  # of topos considered
         # s = s + 1  needed?
-        Topo = np.ones((Npixel, ConOrder)) * np.Inf
+        Topo = np.ones((n_pixels, con_order)) * np.Inf
 
-        for k in range(ConOrder):
-            Topo[:, k] = U[k * Npixel : (k + 1) * Npixel, ii]
+        for block_size in range(con_order):
+            Topo[:, block_size] = U[block_size * n_pixels : (block_size + 1) * n_pixels, ii]
+
         Topo_mean[:, ii] = np.mean(Topo, axis=1)
 
-    # unwrapping... REVIEW; allow user option to select from a list of chronos ([0,1,3]) to retain (i.e., not just i1, i2)
-    i2 = 1
-    i1 = 0
-
-    ConImgT = np.zeros((max(U.shape), ell + 1), dtype="float64")
-    for i in range(i1, i2 + 1):
-        # %ConImgT = U(:,i) *(sdiag(i)* V(:,i)')*psiC';
+    # unwrapping... REVIEW; allow user option to select from a list of chronos ([0,1,3]) to retain (i.e., not just [0, 1])
+    ConImgT = np.zeros((max(U.shape), ell + 1), dtype=np.float64)
+    for i in range(0, 2):
         ConImgT = ConImgT + np.matmul(
             U[:, i].reshape(-1, 1), sdiag[i] * (V[:, i].reshape(1, -1))
         )
 
-    recNum = ConOrder
-    # tmp = np.zeros((Npixel,num-ConOrder),dtype='float64')
-    IMGT = np.zeros((Npixel, nS - ConOrder - recNum), dtype="float64")
-    for i in range(recNum):
-        ind1 = i * Npixel
-        ind2 = ind1 + Npixel
-        tmp = np.matmul(ConImgT[ind1:ind2, :], psiC.T)
-        for ii in range(num - 2 * ConOrder):
-            ind3 = i + ii
-            ttmp = IMGT[:, ii]
-            ttmp = ttmp + tmp[:, ind3]
-            IMGT[:, ii] = ttmp
+    rec_num = con_order
+    IMGT = np.zeros((n_pixels, n_images - con_order - rec_num), dtype=np.float64)
+    for i in range(rec_num):
+        tmp = ConImgT[i * n_pixels : (i + 1) * n_pixels, :] @ psiC.T
+        for ii in range(n_images - 2 * con_order):
+            IMGT[:, ii] += tmp[:, i + ii]
 
     # normalize per frame so that mean=0 std=1, whole frame (this needs justif)
     for i in range(IMGT.shape[1]):
         ttmp = IMGT[:, i]
         try:
             ttmp = (ttmp - np.mean(ttmp)) / np.std(ttmp)
-        except:
-            print("flat image")
-            exit(0)
+        except Exception as e:
+            msg = f"Error in NLSA normalization. Flat image?\nOriginal exception: {e}"
+            raise ValueError(msg)
+
         IMGT[:, i] = ttmp
 
     nSrecon = min(IMGT.shape)
     Drecon = L2_distance(IMGT, IMGT)
-    k = nSrecon
+    block_size = nSrecon
 
-    lamb, psirec, sigma, mu, logEps, logSumWij, popt, R_squared = (
-        diffusion_map_embedding((Drecon**2), k, tune, 30)
+    lamb, psirec, _, mu, _, _, _, _ = (
+        diffusion_map_embedding((Drecon**2), block_size, tune)
     )
 
     lamb = lamb[lamb > 0]
-    a, b, tau = fit_1D_open_manifold_3D(psirec)
+    _, _, tau = fit_1D_open_manifold_3D(psirec)
 
     # tau is #part (num-2ConOrder?)
     # psirec is #part x #eigs
@@ -500,19 +461,17 @@ def psi_analysis_single(
     mask,
     psi,
     psi_list,
-    pos_path,
-    senses,
+    img_indices,
     con_order_range,
     psi_trunc,
-    first_pass_images=None,
 ):
-    nS = len(pos_path)  # number of images in PD
-    con_order = nS // con_order_range
+    n_images = len(img_indices)  # number of images in PD
+    con_order = n_images // con_order_range
     # if ConOrder is large, noise-free 2D frames expected w/ small range of conformations, \
     # while losing snapshots at edges
 
-    pos_path = np.squeeze(pos_path)
-    distances = distances[pos_path][:, pos_path]
+    img_indices = np.squeeze(np.array(img_indices))
+    distances = distances[img_indices][:, img_indices]
 
     res = []
     for psinum in psi_list:  # for each reaction coordinates do the following:
@@ -521,31 +480,26 @@ def psi_analysis_single(
 
         # e.g., shape=(numPDs,): reordering image indices along each diff map coord
         psi_sorted_ind = np.argsort(psi[:, psinum])
-        DD = distances[psi_sorted_ind]
         # distance matrix with indices of images re-arranged along current diffusion map coordinate
-        DD = DD[:, psi_sorted_ind]
-        num = DD.shape[1]  # number of images in PD (duplicate of nS?)
-        k = num - con_order
-
-        NLSAPar = dict(
-            num=num,
-            ConOrder=con_order,
-            k=k,
+        DD = distances[psi_sorted_ind][:, psi_sorted_ind]
+        nlsa_images, topo_mean, psirec, psiC1, sdiag, VX, mu, tau = NLSA(
+            DD,
+            img_indices,
+            psi_sorted_ind,
+            images,
+            mask,
+            CTF,
+            con_order=con_order,
             tune=params.nlsa_tune,
-            nS=nS,
-            save=False,
             psiTrunc=psi_trunc,
         )
-        IMGT, Topo_mean, psirec, psiC1, sdiag, VX, mu, tau = _NLSA(
-            NLSAPar, DD, pos_path, psi_sorted_ind, images, mask, CTF
-        )
 
-        n_s_recon = min(IMGT.shape)
+        n_s_recon = min(nlsa_images.shape)
         numclass = min(params.states_per_coord, n_s_recon // 2)
 
         tau = (tau - min(tau)) / (max(tau) - min(tau))
         i1 = 0
-        i2 = IMGT.shape[0]
+        i2 = nlsa_images.shape[0]
 
         IMG1 = np.zeros((i2, numclass), dtype=np.float16)
         tauinds = np.empty(numclass, dtype=np.int32)
@@ -562,44 +516,22 @@ def psi_analysis_single(
                 ind2 = ind2 + sc * ind2
                 tauind = ((tau >= ind1) & (tau < ind2)).nonzero()[0]
 
-            IMG1[i1:i2, i] = IMGT[:, tauind[0]]
+            IMG1[i1:i2, i] = nlsa_images[:, tauind[0]]
             tauinds[i] = tauind[0]
-        if first_pass_images is not None:  # second pass for energy_landscape
-            #  adjust tau by comparing the first pass output images
-            dc = _diff_corr(IMG1, first_pass_images, numclass - 1)
-            if (senses[0] == -1 and dc > 0) or senses[0] == 1 and dc < 0:
-                tau = 1 - tau
 
-            res.append(
-                dict(
-                    IMG1=IMG1.astype(np.float16),
-                    IMGT=IMGT.astype(np.float16),
-                    posPath=pos_path,
-                    PosPsi1=psi_sorted_ind,
-                    psirec=psirec,
-                    tau=tau,
-                    psiC1=psiC1,
-                    mu=mu,
-                    VX=VX,
-                    sdiag=sdiag,
-                    Topo_mean=Topo_mean.astype(np.float16),
-                    tauinds=tauinds,
-                )
+        res.append(
+            dict(
+                IMG1=IMG1.astype(np.float16),
+                psirec=psirec,
+                tau=tau,
+                psiC1=psiC1,
+                mu=mu,
+                VX=VX,
+                sdiag=sdiag,
+                Topo_mean=topo_mean.astype(np.float16),
+                tauinds=tauinds,
             )
-        else:  # first pass
-            res.append(
-                dict(
-                    IMG1=IMG1.astype(np.float16),
-                    psirec=psirec,
-                    tau=tau,
-                    psiC1=psiC1,
-                    mu=mu,
-                    VX=VX,
-                    sdiag=sdiag,
-                    Topo_mean=Topo_mean.astype(np.float16),
-                    tauinds=tauinds,
-                )
-            )
+        )
 
     return res
 
@@ -635,7 +567,7 @@ def run_pipeline(prd_index: int):
         image_offsets,
         image_rotations,
         image_mirrored,
-        True,
+        in_place=True,
     )
     image_CTFs = get_CTFs(
         image_defocus,
@@ -656,12 +588,16 @@ def run_pipeline(prd_index: int):
         embed_data["psi"],
         np.arange(params.num_psi),
         embed_data["posPath"],
-        np.ones(params.num_psi),
         params.con_order_range,
         params.num_psi_truncated,
     )
 
-    image_data = dict(filter=image_filter, mask=image_mask, rotations=image_rotations, avg_orientation=avg_orientation)
+    image_data = dict(
+        filter=image_filter,
+        mask=image_mask,
+        rotations=image_rotations,
+        avg_orientation=avg_orientation,
+    )
     res = {
         "image_data": image_data,
         "distances": distances_data,
@@ -677,6 +613,7 @@ def prd_analysis(
     prd_indices: None | Iterable[int] = None,
     return_output: bool = True,
     output_handle: None | h5py.Group = None,
+    ncpu: int = 1,
 ):
     """Runs the preprocessing analysis pipeline for a set of projection directions.
 
@@ -716,12 +653,13 @@ def prd_analysis(
     tqdm = get_tqdm()
     prd_data: dict[int, Any] = {}
 
-    with multiprocessing.Pool(processes=params.ncpu) as pool:
-        for i, result in tqdm(
-            enumerate(pool.imap(run_pipeline, prd_indices)),
+    if ncpu == 1:
+        for i in tqdm(
+            prd_indices,
             total=len(prd_indices),
             desc="Running manifold decomposition...",
         ):
+            result = run_pipeline(i)
             if return_output:
                 prd_data[i] = result
             if output_handle:
@@ -730,6 +668,21 @@ def prd_analysis(
                     del output_handle[group_name]
                 sub_group = output_handle.create_group(group_name)
                 recursive_dict_to_hdf5(sub_group, result)
+    else:
+        with multiprocessing.Pool(ncpu) as pool:
+            for i, result in tqdm(
+                enumerate(pool.imap(run_pipeline, prd_indices)),
+                total=len(prd_indices),
+                desc="Running manifold decomposition...",
+            ):
+                if return_output:
+                    prd_data[i] = result
+                if output_handle:
+                    group_name = f"prd_{i}"
+                    if output_handle.get(group_name):
+                        del output_handle[group_name]
+                    sub_group = output_handle.create_group(group_name)
+                    recursive_dict_to_hdf5(sub_group, result)
 
     if return_output:
         return prd_data
