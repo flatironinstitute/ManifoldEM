@@ -232,7 +232,7 @@ def get_transform_info(
     if mask_vol_file:
         with mrcfile.open(mask_vol_file) as mrc:
             mask3D = mrc.data
-        mask = project_mask(mask3D, avg_orientation_vec)
+            mask = project_mask(mask3D, avg_orientation_vec)
     else:
         mask = annular_mask(0, n_pix / 2.0, n_pix, n_pix)
 
@@ -243,15 +243,39 @@ def get_transform_info(
     return G, mask, rotations, avg_orientation_vec
 
 
-def get_raw_images(image_stack_file: str, image_indices: NDArray[Shape["Any"], Int]):
+def get_raw_images(
+    image_stack_file: str, image_indices: NDArray[Shape["Any"], Int]
+) -> NDArray[Shape["Any,Any,Any"], Float]:
+    """
+    Retrieves a subset of images from an mrcs image stack file.
+
+    Parameters
+    ----------
+    image_stack_file : str
+        The path to the image stack file
+    image_indices : ndarray
+        The indices of the images to retrieve
+
+    Returns
+    -------
+    ndarray
+        A 3D NumPy array of shape (N, H, W) containing the images,
+        where N is the number of images and H and W are the image dimensions.
+
+    Raises
+    ------
+    ValueError
+        If the image stack is not a NumPy array or is not 3D.
+    """
     with mrcfile.mmap(image_stack_file, "r") as mrc:
         images = mrc.data
 
-    raw_images = np.empty((len(image_indices), images.shape[1], images.shape[2]))
-    for i, idx in enumerate(image_indices):
-        raw_images[i] = images[idx]
+        if not isinstance(images, (np.memmap, np.ndarray)):
+            raise ValueError("Image stack must be a NumPy array")
+        if len(images.shape) != 3:
+            raise ValueError("Image stack must be 3D")
 
-    return raw_images
+    return images[image_indices, :, :]
 
 
 def transform_images(
@@ -424,29 +448,29 @@ def NLSA(
         )
 
     rec_num = con_order
-    IMGT = np.zeros((n_pixels, n_images - con_order - rec_num), dtype=np.float64)
+    img_shape = all_images.shape[1:]
+    IMGT = np.zeros((n_images - con_order - rec_num, *img_shape), dtype=np.float64)
     for i in range(rec_num):
         tmp = ConImgT[i * n_pixels : (i + 1) * n_pixels, :] @ psiC.T
         for ii in range(n_images - 2 * con_order):
-            IMGT[:, ii] += tmp[:, i + ii]
+            IMGT[ii] += tmp[:, i + ii].reshape(img_shape)
 
     # normalize per frame so that mean=0 std=1, whole frame (this needs justif)
-    for i in range(IMGT.shape[1]):
-        ttmp = IMGT[:, i]
+    for i in range(IMGT.shape[0]):
+        ttmp = IMGT[i, :, :]
         try:
             ttmp = (ttmp - np.mean(ttmp)) / np.std(ttmp)
         except Exception as e:
             msg = f"Error in NLSA normalization. Flat image?\nOriginal exception: {e}"
             raise ValueError(msg)
 
-        IMGT[:, i] = ttmp
+        IMGT[i, :, :] = ttmp
 
-    nSrecon = min(IMGT.shape)
+    nSrecon = IMGT.shape[0]
     Drecon = L2_distance(IMGT, IMGT)
-    block_size = nSrecon
 
     lamb, psirec, _, mu, _, _, _, _ = diffusion_map_embedding(
-        (Drecon**2), block_size, tune
+        (Drecon**2), nSrecon, tune
     )
 
     lamb = lamb[lamb > 0]
@@ -497,14 +521,12 @@ def psi_analysis_single(
             psiTrunc=psi_trunc,
         )
 
-        n_s_recon = min(nlsa_images.shape)
+        n_s_recon = nlsa_images.shape[0]
         numclass = min(params.states_per_coord, n_s_recon // 2)
 
         tau = (tau - min(tau)) / (max(tau) - min(tau))
-        i1 = 0
-        i2 = nlsa_images.shape[0]
 
-        IMG1 = np.zeros((i2, numclass), dtype=np.float16)
+        IMG1 = np.zeros((numclass, *nlsa_images.shape[1:]), dtype=np.float16)
         tauinds = np.empty(numclass, dtype=np.int32)
         for i in range(numclass):
             ind1 = float(i) / numclass
@@ -519,7 +541,7 @@ def psi_analysis_single(
                 ind2 = ind2 + sc * ind2
                 tauind = ((tau >= ind1) & (tau < ind2)).nonzero()[0]
 
-            IMG1[i1:i2, i] = nlsa_images[:, tauind[0]]
+            IMG1[i] = nlsa_images[tauind[0]]
             tauinds[i] = tauind[0]
 
         res.append(

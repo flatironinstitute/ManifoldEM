@@ -192,8 +192,8 @@ def find_bad_node_psi_tau(tau, tau_occ_thresh=0.33):
 
 
 def load_prd_psi_movies_masked(
-    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]] | list[h5py.Group],
-    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Group],
+    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]] | list[h5py.Dataset],
+    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Dataset],
     mask: None | NDArray[Shape["Any,Any"], Float],
     find_bad_psi_tau: bool,
     tau_occ_thresh: float,
@@ -223,10 +223,8 @@ def load_prd_psi_movies_masked(
         IMG1 = np.array(nlsa_movies[psinum])
         tau = np.array(taus[psinum])
 
-        Mpsi = -IMG1.T.reshape(-1, n_pix, n_pix)
-        Mpsi_masked = Mpsi * mask  # broadcast to all frames
-
-        movie_prd_psis[psinum] = Mpsi_masked
+        # FIXME: Why is this negative?
+        movie_prd_psis[psinum] = -IMG1 * mask
         tau_prd_psis[psinum] = tau
 
         if find_bad_psi_tau:
@@ -438,8 +436,9 @@ def dispatch_helper(kwargs, func):
 
 
 def optical_flow_movie_list(
-    nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]] | list[list[h5py.Group]],
-    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Group]],
+    nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]]
+    | list[list[h5py.Dataset]],
+    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
     mask: None | list[NDArray[Shape["Any,Any"], Float]],
     find_bad_psi_tau: bool,
     ncpu: int = 1,
@@ -855,7 +854,7 @@ def collate_bad_psi_tau(n_nodes: int, n_psi: int, flow_map: dict[int, dict[str, 
 def calculate_energy_landscape(
     psinums: NDArray[Shape["Any"], Integer],
     senses: NDArray[Shape["Any"], Integer],
-    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Group],
+    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Dataset],
     n_prds_total: int,
     trash_ids: set[int],
     states_per_coord: int,
@@ -893,8 +892,8 @@ def calculate_energy_landscape(
 
 def find_conformational_coords(
     prds: ProjectionDirections,
-    nlsa_movies: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Group]],
-    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Group]],
+    nlsa_movies: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
+    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
     nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
     num_psi: int,
     return_all_output: bool = False,

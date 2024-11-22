@@ -42,11 +42,11 @@ def L2_distance(a, b):
     Parameters
     ----------
         a : ndarray
-            D x M array where D is the dimensionality of each vector and M is the number
-            of vectors in the first set.
+            M x D array where D is the dimensionality of each vector and M is the number
+            of vectors in the first set. Higher dimension inputs are flattened
         b : ndarray
-            D x N array where D is the dimensionality of each vector (matching the first set)
-            and N is the number of vectors in the second set.
+            N x D array where D is the dimensionality of each vector (matching the first set)
+            and N is the number of vectors in the second set. Higher dimension inputs are flattened
 
     Returns
     -------
@@ -70,12 +70,14 @@ def L2_distance(a, b):
     """
     eps = 1e-8
 
-    if a.shape[0] != b.shape[0]:
+    a = a.reshape(a.shape[0], -1)
+    b = b.reshape(b.shape[0], -1)
+    if a.shape[1] != b.shape[1]:
         raise ValueError("A and B should be of same dimensionality")
 
-    aa = np.sum(a**2, axis=0)
-    bb = np.sum(b**2, axis=0)
-    ab = np.matmul(a.T, b)
+    aa = np.sum(a**2, axis=1)
+    bb = np.sum(b**2, axis=1)
+    ab = a @ b.T
     tmp = aa[:, np.newaxis] + bb[np.newaxis, :] - 2 * ab
     tmp[tmp < eps] = 0
     return np.sqrt(tmp)
