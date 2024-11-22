@@ -2,12 +2,11 @@ import os
 
 from copy import deepcopy
 from enum import Enum
-import h5py
+import h5pickle
 import mrcfile
 import numbers
 import numpy as np
 import pickle
-import h5py
 from dataclasses import dataclass
 
 from typing import List, Any, Tuple, Dict, Set
@@ -348,8 +347,8 @@ class PrdData:
         if self._CTF is None:
             prds = data_store.get_prds()
             self._CTF = get_CTFs(
-                params.ms_num_pixels,
                 prds.get_defocus_by_prd(self._info.prd_index),
+                params.ms_num_pixels,
                 params.ms_spherical_aberration,
                 params.ms_kilovolts,
                 params.ms_ctf_envelope,
@@ -449,7 +448,7 @@ class ProjectionDirections:
         with open(params.pd_file, "wb") as f:
             pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
 
-    def update(self):
+    def update(self, force_rebuild=0):
         """
         Updates/builds the projection direction data based on external parameters or
         files. If data is uninitialized, the threshold values have changed, or the environment
@@ -461,7 +460,7 @@ class ProjectionDirections:
             self.load(params.pd_file)
 
         # If uninitialized or things have changed, actually update
-        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", 0))
+        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", force_rebuild))
         if (
             force_rebuild
             or self.pos_full.size == 0
@@ -470,7 +469,8 @@ class ProjectionDirections:
         ):
             if force_rebuild:
                 print("Rebuilding data store")
-                os.environ.pop("MANIFOLD_REBUILD_DS")
+                if "MANIFOLD_REBUILD_DS" in os.environ:
+                    os.environ.pop("MANIFOLD_REBUILD_DS")
 
             print("Calculating projection direction information")
             self.microscope_origin, self.quats_raw, U, V = get_align_data(
@@ -768,7 +768,7 @@ class _DataStore:
 
     def get_analysis_handle(self):
         if self._analysis_handle is None:
-            self._analysis_handle = h5py.File(params.analysis_file, "a")
+            self._analysis_handle = h5pickle.File(params.analysis_file, "a")
         return self._analysis_handle
 
     def close_analysis_handle(self):

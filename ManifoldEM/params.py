@@ -513,6 +513,8 @@ class Params:
         pprint(self.asdict())
 
     def create_dir(self):
+        os.makedirs(self.out_dir, exist_ok=True)
+        return
         os.makedirs(self.dist_dir, exist_ok=True)
         os.makedirs(self.psi_dir, exist_ok=True)
         os.makedirs(self.psi2_dir, exist_ok=True)

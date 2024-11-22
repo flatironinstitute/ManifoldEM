@@ -3,7 +3,6 @@ import logging
 import mrcfile
 import multiprocessing
 import numpy as np
-import sys
 
 from dataclasses import dataclass
 from typing import Any, Tuple, Iterable
@@ -355,15 +354,15 @@ def auto_trim_manifold(distances, nlsa_tune: int, rad: float):
 
 
 def NLSA(
-    distance_mat,
-    image_indices,
-    posPsi1,
-    all_images,
-    mask,
-    CTF,
-    con_order,
-    tune,
-    psiTrunc,
+    distance_mat: NDArray[Shape["Any,Any"], Float],
+    image_indices: NDArray[Shape["Any"], Int],
+    posPsi1: NDArray[Shape["Any"], Int],
+    all_images: NDArray[Shape["Any,Any,Any"], Float],
+    mask: NDArray[Shape["Any,Any"], Float],
+    CTF: NDArray[Shape["Any,Any,Any"], Float],
+    con_order: int,
+    tune: float,
+    psiTrunc: int,
 ):
     n_images = distance_mat.shape[0]
     block_size = n_images - con_order
@@ -377,8 +376,6 @@ def NLSA(
     _, psiC, _, mu, _, _, _, _ = diffusion_map_embedding(con_dist_mat, block_size, tune)
 
     psiC1 = np.copy(psiC)
-    # rearrange arrays
-    IMG1 = all_images[image_indices[posPsi1]]
     # Wiener filtering
     wiener_dom, CTF1 = get_wiener(CTF, image_indices, posPsi1, con_order, n_images)
 
@@ -389,12 +386,16 @@ def NLSA(
     A = np.zeros((con_order * n_pixels, ell + 1), dtype=np.float64)
     tmp = np.zeros((n_pixels, block_size), dtype=np.float64)
 
+    img_f_wiener = np.zeros(CTF[0].shape, dtype=np.complex128)
+    img = np.zeros(CTF[0].shape, dtype=np.float64)
+    image_indices_psi_sorted = image_indices[posPsi1]
     for ii in range(con_order):
         for i in range(block_size):
             ind = con_order - ii + i - 1
-            img_f_wiener = fft2(IMG1[ind]) * CTF1[ind] / wiener_dom[i]
-            img = ifft2(img_f_wiener).real * mask
-            tmp[:n_pixels, i] = np.squeeze(img.T.reshape(-1, 1))
+            img[:] = all_images[image_indices_psi_sorted[ind]]
+            img_f_wiener[:] = fft2(img) * CTF1[ind] / wiener_dom[i]
+            img[:] = ifft2(img_f_wiener).real * mask
+            tmp[:, i] = np.squeeze(img.T.ravel())
 
         A[ii * n_pixels : (ii + 1) * n_pixels, :] = tmp @ mu_psi
 
@@ -409,7 +410,9 @@ def NLSA(
         Topo = np.ones((n_pixels, con_order)) * np.Inf
 
         for block_size in range(con_order):
-            Topo[:, block_size] = U[block_size * n_pixels : (block_size + 1) * n_pixels, ii]
+            Topo[:, block_size] = U[
+                block_size * n_pixels : (block_size + 1) * n_pixels, ii
+            ]
 
         Topo_mean[:, ii] = np.mean(Topo, axis=1)
 
@@ -442,8 +445,8 @@ def NLSA(
     Drecon = L2_distance(IMGT, IMGT)
     block_size = nSrecon
 
-    lamb, psirec, _, mu, _, _, _, _ = (
-        diffusion_map_embedding((Drecon**2), block_size, tune)
+    lamb, psirec, _, mu, _, _, _, _ = diffusion_map_embedding(
+        (Drecon**2), block_size, tune
     )
 
     lamb = lamb[lamb > 0]
