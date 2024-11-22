@@ -1,12 +1,24 @@
 from ManifoldEM.params import params, ProjectLevel
+from ManifoldEM.data_store import data_store
 import os
 import shutil
 from typing import Union
 from threadpoolctl import threadpool_limits
 
-def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, mask_volume: str,
-         pixel_size: float, diameter: float, resolution: float, aperture_index: int, overwrite: bool,
-         **kwargs):
+
+def init(
+    project_name: str,
+    avg_volume: str,
+    alignment: str,
+    image_stack: str,
+    mask_volume: str,
+    pixel_size: float,
+    diameter: float,
+    resolution: float,
+    aperture_index: int,
+    overwrite: bool,
+    **kwargs,
+):
     """
     Initializes a new project with specified parameters, including project directory creation
     and parameter storage.
@@ -53,13 +65,13 @@ def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, m
     import multiprocessing
 
     params.project_name = project_name
-    proj_file = f'params_{params.project_name}.toml'
+    proj_file = f"params_{params.project_name}.toml"
 
     if os.path.isfile(proj_file) or os.path.isdir(params.out_dir):
-        response = 'y' if overwrite else None
-        while response not in ('y', 'n'):
+        response = "y" if overwrite else None
+        while response not in ("y", "n"):
             response = input("Project appears to exist. Overwrite? y/n\n").lower()
-        if response == 'n':
+        if response == "n":
             print("Aborting")
             return 1
         print("Removing previous project")
@@ -75,7 +87,7 @@ def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, m
     params.particle_diameter = diameter
     params.ms_estimated_resolution = resolution
     params.aperture_index = aperture_index
-    params.is_relion_data = alignment.endswith('.star')
+    params.is_relion_data = alignment.endswith(".star")
 
     params.ms_num_pixels = get_image_width_from_stack(params.img_stack_file)
     params.ncpu = multiprocessing.cpu_count()
@@ -93,43 +105,56 @@ def threshold(**kwargs):
     params.save()
 
 
-def calc_distance(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
-    from ManifoldEM.calc_distance import op as calc_distance
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
-        calc_distance(prd_list)
+def decompose(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
+    from ManifoldEM.prd_analysis import prd_analysis
 
-
-def manifold_analysis(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
-    from ManifoldEM.manifold_analysis import op as manifold_analysis
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
-        manifold_analysis(prd_list)
-
-
-def psi_analysis(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
-    from ManifoldEM.psi_analysis import op as psi_analysis
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
-        psi_analysis(prd_list)
-
-
-def nlsa_movie(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
-    from ManifoldEM.nlsa_movie import op as nlsa_movie
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
-        nlsa_movie(prd_list)
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        prd_analysis(
+            None,
+            prd_list,
+            return_output=False,
+            output_handle=data_store.get_analysis_handle(),
+            ncpu=params.ncpu,
+        )
 
 
 def find_conformational_coordinates(blas_threads=1, **kwargs):
-    from ManifoldEM.find_conformational_coords import op as find_conformational_coords
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
-        find_conformational_coords()
+    from ManifoldEM.optical_flow import find_conformational_coords
+
+    # FIXME: The interactive interface shouldn't force the user to use analysis store
+    prds = data_store.get_prds()
+    n_prds = prds.n_thresholded
+    res = data_store.get_analysis_handle()
+    nlsa_movies = [
+        [res[f"prd_{i}"][f"nlsa_data_{j}"]["IMG1"] for j in range(params.num_psi)]
+        for i in range(n_prds)
+    ]
+    taus = [
+        [res[f"prd_{i}"][f"nlsa_data_{j}"]["tau"] for j in range(params.num_psi)]
+        for i in range(n_prds)
+    ]
+
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        find_conformational_coords(
+            prds,
+            nlsa_movies,
+            taus,
+            None,
+            params.num_psi,
+            flow_vec_pct_thresh=params.opt_movie["flowVecPctThresh"],
+            ncpu=params.ncpu,
+        )
 
 
 def energy_landscape(blas_threads=1, **kwargs):
     from ManifoldEM.energy_landscape import op as energy_landscape
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
         energy_landscape()
 
 
 def compute_trajectory(blas_threads=1, **kwargs):
     from ManifoldEM.trajectory import op as trajectory
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
         trajectory()

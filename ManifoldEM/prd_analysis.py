@@ -670,8 +670,9 @@ def prd_analysis(
     if project_file is not None:
         params.load(project_file)
 
+    prds = data_store.get_prds()
     if prd_indices is None:
-        prd_indices = list(range(params.prd_n_active))
+        prd_indices = list(range(prds.n_thresholded))
     else:
         prd_indices = list(prd_indices)
 
@@ -708,6 +709,9 @@ def prd_analysis(
                         del output_handle[group_name]
                     sub_group = output_handle.create_group(group_name)
                     recursive_dict_to_hdf5(sub_group, result)
+
+    prds.guess_and_mark_anchors()
+    prds.save()
 
     if return_output:
         return prd_data

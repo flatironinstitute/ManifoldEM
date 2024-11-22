@@ -25,14 +25,11 @@ from typing import Annotated, get_type_hints, get_args
 class ProjectLevel(Enum):
     INIT = 0
     BINNING = 1
-    CALC_DISTANCE = 2
-    MANIFOLD_ANALYSIS = 3
-    PSI_ANALYSIS = 4
-    NLSA_MOVIE = 5
-    PRD_SELECTION = 6
-    FIND_CCS = 7
-    ENERGY_LANDSCAPE = 8
-    TRAJECTORY = 9
+    DECOMPOSITION = 2
+    PRD_SELECTION = 3
+    FIND_CCS = 4
+    ENERGY_LANDSCAPE = 5
+    TRAJECTORY = 6
 
 
 @dataclass
@@ -148,19 +145,19 @@ class Params:
         ParamInfo(
             'Filter type for image preprocessing. Valid: {"Butter", "Gauss"}',
             True,
-            [ProjectLevel.CALC_DISTANCE],
+            [ProjectLevel.DECOMPOSITION],
         ),
     ] = "Butter"
     distance_filter_cutoff_freq: Annotated[
         float,
         ParamInfo(
-            "Nyquist cutoff frequency for filter", True, [ProjectLevel.CALC_DISTANCE]
+            "Nyquist cutoff frequency for filter", True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 0.5
     distance_filter_order: Annotated[
         int,
         ParamInfo(
-            'Order of Filter ("Butter" only)', True, [ProjectLevel.CALC_DISTANCE]
+            'Order of Filter ("Butter" only)', True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 8
 
@@ -177,18 +174,18 @@ class Params:
     num_psi: Annotated[
         int,
         ParamInfo(
-            "Number of eigenfunctions for analysis", True, [ProjectLevel.CALC_DISTANCE]
+            "Number of eigenfunctions for analysis", True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 8
     rad: Annotated[
-        int, ParamInfo("Manifold pruning"), True, [ProjectLevel.MANIFOLD_ANALYSIS]
+        int, ParamInfo("Manifold pruning"), True, [ProjectLevel.DECOMPOSITION]
     ] = 5
 
     # NLSA parameters:
     nlsa_fps: Annotated[
         float,
         ParamInfo(
-            "Frames per second for generated movies", True, [ProjectLevel.NLSA_MOVIE]
+            "Frames per second for generated movies", True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 5.0
     con_order_range: Annotated[
@@ -197,7 +194,7 @@ class Params:
             "Coarse-graining factor of energy landscape",
             True,
             [
-                ProjectLevel.PSI_ANALYSIS,
+                ProjectLevel.DECOMPOSITION,
                 ProjectLevel.ENERGY_LANDSCAPE,
                 ProjectLevel.TRAJECTORY,
             ],
@@ -212,7 +209,7 @@ class Params:
         ParamInfo(
             "Diffusion map tuning parameter",
             True,
-            [ProjectLevel.MANIFOLD_ANALYSIS, ProjectLevel.PSI_ANALYSIS],
+            [ProjectLevel.DECOMPOSITION],
         ),
     ] = 3
 
@@ -514,20 +511,6 @@ class Params:
 
     def create_dir(self):
         os.makedirs(self.out_dir, exist_ok=True)
-        return
-        os.makedirs(self.dist_dir, exist_ok=True)
-        os.makedirs(self.psi_dir, exist_ok=True)
-        os.makedirs(self.psi2_dir, exist_ok=True)
-        os.makedirs(self.EL_dir, exist_ok=True)
-        os.makedirs(self.OM_dir, exist_ok=True)
-        os.makedirs(self.traj_dir, exist_ok=True)
-        os.makedirs(self.bin_dir, exist_ok=True)
-        os.makedirs(self.CC_dir, exist_ok=True)
-        os.makedirs(self.CC_OF_dir, exist_ok=True)
-        os.makedirs(self.CC_meas_dir, exist_ok=True)
-        os.makedirs(self.euler_dir, exist_ok=True)
-        os.makedirs(self.postproc_mrcs2mrc_dir, exist_ok=True)
-        os.makedirs(self.postproc_denoise_dir, exist_ok=True)
 
     def __repr__(self):
         return pformat(self.asdict())
