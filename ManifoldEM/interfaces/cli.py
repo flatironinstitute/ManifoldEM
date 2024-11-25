@@ -8,7 +8,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from typing import Union
 import ManifoldEM
 from ManifoldEM.params import params, ProjectLevel
-from . import interactive as mem
+from . import simple as mem
 
 
 def get_parser():

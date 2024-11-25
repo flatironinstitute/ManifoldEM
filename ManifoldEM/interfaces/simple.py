@@ -131,7 +131,7 @@ def find_conformational_coordinates(
 ):
     from ManifoldEM.optical_flow import find_conformational_coords
 
-    # FIXME: The interactive interface shouldn't force the user to use analysis store
+    # FIXME: The simple interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
     n_prds = prds.n_thresholded
     data_handle = data_store.get_analysis_handle()
@@ -170,7 +170,7 @@ def energy_landscape(blas_threads=1, **kwargs):
     from ManifoldEM.optical_flow import calculate_energy_landscape
     import numpy as np
 
-    # FIXME: The interactive interface shouldn't force the user to use analysis store
+    # FIXME: The simple interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
     active_prds = set(range(params.prd_n_active)) - prds.trash_ids
     data_handle = data_store.get_analysis_handle()

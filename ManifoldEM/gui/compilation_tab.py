@@ -49,7 +49,7 @@ class CompilationTab(QWidget):
                 args=(self.hostname, cmd, self.find_cc_progress_changed),
             )
         else:
-            from ManifoldEM.interfaces.interactive import (
+            from ManifoldEM.interfaces.simple import (
                 find_conformational_coordinates,
             )
             from functools import partial
@@ -69,7 +69,7 @@ class CompilationTab(QWidget):
         self.progress_find_cc.setValue(val)
         if val == 100:
             self.button_CC.setText("Conformational Coordinates Complete")
-            from ManifoldEM.interfaces.interactive import energy_landscape
+            from ManifoldEM.interfaces.simple import energy_landscape
 
             energy_landscape()
             self.button_toP6.setEnabled(True)

@@ -46,7 +46,7 @@ class EmbeddingTab(QWidget):
                 args=(self.hostname, cmd, self.decompose_progress_changed),
             )
         else:
-            from ManifoldEM.interfaces.interactive import decompose
+            from ManifoldEM.interfaces.simple import decompose
             from functools import partial
 
             target = partial(
