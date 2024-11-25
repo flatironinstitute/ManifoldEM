@@ -133,22 +133,9 @@ def find_conformational_coordinates(
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
-    n_prds = prds.n_thresholded
     data_handle = data_store.get_analysis_handle()
-    nlsa_movies = [
-        [
-            data_handle[f"prd_{i}"][f"nlsa_data_{j}"]["IMG1"]
-            for j in range(params.num_psi)
-        ]
-        for i in range(n_prds)
-    ]
-    taus = [
-        [
-            data_handle[f"prd_{i}"][f"nlsa_data_{j}"]["tau"]
-            for j in range(params.num_psi)
-        ]
-        for i in range(n_prds)
-    ]
+    nlsa_movies = data_store.get_all_nlsa_movies()
+    taus = data_store.get_all_taus()
 
     with threadpool_limits(limits=blas_threads, user_api="blas"):
         find_conformational_coords(
@@ -171,20 +158,8 @@ def energy_landscape(blas_threads=1, **kwargs):
     import numpy as np
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
-    prds = data_store.get_prds()
-    active_prds = set(range(params.prd_n_active)) - prds.trash_ids
-    data_handle = data_store.get_analysis_handle()
-
-    psinums = np.array([data_handle[f"prd_{i}"]["psinum"][()] for i in active_prds])
-    senses = np.array([data_handle[f"prd_{i}"]["sense"][()] for i in active_prds])
-
-    taus = [
-        [
-            data_handle[f"prd_{i}"][f"nlsa_data_{j}"]["tau"]
-            for j in range(params.num_psi)
-        ]
-        for i in active_prds
-    ]
+    _, psinums, senses = data_store.get_active_psinums_and_senses()
+    taus = data_store.get_active_taus()
 
     energy, occupancy = calculate_energy_landscape(
         psinums, senses, taus, params.states_per_coord, params.temperature
