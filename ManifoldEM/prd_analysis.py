@@ -14,7 +14,13 @@ from ManifoldEM.core import annular_mask, project_mask, svdRF, L2_distance, get_
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import quaternion_to_S2, q2Spider
-from ManifoldEM.util import create_proportional_grid, get_CTFs, rotate_fill, get_tqdm
+from ManifoldEM.util import (
+    create_proportional_grid,
+    get_CTFs,
+    rotate_fill,
+    get_tqdm,
+    NullEmitter,
+)
 from ManifoldEM.DMembeddingII import diffusion_map_embedding
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
 from ManifoldEM.util import recursive_dict_to_hdf5
@@ -637,8 +643,9 @@ def prd_analysis(
     project_file: None | str,
     prd_indices: None | Iterable[int] = None,
     return_output: bool = True,
-    output_handle: None | h5py.Group = None,
+    output_handle: None | h5py.File = None,
     ncpu: int = 1,
+    progress_bar: Any = None,
 ):
     """Runs the preprocessing analysis pipeline for a set of projection directions.
 
@@ -650,8 +657,8 @@ def prd_analysis(
         The indices of the projection directions to analyze. If None, all active projection directions are analyzed
     return_output : bool, optional
         Whether to return the output data. More memory intensive, but allows direct manipulation of return data
-    output_handle : None | h5py.Group, optional
-        The HDF5 group to write the output data to. If None, no output data is written
+    output_handle : None | h5py.File, optional
+        The HDF5 file handle to write the output data to. If None, no output data is written
 
     Returns
     -------
@@ -678,6 +685,8 @@ def prd_analysis(
 
     tqdm = get_tqdm()
     prd_data: dict[int, Any] = {}
+    if progress_bar is None:
+        progress_bar = NullEmitter()
 
     if ncpu == 1:
         for i in tqdm(
@@ -694,6 +703,7 @@ def prd_analysis(
                     del output_handle[group_name]
                 sub_group = output_handle.create_group(group_name)
                 recursive_dict_to_hdf5(sub_group, result)
+                progress_bar.emit(int(99 * i / len(prd_indices)))
     else:
         with multiprocessing.Pool(ncpu) as pool:
             for i, result in tqdm(
@@ -710,8 +720,15 @@ def prd_analysis(
                     sub_group = output_handle.create_group(group_name)
                     recursive_dict_to_hdf5(sub_group, result)
 
+                progress_bar.emit(int(99 * i / len(prd_indices)))
+
     prds.guess_and_mark_anchors()
     prds.save()
+
+    if output_handle:
+        output_handle.flush()
+
+    progress_bar.emit(100)
 
     if return_output:
         return prd_data

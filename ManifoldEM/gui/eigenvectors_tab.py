@@ -21,7 +21,7 @@ from PyQt5.QtGui import QImage, QPixmap
 import imageio
 import numpy as np
 
-from ManifoldEM.params import params
+from ManifoldEM.params import ProjectLevel, params
 from ManifoldEM.data_store import data_store, Anchor, Sense
 from .eigen_views import (
     Mayavi_Rho,
@@ -134,8 +134,11 @@ class EigenvectorsTab(QWidget):
             label.setAlignment(QtCore.Qt.AlignCenter)
 
             button = QPushButton(f"View Ψ{str(i).translate(subscripts)}", self)
-            button.clicked.connect(lambda *, i=i: self.view_cc_details(i))
-            button.setToolTip("View 2d movie and related outputs.")
+            if i > params.num_psi:
+                button.setDisabled(True)
+            else:
+                button.clicked.connect(lambda *, i=i: self.view_cc_details(i))
+                button.setToolTip("View 2d movie and related outputs.")
 
             self.label_pic.append(label)
             self.button_pic.append(button)
@@ -358,6 +361,8 @@ class EigenvectorsTab(QWidget):
 
         for i, (label, button) in enumerate(zip(self.label_pic, self.button_pic)):
             data = data_store.get_nlsa_data(self.user_prd_index - 1, i)
+            if data is None:
+                continue
             topo = data["Topo_mean"][:, 1].reshape(
                 params.ms_num_pixels, params.ms_num_pixels
             )
@@ -436,6 +441,7 @@ class EigenvectorsTab(QWidget):
             return
 
         data_store.get_prds().save()
+        params.project_level = ProjectLevel.FIND_CCS
         params.save()
         self.main_window.set_tab_state(True, "Compilation")
         self.main_window.switch_tab("Compilation")

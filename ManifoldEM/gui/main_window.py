@@ -9,36 +9,42 @@ from ..params import params
 from ManifoldEM.params import params
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QTabWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QScrollArea, QDesktopWidget)
+from PyQt5.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QGroupBox,
+    QHBoxLayout,
+    QVBoxLayout,
+    QScrollArea,
+    QDesktopWidget,
+)
 
 from typing import List, Union
 
 
 class MainWindow(QMainWindow):
     proj_lev_to_tab: list[str] = [
-        'Import', # 0
-        'Distribution', # 1
-        'Embedding', # 2
-        'Embedding', # 3
-        'Embedding', # 4
-        'Eigenvectors', # 5
-        'Compilation', # 6
-        'Compilation', # 7
-        'Energetics', # 8
-        'Energetics', # 9
+        "Import",  # 0
+        "Distribution",  # 1
+        "Embedding",  # 2
+        "Eigenvectors",  # 3
+        "Compilation",  # 4
+        "Energetics",  # 5
+        "Energetics",  # 6
     ]
     tab_indices: dict[str, int] = {
-        'Import': 0,
-        'Distribution': 1,
-        'Embedding': 2,
-        'Eigenvectors': 3,
-        'Compilation': 4,
-        'Energetics': 5,
+        "Import": 0,
+        "Distribution": 1,
+        "Embedding": 2,
+        "Eigenvectors": 3,
+        "Compilation": 4,
+        "Energetics": 5,
     }
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.setWindowTitle('ManifoldEM')
+        self.setWindowTitle("ManifoldEM")
 
         # Ensures cleanup in proper order
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -51,12 +57,12 @@ class MainWindow(QMainWindow):
         self.resize((7 * w) // 10, (7 * h) // 10)
 
         self.tabs = QTabWidget(self)
-        self.tabs.addTab(ImportTab(self), 'Import')
-        self.tabs.addTab(DistributionTab(self), 'Distribution')
-        self.tabs.addTab(EmbeddingTab(self), 'Embedding')
-        self.tabs.addTab(EigenvectorsTab(self), 'Eigenvectors')
-        self.tabs.addTab(CompilationTab(self), 'Compilation')
-        self.tabs.addTab(EnergeticsTab(self), 'Energetics')
+        self.tabs.addTab(ImportTab(self), "Import")
+        self.tabs.addTab(DistributionTab(self), "Distribution")
+        self.tabs.addTab(EmbeddingTab(self), "Embedding")
+        self.tabs.addTab(EigenvectorsTab(self), "Eigenvectors")
+        self.tabs.addTab(CompilationTab(self), "Compilation")
+        self.tabs.addTab(EnergeticsTab(self), "Energetics")
 
         self.tabs.blockSignals(True)
         self.tabs.currentChanged.connect(self.on_tab_change)
@@ -80,17 +86,14 @@ class MainWindow(QMainWindow):
         self.tabs.blockSignals(False)
         self.show()
 
-
     def on_tab_change(self):
         self.tabs.widget(self.tabs.currentIndex()).activate()
-
 
     def reload_tab_states(self):
         self.set_tab_state(False)
         for tabi in range(params.project_level.value + 1):
             self.set_tab_state(True, self.proj_lev_to_tab[tabi])
             self.switch_tab(self.proj_lev_to_tab[tabi])
-
 
     def switch_tab(self, tab_name: str):
         index = self.tab_indices.get(tab_name, None)
@@ -99,7 +102,6 @@ class MainWindow(QMainWindow):
             self.tabs.setCurrentIndex(index)
         else:
             print(f"Invalid tab name: {tab_name}")
-
 
     def set_tab_state(self, state: bool, tab_names: Union[List[str], str, None] = None):
         if isinstance(tab_names, str):

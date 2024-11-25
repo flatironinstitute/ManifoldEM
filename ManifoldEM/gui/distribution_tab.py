@@ -1,9 +1,10 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGridLayout, QWidget
 
-from ManifoldEM.params import params
+from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.data_store import data_store
 from .s2_view import S2View
+
 
 class DistributionTab(QWidget):
     def __init__(self, parent):
@@ -28,8 +29,8 @@ class DistributionTab(QWidget):
         new_hline(0)  # left of button
         new_hline(4)  # right of button
 
-        self.button_binPart = QPushButton('Bin Particles')
-        self.button_binPart.setToolTip('Proceed to embedding.')
+        self.button_binPart = QPushButton("Bin Particles")
+        self.button_binPart.setToolTip("Proceed to embedding.")
         self.button_binPart.clicked.connect(self.finalize)
         layout.addWidget(self.button_binPart, 2, 2, 1, 2)
         self.button_binPart.show()
@@ -43,5 +44,7 @@ class DistributionTab(QWidget):
     def finalize(self):
         # not strictly necessary, but at least makes the "bin particles" text not a lie
         data_store.get_prds().update()
+        params.project_level = ProjectLevel.DECOMPOSITION
+        params.save()
         self.main_window.set_tab_state(True, "Embedding")
         self.main_window.switch_tab("Embedding")

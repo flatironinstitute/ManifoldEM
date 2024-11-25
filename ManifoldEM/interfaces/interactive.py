@@ -5,6 +5,8 @@ import shutil
 from typing import Union
 from threadpoolctl import threadpool_limits
 
+from ManifoldEM.util import NullEmitter
+
 
 def init(
     project_name: str,
@@ -105,7 +107,9 @@ def threshold(**kwargs):
     params.save()
 
 
-def decompose(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
+def decompose(
+    prd_list: Union[list[int], None] = None, blas_threads=1, progress_bar=None, **kwargs
+):
     from ManifoldEM.prd_analysis import prd_analysis
 
     with threadpool_limits(limits=blas_threads, user_api="blas"):
@@ -115,22 +119,34 @@ def decompose(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs)
             return_output=False,
             output_handle=data_store.get_analysis_handle(),
             ncpu=params.ncpu,
+            progress_bar=progress_bar,
         )
 
+    params.project_level = ProjectLevel.PRD_SELECTION
+    params.save()
 
-def find_conformational_coordinates(blas_threads=1, **kwargs):
+
+def find_conformational_coordinates(
+    blas_threads=1, progress_bar=NullEmitter(), **kwargs
+):
     from ManifoldEM.optical_flow import find_conformational_coords
 
     # FIXME: The interactive interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
     n_prds = prds.n_thresholded
-    res = data_store.get_analysis_handle()
+    data_handle = data_store.get_analysis_handle()
     nlsa_movies = [
-        [res[f"prd_{i}"][f"nlsa_data_{j}"]["IMG1"] for j in range(params.num_psi)]
+        [
+            data_handle[f"prd_{i}"][f"nlsa_data_{j}"]["IMG1"]
+            for j in range(params.num_psi)
+        ]
         for i in range(n_prds)
     ]
     taus = [
-        [res[f"prd_{i}"][f"nlsa_data_{j}"]["tau"] for j in range(params.num_psi)]
+        [
+            data_handle[f"prd_{i}"][f"nlsa_data_{j}"]["tau"]
+            for j in range(params.num_psi)
+        ]
         for i in range(n_prds)
     ]
 
@@ -141,16 +157,43 @@ def find_conformational_coordinates(blas_threads=1, **kwargs):
             taus,
             None,
             params.num_psi,
+            output_handle=data_handle,
             flow_vec_pct_thresh=params.opt_movie["flowVecPctThresh"],
             ncpu=params.ncpu,
+            progress_bar=progress_bar,
         )
+        params.project_level = ProjectLevel.ENERGY_LANDSCAPE
+        params.save()
 
 
 def energy_landscape(blas_threads=1, **kwargs):
-    from ManifoldEM.energy_landscape import op as energy_landscape
+    from ManifoldEM.optical_flow import calculate_energy_landscape
+    import numpy as np
 
-    with threadpool_limits(limits=blas_threads, user_api="blas"):
-        energy_landscape()
+    # FIXME: The interactive interface shouldn't force the user to use analysis store
+    prds = data_store.get_prds()
+    active_prds = set(range(params.prd_n_active)) - prds.trash_ids
+    data_handle = data_store.get_analysis_handle()
+
+    psinums = np.array([data_handle[f"prd_{i}"]["psinum"][()] for i in active_prds])
+    senses = np.array([data_handle[f"prd_{i}"]["sense"][()] for i in active_prds])
+
+    taus = [
+        [
+            data_handle[f"prd_{i}"][f"nlsa_data_{j}"]["tau"]
+            for j in range(params.num_psi)
+        ]
+        for i in active_prds
+    ]
+
+    energy, occupancy = calculate_energy_landscape(
+        psinums, senses, taus, params.states_per_coord, params.temperature
+    )
+    fname = params.energy_landscape_file
+    print(f"Energy landscape calculated. Saving to {fname}")
+    np.savez(fname, energy=energy, occupancy=occupancy)
+    params.project_level = ProjectLevel.TRAJECTORY
+    params.save()
 
 
 def compute_trajectory(blas_threads=1, **kwargs):

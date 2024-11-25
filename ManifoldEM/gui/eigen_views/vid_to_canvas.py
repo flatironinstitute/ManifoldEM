@@ -213,10 +213,7 @@ class _Vid2Canvas(QDialog):
 
         prD = self.PrD1.value()
         psi = self.Psi1.value()
-        npix = params.ms_num_pixels
-        self.imgs1 = data_store.get_nlsa_data(prD - 1, psi - 1)["IMG1"][()].T.reshape(
-            -1, npix, npix
-        )
+        self.imgs1 = data_store.get_nlsa_data(prD - 1, psi - 1)["IMG1"][()]
 
         if self.btnSet1.isChecked():
             self.PrD1.setDisabled(True)
@@ -255,10 +252,7 @@ class _Vid2Canvas(QDialog):
 
         prD = self.PrD2.value()
         psi = self.Psi2.value()
-        npix = params.ms_num_pixels
-        self.imgs2 = data_store.get_nlsa_data(prD - 1, psi - 1)["IMG1"][()].T.reshape(
-            -1, npix, npix
-        )
+        self.imgs2 = data_store.get_nlsa_data(prD - 1, psi - 1)["IMG1"][()]
 
         if self.btnSet2.isChecked():
             self.PrD2.setDisabled(True)

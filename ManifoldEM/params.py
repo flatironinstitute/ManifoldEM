@@ -278,24 +278,8 @@ class Params:
         return self.ms_estimated_resolution / self.particle_diameter
 
     @property
-    def user_dir(self) -> str:
-        return "output"
-
-    @property
     def out_dir(self) -> str:
-        return os.path.join(self.user_dir, self.project_name)
-
-    @property
-    def psi_file(self) -> str:
-        return os.path.join(self.psi_dir, "gC_trimmed_psi_")
-
-    @property
-    def psi2_file(self) -> str:
-        return os.path.join(self.psi2_dir, "S2_")
-
-    @property
-    def rho_file(self) -> str:
-        return os.path.join(self.OM_dir, "rho")
+        return os.path.join("output", self.project_name)
 
     @property
     def pd_file(self) -> str:
@@ -306,84 +290,12 @@ class Params:
         return os.path.join(self.out_dir, "prd_analysis.h5")
 
     @property
-    def dist_dir(self) -> str:
-        return os.path.join(self.out_dir, "distances")
-
-    @property
-    def dist_file(self) -> str:
-        return os.path.join(self.dist_dir, "IMGs_")
-
-    @property
-    def psi_dir(self) -> str:
-        return os.path.join(self.out_dir, "diff_maps")
-
-    @property
-    def psi2_dir(self) -> str:
-        return os.path.join(self.out_dir, "psi_analysis")
-
-    @property
-    def EL_dir(self) -> str:
-        return os.path.join(self.out_dir, f"ELConc{self.con_order_range}")
-
-    @property
-    def OM_dir(self) -> str:
-        return os.path.join(self.EL_dir, "OM")
-
-    @property
-    def OM_file(self) -> str:
-        return os.path.join(self.OM_dir, "S2_OM.npy")
-
-    @property
-    def OM1_file(self) -> str:
-        return os.path.join(self.EL_dir, "S2_EL.npy")
-
-    @property
-    def traj_dir(self) -> str:
-        return os.path.join(self.out_dir, "traj")
-
-    @property
-    def CC_dir(self) -> str:
-        return os.path.join(self.out_dir, "CC")
-
-    @property
-    def CC_dir_temp(self) -> str:
-        return os.path.join(self.CC_dir, "temp")
-
-    @property
-    def bad_nodes_psis_tau_file(self) -> str:
-        return os.path.join(self.CC_dir, "bad_nodes_psis_tau.pkl")
-
-    @property
-    def CC_file(self) -> str:
-        return os.path.join(self.CC_dir, "CC_file.pkl")
-
-    @property
-    def CC_meas_dir(self) -> str:
-        return os.path.join(self.CC_dir, "CC_meas")
-
-    @property
-    def CC_OF_dir(self) -> str:
-        return os.path.join(self.CC_dir, "CC_OF")
-
-    @property
-    def traj_file(self) -> str:
-        return os.path.join(self.traj_dir, "traj_")
-
-    @property
-    def euler_dir(self) -> str:
-        return os.path.join(self.out_dir, "topos", "Euler_PrD")
-
-    @property
-    def ref_ang_file(self) -> str:
-        return os.path.join(self.euler_dir, "PrD_map.txt")
-
-    @property
-    def ref_ang_file1(self) -> str:
-        return os.path.join(self.euler_dir, "PrD_map1.txt")
-
-    @property
     def bin_dir(self) -> str:
         return os.path.join(self.out_dir, "bin")
+
+    @property
+    def energy_landscape_file(self) -> str:
+        return os.path.join(self.out_dir, "energy_landscape.npz")
 
     @property
     def user_dimensions(self) -> int:
@@ -397,35 +309,6 @@ class Params:
     @property
     def postproc_denoise_dir(self) -> str:
         return os.path.join(self.out_dir, "postproc", "denoise")
-
-    def get_topos_path(self, prd: int, index: int) -> str:
-        return os.path.join(self.out_dir, "topos", f"PrD_{prd}", f"topos_{index}.png")
-
-    def get_psi_gif(self, prd: int, index: int) -> str:
-        return os.path.join(self.out_dir, "topos", f"PrD_{prd}", f"psi_{index}.gif")
-
-    def get_EL_file(self, prd_index: int):
-        return os.path.join(self.EL_dir, f"S2_prD_{prd_index}.pkl")
-
-    def get_CC_OF_file(self, prd_index: int):
-        return os.path.join(self.CC_OF_dir, f"OF_prD_{prd_index}.pkl")
-
-    def get_CC_meas_file(self, edge_index: int, prd_index: int, nbr_index: int) -> str:
-        return os.path.join(
-            self.CC_meas_dir, f"meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.h5"
-        )
-
-    def get_psi_file(self, prd_index: int):
-        return f"{self.psi_file}prD_{prd_index}.h5"
-
-    def get_psi2_file(self, prd_index: int, psi_index: int):
-        return f"{self.psi2_file}prD_{prd_index}_psi_{psi_index}.h5"
-
-    def get_dist_file(self, prd_index: int):
-        return f"{self.dist_file}prD_{prd_index}.h5"
-
-    def get_bad_nodes_psis_tau_file_prd(self, prd_index: int):
-        return os.path.join(self.CC_dir_temp, f"bad_nodes_tau_prD_{prd_index}.pkl")
 
     def get_user_params(self) -> dict[str, Annotated]:
         return {

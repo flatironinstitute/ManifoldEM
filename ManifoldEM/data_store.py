@@ -757,8 +757,8 @@ class _DataStore:
         """
         Returns
         -------
-        mrcfile.mmap
-            Singular mrcfile.mmap().data instance for the image stack file.
+        numpy.mmap
+            Singular numpy.mmap().data instance for the image stack file.
         """
 
         if self._image_stack_data is None:
@@ -767,7 +767,7 @@ class _DataStore:
         return self._image_stack_data
 
     def get_analysis_handle(self):
-        if self._analysis_handle is None:
+        if not self._analysis_handle:
             self._analysis_handle = h5pickle.File(params.analysis_file, "a")
         return self._analysis_handle
 
@@ -790,6 +790,8 @@ class _DataStore:
         return self.analysis_data(prd_index)["embedding_data"]
 
     def get_nlsa_data(self, prd_index: int, psi_index: int):
+        if psi_index >= params.num_psi:
+            return None
         return self.analysis_data(prd_index)[f"nlsa_data_{psi_index}"]
 
 

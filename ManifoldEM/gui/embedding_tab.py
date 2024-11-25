@@ -2,22 +2,30 @@ import threading
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QLabel, QFrame, QLineEdit, QPushButton,
-                             QGridLayout, QWidget, QSpinBox, QProgressBar)
+from PyQt5.QtWidgets import (
+    QLabel,
+    QFrame,
+    QLineEdit,
+    QPushButton,
+    QGridLayout,
+    QWidget,
+    QSpinBox,
+    QProgressBar,
+)
 
 from ManifoldEM.params import params
 from ManifoldEM.util import remote_runner, is_valid_host
 
 
 class EmbeddingTab(QWidget):
-    distance_progress_changed = QtCore.pyqtSignal(int)
+    decompose_progress_changed = QtCore.pyqtSignal(int)
     eigenvector_progress_changed = QtCore.pyqtSignal(int)
     psi_progress_changed = QtCore.pyqtSignal(int)
     nlsa_progress_changed = QtCore.pyqtSignal(int)
     hostname = ""
 
     @QtCore.pyqtSlot()
-    def calc_distances(self):
+    def decompose(self):
         if self.hostname and not is_valid_host(self.hostname):
             print(f"Invalid hostname: {self.hostname}")
             return
@@ -28,119 +36,33 @@ class EmbeddingTab(QWidget):
         self.entry_hostname.setDisabled(True)
         self.entry_psi.setDisabled(True)
         self.entry_dim.setDisabled(True)
-        self.button_dist.setDisabled(True)
-        self.button_dist.setText('Distance Calculation Initiated')
+        self.button_decompose.setDisabled(True)
+        self.button_decompose.setText("Manifold decomposition started")
 
         if self.hostname:
-            cmd = f'manifold-cli -n {params.ncpu} calc-distance --num_psi {params.num_psi}'
-            task = threading.Thread(target=remote_runner,
-                                    args=(self.hostname, cmd, self.distance_progress_changed))
+            cmd = f"manifold-cli -n {params.ncpu} decompose --num_psi {params.num_psi}"
+            task = threading.Thread(
+                target=remote_runner,
+                args=(self.hostname, cmd, self.decompose_progress_changed),
+            )
         else:
-            from ManifoldEM.calc_distance import op as calc_distance
-            task = threading.Thread(target=calc_distance, args=(None, self.distance_progress_changed, ))
+            from ManifoldEM.interfaces.interactive import decompose
+            from functools import partial
 
-        task.daemon = True
-        task.start()
-    
-    @QtCore.pyqtSlot(int)
-    def on_distance_progress_changed(self, val):
-        self.distance_progress.setValue(val)
-        if val == self.distance_progress.maximum():
-            self.button_dist.setText('Distance Calculation Complete')
-            self.button_eig.setDisabled(False)
-            params.save()
-            self.calc_eigenvectors()
-
-    @QtCore.pyqtSlot()
-    def calc_eigenvectors(self):
-        params.save()
-
-        self.entry_proc.setDisabled(True)
-        self.entry_hostname.setDisabled(True)
-        self.entry_psi.setDisabled(True)
-        self.entry_dim.setDisabled(True)
-        self.button_eig.setDisabled(True)
-        self.button_eig.setText('Embedding Initiated')
-
-        if self.hostname:
-            cmd = f'manifold-cli -n {params.ncpu} manifold-analysis'
-            task = threading.Thread(target=remote_runner,
-                                    args=(self.hostname, cmd, self.eigenvector_progress_changed))
-        else:
-            from ManifoldEM.manifold_analysis import op as calculate_eigenvectors
-            task = threading.Thread(target=calculate_eigenvectors, args=(None, self.eigenvector_progress_changed, ))
-        
-        task.daemon = True
-        task.start()
-
-    @QtCore.pyqtSlot(int)
-    def on_eigenvector_progress_changed(self, val):
-        self.eigenvector_progress.setValue(val)
-        if val == self.eigenvector_progress.maximum():
-            self.button_eig.setText('Embedding Complete')
-            self.button_psi.setDisabled(False)
-            params.save()
-            self.calc_psi()
-
-    @QtCore.pyqtSlot()
-    def calc_psi(self):
-        params.save()
-
-        self.entry_proc.setDisabled(True)
-        self.entry_hostname.setDisabled(True)
-        self.entry_psi.setDisabled(True)
-        self.entry_dim.setDisabled(True)
-        self.button_psi.setDisabled(True)
-        self.button_psi.setText('Spectral Analysis Initiated')
-
-        if self.hostname:
-            cmd = f'manifold-cli -n {params.ncpu} psi-analysis'
-            task = threading.Thread(target=remote_runner,
-                                    args=(self.hostname, cmd, self.psi_progress_changed))
-        else:
-            from ManifoldEM.psi_analysis import op as psi_analysis
-            task = threading.Thread(target=psi_analysis, args=(None, self.psi_progress_changed, ))
+            target = partial(
+                decompose, blas_threads=1, progress_bar=self.decompose_progress_changed
+            )
+            task = threading.Thread(target=target)
 
         task.daemon = True
         task.start()
 
     @QtCore.pyqtSlot(int)
-    def on_psi_progress_changed(self, val):
-        self.psi_progress.setValue(val)
-        if val == self.psi_progress.maximum():
-            self.button_psi.setText('Spectral Analysis Complete')
-            params.save()
-            self.calc_nlsa()
-
-    @QtCore.pyqtSlot()
-    def calc_nlsa(self):
-        params.save()
-
-        self.entry_proc.setDisabled(True)
-        self.entry_hostname.setDisabled(True)
-        self.entry_psi.setDisabled(True)
-        self.entry_dim.setDisabled(True)
-        self.button_nlsa.setDisabled(True)
-        self.button_nlsa.setText('NLSA Movie Initiated')
-
-        if self.hostname:
-            cmd = f'manifold-cli -n {params.ncpu} nlsa-movie'
-            task = threading.Thread(target=remote_runner,
-                                    args=(self.hostname, cmd, self.nlsa_progress_changed))
-        else:
-            from ManifoldEM.nlsa_movie import op as nlsa_movie
-            task = threading.Thread(target=nlsa_movie, args=(None, self.nlsa_progress_changed, ))
-        
-        task.daemon = True
-        task.start()
-
-    @QtCore.pyqtSlot(int)
-    def on_nlsa_progress_changed(self, val):
-        self.nlsa_progress.setValue(val)
-        if val == self.nlsa_progress.maximum():
-            self.button_nlsa.setText('NLSA Movie Complete')
+    def on_decompose_progress_changed(self, val):
+        self.decompose_progress.setValue(val)
+        if val == self.decompose_progress.maximum():
+            self.button_decompose.setText("Decomposition complete!")
             self.button_to_eigenvectors.setEnabled(True)
-
 
     def __init__(self, parent=None):
         super(EmbeddingTab, self).__init__(parent)
@@ -189,7 +111,9 @@ class EmbeddingTab(QWidget):
         create_label((1, 1, 1, 2))
 
         # nproc label + selector
-        create_label((1, 1, 1, 1), "Processors", alignment=Qt.AlignCenter | Qt.AlignVCenter)
+        create_label(
+            (1, 1, 1, 1), "Processors", alignment=Qt.AlignCenter | Qt.AlignVCenter
+        )
 
         self.entry_proc = QSpinBox(self)
         self.entry_proc.setMinimum(1)
@@ -197,22 +121,25 @@ class EmbeddingTab(QWidget):
         self.entry_proc.setValue(params.ncpu)
         self.entry_proc.valueChanged.connect(choose_processors)
         self.entry_proc.setStyleSheet("QSpinBox { width : 100px }")
-        self.entry_proc.setToolTip('The number of processors to use in parallel.')
+        self.entry_proc.setToolTip("The number of processors to use in parallel.")
         layout.addWidget(self.entry_proc, 1, 2, 1, 1, Qt.AlignLeft)
         self.entry_proc.show()
 
-
         # hostname selector
-        create_label((2, 1, 1, 1), "Hostname", alignment=Qt.AlignCenter | Qt.AlignVCenter)
+        create_label(
+            (2, 1, 1, 1), "Hostname", alignment=Qt.AlignCenter | Qt.AlignVCenter
+        )
         self.entry_hostname = QLineEdit(self)
         self.entry_hostname.textChanged.connect(choose_hostname)
         layout.addWidget(self.entry_hostname, 2, 2, 1, 1, Qt.AlignLeft)
         self.entry_hostname.show()
 
         # psi label + selector
-        create_label((1, 3, 1, 1),
-                     title="Eigenvectors",
-                     alignment=Qt.AlignCenter | Qt.AlignVCenter)
+        create_label(
+            (1, 3, 1, 1),
+            title="Eigenvectors",
+            alignment=Qt.AlignCenter | Qt.AlignVCenter,
+        )
 
         self.entry_psi = QSpinBox(self)
         self.entry_psi.setMinimum(1)
@@ -220,14 +147,14 @@ class EmbeddingTab(QWidget):
         self.entry_psi.setValue(8)
         self.entry_psi.valueChanged.connect(choose_psi)
         self.entry_psi.setStyleSheet("QSpinBox { width : 100px }")
-        self.entry_psi.setToolTip('The number of DM eigenvectors to consider for NLSA.')
+        self.entry_psi.setToolTip("The number of DM eigenvectors to consider for NLSA.")
         layout.addWidget(self.entry_psi, 1, 4, 1, 1, Qt.AlignLeft)
         self.entry_psi.show()
 
         # dimension selector
-        create_label((1, 5, 1, 1),
-                     title="Dimensions",
-                     alignment=Qt.AlignCenter | Qt.AlignVCenter)
+        create_label(
+            (1, 5, 1, 1), title="Dimensions", alignment=Qt.AlignCenter | Qt.AlignVCenter
+        )
 
         self.entry_dim = QSpinBox(self)
         self.entry_dim.setMinimum(1)
@@ -235,7 +162,9 @@ class EmbeddingTab(QWidget):
         self.entry_dim.setValue(1)
         self.entry_dim.setDisabled(True)
         self.entry_dim.valueChanged.connect(choose_dimensions)
-        self.entry_dim.setToolTip("The number of orthogonal conformational coordinates to compare within the energy landscape.")
+        self.entry_dim.setToolTip(
+            "The number of orthogonal conformational coordinates to compare within the energy landscape."
+        )
         self.entry_dim.setStyleSheet("QSpinBox { width : 100px }")
         layout.addWidget(self.entry_dim, 1, 6, 1, 1, Qt.AlignLeft)
         self.entry_dim.show()
@@ -243,72 +172,24 @@ class EmbeddingTab(QWidget):
         row = 3
         create_hline((row, 1, 1, 6))
         row += 1
-        
-        # distances progress:
-        self.button_dist = QPushButton('Distance Calculation', self)
-        self.button_dist.clicked.connect(self.calc_distances)
-        layout.addWidget(self.button_dist, row, 1, 1, 2)
-        self.button_dist.setDisabled(False)
-        self.button_dist.show()
 
-        self.distance_progress = QProgressBar(minimum=0, maximum=100, value=0)
-        self.distance_progress_changed.connect(self.on_distance_progress_changed)
-        layout.addWidget(self.distance_progress, row, 3, 1, 4)
-        self.distance_progress.show()
+        # Decomposition progress
+        self.button_decompose = QPushButton("Start decomposition", self)
+        self.button_decompose.clicked.connect(self.decompose)
+        layout.addWidget(self.button_decompose, row, 1, 1, 2)
+        self.button_decompose.setDisabled(False)
+        self.button_decompose.show()
 
-        # eigenvectors progress:
-        row += 1
-        create_hline((row, 1, 1, 6))
-        row += 1
-
-        self.button_eig = QPushButton('Embedding', self)
-        self.button_eig.clicked.connect(self.calc_eigenvectors)
-        layout.addWidget(self.button_eig, row, 1, 1, 2)
-        self.button_eig.setDisabled(True)
-        self.button_eig.show()
-
-        self.eigenvector_progress = QProgressBar(minimum=0, maximum=100, value=0)
-        self.eigenvector_progress_changed.connect(self.on_eigenvector_progress_changed)
-        layout.addWidget(self.eigenvector_progress, row, 3, 1, 4)
-        self.eigenvector_progress.show()
-
-        # spectral anaylsis progress:
-        row += 1
-        create_hline((row, 1, 1, 6))
-        row += 1
-
-        self.button_psi = QPushButton('Spectral Analysis', self)
-        self.button_psi.clicked.connect(self.calc_psi)
-        layout.addWidget(self.button_psi, row, 1, 1, 2)
-        self.button_psi.setDisabled(True)
-        self.button_psi.show()
-
-        self.psi_progress = QProgressBar(minimum=0, maximum=100, value=0)
-        self.psi_progress_changed.connect(self.on_psi_progress_changed)
-        layout.addWidget(self.psi_progress, row, 3, 1, 4)
-        self.psi_progress.show()
-
-        # nlsa movie progress:
-        row += 1
-        create_hline((row, 1, 1, 6))
-        row += 1
-
-        self.button_nlsa = QPushButton("NLSA Movie", self)
-        self.button_nlsa.clicked.connect(self.calc_nlsa)
-        layout.addWidget(self.button_nlsa, row, 1, 1, 2)
-        self.button_nlsa.setDisabled(True)
-        self.button_nlsa.show()
-
-        self.nlsa_progress = QProgressBar(minimum=0, maximum=100, value=0)
-        self.nlsa_progress_changed.connect(self.on_nlsa_progress_changed)
-        layout.addWidget(self.nlsa_progress, row, 3, 1, 4)
-        self.nlsa_progress.show()
+        self.decompose_progress = QProgressBar(minimum=0, maximum=100, value=0)
+        self.decompose_progress_changed.connect(self.on_decompose_progress_changed)
+        layout.addWidget(self.decompose_progress, row, 3, 1, 4)
+        self.decompose_progress.show()
 
         row += 1
-        create_hline((row, 1, 1, 6))
+        create_hline((row + 1, 1, 1, 6))
         row += 1
 
-        self.button_to_eigenvectors = QPushButton('View Eigenvectors', self)
+        self.button_to_eigenvectors = QPushButton("View Eigenvectors", self)
         self.button_to_eigenvectors.clicked.connect(self.finalize)
         layout.addWidget(self.button_to_eigenvectors, row, 3, 1, 2)
         self.button_to_eigenvectors.setDisabled(True)
@@ -322,11 +203,9 @@ class EmbeddingTab(QWidget):
 
         self.show()
 
-
     def finalize(self):
         self.main_window.set_tab_state(True, "Eigenvectors")
         self.main_window.switch_tab("Eigenvectors")
-
 
     def activate(self):
         self.entry_proc.setValue(params.ncpu)

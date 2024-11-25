@@ -13,7 +13,7 @@ from typing import Any, Union
 from numpy import linalg as LA
 import numpy.typing as npt
 from ManifoldEM.data_store import ProjectionDirections
-from ManifoldEM.util import get_tqdm, recursive_dict_to_hdf5
+from ManifoldEM.util import NullEmitter, get_tqdm, recursive_dict_to_hdf5
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt, op as hornschunk_simple
 from ManifoldEM.belief_propagation import belief_propagation, BeliefPropagationOptions
 
@@ -409,9 +409,16 @@ def optical_flow(
     )
 
 
-def dispatch_func(func, input_data: list[Any], desc: str = "", ncpu: int = 1):
+def dispatch_func(
+    func,
+    input_data: list[Any],
+    desc: str = "",
+    ncpu: int = 1,
+    progress_bar=NullEmitter(),
+    progress_bounds=(0, 100),
+):
     tqdm = get_tqdm()
-
+    progress_min, progress_max = progress_bounds
     data: dict[int, Any] = {}
     if ncpu == 1:
         for i in tqdm(
@@ -419,6 +426,10 @@ def dispatch_func(func, input_data: list[Any], desc: str = "", ncpu: int = 1):
             desc=desc,
         ):
             data[i] = func(input_data[i])
+            progress = int(
+                progress_min + i / len(input_data) * (progress_max - progress_min)
+            )
+            progress_bar.emit(progress)
     else:
         with multiprocessing.Pool(ncpu) as pool:
             for i, result in tqdm(
@@ -427,6 +438,10 @@ def dispatch_func(func, input_data: list[Any], desc: str = "", ncpu: int = 1):
                 desc=desc,
             ):
                 data[i] = result
+                progress = int(
+                    progress_min + i / len(input_data) * (progress_max - progress_min)
+                )
+                progress_bar.emit(progress)
 
     return data
 
@@ -442,6 +457,8 @@ def optical_flow_movie_list(
     mask: None | list[NDArray[Shape["Any,Any"], Float]],
     find_bad_psi_tau: bool,
     ncpu: int = 1,
+    progress_bar=NullEmitter(),
+    progress_bounds=(0, 100),
 ):
     input_data = [
         dict(
@@ -457,7 +474,9 @@ def optical_flow_movie_list(
         partial(dispatch_helper, func=optical_flow),
         input_data,
         "Computing Optical Flow",
-        ncpu,
+        ncpu=ncpu,
+        progress_bar=progress_bar,
+        progress_bounds=progress_bounds,
     )
 
 
@@ -793,6 +812,8 @@ def compute_edge_measures_all(
     flow_map: dict[int, dict[str, Any]],
     flow_vec_pct_thresh: float,
     ncpu: int = 1,
+    progress_bar=NullEmitter(),
+    progress_bounds=(0, 100),
 ):
     input_data = [
         dict(
@@ -812,7 +833,9 @@ def compute_edge_measures_all(
         partial(dispatch_helper, func=compute_edge_measure_pair_wise_all_psi),
         input_data,
         "Computing Edge Measures",
-        ncpu,
+        ncpu=ncpu,
+        progress_bar=progress_bar,
+        progress_bounds=progress_bounds,
     )
 
     edge_measures = np.empty(len(edges), dtype=object)
@@ -855,20 +878,14 @@ def calculate_energy_landscape(
     psinums: NDArray[Shape["Any"], Integer],
     senses: NDArray[Shape["Any"], Integer],
     taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Dataset],
-    n_prds_total: int,
-    trash_ids: set[int],
     states_per_coord: int,
     temperature: float,
 ):
-    unused_prds = set(np.nonzero(psinums == -1)[0])
-    unused_prds = unused_prds.union(trash_ids)
-
     # Section II
     occupancy = np.zeros((1, states_per_coord)).flatten()
     tau_avg = np.array([])
 
-    active_prds = np.delete(np.arange(n_prds_total), list(unused_prds))
-    for prd in active_prds:
+    for prd in range(len(psinums)):
         psi = psinums[prd]
         tau = np.array(taus[prd][psi]).flatten()
         if senses[prd] == -1:
@@ -897,11 +914,12 @@ def find_conformational_coords(
     nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
     num_psi: int,
     return_all_output: bool = False,
-    output_handle: None | h5py.Group = None,
+    output_handle: None | h5py.File = None,
     flow_vec_pct_thresh: float = 0.95,
     allow_empty_clusters: bool = False,
     allow_bad_psi_tau: bool = True,
     ncpu: int = 1,
+    progress_bar=NullEmitter(),
 ):
     G, Gsub = prds.prune_graphs()
     num_clusters = len(G["NodesConnComp"])
@@ -922,7 +940,13 @@ def find_conformational_coords(
     G.update(ConnCompNoAnchor=cluster_no_anchor)
 
     flow_map = optical_flow_movie_list(
-        nlsa_movies, taus, nlsa_mask, allow_bad_psi_tau, ncpu
+        nlsa_movies,
+        taus,
+        nlsa_mask,
+        allow_bad_psi_tau,
+        ncpu,
+        progress_bar=progress_bar,
+        progress_bounds=(0, 50),
     )
 
     edge_measures, edge_measures_tblock, bad_nodes_psis_block = (
@@ -934,6 +958,8 @@ def find_conformational_coords(
             flow_map,
             flow_vec_pct_thresh,
             ncpu,
+            progress_bar=progress_bar,
+            progress_bounds=(50, 99),
         )
     )
 
@@ -954,6 +980,16 @@ def find_conformational_coords(
             if not isinstance(group, h5py.Group):
                 msg = f"path 'prd_{index}' is not a group in the output handle"
                 raise ValueError(msg)
+
+            if "sense" in group:
+                group["sense"][...] = senses[index]
+            else:
+                group["sense"] = senses[index]
+            if "psinum" in group:
+                group["psinum"][...] = psinums[index]
+            else:
+                group["psinum"] = psinums[index]
+
             if "flow_data" in group:
                 print(f"Deleting existing 'flow_data' group in 'prd_{index}'")
                 del group["flow_data"]
@@ -980,7 +1016,12 @@ def find_conformational_coords(
                     edge_measures=edge_measures_local,
                     bad_nodes_psis=bad_nodes_psis_block[index, :],
                 ),
+                overwrite=True,
             )
+
+        output_handle.flush()
+
+    progress_bar.emit(100)
 
     if return_all_output:
         return (

@@ -965,11 +965,9 @@ class _CCDetailsView(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        gif_path = params.get_psi_gif(self.prd_index, self.psi_index)
-        npix = params.ms_num_pixels
         imgs = data_store.get_nlsa_data(self.prd_index - 1, self.psi_index - 1)["IMG1"][
             ()
-        ].T.reshape(-1, npix, npix)
+        ]
         self.vid_tab1 = VidCanvas(imgs, parent=self)
         self.vid_tab2 = Manifold2dCanvas(self.prd_index, self)
         self.vid_tab3 = QDialog(self)  # Manifold3dCanvas(self)
