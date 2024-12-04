@@ -394,6 +394,7 @@ class Params:
 
     def create_dir(self):
         os.makedirs(self.out_dir, exist_ok=True)
+        os.makedirs(self.bin_dir, exist_ok=True)
 
     def __repr__(self):
         return pformat(self.asdict())

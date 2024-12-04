@@ -108,7 +108,7 @@ def threshold(**kwargs):
 
 
 def decompose(
-    prd_list: Union[list[int], None] = None, blas_threads=1, progress_bar=None, **kwargs
+    prd_list: Union[list[int], None] = None, blas_threads=1, progress_bar=NullEmitter(), **kwargs
 ):
     from ManifoldEM.prd_analysis import prd_analysis
 
@@ -171,8 +171,8 @@ def energy_landscape(blas_threads=1, **kwargs):
     params.save()
 
 
-def compute_trajectory(blas_threads=1, **kwargs):
-    from ManifoldEM.trajectory import op as trajectory
+def compute_trajectory(blas_threads=1, progress_bar=NullEmitter(), **kwargs):
+    from ManifoldEM.trajectory import build_trajectory
 
     with threadpool_limits(limits=blas_threads, user_api="blas"):
-        trajectory()
+        build_trajectory(progress_bar=progress_bar)

@@ -4,8 +4,8 @@ import mrcfile
 import multiprocessing
 import numpy as np
 
-from dataclasses import dataclass
-from typing import Any, Tuple, Iterable
+import dataclasses
+from typing import Any, Tuple, Iterable, cast
 from nptyping import NDArray, Shape, Float, Int, Bool
 from numpy.fft import fft2, ifft2, ifftshift
 from scipy.ndimage import shift
@@ -29,7 +29,15 @@ _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
 
 
-@dataclass
+@dataclasses.dataclass
+class ImageData:
+    filter: NDArray[Shape["Any,Any"], Float]
+    mask: NDArray[Shape["Any,Any"], Float]
+    rotations: NDArray[Shape["Any"], Float]
+    avg_orientation: NDArray[Shape["3"], Float]
+
+
+@dataclasses.dataclass
 class FilterParams:
     """
     Class to assist in the creation of image filters.
@@ -217,12 +225,7 @@ def get_transform_info(
     quats: NDArray[Shape["Any,4"], Float],
     filter: FilterParams,
     mask_vol_file: str = "",
-) -> Tuple[
-    NDArray[Shape["Any,Any"], Float],
-    NDArray[Shape["Any,Any"], Float],
-    NDArray[Shape["Any"], Float],
-    NDArray[Shape["3"], Float],
-]:
+) -> ImageData:
     if len(quats.shape) != 2 or quats.shape[1] != 4:
         raise ValueError("Quaternions must be of shape (N, 4)")
 
@@ -246,7 +249,9 @@ def get_transform_info(
     for i_image in range(n_images):
         rotations[i_image] = -get_psi(quats[i_image, :], avg_orientation_vec) - psi_p
 
-    return G, mask, rotations, avg_orientation_vec
+    return ImageData(
+        filter=G, mask=mask, rotations=rotations, avg_orientation=avg_orientation_vec
+    )
 
 
 def get_raw_images(
@@ -566,7 +571,7 @@ def psi_analysis_single(
     return res
 
 
-def run_nlsa_second_pass(prd_index: int, data_handle: h5py.Group, dtype=np.float32):
+def get_transformed_images_CTFs_and_image_data(prd_index: int):
     prds = data_store.get_prds()
     raw_image_indices = prds.thresholded_image_indices[prd_index]
     image_mirrored = prds.image_is_mirrored[raw_image_indices]
@@ -582,7 +587,7 @@ def run_nlsa_second_pass(prd_index: int, data_handle: h5py.Group, dtype=np.float
     )
 
     image_quats = prds.quats_full[:, raw_image_indices].T
-    (image_filter, image_mask, image_rotations, _) = get_transform_info(
+    image_data = get_transform_info(
         params.ms_num_pixels,
         image_quats,
         filter_params,
@@ -592,10 +597,10 @@ def run_nlsa_second_pass(prd_index: int, data_handle: h5py.Group, dtype=np.float
     raw_images = get_raw_images(params.img_stack_file, raw_image_indices)
     transformed_images = transform_images(
         raw_images,
-        image_filter,
-        image_mask,
+        image_data.filter,
+        image_data.mask,
         image_offsets,
-        image_rotations,
+        image_data.rotations,
         image_mirrored,
         in_place=True,
     )
@@ -608,18 +613,54 @@ def run_nlsa_second_pass(prd_index: int, data_handle: h5py.Group, dtype=np.float
         params.ms_amplitude_contrast_ratio,
     )
 
-    local_handle = data_handle[f"prd_{prd_index}"]
-    embed_data = local_handle["embedding_data"]
-    image_data = local_handle["image_data"]
-    distances_data = local_handle["distances"]
-    psi_index = local_handle["psinum"][()]
+    return transformed_images, image_CTFs, image_data
 
-    image_indices = embed_data["posPath"][:]
-    psi = embed_data["psi"][:]
+
+def run_nlsa_second_pass(
+    prd_index: int, data_handle: h5py.Group, dtype=np.float32
+) -> NDArray[Shape["Any,Any,Any"], Float]:
+    """
+    Generates NLSA data for a given projection direction. This is used in generating the trajectory data.
+    The main differences between this and the first pass are:
+      - The 'psi' is selected from the user or optical flow analysis, rather than all generated
+      - The 'psi' NLSA movie is not binned to have roughly 'states_per_coord' images, but rather returns the full output
+
+    Parameters
+    ----------
+    prd_index : int
+        The index of the projection direction to analyze.
+    data_handle : h5pickle.Group
+        The HDF5 group where project data is stored. This should have the embedding, image, distances, and psinum data.
+    dtype : type, default=np.float32
+        The data type to use for the NLSA images.
+
+    Returns
+    -------
+    ndarray[dtype]
+        An [n_images, n_pix, n_pix] array of NLSA images for the given projection direction of the specified data type.
+
+    Notes
+    -----
+    The data handle needs to be passed in since this routine is typically called from a
+    multiprocessing context. hdf5 does not play nice with forks, so this allows h5pickle to do
+    its thing in the main process and pass the handle to the worker processes.
+    """
+    transformed_images, image_CTFs, _ = get_transformed_images_CTFs_and_image_data(
+        prd_index
+    )
+
+    local_handle = cast(h5py.Group, data_handle[f"prd_{prd_index}"])
+    embed_data = cast(h5py.Group, local_handle["embedding_data"])
+    image_data = cast(h5py.Group, local_handle["image_data"])
+    distances_data = cast(h5py.Group, local_handle["distances"])
+    psi_index = int(cast(h5py.Dataset, local_handle["psinum"])[()])
+
+    image_indices = cast(h5py.Dataset, embed_data["posPath"])[:]
+    psi = cast(h5py.Dataset, embed_data["psi"])[:]
     psi_sorted_ind = np.argsort(psi[:, psi_index])
-    DD = distances_data["D"][:]
+    DD = cast(h5py.Dataset, distances_data["D"])[:]
     DD = DD[psi_sorted_ind][:, psi_sorted_ind]
-    mask = image_data["mask"]
+    mask = cast(h5py.Dataset, image_data["mask"])[:]
     con_order = len(image_indices) // params.con_order_range
 
     nlsa_images, _, _, _, _, _, _, _ = NLSA(
@@ -638,54 +679,16 @@ def run_nlsa_second_pass(prd_index: int, data_handle: h5py.Group, dtype=np.float
 
 
 def run_pipeline(prd_index: int):
-    prds = data_store.get_prds()
-    raw_image_indices = prds.thresholded_image_indices[prd_index]
-    image_mirrored = prds.image_is_mirrored[raw_image_indices]
-    image_defocus = prds.get_defocus_by_prd(prd_index)
-    image_offsets = np.empty((len(raw_image_indices), 2))
-    image_offsets[:, 0] = prds.microscope_origin[1][raw_image_indices]
-    image_offsets[:, 1] = prds.microscope_origin[0][raw_image_indices]
-
-    filter_params = FilterParams(
-        method=params.distance_filter_type,
-        cutoff_freq=params.distance_filter_cutoff_freq,
-        order=params.distance_filter_order,
+    transformed_images, image_CTFs, image_data = (
+        get_transformed_images_CTFs_and_image_data(prd_index)
     )
-
-    image_quats = prds.quats_full[:, raw_image_indices].T
-    (image_filter, image_mask, image_rotations, avg_orientation) = get_transform_info(
-        params.ms_num_pixels,
-        image_quats,
-        filter_params,
-        mask_vol_file=params.mask_vol_file,
-    )
-
-    raw_images = get_raw_images(params.img_stack_file, raw_image_indices)
-    transformed_images = transform_images(
-        raw_images,
-        image_filter,
-        image_mask,
-        image_offsets,
-        image_rotations,
-        image_mirrored,
-        in_place=True,
-    )
-    image_CTFs = get_CTFs(
-        image_defocus,
-        params.ms_num_pixels,
-        params.ms_spherical_aberration,
-        params.ms_kilovolts,
-        params.ms_ctf_envelope,
-        params.ms_amplitude_contrast_ratio,
-    )
-
     distances_data = calc_distances(transformed_images, image_CTFs)
     embed_data = auto_trim_manifold(distances_data["D"], params.nlsa_tune, params.rad)
     nlsa_data = psi_analysis_single(
         distances_data["D"],
         transformed_images,
         image_CTFs,
-        image_mask,
+        image_data.mask,
         embed_data["psi"],
         np.arange(params.num_psi),
         embed_data["posPath"],
@@ -693,14 +696,8 @@ def run_pipeline(prd_index: int):
         params.num_psi_truncated,
     )
 
-    image_data = dict(
-        filter=image_filter,
-        mask=image_mask,
-        rotations=image_rotations,
-        avg_orientation=avg_orientation,
-    )
     res = {
-        "image_data": image_data,
+        "image_data": dataclasses.asdict(image_data),
         "distances": distances_data,
         "embedding_data": embed_data,
         "nlsa_data": nlsa_data,

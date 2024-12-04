@@ -803,8 +803,8 @@ class _DataStore:
     ]:
         data = self.get_analysis_handle()
         active_prds = self.get_active_prd_indices()
-        psinums = np.array([data[f"prd_{i}"]["psinum"][()] for i in active_prds])
-        senses = np.array([data[f"prd_{i}"]["sense"][()] for i in active_prds])
+        psinums = np.asarray([data[f"prd_{i}"]["psinum"][()] for i in active_prds], dtype=int)
+        senses = np.asarray([data[f"prd_{i}"]["sense"][()] for i in active_prds], dtype=int)
         return active_prds, psinums, senses
 
     def get_active_prd_indices(self) -> NDArray[Shape["Any"], Int]:
@@ -816,7 +816,7 @@ class _DataStore:
         return cast(
             list[NDArray[Shape["Any"], Float]],
             [
-                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"]
+                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"][:]
                 for j in range(params.num_psi)
             ],
         )

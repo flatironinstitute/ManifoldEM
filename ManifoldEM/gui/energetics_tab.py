@@ -2,6 +2,7 @@ import os
 import shutil
 import threading
 
+from functools import partial
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -185,7 +186,9 @@ class Erg1dMain(QDialog):
 
     @QtCore.pyqtSlot()
     def start_task(self):
-        from ManifoldEM.trajectory import op as trajectory
+        from ManifoldEM.interfaces.simple import compute_trajectory
+
+        target = partial(compute_trajectory, progress_bar=self.progress_changed)
 
         if self.reprepare == 1:  # ZULU
             # overwrite warning:
@@ -204,7 +207,7 @@ class Erg1dMain(QDialog):
             box.setInformativeText(msg)
             reply = box.exec_()
             if reply == QMessageBox.No:
-                pass
+                return
 
             self.progress.setValue(0)
             # hard-remove pre-existing trajectory outputs:
@@ -219,7 +222,7 @@ class Erg1dMain(QDialog):
 
             params.save()  # send new GUI data to parameters file
 
-            task = threading.Thread(target=trajectory, args=(self.progress_changed,))
+            task = threading.Thread(target=target)
             task.daemon = True
             task.start()
 
@@ -232,7 +235,7 @@ class Erg1dMain(QDialog):
 
             params.save()  # send new GUI data to parameters file
 
-            task = threading.Thread(target=trajectory, args=(self.progress_changed,))
+            task = threading.Thread(target=target)
             task.daemon = True
             task.start()
 

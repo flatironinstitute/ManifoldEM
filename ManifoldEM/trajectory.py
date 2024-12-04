@@ -121,9 +121,14 @@ def write_relion_s2(
     tqdm = get_tqdm()
 
     n_prds = len(prd_indices)
-    taubins, psis, thetas, phis = [], [], [], []
+    taubins, psis, thetas, phis = (
+        [[]] * n_prds,
+        [[]] * n_prds,
+        [[]] * n_prds,
+        [[]] * n_prds,
+    )
     for i in tqdm(range(n_prds), "Extracting bin/orientation data..."):
-        res = extract_traj_data(
+        taubins[i], phis[i], thetas[i], psis[i] = extract_traj_data(
             active_tau_by_prd[i],
             tau_avg,
             psi_sorted_quats_by_prd[i],
@@ -131,22 +136,19 @@ def write_relion_s2(
             params.states_per_coord,
             params.con_order_range,
         )
-        taubins.append(res[0])
-        phis.append(res[1])
-        thetas.append(res[2])
-        psis.append(res[3])
 
-    with NamedTemporaryFile(suffix='.h5') as f_tmp:
+    with NamedTemporaryFile(suffix=".h5") as f_tmp:
         with h5pickle.File(f_tmp.name, "w") as f:
             print(f"Using {f_tmp.name} for temporary storage of NLSA data")
             nlsa_builder = partial(
                 run_nlsa_second_pass, data_handle=data_store.get_analysis_handle()
             )
 
+            desc = "Generating full NLSA movies..."
             if params.ncpu == 1:
                 for i in tqdm(
                     range(n_prds),
-                    desc="Generating full NLSA movies...",
+                    desc=desc,
                 ):
                     f[str(i)] = nlsa_builder(prd_indices[i])
                     progress_bar.emit(int(49 * i / n_prds))
@@ -155,7 +157,7 @@ def write_relion_s2(
                     for i, nlsa_movie in tqdm(
                         enumerate(pool.imap(nlsa_builder, prd_indices)),
                         total=len(prd_indices),
-                        desc="Generating full NLSA movies...",
+                        desc=desc,
                     ):
                         f[str(i)] = nlsa_movie
                         progress_bar.emit(int(49 * i / n_prds))
@@ -200,7 +202,6 @@ def build_trajectory(progress_bar: Any = NullEmitter()):
     params.load()
     active_prds, psinums, senses = data_store.get_active_psinums_and_senses()
     taus = data_store.get_active_taus()
-
     prds = data_store.get_prds()
     image_indices_by_prd = prds.thresholded_image_indices
 
@@ -209,17 +210,20 @@ def build_trajectory(progress_bar: Any = NullEmitter()):
     active_tau_by_prd = []
     tau_avg = np.array([])
     quats_full = prds.quats_full
-    psi_sorted_quats_by_prd = []
+    psi_sorted_quats_by_prd: list[NDArray] = []
     for i, i_prd in enumerate(active_prds):
         i_psi = psinums[i]
         psi_sorted_indices = cast(
             NDArray[Shape["Any"], Int],
-            data_handle[f"prd_{i_prd}/nlsa_data_{i_psi}/psi_sorted_ind"][:],
+            cast(
+                h5pickle.Dataset,
+                data_handle[f"prd_{i_prd}/nlsa_data_{i_psi}/psi_sorted_ind"],
+            )[:],
         )
         sorted_raw_indices = image_indices_by_prd[i_prd][psi_sorted_indices]
         psi_sorted_quats_by_prd.append(quats_full[:, sorted_raw_indices])
 
-        tau = taus[i][i_psi][:]
+        tau = taus[i][i_psi]
         if senses[i] == -1:
             tau = 1.0 - tau
 
@@ -242,4 +246,4 @@ def build_trajectory(progress_bar: Any = NullEmitter()):
     params.save()
 
     progress_bar.emit(100)
-    print("finished manifold embedding!")
+    print(f"Trajectory generation complete! Check {params.bin_dir} for output.")
