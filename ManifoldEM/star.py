@@ -5,26 +5,33 @@ import pandas as pd
 from ManifoldEM.params import params
 from ManifoldEM.util import eul_to_quat
 
-'''
+"""
 Copyright (c) Columbia University Sonya Hanson 2018
 Copyright (c) Columbia University Hstau Liao 2019
 Copyright (c) Columbia University Evan Seitz 2021
-'''
+"""
 
 
-def write_star(star_file, traj_file, df):
-    params.load()
-
-    with open(star_file, 'w') as text_file:
+def write_star(star_file, traj_file, phi, theta, psi, pixel_size):
+    with open(star_file, "w") as text_file:
         text_file.write(
-            '\ndata_ \n \nloop_ \n \n_rlnImageName #1 \n_rlnAnglePsi #2 \n_rlnAngleTilt #3 \n_rlnAngleRot #4 \n_rlnDetectorPixelSize #5 \n_rlnMagnification #6 \n'
+            "\ndata_ \n \nloop_ \n \n_rlnImageName #1 \n_rlnAnglePsi #2 \n_rlnAngleTilt #3 \n_rlnAngleRot #4 \n_rlnDetectorPixelSize #5 \n_rlnMagnification #6 \n"
         )
-        for i in range(len(df)):
-            text_file.write('%s@%s %s %s %s %s %s\n' %
-                            (i + 1, traj_file, df.psi[i], df.theta[i], df.phi[i], params.ms_pixel_size, 10000.0))
+        for i in range(len(phi)):
+            text_file.write(
+                "%s@%s %s %s %s %s %s\n"
+                % (
+                    i + 1,
+                    traj_file,
+                    psi[i],
+                    theta[i],
+                    phi[i],
+                    pixel_size,
+                    10000.0,
+                )
+            )
             # Note: DetectorPixelSize and Magnification required by relion_reconstruct; 10000 used here such that we can always put in the user-defined pixel size...
             # ...since it may be obtained via calibration (see user manual); since Pixel Size = Detector Pixel Size [um] / Magnification --> [Angstroms]
-
 
 
 def parse_star(starfile, skip, keep_index=False):
@@ -63,7 +70,7 @@ def parse_star(starfile, skip, keep_index=False):
     headers = []
     foundheader = False
     ln = 0
-    with open(starfile, 'rU') as f:
+    with open(starfile, "rU") as f:
         for l in f:
             if ln < skip:
                 ln += 1
@@ -74,20 +81,20 @@ def parse_star(starfile, skip, keep_index=False):
                     if keep_index:
                         head = l.rstrip()
                     else:
-                        head = l.split('#')[0].rstrip().lstrip('_')
+                        head = l.split("#")[0].rstrip().lstrip("_")
                     headers.append(head)
                 else:
                     lastheader = False
                 if foundheader and not lastheader:
                     break
                 ln += 1
-    star = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None)
+    star = pd.read_table(starfile, skiprows=ln, delimiter="\s+", header=None)
     star.columns = headers
 
     return star
 
 
-def parse_star_optics(starfile:str, keep_index: bool=False):
+def parse_star_optics(starfile: str, keep_index: bool = False):
     """
     Parses the optics section of a STAR file and returns the data as a pandas DataFrame.
 
@@ -123,7 +130,7 @@ def parse_star_optics(starfile:str, keep_index: bool=False):
     headers = []
     foundheader = False
     ln = 0
-    with open(starfile, 'rU') as f:
+    with open(starfile, "rU") as f:
         for l in f:
             if l.startswith("_rln"):
                 foundheader = True
@@ -131,25 +138,27 @@ def parse_star_optics(starfile:str, keep_index: bool=False):
                 if keep_index:
                     head = l.rstrip()
                 else:
-                    head = l.split('#')[0].rstrip().lstrip('_')
+                    head = l.split("#")[0].rstrip().lstrip("_")
                 headers.append(head)
             else:
                 lastheader = False
             if foundheader and not lastheader:
                 break
             ln += 1
-    star = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None, nrows=1)
+    star = pd.read_table(starfile, skiprows=ln, delimiter="\s+", header=None, nrows=1)
     star.columns = headers
 
     return (star, ln + 1)
 
 
-def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shape["*"], Float64],
-                                                                    NDArray[Shape["*"], Float64]],
-                                                              NDArray[Shape["4,*"], Float64],
-                                                              NDArray[Shape["*"], Float64],
-                                                              NDArray[Shape["*"], Float64],
-                                                              ]:
+def get_align_data(
+    align_star_file: str, flip: bool
+) -> tuple[
+    tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
+    NDArray[Shape["4,*"], Float64],
+    NDArray[Shape["*"], Float64],
+    NDArray[Shape["*"], Float64],
+]:
     """
     Extracts alignment data and microscope parameters from a RELION STAR file.
 
@@ -189,7 +198,7 @@ def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shap
     """
 
     relion_old = True
-    with open(align_star_file, 'r') as f:
+    with open(align_star_file, "r") as f:
         for line in f:
             if line.startswith("data_optics"):
                 relion_old = False
@@ -200,41 +209,43 @@ def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shap
         df = parse_star(align_star_file, skip, keep_index=False)
         df0 = df
     else:
-        print('RELION Optics Group found.')
+        print("RELION Optics Group found.")
         df0, skip = parse_star_optics(align_star_file, keep_index=False)
         df = parse_star(align_star_file, skip, keep_index=False)
 
     try:
-        params.ms_kilovolts = float(df0['rlnVoltage'].values[0])
-        params.ms_spherical_aberration = float(df0['rlnSphericalAberration'].values[0])
-        params.ms_amplitude_contrast_ratio = float(df0['rlnAmplitudeContrast'].values[0])
+        params.ms_kilovolts = float(df0["rlnVoltage"].values[0])
+        params.ms_spherical_aberration = float(df0["rlnSphericalAberration"].values[0])
+        params.ms_amplitude_contrast_ratio = float(
+            df0["rlnAmplitudeContrast"].values[0]
+        )
     except:
-        print('missing microscope parameters')
+        print("missing microscope parameters")
         exit(1)
 
     try:
-        U = df['rlnDefocusU'].values
-        V = df['rlnDefocusV'].values
+        U = df["rlnDefocusU"].values
+        V = df["rlnDefocusV"].values
     except:
         print("missing defocus")
         exit(1)
 
-    if 'rlnOriginX' in df.columns and 'rlnOriginY' in df.columns:
-        shx = df['rlnOriginX'].values
-        shy = df['rlnOriginY'].values
-    elif 'rlnOriginXAngst' in df.columns and 'rlnOriginYAngst' in df.columns:
-        shx = df['rlnOriginXAngst'].values / params.ms_pixel_size
-        shy = df['rlnOriginYAngst'].values / params.ms_pixel_size
+    if "rlnOriginX" in df.columns and "rlnOriginY" in df.columns:
+        shx = df["rlnOriginX"].values
+        shy = df["rlnOriginY"].values
+    elif "rlnOriginXAngst" in df.columns and "rlnOriginYAngst" in df.columns:
+        shx = df["rlnOriginXAngst"].values / params.ms_pixel_size
+        shy = df["rlnOriginYAngst"].values / params.ms_pixel_size
     else:
         print(f"Warning: missing relion origin data in {align_star_file}")
-        shx = U * 0.
+        shx = U * 0.0
         shy = shx
     sh = (shx, shy)
 
     try:
-        phi = np.deg2rad(df['rlnAngleRot'].values)
-        theta = np.deg2rad(df['rlnAngleTilt'].values)
-        psi = np.deg2rad(df['rlnAnglePsi'].values)
+        phi = np.deg2rad(df["rlnAngleRot"].values)
+        theta = np.deg2rad(df["rlnAngleTilt"].values)
+        psi = np.deg2rad(df["rlnAnglePsi"].values)
     except:
         print("missing Euler angles")
         exit(1)

@@ -1,5 +1,6 @@
 import h5py
 import mrcfile
+import multiprocessing
 import numpy as np
 import os
 import sys
@@ -515,6 +516,38 @@ def rotate_fill(
     return rotate(img, angle, reshape=False, mode="grid-wrap")
 
 
+def annotate_hdf_hierachy(group: h5py.Group, data: None | dict = None) -> dict:
+    """
+    Recursively annotates the hierarchy of an HDF5 group.
+
+    Parameters
+    ----------
+    group : h5py.Group
+        The group to annotate.
+    data : dict, optional
+        The data dictionary to populate. If None, a new dictionary is created. Defaults to None.
+
+    Returns
+    -------
+    dict
+        A dictionary representing the hierarchy. The keys are the group names, with datasets represented as tuples
+        containing the number of dimensions and the data type.
+    """
+    if data is None:
+        data = {}
+    for key, item in group.items():
+        if isinstance(item, h5py.Group):
+            data[key] = {}
+            data[key] = annotate_hdf_hierachy(item, data[key])
+        elif isinstance(item, h5py.Dataset):
+            data[key] = (len(item.shape) if item.shape else 0, item.dtype.name)
+        else:
+            # Shouldn't be possible to reach this point
+            data[key] = None
+
+    return data
+
+
 def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any], overwrite=False):
     """Recursively writes a dictionary to an HDF5 group.
     Data must be something convertible to an HDF5 dataset (e.g. a numpy array).
@@ -548,3 +581,44 @@ def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any], overwrite=Fa
                     group.create_dataset(keyi, data=sub_item)
         else:
             group.create_dataset(str(key), data=item)
+
+
+def dispatch_func(
+    func,
+    input_data: list[Any],
+    desc: str = "",
+    ncpu: int = 1,
+    progress_bar=NullEmitter(),
+    progress_bounds=(0, 100),
+):
+    tqdm = get_tqdm()
+    progress_min, progress_max = progress_bounds
+    data: dict[int, Any] = {}
+    if ncpu == 1:
+        for i in tqdm(
+            range(len(input_data)),
+            desc=desc,
+        ):
+            data[i] = func(input_data[i])
+            progress = int(
+                progress_min + i / len(input_data) * (progress_max - progress_min)
+            )
+            progress_bar.emit(progress)
+    else:
+        with multiprocessing.Pool(ncpu) as pool:
+            for i, result in tqdm(
+                enumerate(pool.imap(func, input_data)),
+                total=len(input_data),
+                desc=desc,
+            ):
+                data[i] = result
+                progress = int(
+                    progress_min + i / len(input_data) * (progress_max - progress_min)
+                )
+                progress_bar.emit(progress)
+
+    return data
+
+
+def dispatch_helper(kwargs, func):
+    return func(**kwargs)

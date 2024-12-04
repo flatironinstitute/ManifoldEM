@@ -197,13 +197,8 @@ def square_symmetrize_matrix(
     n_rows: int,
 ) -> NDArray[Shape["Any,Any"], Float]:
     """
-    Constructs a symmetric matrix from given row indices, column indices, and values,
+    Constructs a dense symmetric matrix from given row indices, column indices, and values,
     specifically designed for handling squared distances.
-
-    This function first creates a sparse matrix from the given row indices, column indices,
-    and values. It then converts this sparse matrix to a dense array and performs operations
-    to ensure that the resulting matrix is symmetric and represents squared distances
-    correctly.
 
     Parameters
     ----------
@@ -224,8 +219,6 @@ def square_symmetrize_matrix(
         to ensure correct representation of squared distances.
 
     Notes:
-    - The function first constructs a sparse CSR (Compressed Sparse Row) matrix from the input
-      indices and values. It then converts this sparse matrix to a dense array.
     - It computes the square of the dense array and its transpose to handle squared distances.
     - The final matrix is adjusted by adding the original matrix and its transpose, then
       subtracting a matrix that contains the squares of the distances, to ensure symmetry

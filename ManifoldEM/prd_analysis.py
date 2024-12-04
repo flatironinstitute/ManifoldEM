@@ -455,7 +455,8 @@ def NLSA(
 
     rec_num = con_order
     img_shape = all_images.shape[1:]
-    IMGT = np.zeros((n_images - con_order - rec_num, *img_shape), dtype=np.float64)
+    n_images_recon = n_images - con_order - rec_num
+    IMGT = np.zeros((n_images_recon, *img_shape), dtype=np.float64)
     for i in range(rec_num):
         tmp = ConImgT[i * n_pixels : (i + 1) * n_pixels, :] @ psiC.T
         for ii in range(n_images - 2 * con_order):
@@ -472,14 +473,11 @@ def NLSA(
 
         IMGT[i, :, :] = ttmp
 
-    nSrecon = IMGT.shape[0]
     Drecon = L2_distance(IMGT, IMGT)
-
-    lamb, psirec, _, mu, _, _, _, _ = diffusion_map_embedding(
-        (Drecon**2), nSrecon, tune
+    _, psirec, _, mu, _, _, _, _ = diffusion_map_embedding(
+        (Drecon**2), n_images_recon, tune
     )
 
-    lamb = lamb[lamb > 0]
     _, _, tau = fit_1D_open_manifold_3D(psirec)
 
     # tau is #part (num-2ConOrder?)
@@ -561,10 +559,82 @@ def psi_analysis_single(
                 sdiag=sdiag,
                 Topo_mean=topo_mean.astype(np.float16),
                 tauinds=tauinds,
+                psi_sorted_ind=psi_sorted_ind,
             )
         )
 
     return res
+
+
+def run_nlsa_second_pass(prd_index: int, data_handle: h5py.Group, dtype=np.float32):
+    prds = data_store.get_prds()
+    raw_image_indices = prds.thresholded_image_indices[prd_index]
+    image_mirrored = prds.image_is_mirrored[raw_image_indices]
+    image_defocus = prds.get_defocus_by_prd(prd_index)
+    image_offsets = np.empty((len(raw_image_indices), 2))
+    image_offsets[:, 0] = prds.microscope_origin[1][raw_image_indices]
+    image_offsets[:, 1] = prds.microscope_origin[0][raw_image_indices]
+
+    filter_params = FilterParams(
+        method=params.distance_filter_type,
+        cutoff_freq=params.distance_filter_cutoff_freq,
+        order=params.distance_filter_order,
+    )
+
+    image_quats = prds.quats_full[:, raw_image_indices].T
+    (image_filter, image_mask, image_rotations, _) = get_transform_info(
+        params.ms_num_pixels,
+        image_quats,
+        filter_params,
+        mask_vol_file=params.mask_vol_file,
+    )
+
+    raw_images = get_raw_images(params.img_stack_file, raw_image_indices)
+    transformed_images = transform_images(
+        raw_images,
+        image_filter,
+        image_mask,
+        image_offsets,
+        image_rotations,
+        image_mirrored,
+        in_place=True,
+    )
+    image_CTFs = get_CTFs(
+        image_defocus,
+        params.ms_num_pixels,
+        params.ms_spherical_aberration,
+        params.ms_kilovolts,
+        params.ms_ctf_envelope,
+        params.ms_amplitude_contrast_ratio,
+    )
+
+    local_handle = data_handle[f"prd_{prd_index}"]
+    embed_data = local_handle["embedding_data"]
+    image_data = local_handle["image_data"]
+    distances_data = local_handle["distances"]
+    psi_index = local_handle["psinum"][()]
+
+    image_indices = embed_data["posPath"][:]
+    psi = embed_data["psi"][:]
+    psi_sorted_ind = np.argsort(psi[:, psi_index])
+    DD = distances_data["D"][:]
+    DD = DD[psi_sorted_ind][:, psi_sorted_ind]
+    mask = image_data["mask"]
+    con_order = len(image_indices) // params.con_order_range
+
+    nlsa_images, _, _, _, _, _, _, _ = NLSA(
+        DD,
+        image_indices,
+        psi_sorted_ind,
+        transformed_images,
+        mask,
+        image_CTFs,
+        con_order=con_order,
+        tune=params.nlsa_tune,
+        psiTrunc=params.num_psi_truncated,
+    )
+
+    return nlsa_images.astype(dtype)
 
 
 def run_pipeline(prd_index: int):

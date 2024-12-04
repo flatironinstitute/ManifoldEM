@@ -9,8 +9,8 @@ import numpy as np
 import pickle
 from dataclasses import dataclass
 
-from typing import List, Any, Tuple, Dict, Set
-from nptyping import NDArray, Shape, Int, Int64, Float64, Bool
+from typing import List, Any, Tuple, Dict, Set, cast
+from nptyping import NDArray, Shape, Int, Float, Float64, Bool
 from scipy.ndimage import shift
 from scipy.fftpack import fft2, ifft2
 
@@ -794,23 +794,32 @@ class _DataStore:
             return None
         return self.analysis_data(prd_index)[f"nlsa_data_{psi_index}"]
 
-    def get_active_psinums_and_senses(self):
+    def get_active_psinums_and_senses(
+        self,
+    ) -> Tuple[
+        NDArray[Shape["Any"], Int],
+        NDArray[Shape["Any"], Int],
+        NDArray[Shape["Any"], Int],
+    ]:
         data = self.get_analysis_handle()
         active_prds = self.get_active_prd_indices()
         psinums = np.array([data[f"prd_{i}"]["psinum"][()] for i in active_prds])
         senses = np.array([data[f"prd_{i}"]["sense"][()] for i in active_prds])
         return active_prds, psinums, senses
 
-    def get_active_prd_indices(self):
+    def get_active_prd_indices(self) -> NDArray[Shape["Any"], Int]:
         prds = self.get_prds()
         return np.array(sorted(list(set(range(prds.n_thresholded)) - prds.trash_ids)))
 
-    def get_taus(self, prd_index: int):
+    def get_taus(self, prd_index: int) -> list[NDArray[Shape["Any"], Float]]:
         data = self.get_analysis_handle()
-        return [
-            data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"]
-            for j in range(params.num_psi)
-        ]
+        return cast(
+            list[NDArray[Shape["Any"], Float]],
+            [
+                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"]
+                for j in range(params.num_psi)
+            ],
+        )
 
     def get_taus_prd_list(self, prd_list: List[int] | NDArray[Shape["Any"], Int]):
         return [self.get_taus(i) for i in prd_list]
@@ -821,19 +830,15 @@ class _DataStore:
     def get_all_taus(self):
         return self.get_taus_prd_list(list(range(self.get_prds().n_thresholded)))
 
-    def get_taus(self, prd_index: int):
+    def get_nlsa_movies(self, prd_index: int) -> list[NDArray[Shape["Any,Any"], Float]]:
         data = self.get_analysis_handle()
-        return [
-            data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"]
-            for j in range(params.num_psi)
-        ]
-
-    def get_nlsa_movies(self, prd_index: int):
-        data = self.get_analysis_handle()
-        return [
-            data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["IMG1"]
-            for j in range(params.num_psi)
-        ]
+        return cast(
+            list[NDArray[Shape["Any,Any"], Float]],
+            [
+                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["IMG1"]
+                for j in range(params.num_psi)
+            ],
+        )
 
     def get_nlsa_movies_prd_list(
         self, prd_list: List[int] | NDArray[Shape["Any"], Int]

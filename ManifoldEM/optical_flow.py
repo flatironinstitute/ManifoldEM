@@ -1,6 +1,5 @@
 import copy
 import h5py
-import multiprocessing
 import math
 import numpy as np
 import warnings
@@ -13,7 +12,12 @@ from typing import Any, Union
 from numpy import linalg as LA
 import numpy.typing as npt
 from ManifoldEM.data_store import ProjectionDirections
-from ManifoldEM.util import NullEmitter, get_tqdm, recursive_dict_to_hdf5
+from ManifoldEM.util import (
+    NullEmitter,
+    recursive_dict_to_hdf5,
+    dispatch_func,
+    dispatch_helper,
+)
 from ManifoldEM.CC.hornschunck_simple import lowpassfilt, op as hornschunk_simple
 from ManifoldEM.belief_propagation import belief_propagation, BeliefPropagationOptions
 
@@ -407,47 +411,6 @@ def optical_flow(
         NodesPsisTauOcc=NodesPsisTauOcc,
         NodesPsisTauVals=NodesPsisTauVals,
     )
-
-
-def dispatch_func(
-    func,
-    input_data: list[Any],
-    desc: str = "",
-    ncpu: int = 1,
-    progress_bar=NullEmitter(),
-    progress_bounds=(0, 100),
-):
-    tqdm = get_tqdm()
-    progress_min, progress_max = progress_bounds
-    data: dict[int, Any] = {}
-    if ncpu == 1:
-        for i in tqdm(
-            range(len(input_data)),
-            desc=desc,
-        ):
-            data[i] = func(input_data[i])
-            progress = int(
-                progress_min + i / len(input_data) * (progress_max - progress_min)
-            )
-            progress_bar.emit(progress)
-    else:
-        with multiprocessing.Pool(ncpu) as pool:
-            for i, result in tqdm(
-                enumerate(pool.imap(func, input_data)),
-                total=len(input_data),
-                desc=desc,
-            ):
-                data[i] = result
-                progress = int(
-                    progress_min + i / len(input_data) * (progress_max - progress_min)
-                )
-                progress_bar.emit(progress)
-
-    return data
-
-
-def dispatch_helper(kwargs, func):
-    return func(**kwargs)
 
 
 def optical_flow_movie_list(
