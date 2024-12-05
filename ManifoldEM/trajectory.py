@@ -75,6 +75,7 @@ def concatenate_bin(
     thetas_by_prd: list[list[NDArray[Shape["Any"], Float]]],
     psis_by_prd: list[list[NDArray[Shape["Any"], Float]]],
     states_per_coord: int,
+    con_orders: list[int],
     pixel_size: int,
     out_dir: str,
 ):
@@ -84,7 +85,8 @@ def concatenate_bin(
         taubins = taubins_by_prd[i][i_bin]
         if len(taubins) == 0:
             continue
-        imgs.append(nlsa_movies[i][taubins][:])
+        # No idea why the transpose is necessary here. Just to match the original code....
+        imgs.append(nlsa_movies[i][taubins][:].astype(np.float32).transpose(0, 2, 1) / con_orders[i])
         phis.append(phis_by_prd[i][i_bin])
         thetas.append(thetas_by_prd[i][i_bin])
         psis.append(psis_by_prd[i][i_bin])
@@ -141,7 +143,7 @@ def write_relion_s2(
         with h5pickle.File(f_tmp.name, "w") as f:
             print(f"Using {f_tmp.name} for temporary storage of NLSA data")
             nlsa_builder = partial(
-                run_nlsa_second_pass, data_handle=data_store.get_analysis_handle()
+                run_nlsa_second_pass, data_handle=data_store.get_analysis_handle(), dtype=np.float16
             )
 
             desc = "Generating full NLSA movies..."
@@ -163,6 +165,7 @@ def write_relion_s2(
                         progress_bar.emit(int(49 * i / n_prds))
 
             nlsa_movies = [f[str(i)] for i in prd_indices]
+            con_orders = [psi_sorted_quats_by_prd[i].shape[1] // params.con_order_range for i in prd_indices]
 
             concatenator = partial(
                 concatenate_bin,
@@ -173,6 +176,7 @@ def write_relion_s2(
                 psis_by_prd=psis,
                 states_per_coord=params.states_per_coord,
                 pixel_size=params.ms_pixel_size,
+                con_orders=con_orders,
                 out_dir=params.bin_dir,
             )
             bins = range(0, params.states_per_coord - pathw + 1)

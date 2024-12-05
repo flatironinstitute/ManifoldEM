@@ -617,7 +617,7 @@ def get_transformed_images_CTFs_and_image_data(prd_index: int):
 
 
 def run_nlsa_second_pass(
-    prd_index: int, data_handle: h5py.Group, dtype=np.float32
+    prd_index: int, data_handle: h5py.Group, dtype: type = np.float32
 ) -> NDArray[Shape["Any,Any,Any"], Float]:
     """
     Generates NLSA data for a given projection direction. This is used in generating the trajectory data.
