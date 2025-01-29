@@ -7,3 +7,5 @@
 /*.egg-info
 /setenv.sh
 /.git-blame-ignore-revs
+/node_modules
+/venv*
