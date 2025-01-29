@@ -349,6 +349,7 @@ class PrdData:
             self._CTF = get_CTFs(
                 prds.get_defocus_by_prd(self._info.prd_index),
                 params.ms_num_pixels,
+                params.ms_pixel_size,
                 params.ms_spherical_aberration,
                 params.ms_kilovolts,
                 params.ms_ctf_envelope,

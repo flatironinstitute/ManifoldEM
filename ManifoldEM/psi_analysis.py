@@ -181,7 +181,7 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
     imgAll = prd_data.transformed_images
     msk2 = prd_data.info.image_mask
 
-    CTF = get_CTFs(defocus, params.ms_num_pixels, params.ms_spherical_aberration,
+    CTF = get_CTFs(defocus, params.ms_num_pixels, params.ms_pixel_size, params.ms_spherical_aberration,
                    params.ms_kilovolts, params.ms_ctf_envelope, params.ms_amplitude_contrast_ratio)
 
     psi = data_psi['psi']  # coordinates of all images in 15-dim space from diffusion map: e.g., shape=(numPDs,15)

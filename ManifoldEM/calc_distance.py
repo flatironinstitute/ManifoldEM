@@ -332,6 +332,7 @@ def get_distance_CTF_local(
     CTF = get_CTFs(
         defocus,
         params.ms_num_pixels,
+        params.ms_pixel_size,
         params.ms_spherical_aberration,
         params.ms_kilovolts,
         params.ms_ctf_envelope,
