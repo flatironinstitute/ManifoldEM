@@ -330,8 +330,9 @@ def get_distance_CTF_local(
         img_all[i_part, :, :] = img * mask
 
     CTF = get_CTFs(
-        params.ms_num_pixels,
         defocus,
+        params.ms_num_pixels,
+        params.ms_pixel_size,
         params.ms_spherical_aberration,
         params.ms_kilovolts,
         params.ms_ctf_envelope,

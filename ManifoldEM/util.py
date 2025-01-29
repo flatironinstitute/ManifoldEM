@@ -443,8 +443,9 @@ def ctemh_cryoFrank(
 
 
 def get_CTFs(
-    width: int,
     defocus: NDArray[Shape["Any"], Float64],
+    width: int,
+    pixel_size: float,
     spherical_aberration: float,
     electron_energy: float,
     gauss_env_halfwidth: float,
@@ -455,10 +456,12 @@ def get_CTFs(
 
     Parameters
     ----------
-    width : int
-        The width of the generated image.
     defocus : ndarray
         The defocus values of interest.
+    width : int
+        The width of the generated image in pixels.
+    pixel_size : float
+        The size of a pixel in angstroms
     spherical_aberration : float
         Spherical aberration (Cs) in mm.
     defocus : float
@@ -476,7 +479,7 @@ def get_CTFs(
         A 3D array representing the CTF of shape `(len(defocus), width, width)`.
     """
 
-    k = create_proportional_grid(width) / (2 * width)
+    k = create_proportional_grid(width) / (2 * pixel_size)
     ctf = np.empty((len(defocus), width, width))
     for i, df in enumerate(defocus):
         ctf[i] = np.fft.ifftshift(
