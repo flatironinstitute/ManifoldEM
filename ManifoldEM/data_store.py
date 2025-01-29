@@ -514,8 +514,10 @@ class _ProjectionDirections:
                 np.arccos(self.pos_thresholded[2, :]) * 180.0 / np.pi
             )
 
+            # double bins because routine expects number of bins on full sphere, while we bin
+            # only half
             self.neighbor_graph, self.neighbor_subgraph = FindCCGraph(
-                self.thresholded_image_indices, self.n_bins, self.pos_thresholded
+                self.thresholded_image_indices, 2 * self.n_bins, self.pos_thresholded
             )
 
             def get_cluster_ids(G):
