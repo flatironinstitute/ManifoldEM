@@ -129,8 +129,9 @@ class ThreshAllCanvas(QDialog):
         self.axes = self.figure.add_subplot(1, 1, 1)
 
         prds = data_store.get_prds()
-        n_pds = prds.occupancy_full.size
-        self.axes.bar(range(n_pds), prds.occupancy_full, align='center',
+        self.occupancy_full = prds.occupancy_full
+        n_pds = self.occupancy_full.size
+        self.axes.bar(range(n_pds), self.occupancy_full, align='center',
                       edgecolor='none', color='#1f77b4', snap=False)
 
         self.xlimLo = self.axes.get_xlim()[0]
@@ -159,7 +160,7 @@ class ThreshAllCanvas(QDialog):
             tick.label1.set_fontsize(6)
         self.axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         self.axes.set_xlim(xmin=1, xmax=n_pds)
-        self.axes.set_ylim(ymin=0, ymax=1.1 * np.max(prds.occupancy_full))
+        self.axes.set_ylim(ymin=0, ymax=1.1 * np.max(self.occupancy_full))
         self.axes.set_xlabel('PD Numbers', fontsize=6)
         self.axes.set_ylabel('Occupancy', fontsize=6)
         #self.axes.autoscale()
@@ -172,19 +173,17 @@ class ThreshAllCanvas(QDialog):
             self.thresh_container.thresh_high = int(self.entry_high.value())
             self.confirmed = False
 
-            prds = data_store.get_prds()
-            self.in_thres_count = np.sum((prds.occupancy_full >= self.thresh_container.thresh_low) &
-                                         (prds.occupancy_full <= self.thresh_container.thresh_high))
+            self.in_thres_count = np.sum((self.occupancy_full >= self.thresh_container.thresh_low))
+            if self.thresh_container.thresh_high < self.thresh_container.thresh_low:
+                self.in_thres_count = 0
 
             self.entry_prd.setValue(self.in_thres_count)
 
-            # self.replot()
 
         label_low = QLabel('Low Threshold:')
         label_high = QLabel('High Threshold:')
 
-        self.in_thres_count = np.sum((prds.occupancy_full >= self.thresh_container.thresh_low) &
-                                     (prds.occupancy_full <= self.thresh_container.thresh_high))
+        self.in_thres_count = np.sum((self.occupancy_full >= self.thresh_container.thresh_low))
         self.entry_prd = QDoubleSpinBox(self)
         self.entry_prd.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.entry_prd.setDecimals(0)
@@ -203,7 +202,7 @@ class ThreshAllCanvas(QDialog):
         self.entry_low = QDoubleSpinBox(self)
         self.entry_low.setDecimals(0)
         self.entry_low.setMinimum(5)
-        self.entry_low.setMaximum(np.amax(prds.occupancy_full))
+        self.entry_low.setMaximum(np.amax(self.occupancy_full))
         self.entry_low.setValue(int(params.prd_thres_low))
 
         self.entry_high = QDoubleSpinBox(self)
@@ -240,6 +239,7 @@ class ThreshAllCanvas(QDialog):
 
 
     def confirmThresh(self):
+        print(f'Number of PDs within thresholds: {self.in_thres_count}')
         if self.in_thres_count > 2:
             params.prd_thres_low = self.thresh_container.thresh_low
             params.prd_thres_high = self.thresh_container.thresh_high
