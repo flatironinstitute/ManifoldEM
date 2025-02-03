@@ -29,7 +29,7 @@ def test_manifold_em_raw_quaternion():
     assert np.allclose(q_ZXZ,permuted_ZXZ)
 
     permuted_ZYZ = np.vstack([-q1, -q2, -q3, q0,]).T
-    assert np.isclose(q_ZYZ,permuted_ZYZ)
+    assert np.allclose(q_ZYZ,permuted_ZYZ)
 
 
 
