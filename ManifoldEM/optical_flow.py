@@ -18,7 +18,7 @@ from ManifoldEM.util import (
     dispatch_func,
     dispatch_helper,
 )
-from ManifoldEM.CC.hornschunck_simple import lowpassfilt, op as hornschunk_simple
+from ManifoldEM.CC.hornschunck_simple import lowpassfilt, hornschunck_simple
 from ManifoldEM.belief_propagation import belief_propagation, BeliefPropagationOptions
 
 
@@ -332,7 +332,7 @@ def optical_flow_movie(
             uInit = Vx  # if both methods are used , GF will provide intial estimates
             vInit = Vy  # if both methods are used , GF will provide intial estimates
 
-            Vx, Vy = hornschunk_simple(
+            Vx, Vy = hornschunck_simple(
                 ImgFrame_prev, ImgFrame_curr, uInit, vInit, sig, 2.0, 200
             )
 
