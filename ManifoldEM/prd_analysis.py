@@ -607,6 +607,7 @@ def get_transformed_images_CTFs_and_image_data(prd_index: int):
     image_CTFs = get_CTFs(
         image_defocus,
         params.ms_num_pixels,
+        params.ms_pixel_size,
         params.ms_spherical_aberration,
         params.ms_kilovolts,
         params.ms_ctf_envelope,
