@@ -123,11 +123,12 @@ def test_psi_ang():
     s2 = convert_euler_to_S2(euler_angles)
     projection_direction_euler_angles, projection_direction_euler_angles_alternate = convert_S2_to_euler(s2)
 
-    t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=1) 
-    t1b = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=1) 
+    axis = 0
+    t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis) 
+    t1b = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis) 
     t1 = np.logical_or(t1a,t1b)
-    t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem, atol=1e-4).all(axis=1)
-    t2b = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=1)
+    t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis)
+    t2b = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis)
     t2 = np.logical_or(t2a,t2b)
     assert np.logical_xor(t1, t2).all()
 
