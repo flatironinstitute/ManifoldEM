@@ -127,12 +127,11 @@ def test_psi_ang():
     axis = 0
     t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis) 
     t1b = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis) 
-    t1 = np.logical_or(t1a,t1b)
+    assert np.logical_or(t1a,t1b).all()
+    
     t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis)
     t2b = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis)
-    t2 = np.logical_or(t2a,t2b)
-    print('RATIO', np.logical_xor(t1, t2).all().mean())
-
+    assert np.logical_or(t2a,t2b).all()
     
     convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles.T[:,:2]).all(1)
     convention_2 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles_alternate.T[:,:2]).all(1)
