@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider, qs_to_spider, psi_ang, convert_S2_to_euler
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider, qs_to_spider_euler_angles, psi_ang, convert_S2_to_euler, alternate_euler_convention
 
 def test_eul_to_quat():
     ''' ManifoldEM raw quaternion convention.
@@ -98,11 +98,14 @@ def test_q2Spider():
     phi, theta, psi, = euler_angles.T
     raw_qs = eul_to_quat(phi, theta, psi, flip=True)
 
-    spider_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T])
-    spider = qs_to_spider(raw_qs)
+    euler_angles_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T
 
-    random_sample_pass_ratio = 0.4 # around 0.5 in expectation. use lower threshold to account for finite sample size
-    assert np.isclose(spider,spider_mem).all(axis=1).mean() > random_sample_pass_ratio
+    euler_angles_spider = qs_to_spider_euler_angles(raw_qs)
+    euler_angles_spider_alternate = alternate_euler_convention(euler_angles_spider)
+
+    t1 = np.isclose(euler_angles_spider,euler_angles_mem).all(axis=1)
+    t2 = np.isclose(euler_angles_spider_alternate,euler_angles_mem).all(axis=1)
+    assert np.logical_xor(t1,t2).all()
 
 
 def test_psi_ang():

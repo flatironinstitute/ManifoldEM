@@ -262,11 +262,29 @@ def collapse_to_half_space_euler_angles(euler_angles):
     return s2, is_mirrored
 
 
-def qs_to_spider(raw_qs):
+def qs_to_spider_euler_angles(raw_qs):
+    '''Convert quaternions to Euler angles in the Spider convention.
+    
+    raw_qs, shape (4,n)
+
+    Return:
+    qs_to_spider_euler_angles, shape (3,n)
+    
+    '''
     q0, q1, q2, q3 = raw_qs
     permuted_ZXZ = np.vstack([-q2, q1, -q3, q0,]).T
-    spider = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ')
-    return spider
+    spider_euler_angles = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ').T
+    return spider_euler_angles
+
+
+
+def alternate_euler_convention(euler_angles_deg):
+    '''Alternate Euler convention that maps to the same S2.
+
+    euler_angles_deg.shape (3,n)
+    '''
+    euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180,0,0]))*np.array([1,-1,1])).T, 360)
+    return euler_angles_deg_alternate
 
 
 def convert_S2_to_euler(s2):
@@ -276,5 +294,5 @@ def convert_S2_to_euler(s2):
     angles = np.array([z1, x, np.zeros_like(x)])
     angles_mod = np.mod(angles, 2 * np.pi)
     angles_deg = np.rad2deg(angles_mod)
-    angles_deg_alternate =  np.mod(((angles_deg.T - np.array([180,0,0]))*np.array([1,-1,1])).T, 360)
+    angles_deg_alternate =  np.mod(alternate_euler_convention(angles_deg), 360)
     return angles_deg, angles_deg_alternate
