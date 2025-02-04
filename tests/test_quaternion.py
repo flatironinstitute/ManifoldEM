@@ -98,14 +98,28 @@ def test_q2Spider():
     phi, theta, psi, = euler_angles.T
     raw_qs = eul_to_quat(phi, theta, psi, flip=True)
 
-    euler_angles_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T
+    euler_angles_mem = np.rad2deg(np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T)
+    euler_angles_mem_alternate = alternate_euler_convention(euler_angles_mem)
 
-    euler_angles_spider = qs_to_spider_euler_angles(raw_qs)
+    euler_angles_spider = np.rad2deg(qs_to_spider_euler_angles(raw_qs))
     euler_angles_spider_alternate = alternate_euler_convention(euler_angles_spider)
 
-    t1 = np.isclose(euler_angles_spider,euler_angles_mem).all(axis=0)
-    t2 = np.isclose(euler_angles_spider_alternate,euler_angles_mem).all(axis=0)
+    euler_angles_mod_deg = np.mod(np.rad2deg(euler_angles).T, 360)
+    t1 = np.isclose(np.mod(euler_angles_spider, 360),euler_angles_mod_deg).all(axis=0)
+    t2 = np.isclose(euler_angles_spider_alternate,euler_angles_mod_deg).all(axis=0)
     assert np.logical_xor(t1,t2).all()
+
+    t1 = np.isclose(np.mod(euler_angles_mem, 360),euler_angles_mod_deg).all(axis=0)
+    t2 = np.isclose(euler_angles_mem_alternate,euler_angles_mod_deg).all(axis=0)
+    assert np.logical_xor(t1,t2).all()
+
+    t1a = np.isclose(np.mod(euler_angles_spider, 360),np.mod(euler_angles_mem, 360)).all(axis=0)
+    t1b = np.isclose(np.mod(euler_angles_spider, 360),euler_angles_mem_alternate).all(axis=0)
+
+    t2a = np.isclose(euler_angles_spider_alternate,np.mod(euler_angles_mem, 360)).all(axis=0)
+    t2b = np.isclose(euler_angles_spider_alternate,euler_angles_mem_alternate).all(axis=0)
+    assert np.logical_xor(t1a, t1b).all()
+    assert np.logical_xor(t2a, t2b).all()
 
 
 def test_psi_ang():
@@ -130,11 +144,11 @@ def test_psi_ang():
     axis = 0
     t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis) 
     t1b = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis) 
-    assert np.logical_or(t1a,t1b).all()
+    assert np.logical_xor(t1a,t1b).all()
     
     t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis)
     t2b = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis)
-    assert np.logical_or(t2a,t2b).all()
+    assert np.logical_xor(t2a,t2b).all()
     
     convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles.T[:,:2]).all(1)
     convention_2 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles_alternate.T[:,:2]).all(1)

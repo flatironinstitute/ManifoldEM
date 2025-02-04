@@ -283,7 +283,7 @@ def alternate_euler_convention(euler_angles_deg):
 
     euler_angles_deg.shape (3,n)
     '''
-    euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180,0,0]))*np.array([1,-1,1])).T, 360)
+    euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180,0,180]))*np.array([1,-1,1])).T, 360)
     return euler_angles_deg_alternate
 
 
