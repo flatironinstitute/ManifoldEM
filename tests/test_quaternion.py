@@ -103,8 +103,8 @@ def test_q2Spider():
     euler_angles_spider = qs_to_spider_euler_angles(raw_qs)
     euler_angles_spider_alternate = alternate_euler_convention(euler_angles_spider)
 
-    t1 = np.isclose(euler_angles_spider,euler_angles_mem).all(axis=1)
-    t2 = np.isclose(euler_angles_spider_alternate,euler_angles_mem).all(axis=1)
+    t1 = np.isclose(euler_angles_spider,euler_angles_mem).all(axis=0)
+    t2 = np.isclose(euler_angles_spider_alternate,euler_angles_mem).all(axis=0)
     assert np.logical_xor(t1,t2).all()
 
 
