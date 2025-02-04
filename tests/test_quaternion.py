@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2
 
 def test_eul_to_quat():
     ''' ManifoldEM raw quaternion convention.
@@ -48,13 +48,6 @@ def test_eul_to_quat():
     np.isclose(q_YXY,permuted_YXY,atol=atol)
 
 
-
-def convert_euler_to_S2(euler_angles):
-    rotation = Rotation.from_euler('ZXZ', euler_angles, degrees=False).as_matrix()
-    rxz, ryz, rzz = rotation[:,:,-1].T
-    s2 = np.stack([-ryz,rxz,rzz], axis=1).T
-    return s2
-
 def test_quaternion_to_S2():
     n_euler_anlges = 3
     n_ransom_samples = 7
@@ -71,13 +64,6 @@ def test_quaternion_to_S2():
     s2 = convert_euler_to_S2(euler_angles)
 
     assert np.allclose(s2, s2_mem, atol=atol)
-
-
-def collapse_to_half_space_euler_angles(euler_angles):
-    s2 = convert_euler_to_S2(euler_angles)
-    is_mirrored = s2[0,:] < 0.0
-    s2[:,is_mirrored] = -s2[:,is_mirrored]
-    return s2, is_mirrored
 
 
 def test_collapse_to_half_space():

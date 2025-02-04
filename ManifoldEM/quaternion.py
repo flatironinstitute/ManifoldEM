@@ -237,3 +237,17 @@ def calc_avg_pd(q, nS):
                          q[0, :]**2 + q[3, :]**2 - np.ones((1, nS)) / 2.0))
 
     return PDs
+
+
+def convert_euler_to_S2(euler_angles):
+    rotation = Rotation.from_euler('ZXZ', euler_angles, degrees=False).as_matrix()
+    rxz, ryz, rzz = rotation[:,:,-1].T
+    s2 = np.stack([-ryz,rxz,rzz], axis=1).T
+    return s2
+
+
+def collapse_to_half_space_euler_angles(euler_angles):
+    s2 = convert_euler_to_S2(euler_angles)
+    is_mirrored = s2[0,:] < 0.0
+    s2[:,is_mirrored] = -s2[:,is_mirrored]
+    return s2, is_mirrored
