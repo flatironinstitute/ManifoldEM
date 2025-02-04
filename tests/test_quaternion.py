@@ -72,6 +72,14 @@ def test_quaternion_to_S2():
 
     assert np.allclose(s2, s2_mem, atol=atol)
 
+
+def collapse_to_half_space_euler_angles(euler_angles):
+    s2 = convert_euler_to_S2(euler_angles)
+    is_mirrored = s2[0,:] < 0.0
+    s2[:,is_mirrored] = -s2[:,is_mirrored]
+    return s2, is_mirrored
+
+
 def test_collapse_to_half_space():
     ''' Tests the collapse_to_half_space function. 
     
@@ -89,12 +97,10 @@ def test_collapse_to_half_space():
     q_mem, is_mirrored_mem = collapse_to_half_space(raw_qs)
     s2_mem_collapsed = quaternion_to_S2(q_mem)
 
-    s2 = convert_euler_to_S2(euler_angles)
-    is_mirrored = s2[0,:] < 0.0
-    s2[:,is_mirrored] = -s2[:,is_mirrored]
+    s2, is_mirrored = collapse_to_half_space_euler_angles(euler_angles)
 
-    assert np.allclose(s2, s2_mem, atol=atol)
-    assert np.allclose(s2_mem, s2_mem_collapsed)
+    assert np.allclose(s2, s2_mem_collapsed, atol=atol)
+    assert np.allclose(is_mirrored_mem, is_mirrored)
 
 
 
