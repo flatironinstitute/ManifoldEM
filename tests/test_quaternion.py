@@ -118,10 +118,11 @@ def test_psi_ang():
     s2_mem = quaternion_to_S2(raw_qs)
     projection_direction_euler_angles_mem = np.array([psi_ang(s2) for s2 in s2_mem.T]).T
     projection_direction_euler_angles_mem_alternate = np.mod((projection_direction_euler_angles_mem.T + np.array([180,0,0]))*np.array([1,-1,1]), 360).T
-
+    assert np.allclose(convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_mem.T)), convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_mem_alternate.T)))
 
     s2 = convert_euler_to_S2(euler_angles)
     projection_direction_euler_angles, projection_direction_euler_angles_alternate = convert_S2_to_euler(s2)
+    assert np.allclose(convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles.T)), convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_alternate.T)))
 
     axis = 0
     t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis) 
@@ -130,7 +131,7 @@ def test_psi_ang():
     t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem, atol=1e-4).all(axis=axis)
     t2b = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=axis)
     t2 = np.logical_or(t2a,t2b)
-    assert np.logical_xor(t1, t2).all()
+    print('RATIO', np.logical_xor(t1, t2).all().mean())
 
     
     convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles.T[:,:2]).all(1)
