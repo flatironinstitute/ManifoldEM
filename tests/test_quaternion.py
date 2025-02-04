@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider, qs_to_spider
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider, qs_to_spider, psi_ang, convert_S2_to_euler
 
 def test_eul_to_quat():
     ''' ManifoldEM raw quaternion convention.
@@ -88,10 +88,6 @@ def test_collapse_to_half_space():
     assert np.allclose(is_mirrored_mem, is_mirrored)
 
 
-
-
-
-
 def test_q2Spider():
     n_euler_anlges = 3
     n_ransom_samples = 1000
@@ -107,6 +103,26 @@ def test_q2Spider():
 
     random_pass_ratio = 0.4 # 0.5 in expectation. use lower threshold to account for finite sample size
     assert np.isclose(spider,spider_mem).all(axis=1).mean() > random_pass_ratio
+
+
+def test_psi_ang():
+    n_euler_anlges = 3
+    n_ransom_samples = 1000
+
+    np.random.seed(0)
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
+
+    phi, theta, psi, = euler_angles.T
+    flip = True
+    raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
+    s2_mem = quaternion_to_S2(raw_qs)
+    projection_direction_euler_angles_mem = np.array([psi_ang(s2) for s2 in s2_mem.T])
+
+    s2 = convert_euler_to_S2(euler_angles)
+    projection_direction_euler_angles = convert_S2_to_euler(s2)
+
+    assert np.allclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4)
+
 
 
 

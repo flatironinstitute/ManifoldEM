@@ -259,3 +259,10 @@ def qs_to_spider(raw_qs):
     permuted_ZXZ = np.vstack([-q2, q1, -q3, q0,]).T
     spider = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ')
     return spider
+
+
+def convert_S2_to_euler(s2):
+    sx, sy, sz = s2
+    x = np.arccos(sz)  # Polar angle
+    z1 = np.arctan2(sy, sx)  # First Euler angle
+    return np.rad2deg(np.array([z1, x, np.zeros_like(x)]))
