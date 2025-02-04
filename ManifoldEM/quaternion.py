@@ -2,6 +2,7 @@ import copy
 import numba
 import numpy as np
 from scipy import optimize
+from scipy.spatial.transform import Rotation
 
 from typing import Any
 from nptyping import NDArray, Shape, Float64, Bool
