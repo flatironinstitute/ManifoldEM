@@ -123,6 +123,8 @@ def test_psi_ang():
 
     random_sample_pass_ratio = 0.5 # around 0.5 in expectation. use lower threshold to account for finite sample size
     np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=1).mean() > random_sample_pass_ratio
+    np.isclose(np.mod(np.rad2deg(euler_angles[:,:2]), 360),projection_direction_euler_angles[:2].T).all(1).mean() > random_sample_pass_ratio
+    np.isclose(np.mod(np.rad2deg(euler_angles[:,:2]), 360),projection_direction_euler_angles_mem[:2].T).all(1).mean() > random_sample_pass_ratio
 
 
 
