@@ -218,6 +218,14 @@ def q_product(q, s):
 
 
 def psi_ang(PD):
+    '''Converts projection directon to Euler angles.
+    
+    Input:
+    PD, shape (3,1), projection direction
+
+    Output:
+    phi, theta, psi, shape (3,1), Euler angles
+    '''
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
     Qr = Qr / np.sqrt(np.sum(Qr**2))
     phi, theta, psi = q2Spider(Qr)
