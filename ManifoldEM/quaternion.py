@@ -265,4 +265,7 @@ def convert_S2_to_euler(s2):
     sx, sy, sz = s2
     x = np.arccos(sz)  # Polar angle
     z1 = np.arctan2(sy, sx)  # First Euler angle
-    return np.rad2deg(np.array([z1, x, np.zeros_like(x)]))
+    angles = np.array([z1, x, np.zeros_like(x)])
+    angles_mod = np.mod(angles, 2 * np.pi)
+    angles_deg = np.rad2deg(angles_mod)
+    return angles_deg
