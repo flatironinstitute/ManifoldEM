@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider, qs_to_spider
 
 def test_eul_to_quat():
     ''' ManifoldEM raw quaternion convention.
@@ -88,6 +88,10 @@ def test_collapse_to_half_space():
     assert np.allclose(is_mirrored_mem, is_mirrored)
 
 
+
+
+
+
 def test_q2Spider():
     n_euler_anlges = 3
     n_ransom_samples = 1000
@@ -97,11 +101,9 @@ def test_q2Spider():
 
     phi, theta, psi, = euler_angles.T
     raw_qs = eul_to_quat(phi, theta, psi, flip=True)
-    q0, q1, q2, q3 = raw_qs
-    permuted_ZXZ = np.vstack([-q2, q1, -q3, q0,]).T
 
     spider_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T])
-    spider = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ')
+    spider = qs_to_spider(raw_qs)
 
     random_pass_ratio = 0.4 # 0.5 in expectation. use lower threshold to account for finite sample size
     assert np.isclose(spider,spider_mem).all(axis=1).mean() > random_pass_ratio

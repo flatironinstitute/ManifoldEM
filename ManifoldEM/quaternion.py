@@ -252,3 +252,10 @@ def collapse_to_half_space_euler_angles(euler_angles):
     is_mirrored = s2[0,:] < 0.0
     s2[:,is_mirrored] = -s2[:,is_mirrored]
     return s2, is_mirrored
+
+
+def qs_to_spider(raw_qs):
+    q0, q1, q2, q3 = raw_qs
+    permuted_ZXZ = np.vstack([-q2, q1, -q3, q0,]).T
+    spider = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ')
+    return spider
