@@ -123,10 +123,17 @@ def test_psi_ang():
     s2 = convert_euler_to_S2(euler_angles)
     projection_direction_euler_angles, projection_direction_euler_angles_alternate = convert_S2_to_euler(s2)
 
-    random_sample_pass_ratio = 0.5 # around 0.5 in expectation. use lower threshold to account for finite sample size
-    np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=1).mean() > random_sample_pass_ratio
-    convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), np.mod(projection_direction_euler_angles.T[:,:2],360)).all(1)
-    convention_2 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), np.mod(projection_direction_euler_angles_alternate.T[:,:2],360)).all(1)
+    t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4).all(axis=1) 
+    t1b = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=1) 
+    t1 = np.logical_or(t1a,t1b)
+    t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem, atol=1e-4).all(axis=1)
+    t2b = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem_alternate, atol=1e-4).all(axis=1)
+    t2 = np.logical_or(t2a,t2b)
+    assert np.logical_xor(t1, t2).all()
+
+    
+    convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles.T[:,:2]).all(1)
+    convention_2 = np.isclose(np.mod(np.rad2deg(euler_angles)[:,:2],360), projection_direction_euler_angles_alternate.T[:,:2]).all(1)
     assert np.logical_xor(convention_1,convention_2).all()
     
     convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles[:,:2]), 360),projection_direction_euler_angles_mem[:2].T).all(1)
