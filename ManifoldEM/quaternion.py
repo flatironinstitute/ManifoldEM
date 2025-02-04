@@ -72,7 +72,7 @@ def _optfunc(a, q):
     return q - _q_product_single(q3, _q_product_single(q2, q1))
 
 
-def quaternion_to_S2(q: NDArray[Shape["4,*"], Float64]) -> NDArray[Shape["3,*"], Float64]:
+def quaternion_to_S2(q: NDArray[Shape["4,Any"], Float64]) -> NDArray[Shape["3,Any"], Float64]:
     """
     Converts a set of quaternions to points on the 2-sphere (S2) in three-dimensional space. The
     function effectively rotates the z unit vector by each quaternion to a new unit vector on the unit
@@ -109,8 +109,8 @@ def quaternion_to_S2(q: NDArray[Shape["4,*"], Float64]) -> NDArray[Shape["3,*"],
 
 
 def collapse_to_half_space(
-    q: NDArray[Shape["4,*"], Float64], plane_vec=np.array([1.0, 0.0, 0.0])
-) -> tuple[NDArray[Shape["4,*"], Float64], NDArray[Shape["*"], Bool]]:
+    q: NDArray[Shape["4,Any"], Float64], plane_vec=np.array([1.0, 0.0, 0.0])
+) -> tuple[NDArray[Shape["4,Any"], Float64], NDArray[Shape["*"], Bool]]:
     n_particles = q.shape[1]
     q = copy.copy(q)
     S2 = quaternion_to_S2(q)
@@ -250,15 +250,15 @@ def calc_avg_pd(q, nS):
 
 def convert_euler_to_S2(euler_angles):
     rotation = Rotation.from_euler('ZXZ', euler_angles, degrees=False).as_matrix()
-    rxz, ryz, rzz = rotation[:,:,-1].T
-    s2 = np.stack([-ryz,rxz,rzz], axis=1).T
+    rxz, ryz, rzz = rotation[:, :, -1].T
+    s2 = np.stack([-ryz, rxz, rzz], axis=1).T
     return s2
 
 
 def collapse_to_half_space_euler_angles(euler_angles):
     s2 = convert_euler_to_S2(euler_angles)
-    is_mirrored = s2[0,:] < 0.0
-    s2[:,is_mirrored] = -s2[:,is_mirrored]
+    is_mirrored = s2[0, :] < 0.0
+    s2[:, is_mirrored] = -s2[:, is_mirrored]
     return s2, is_mirrored
 
 
@@ -272,10 +272,9 @@ def qs_to_spider_euler_angles(raw_qs):
     
     '''
     q0, q1, q2, q3 = raw_qs
-    permuted_ZXZ = np.vstack([-q2, q1, -q3, q0,]).T
+    permuted_ZXZ = np.vstack([-q2, q1, -q3, q0]).T
     spider_euler_angles = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ').T
     return spider_euler_angles
-
 
 
 def alternate_euler_convention(euler_angles_deg):
@@ -283,7 +282,7 @@ def alternate_euler_convention(euler_angles_deg):
 
     euler_angles_deg.shape (3,n)
     '''
-    euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180,0,180]))*np.array([1,-1,1])).T, 360)
+    euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180, 0, 180])) * np.array([1, -1, 1])).T, 360)
     return euler_angles_deg_alternate
 
 
@@ -294,7 +293,7 @@ def convert_S2_to_euler(s2):
     angles = np.array([z1, x, np.zeros_like(x)])
     angles_mod = np.mod(angles, 2 * np.pi)
     angles_deg = np.rad2deg(angles_mod)
-    angles_deg_alternate =  np.mod(alternate_euler_convention(angles_deg), 360)
+    angles_deg_alternate = np.mod(alternate_euler_convention(angles_deg), 360)
     convention_psi = 0.0
-    angles_deg_alternate[-1,:] = convention_psi
+    angles_deg_alternate[-1, :] = convention_psi
     return angles_deg, angles_deg_alternate
