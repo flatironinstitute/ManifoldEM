@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space
 
 def test_eul_to_quat():
     ''' ManifoldEM raw quaternion convention.
@@ -48,6 +48,13 @@ def test_eul_to_quat():
     np.isclose(q_YXY,permuted_YXY,atol=atol)
 
 
+
+def convert_euler_to_S2(euler_angles):
+    rotation = Rotation.from_euler('ZXZ', euler_angles, degrees=False).as_matrix()
+    rxz, ryz, rzz = rotation[:,:,-1].T
+    s2 = np.stack([-ryz,rxz,rzz], axis=1).T
+    return s2
+
 def test_quaternion_to_S2():
     n_euler_anlges = 3
     n_ransom_samples = 7
@@ -56,16 +63,40 @@ def test_quaternion_to_S2():
     np.random.seed(0)
     euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
 
-    rotation = Rotation.from_euler('ZXZ', euler_angles, degrees=False).as_matrix()
-    rxz, ryz, rzz = rotation[:,:,-1].T
-    s2 = np.stack([-ryz,rxz,rzz], axis=1)
+    phi, theta, psi, = euler_angles.T
+    flip = True
+    raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
+    s2_mem = quaternion_to_S2(raw_qs)
 
+    s2 = convert_euler_to_S2(euler_angles)
+
+    assert np.allclose(s2, s2_mem, atol=atol)
+
+def test_collapse_to_half_space():
+    ''' Tests the collapse_to_half_space function. 
+    
+    Can convert from EUler angles directly to S2, instead of going through quaternions.'''
+    n_euler_anlges = 3
+    n_ransom_samples = 7
+    atol = 1e-4
+
+    np.random.seed(0)
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
     phi, theta, psi, = euler_angles.T
     flip = True
     raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
     s2_mem = quaternion_to_S2(raw_qs).T
+    q_mem, is_mirrored_mem = collapse_to_half_space(raw_qs)
+    s2_mem_collapsed = quaternion_to_S2(q_mem)
+
+    s2 = convert_euler_to_S2(euler_angles)
+    is_mirrored = s2[0,:] < 0.0
+    s2[:,is_mirrored] = -s2[:,is_mirrored]
 
     assert np.allclose(s2, s2_mem, atol=atol)
+    assert np.allclose(s2_mem, s2_mem_collapsed)
+
+
 
 
 
