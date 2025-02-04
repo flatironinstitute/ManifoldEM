@@ -135,6 +135,8 @@ def test_psi_ang():
     s2_mem = quaternion_to_S2(raw_qs)
     projection_direction_euler_angles_mem = np.array([psi_ang(s2) for s2 in s2_mem.T]).T
     projection_direction_euler_angles_mem_alternate = alternate_euler_convention(projection_direction_euler_angles_mem)
+    psi_convention = 0.0
+    projection_direction_euler_angles_mem_alternate[-1,:] = psi_convention
     assert np.allclose(convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_mem.T)), convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_mem_alternate.T)))
 
     s2 = convert_euler_to_S2(euler_angles)

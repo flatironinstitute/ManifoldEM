@@ -295,4 +295,6 @@ def convert_S2_to_euler(s2):
     angles_mod = np.mod(angles, 2 * np.pi)
     angles_deg = np.rad2deg(angles_mod)
     angles_deg_alternate =  np.mod(alternate_euler_convention(angles_deg), 360)
+    convention_psi = 0.0
+    angles_deg_alternate[-1,:] = convention_psi
     return angles_deg, angles_deg_alternate
