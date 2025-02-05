@@ -29,7 +29,8 @@ resources may prove useful for a review of ManifoldEM history, theory and implem
 
 ## Installation
 Should be installable in any modern python/conda environment (python 3.9+, though `mayavi` and
-`pyqt` packages don't always immediately work with the most recent version of python).
+`pyqt` packages don't always immediately work with the most recent version of python). If you don't
+need the gui, feel free to omit the "[gui]" part of the install command!
 
 python:
 ```bash
@@ -38,7 +39,7 @@ python3 -m venv ~/envs/manifoldem
 source ~/envs/manifoldem/bin/activate
 
 pip install --upgrade pip
-pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
+pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM[gui]"
 
 manifold-gui
 ```
@@ -49,7 +50,7 @@ conda create -n manifoldem
 conda activate manifoldem
 
 conda install mayavi pyqt=5 python=3.10 -c conda-forge
-pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM"
+pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM[gui]"
 
 manifold-gui
 ```

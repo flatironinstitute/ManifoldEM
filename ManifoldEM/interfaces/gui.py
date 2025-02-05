@@ -11,9 +11,13 @@ import time
 
 from argparse import ArgumentParser
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication
+try:
+    from PyQt5 import QtCore
+    from PyQt5.QtGui import QFont
+    from PyQt5.QtWidgets import QApplication
+except ImportError:
+    print("PyQt5 not found. Did you install ManifoldEM with the [gui] option? Consult the README for more information.")
+    sys.exit(1)
 
 import ManifoldEM
 
