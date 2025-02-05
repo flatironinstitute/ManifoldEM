@@ -4,13 +4,13 @@ import numpy as np
 from scipy import optimize
 from scipy.spatial.transform import Rotation
 
-from typing import Any
-from nptyping import NDArray, Shape, Float64, Bool
-'''
+from typing import Any, Tuple
+from nptyping import NDArray, Shape, Bool, Float
+"""
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
-'''
+"""
 
 
 @numba.jit(nopython=True)
@@ -72,7 +72,7 @@ def _optfunc(a, q):
     return q - _q_product_single(q3, _q_product_single(q2, q1))
 
 
-def quaternion_to_S2(q: NDArray[Shape["4,Any"], Float64]) -> NDArray[Shape["3,Any"], Float64]:
+def quaternion_to_S2(q: NDArray[Shape["4,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
     """
     Converts a set of quaternions to points on the 2-sphere (S2) in three-dimensional space. The
     function effectively rotates the z unit vector by each quaternion to a new unit vector on the unit
@@ -109,8 +109,27 @@ def quaternion_to_S2(q: NDArray[Shape["4,Any"], Float64]) -> NDArray[Shape["3,An
 
 
 def collapse_to_half_space(
-    q: NDArray[Shape["4,Any"], Float64], plane_vec=np.array([1.0, 0.0, 0.0])
-) -> tuple[NDArray[Shape["4,Any"], Float64], NDArray[Shape["*"], Bool]]:
+    q: NDArray[Shape["4,Any"], Float],
+    plane_vec: NDArray[Shape["3"], Float] = np.array([1.0, 0.0, 0.0]),
+) -> tuple[NDArray[Shape["4,Any"], Float], NDArray[Shape["Any"], Bool]]:
+    """
+    Converts an array of quaternions in the Manifold [R,I,I,I] representation to an array of unit vectors on half of S2,
+    with the division based on a plane vector. Points on the opposite side of the plane vector are mirrored,
+    and a boolean array is returned to indicate the mirrored points.
+
+    Parameters
+    ----------
+    q : np.ndarray
+        An Nx4 numpy array representing the quaternions.
+    plane_vec : np.ndarray
+        A 3-element numpy array representing the plane vector that divides S2.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        A tuple containing the unit vectors (Nx3) and a boolean array (N) indicating mirrored points.
+    """
+
     n_particles = q.shape[1]
     q = copy.copy(q)
     S2 = quaternion_to_S2(q)
@@ -217,15 +236,20 @@ def q_product(q, s):
     return p
 
 
-def psi_ang(PD):
-    '''Converts projection directon to Euler angles.
+def psi_ang(PD: NDArray[Shape["3,1"], Float]) -> tuple[float, float, float]:
+    """
+    Converts a projection direction to Euler angles.
     
-    Input:
-    PD, shape (3,1), projection direction
+    Parameters
+    ----------
+    PD : np.ndarray
+        A 3x1 numpy array representing the unit projection direction.
 
-    Output:
-    phi, theta, psi, shape (3,1), Euler angles
-    '''
+    Returns
+    -------
+    tuple[float,float,float]
+        Euler angles: phi, theta, psi
+    """
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
     Qr = Qr / np.sqrt(np.sum(Qr**2))
     phi, theta, psi = q2Spider(Qr)
@@ -248,45 +272,107 @@ def calc_avg_pd(q, nS):
     return PDs
 
 
-def convert_euler_to_S2(euler_angles):
+def convert_euler_to_S2(euler_angles: NDArray[Shape["Any,3"], Float]) -> NDArray[Shape["Any,3"], Float]:
+    """
+    Converts an array of euler angles in ZXZ representation to an array of unit vectors on S2
+
+    Parameters
+    ----------
+    euler_angles : np.ndarray
+        An Nx3 numpy array representing the Euler angles in radians.
+
+    Returns
+    -------
+    np.ndarray
+        A Nx3 array of unit vectors corresponding to the input Euler angles.
+    """
     rotation = Rotation.from_euler('ZXZ', euler_angles, degrees=False).as_matrix()
     rxz, ryz, rzz = rotation[:, :, -1].T
-    s2 = np.stack([-ryz, rxz, rzz], axis=1).T
-    return s2
+    return np.stack([-ryz, rxz, rzz], axis=1).T
 
 
-def collapse_to_half_space_euler_angles(euler_angles):
+def collapse_to_half_space_euler_angles(
+    euler_angles: NDArray[Shape["Any,3"], Float],
+    plane_vec: NDArray[Shape["3"], Float] = np.array([1.0, 0.0, 0.0]),
+) -> Tuple[NDArray[Shape["Any,3"], Float], NDArray[Shape["Any"], Bool]]:
+    """
+    Converts an array of euler angles in ZXZ representation to an array of unit vectors on half of S2,
+    with the division based on a plane vector. Points on the opposite side of the plane vector are mirrored,
+    and a boolean array is returned to indicate the mirrored points.
+
+    Parameters
+    ----------
+    euler_angles : np.ndarray
+        An Nx3 numpy array representing the Euler angles in radians.
+    plane_vec : np.ndarray
+        A 3-element numpy array representing the plane vector that divides S2.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        A tuple containing the unit vectors (Nx3) and a boolean array (N) indicating mirrored points.
+    """
+
     s2 = convert_euler_to_S2(euler_angles)
-    is_mirrored = s2[0, :] < 0.0
+    is_mirrored = np.dot(s2.T, plane_vec) < 0.0
     s2[:, is_mirrored] = -s2[:, is_mirrored]
     return s2, is_mirrored
 
 
-def qs_to_spider_euler_angles(raw_qs):
-    '''Convert quaternions to Euler angles in the Spider convention.
-    
-    raw_qs, shape (4,n)
+def qs_to_spider_euler_angles(raw_qs: NDArray[Shape["4,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
+    """
+    Convert quaternions to Euler angles in the Spider convention.
 
-    Return:
-    qs_to_spider_euler_angles, shape (3,n)
-    
-    '''
+    Parameters
+    ----------
+    raw_qs : np.ndarray
+       A 4xN numpy array representing the quaternions in [R,I,I,I] format
+
+    Returns
+    -------
+    np.ndarray
+        3xN array of Euler angles in the "spider" convention
+    """
     q0, q1, q2, q3 = raw_qs
     permuted_ZXZ = np.vstack([-q2, q1, -q3, q0]).T
-    spider_euler_angles = Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ').T
-    return spider_euler_angles
+    return Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ').T
 
 
-def alternate_euler_convention(euler_angles_deg):
-    '''Alternate Euler convention that maps to the same S2.
+def alternate_euler_convention(euler_angles_deg: NDArray[Shape["3,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
+    """
+    FIXME -- what's going on here?
+    Maps Euler angles in the ??? convention to the ??? convention
 
-    euler_angles_deg.shape (3,n)
-    '''
+    Parameters
+    ----------
+    euler_angles_deg : np.ndarray
+        3xN array of Euler angles in the ??? convention
+
+    Returns
+    -------
+    np.ndarray
+        3xN array of Euler angles in the ??? convention
+    """
     euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180, 0, 180])) * np.array([1, -1, 1])).T, 360)
     return euler_angles_deg_alternate
 
 
 def convert_S2_to_euler(s2):
+    """
+    FIXME -- what's going on here?
+    Maps unit vectors representing positions on in S2 to Euler angles in the ??? convention.
+
+    Parameters
+    ----------
+    s2 : np.ndarray
+        3xN of unit vectors
+
+    Returns
+    -------
+    np.ndarray
+        3xN array of Euler angles in the ??? convention
+    """
+
     sx, sy, sz = s2
     x = np.arccos(sz)  # Polar angle
     z1 = np.arctan2(sy, sx)  # First Euler angle

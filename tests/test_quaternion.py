@@ -2,21 +2,24 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles, convert_euler_to_S2, q2Spider, qs_to_spider_euler_angles, psi_ang, convert_S2_to_euler, alternate_euler_convention
+from ManifoldEM.quaternion import (quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles,
+                                   convert_euler_to_S2, q2Spider, qs_to_spider_euler_angles, psi_ang,
+                                   convert_S2_to_euler, alternate_euler_convention)
 
 
 def test_eul_to_quat():
-    ''' ManifoldEM raw quaternion convention.
+    """
+    ManifoldEM raw quaternion convention.
     
     The convention is different from the one used in scipy.spatial.transform.Rotation.
     Converting between the two conventions required permuting indices and negating some values.
-    '''
-    n_euler_anlges = 3
-    n_ransom_samples = 7
+    """
+    n_euler_angles = 3
+    n_random_samples = 7
     atol = 1e-4
 
     np.random.seed(0)
-    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
     flip = True
@@ -50,12 +53,12 @@ def test_eul_to_quat():
 
 
 def test_quaternion_to_S2():
-    n_euler_anlges = 3
-    n_ransom_samples = 7
+    n_euler_angles = 3
+    n_random_samples = 7
     atol = 1e-4
 
     np.random.seed(0)
-    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
     flip = True
@@ -68,15 +71,17 @@ def test_quaternion_to_S2():
 
 
 def test_collapse_to_half_space():
-    ''' Tests the collapse_to_half_space function. 
+    """
+    Tests the collapse_to_half_space_euler_angles against the collapse_to_half_space function. 
     
-    Can convert from EUler angles directly to S2, instead of going through quaternions.'''
-    n_euler_anlges = 3
-    n_ransom_samples = 7
+    Can convert from Euler angles directly to S2, instead of going through quaternions.
+    """
+    n_euler_angles = 3
+    n_random_samples = 7
     atol = 1e-4
 
     np.random.seed(0)
-    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
     phi, theta, psi, = euler_angles.T
     flip = True
     raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
@@ -88,13 +93,21 @@ def test_collapse_to_half_space():
     assert np.allclose(s2, s2_mem_collapsed, atol=atol)
     assert np.allclose(is_mirrored_mem, is_mirrored)
 
+    plane_vec = np.array([0.0, 1.0, 0.0])
+    q_mem, is_mirrored_mem = collapse_to_half_space(raw_qs, plane_vec)
+    s2_mem_collapsed = quaternion_to_S2(q_mem)
+
+    s2, is_mirrored = collapse_to_half_space_euler_angles(euler_angles, plane_vec)
+    assert np.allclose(s2, s2_mem_collapsed, atol=atol)
+    assert np.allclose(is_mirrored_mem, is_mirrored)
+
 
 def test_q2Spider():
-    n_euler_anlges = 3
-    n_ransom_samples = 1000
+    n_euler_angles = 3
+    n_random_samples = 1000
 
     np.random.seed(0)
-    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
     raw_qs = eul_to_quat(phi, theta, psi, flip=True)
