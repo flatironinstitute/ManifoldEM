@@ -48,8 +48,6 @@ dependencies = [
     "nptyping",
     "numpy",
     "numba",
-    "mayavi",
-    "PyQt5",
     "psutil",
     "matplotlib",
     "scikit-image",
@@ -64,6 +62,12 @@ dependencies = [
     "toml",
     "tqdm",
     "fasthog",
+]
+
+[project.optional-dependencies]
+gui = [
+    "mayavi",
+    "PyQt5",
 ]
 
 [project.scripts]
