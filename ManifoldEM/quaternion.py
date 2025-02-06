@@ -256,7 +256,8 @@ def psi_ang(PD: NDArray[Shape["3,1"], Float]) -> tuple[float, float, float]:
 
     phi = np.mod(phi, 2 * np.pi) * (180 / np.pi)
     theta = np.mod(theta, 2 * np.pi) * (180 / np.pi)
-    psi = 0.0  # already done in getDistances np.mod(psi,2*np.pi)*(180/np.pi)
+    psi = 0.0  # degenerate, set to zero for convention
+
     return (phi, theta, psi)
 
 
@@ -372,7 +373,6 @@ def convert_S2_to_euler(s2):
     np.ndarray
         3xN array of Euler angles in the ??? convention
     """
-
     sx, sy, sz = s2
     x = np.arccos(sz)  # Polar angle
     z1 = np.arctan2(sy, sx)  # First Euler angle
@@ -382,4 +382,8 @@ def convert_S2_to_euler(s2):
     angles_deg_alternate = np.mod(alternate_euler_convention(angles_deg), 360)
     convention_psi = 0.0
     angles_deg_alternate[-1, :] = convention_psi
-    return angles_deg, angles_deg_alternate
+
+    mask = sx < 0
+    angles_deg[:, mask] = angles_deg_alternate[:, mask]
+
+    return angles_deg

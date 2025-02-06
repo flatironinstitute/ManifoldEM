@@ -148,39 +148,8 @@ def test_psi_ang():
     raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
     s2_mem = quaternion_to_S2(raw_qs)
     projection_direction_euler_angles_mem = np.array([psi_ang(s2) for s2 in s2_mem.T]).T
-    projection_direction_euler_angles_mem_alternate = alternate_euler_convention(projection_direction_euler_angles_mem)
-    psi_convention = 0.0
-    projection_direction_euler_angles_mem_alternate[-1, :] = psi_convention
-    assert np.allclose(convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_mem.T)),
-                       convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_mem_alternate.T)))
 
     s2 = convert_euler_to_S2(euler_angles)
-    projection_direction_euler_angles, projection_direction_euler_angles_alternate = convert_S2_to_euler(s2)
-    assert np.allclose(convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles.T)),
-                       convert_euler_to_S2(np.deg2rad(projection_direction_euler_angles_alternate.T)))
+    projection_direction_euler_angles = convert_S2_to_euler(s2)
 
-    axis = 0
-    t1a = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem,
-                     atol=1e-4).all(axis=axis)
-    t1b = np.isclose(projection_direction_euler_angles, projection_direction_euler_angles_mem_alternate,
-                     atol=1e-4).all(axis=axis)
-    assert np.logical_xor(t1a, t1b).all()
-
-    t2a = np.isclose(projection_direction_euler_angles_alternate, projection_direction_euler_angles_mem,
-                     atol=1e-4).all(axis=axis)
-    t2b = np.isclose(projection_direction_euler_angles_alternate,
-                     projection_direction_euler_angles_mem_alternate,
-                     atol=1e-4).all(axis=axis)
-    assert np.logical_xor(t2a, t2b).all()
-
-    convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles)[:, :2], 360),
-                              projection_direction_euler_angles.T[:, :2]).all(1)
-    convention_2 = np.isclose(np.mod(np.rad2deg(euler_angles)[:, :2], 360),
-                              projection_direction_euler_angles_alternate.T[:, :2]).all(1)
-    assert np.logical_xor(convention_1, convention_2).all()
-
-    convention_1 = np.isclose(np.mod(np.rad2deg(euler_angles[:, :2]), 360),
-                              projection_direction_euler_angles_mem[:2].T).all(1)
-    convention_2 = np.isclose(np.mod(np.rad2deg(euler_angles[:, :2]), 360),
-                              projection_direction_euler_angles_mem_alternate[:2].T).all(1)
-    assert np.logical_xor(convention_1, convention_2).all()
+    assert np.allclose(projection_direction_euler_angles, projection_direction_euler_angles_mem, atol=1e-4)
