@@ -412,14 +412,17 @@ def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
             print(f"Warning: requested invalid prds: {invalid_prds}")
         valid_prds = valid_prds.intersection(requested_prds)
 
-    ll = []
+    jobs = []
     for prD in valid_prds:
-        ind = thresholded_indices[prD]
-        ll.append(
-            LocalInput(ind, quats_full[:, ind], defocus[ind], params.get_dist_file(prD))
+        indices = thresholded_indices[prD]
+        jobs.append(
+            LocalInput(indices, quats_full[:, indices], defocus[indices], params.get_dist_file(prD))
         )
 
-    return ll
+    # Sort by largest amount of work first, so the last job to run is always the shortest
+    jobs = sorted(jobs, key=lambda x: len(x.indices), reverse=True)
+
+    return jobs
 
 
 def op(prd_list: Union[List[int], None] = None, *argv):
