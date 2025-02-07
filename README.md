@@ -185,7 +185,7 @@ Performing connected component analysis.
 Number of connected components: 2
 Number of Graph Edges: (518, 2)
 Number of Graph Edges: (464, 2)
-100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 145/145 [00:11<00:00, 12.17it/s]
+100%|███████████████████████████████| 145/145 [00:11<00:00, 12.17it/s]
 ```
 
 This has created a significant amount of data stored in the `output/my_J310_analysis/distances` --
