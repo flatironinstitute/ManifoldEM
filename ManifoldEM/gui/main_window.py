@@ -3,7 +3,7 @@ from .distribution_tab import DistributionTab
 from .embedding_tab import EmbeddingTab
 from .eigenvectors_tab import EigenvectorsTab
 from .compilation_tab import CompilationTab
-from .energetics_tab import EnergeticsTab
+from .occupancy_tab import ProbabilityTab
 from ..params import params
 
 from ManifoldEM.params import params
@@ -24,8 +24,8 @@ class MainWindow(QMainWindow):
         'Eigenvectors', # 5
         'Compilation', # 6
         'Compilation', # 7
-        'Energetics', # 8
-        'Energetics', # 9
+        'Probabilities', # 8
+        'Probatilities', # 9
     ]
     tab_indices: dict[str, int] = {
         'Import': 0,
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         'Embedding': 2,
         'Eigenvectors': 3,
         'Compilation': 4,
-        'Energetics': 5,
+        'Probabilities': 5,
     }
 
     def __init__(self, parent=None):
@@ -56,7 +56,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(EmbeddingTab(self), 'Embedding')
         self.tabs.addTab(EigenvectorsTab(self), 'Eigenvectors')
         self.tabs.addTab(CompilationTab(self), 'Compilation')
-        self.tabs.addTab(EnergeticsTab(self), 'Energetics')
+        self.tabs.addTab(ProbabilityTab(self), 'Probabilities')
 
         self.tabs.blockSignals(True)
         self.tabs.currentChanged.connect(self.on_tab_change)

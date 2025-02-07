@@ -236,7 +236,7 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
 
             IMG1[i1:i2, i] = IMGT[:, tauind[0]]
             tauinds.append(tauind[0])
-        if is_full:  # second pass for energy_landscape
+        if is_full:  # second pass for probability_landscape
             #  adjust tau by comparing the IMG1s
             data = myio.fin1(params.get_psi2_file(prD, psinum))
             IMG1a = data['IMG1']

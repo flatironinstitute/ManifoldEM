@@ -80,23 +80,24 @@ no arguments, it will print a help message and exit.
 
 ```
 % manifold-cli
-ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
 
-usage: manifold-cli [-h] [-n NCPU] {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,energy-landscape,trajectory} ...
+usage: manifold-cli [-h] [-n NCPU] {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,calc-probabilities,trajectory,utility} ...
 
 Command-line interface for ManifoldEM package
 
 positional arguments:
-  {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,energy-landscape,trajectory}
-    init                Initialize new project
-    threshold           Set upper/lower thresholds for principal direction detection
-    calc-distance       Calculate S2 distances
-    manifold-analysis   Initial embedding
-    psi-analysis        Analyze images to get psis
-    nlsa-movie          Create 2D psi movies
-    find-ccs            Find conformational coordinates
-    energy-landscape    Calculate energy landscape
-    trajectory          Calculate trajectory
+  {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,calc-probabilities,trajectory,utility}
+    init                0: Initialize new project
+    threshold           1: Set upper/lower thresholds for principal direction detection
+    calc-distance       2: Calculate S2 distances
+    manifold-analysis   3: Initial embedding
+    psi-analysis        4: Analyze images to get psis
+    nlsa-movie          5: Create 2D psi movies
+    find-ccs            7: Find conformational coordinates
+    calc-probabilities  8: Calculate probability landscape
+    trajectory          9: Calculate trajectory
+    utility             Utility functions
 
 options:
   -h, --help            show this help message and exit
@@ -104,30 +105,50 @@ options:
 ```
 
 The output shows that there are nine sub-commands listed in the order they belong in the
-pipeline. Some commands support additional arguments, especially the `init` command, which creates a
-new project in your current working directory. To see how to use a given command, simply run the
-command with a following `-h` flag, e.g.
+pipeline (and some utility functions). Some commands support additional arguments, especially
+the `init` command, which creates a new project in your current working directory. To see how
+to use a given command, simply run the command with a following `-h` flag, e.g.
 
 ```
 % manifold-cli init -h
-ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
 
-usage: manifold-cli init [-h] -p PROJECT_NAME [-v AVG_VOLUME] [-a ALIGNMENT] [-i IMAGE_STACK] [-m MASK_VOLUME] -s PIXEL_SIZE -d DIAMETER -r RESOLUTION [-x APERTURE_INDEX]
-                         [-o]
+usage: manifold-cli init [-h] -p STR [-v FILEPATH] [-a FILEPATH] [-i FILEPATH] [-m FILEPATH] -s FLOAT -d FLOAT -r FLOAT [-x INT] [-o] [--eps FLOAT] [--prd_thres_low INT]
+                         [--prd_thres_high INT] [--tess_hemisphere_vec STR] [--tess_hemisphere_type STR] [--distance_filter_type STR] [--distance_filter_cutoff_freq FLOAT]
+                         [--distance_filter_order INT] [--num_psi INT] [--nlsa_tune INT] [--con_order_range INT] [--nlsa_fps FLOAT]
 
 options:
   -h, --help            show this help message and exit
-  -p PROJECT_NAME, --project-name PROJECT_NAME
-                        Name of project to create
-  -v AVG_VOLUME, --avg-volume AVG_VOLUME
-  -a ALIGNMENT, --alignment ALIGNMENT
-  -i IMAGE_STACK, --image-stack IMAGE_STACK
-  -m MASK_VOLUME, --mask-volume MASK_VOLUME
-  -s PIXEL_SIZE, --pixel-size PIXEL_SIZE
-  -d DIAMETER, --diameter DIAMETER
-  -r RESOLUTION, --resolution RESOLUTION
-  -x APERTURE_INDEX, --aperture-index APERTURE_INDEX
-  -o, --overwrite       Replace existing project with same name automatically
+  -p STR, --project-name STR
+                        Name of project to create (default: None)
+  -v FILEPATH, --avg-volume FILEPATH
+  -a FILEPATH, --alignment FILEPATH
+  -i FILEPATH, --image-stack FILEPATH
+  -m FILEPATH, --mask-volume FILEPATH
+  -s FLOAT, --pixel-size FLOAT
+  -d FLOAT, --diameter FLOAT
+  -r FLOAT, --resolution FLOAT
+  -x INT, --aperture-index INT
+  -o, --overwrite       Replace existing project with same name automatically (default: False)
+  --eps FLOAT           [BINNING] Small fraction to be added if divide-by-zero errors occur (default: 1e-10)
+  --prd_thres_low INT   [BINNING] Minimum required snapshots in a tessellation for it be admitted (default: 100)
+  --prd_thres_high INT  [BINNING] Maximum number of snapshots that will be considered within each tessellation (default: 2000)
+  --tess_hemisphere_vec STR
+                        [BINNING] Vector perpendicular to the plane defining which half of S2 (image viewing directions) to place PrDs. PrDs opposite this plane will be
+                        mirrored (default: [1.0, 0.0, 0.0])
+  --tess_hemisphere_type STR
+                        [BINNING] Technique to tesselate sphere. Valid options: ["lovisolo_silva", "fibonacci"] (default: lovisolo_silva)
+  --distance_filter_type STR
+                        [CALC_DISTANCE] Filter type for image preprocessing. Valid: {"Butter", "Gauss"} (default: Butter)
+  --distance_filter_cutoff_freq FLOAT
+                        [CALC_DISTANCE] Nyquist cutoff frequency for filter (default: 0.5)
+  --distance_filter_order INT
+                        [CALC_DISTANCE] Order of Filter ("Butter" only) (default: 8)
+  --num_psi INT         [CALC_DISTANCE] Number of eigenfunctions for analysis (default: 8)
+  --nlsa_tune INT       [MANIFOLD_ANALYSIS] Diffusion map tuning parameter (default: 3)
+  --con_order_range INT
+                        [PSI_ANALYSIS] Coarse-graining factor of probability landscape (default: 50)
+  --nlsa_fps FLOAT      [NLSA_MOVIE] Frames per second for generated movies (default: 5.0)
 ```
 
 An example invocation then might look like
@@ -146,23 +167,25 @@ commands that don't support parallel processing is harmless.
 
 ```
 % manifold-cli threshold --prd_thres_low 100 --prd_thres_high 4000 params_my_J310_analysis.toml
-ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
 
+Changing param prd_thres_high from 2000 to 4000
 % manifold-cli -n 16 calc-distance --num_psi 5 params_my_J310_analysis.toml
-ManifoldEM version: 0.2.0b1.dev190+g447ab76.d20231109
+ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
 
+Changing param num_psi from 3 to 5
 Computing the distances...
 Calculating projection direction information
 RELION Optics Group found.
-Number of PDs: 132
-Neighborhood epsilon: 0.053387630212191464
-Number of Graph Edges: (926, 2)
+Number of PDs: 145
+Neighborhood epsilon: 0.05338763021220811
+Number of Graph Edges: (982, 2)
 
 Performing connected component analysis.
 Number of connected components: 2
-Number of Graph Edges: (485, 2)
-Number of Graph Edges: (441, 2)
-100%|████████████████| 132/132 [01:09<00:00,  1.89it/s]
+Number of Graph Edges: (518, 2)
+Number of Graph Edges: (464, 2)
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 145/145 [00:11<00:00, 12.17it/s]
 ```
 
 This has created a significant amount of data stored in the `output/my_J310_analysis/distances` --
@@ -186,7 +209,7 @@ line. Here I set a few anchors and will continue on...
 
 ```
 % manifold-cli -n 16 find-ccs params_my_J310_analysis.toml &> /dev/null
-% manifold-cli -n 16 energy-landscape params_my_J310_analysis.toml &> /dev/null
+% manifold-cli -n 16 calc-probabilities params_my_J310_analysis.toml &> /dev/null
 % manifold-cli -n 16 trajectory params_my_J310_analysis.toml &> /dev/null
 ```
 

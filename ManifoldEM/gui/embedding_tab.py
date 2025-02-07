@@ -235,7 +235,7 @@ class EmbeddingTab(QWidget):
         self.entry_dim.setValue(1)
         self.entry_dim.setDisabled(True)
         self.entry_dim.valueChanged.connect(choose_dimensions)
-        self.entry_dim.setToolTip("The number of orthogonal conformational coordinates to compare within the energy landscape.")
+        self.entry_dim.setToolTip("The number of orthogonal conformational coordinates to compare within the probability landscape.")
         self.entry_dim.setStyleSheet("QSpinBox { width : 100px }")
         layout.addWidget(self.entry_dim, 1, 6, 1, 1, Qt.AlignLeft)
         self.entry_dim.show()

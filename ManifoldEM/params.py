@@ -31,7 +31,7 @@ class ProjectLevel(Enum):
     NLSA_MOVIE = 5
     PRD_SELECTION = 6
     FIND_CCS = 7
-    ENERGY_LANDSCAPE = 8
+    PROBABILITY_LANDSCAPE = 8
     TRAJECTORY = 9
 
 
@@ -194,11 +194,11 @@ class Params:
     con_order_range: Annotated[
         int,
         ParamInfo(
-            "Coarse-graining factor of energy landscape",
+            "Coarse-graining factor of probability landscape",
             True,
             [
                 ProjectLevel.PSI_ANALYSIS,
-                ProjectLevel.ENERGY_LANDSCAPE,
+                ProjectLevel.PROBABILITY_LANDSCAPE,
                 ProjectLevel.TRAJECTORY,
             ],
         ),
@@ -216,16 +216,10 @@ class Params:
         ),
     ] = 3
 
-    # energy landscape parameters:
+    # probability landscape parameters:
     n_reaction_coords: Annotated[
-        int, ParamInfo("Number of reaction coordinates for energy landscape")
+        int, ParamInfo("Number of reaction coordinates for probability landscape")
     ] = 1
-    temperature: Annotated[
-        int,
-        ParamInfo("User-defined pre-quenching temperature of experiments (Celcius)"),
-        True,
-        [ProjectLevel.ENERGY_LANDSCAPE],
-    ] = 25
     traj_name: Annotated[
         str, ParamInfo("Filename modifier for exported (2D) trajectories")
     ] = "1"
@@ -235,8 +229,8 @@ class Params:
             "Number of states partitioned within each 1D reaction coordinate; results in a nClassx1 1D ELS"
         ),
     ] = 50
-    width_1D: Annotated[int, ParamInfo("Width of trajectory in 1D energy path")] = 1
-    width_2D: Annotated[int, ParamInfo("Width of trajectory in 2D energy path")] = 1
+    width_1D: Annotated[int, ParamInfo("Width of trajectory in 1D probability path")] = 1
+    width_2D: Annotated[int, ParamInfo("Width of trajectory in 2D probability path")] = 1
 
     #  reaction coordinates parameters:
     calc_optical_flow: Annotated[bool, ParamInfo("Compute optical flow vectors")] = True
@@ -331,10 +325,6 @@ class Params:
     @property
     def OM_file(self) -> str:
         return os.path.join(self.OM_dir, "S2_OM.npy")
-
-    @property
-    def OM1_file(self) -> str:
-        return os.path.join(self.EL_dir, "S2_EL.npy")
 
     @property
     def traj_dir(self) -> str:

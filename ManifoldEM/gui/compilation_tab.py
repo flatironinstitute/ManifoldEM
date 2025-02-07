@@ -11,7 +11,6 @@ from ManifoldEM.util import remote_runner, is_valid_host
 
 class CompilationTab(QWidget):
     #temporary values:
-    user_temperature = 25  #Celsius
     hostname = ""
 
     # threading:
@@ -29,7 +28,6 @@ class CompilationTab(QWidget):
         self.button_CC.setDisabled(True)
         self.button_CC.setText('Finding Conformational Coordinates')
         self.entry_hostname.setDisabled(True)
-        self.entry_temp.setDisabled(True)
         self.entry_proc.setDisabled(True)
 
         params.save()  #send new GUI data to user parameters file
@@ -59,18 +57,17 @@ class CompilationTab(QWidget):
     @QtCore.pyqtSlot()
     def start_compute_landscape_task(self):
         self.button_erg.setDisabled(True)
-        self.button_erg.setText(' Computing Energy Landscape ')
+        self.button_erg.setText(' Computing Probability Landscape ')
         self.entry_hostname.setDisabled(True)
-        self.entry_temp.setDisabled(True)
         self.entry_proc.setDisabled(True)
 
         if self.hostname:
-            cmd = f'manifold-cli -n {params.ncpu} energy-landscape'
+            cmd = f'manifold-cli -n {params.ncpu} probability-landscape'
             task = threading.Thread(target=remote_runner,
                                     args=(self.hostname, cmd, self.compute_landscape_progress_changed))
         else:
-            from ManifoldEM.energy_landscape import op as energy_landscape
-            task = threading.Thread(target=energy_landscape, args=(self.compute_landscape_progress_changed, ))
+            from ManifoldEM.probability_landscape import op as probability_landscape
+            task = threading.Thread(target=probability_landscape, args=(self.compute_landscape_progress_changed, ))
 
         task.daemon = True
         task.start()
@@ -81,19 +78,7 @@ class CompilationTab(QWidget):
         self.progress6.setValue(val)
 
         if val == 100:
-            self.button_erg.setText('Energy Landscape Complete')
-
-            # fnameOM = p.OM_file
-            # fnameEL = p.OM1_file
-            # P4.Occ1d = np.fromfile(fnameOM, dtype=int)
-            # P4.Erg1d = np.fromfile(fnameEL)
-
-            # Erg1dMain.entry_width.model().item(0).setEnabled(False)
-            # Erg1dMain.button_traj.setDisabled(False)
-            # P4.Erg1d = np.fromfile(fnameEL)
-
-            # Erg1dMain.plot_erg1d.update_figure()  #updates 1d landscape plot
-
+            self.button_erg.setText('Probability Landscape Complete')
             self.button_toP6.setDisabled(False)
 
 
@@ -107,9 +92,6 @@ class CompilationTab(QWidget):
 
         def choose_processors():
             params.ncpu = self.entry_proc.value()
-
-        def choose_temperature():
-            params.temperature = self.entry_temp.value()
 
         def choose_hostname():
             self.hostname = self.entry_hostname.text()
@@ -155,24 +137,6 @@ class CompilationTab(QWidget):
         layout.addWidget(self.entry_hostname, 1, 4, 1, 1, Qt.AlignLeft)
         self.entry_hostname.show()
 
-        # temperature label + selector
-        create_label((1, 5, 1, 2))
-        create_label((1, 5, 1, 1), style=QFrame.Box | QFrame.Sunken)
-        create_label((1, 5, 1, 1), "Temperature",
-                     style=QFrame.Box | QFrame.Sunken,
-                     alignment=Qt.AlignCenter | Qt.AlignVCenter)
-
-        self.entry_temp = QSpinBox(self)
-        self.entry_temp.setMinimum(0)
-        self.entry_temp.setMaximum(100)
-        self.entry_temp.setValue(25)
-        self.entry_temp.setSuffix(' C')
-        self.entry_temp.valueChanged.connect(choose_temperature)
-        self.entry_temp.setStyleSheet("QSpinBox { width : 100px }")
-        self.entry_temp.setToolTip('The temperature of the sample prior to quenching.')
-        layout.addWidget(self.entry_temp, 1, 6, 1, 1, Qt.AlignLeft)
-        self.entry_temp.show()
-
         # conformational coordinates progress:
         self.button_CC = QPushButton('Find Conformational Coordinates', self)
         self.button_CC.clicked.connect(self.start_find_cc_task)
@@ -185,14 +149,14 @@ class CompilationTab(QWidget):
         layout.addWidget(self.progress_find_cc, 3, 3, 1, 4)
         self.progress_find_cc.show()
 
-        # energy landscape progress:
+        # probability landscape progress:
         self.label_Hline1 = QLabel('')
         self.label_Hline1.setMargin(0)
         self.label_Hline1.setFrameStyle(QFrame.HLine | QFrame.Sunken)
         layout.addWidget(self.label_Hline1, 4, 1, 1, 6, Qt.AlignVCenter)
         self.label_Hline1.show()
 
-        self.button_erg = QPushButton('Energy Landscape', self)
+        self.button_erg = QPushButton('Probability Landscape', self)
 #        self.button_erg.clicked.connect(self.start_task6)
         layout.addWidget(self.button_erg, 5, 1, 1, 2)
         self.button_erg.setDisabled(True)
@@ -210,7 +174,7 @@ class CompilationTab(QWidget):
         layout.addWidget(self.label_Hline2, 6, 1, 1, 6, Qt.AlignVCenter)
         self.label_Hline2.show()
 
-        self.button_toP6 = QPushButton('View Energy Landscape', self)
+        self.button_toP6 = QPushButton('View Probability Landscape', self)
         self.button_toP6.clicked.connect(self.finalize)
         layout.addWidget(self.button_toP6, 7, 3, 1, 2)
         self.button_toP6.setDisabled(True)
@@ -230,5 +194,5 @@ class CompilationTab(QWidget):
 
 
     def finalize(self):
-        self.main_window.set_tab_state(True, "Energetics")
-        self.main_window.switch_tab("Energetics")
+        self.main_window.set_tab_state(True, "Probabilities")
+        self.main_window.switch_tab("Probabilities")

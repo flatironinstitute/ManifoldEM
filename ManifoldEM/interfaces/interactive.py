@@ -123,10 +123,10 @@ def find_conformational_coordinates(blas_threads=1, **kwargs):
         find_conformational_coords()
 
 
-def energy_landscape(blas_threads=1, **kwargs):
-    from ManifoldEM.energy_landscape import op as energy_landscape
+def probability_landscape(blas_threads=1, **kwargs):
+    from ManifoldEM.probability_landscape import op as probability_landscape
     with threadpool_limits(limits=blas_threads, user_api='blas'):
-        energy_landscape()
+        probability_landscape()
 
 
 def compute_trajectory(blas_threads=1, **kwargs):
