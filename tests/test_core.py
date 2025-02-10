@@ -1,9 +1,23 @@
 import numpy as np
 
-from ManifoldEM.core import get_euler_from_PD, project_mask
+from ManifoldEM.core import get_euler_from_PD, project_mask, euler_rot_matrix_3D_spider
 from ManifoldEM.quaternion import convert_euler_to_S2, convert_S2_to_euler
 from scipy.spatial.transform import Rotation
 from scipy.ndimage import affine_transform
+
+
+def test_euler_rot_matrix():
+    n_euler_angles = 3
+    n_random_samples = 100
+    atol = 1e-4
+
+    np.random.seed(0)
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
+
+    rotmat_scipy = Rotation.from_euler('zyz', -euler_angles).as_matrix()
+    rotmat_mem = np.array([euler_rot_matrix_3D_spider(e[0], e[1], e[2]) for e in euler_angles])
+
+    assert np.allclose(rotmat_scipy, rotmat_mem, atol=atol)
 
 
 def test_get_euler_from_PD():
@@ -33,7 +47,7 @@ def test_project_mask():
     c_in = 0.5 * np.array(dims)
     c_out = 0.5 * np.array(dims)
 
-    euler_new = convert_S2_to_euler(s2.T).T * np.pi / 180.0
+    euler_new = convert_S2_to_euler(s2.T).T
 
     def project_mask_test(vol, angs):
         angs = np.flip(angs)
