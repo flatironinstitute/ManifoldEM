@@ -334,12 +334,13 @@ def qs_to_spider_euler_angles(raw_qs: NDArray[Shape["4,Any"], Float]) -> NDArray
     np.ndarray
         3xN array of Euler angles in the "spider" convention
     """
-    q0, q1, q2, q3 = raw_qs
-    permuted_ZXZ = np.vstack([-q2, q1, -q3, q0]).T
-    return Rotation.from_quat(permuted_ZXZ).as_euler('ZXZ').T
+    # https://www.ccpem.ac.uk/user_help/rotation_conventions.php
+    # "ZYZ anti-clockwise. (α,β,γ) is (ψ,θ,φ), note reversal because Spider defines its angles w.r.t external axes."
+    # so negate euler angles for counter-clockwise, and use lower case for extrinsic in scipy transforms
+    return -Rotation.from_quat(raw_qs.T, scalar_first=True).as_euler('zyz').T
 
 
-def alternate_euler_convention(euler_angles_deg: NDArray[Shape["3,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
+def alternate_euler_convention(euler_angles: NDArray[Shape["3,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
     """
     FIXME -- what's going on here?
     Maps Euler angles in the ??? convention to the ??? convention
@@ -354,8 +355,9 @@ def alternate_euler_convention(euler_angles_deg: NDArray[Shape["3,Any"], Float])
     np.ndarray
         3xN array of Euler angles in the ??? convention
     """
-    euler_angles_deg_alternate = np.mod(((euler_angles_deg.T - np.array([180, 0, 180])) * np.array([1, -1, 1])).T, 360)
-    return euler_angles_deg_alternate
+    euler_angles_alternate = np.mod(((euler_angles.T - np.array([np.pi, 0, np.pi])) * np.array([1, -1, 1])).T,
+                                    2 * np.pi)
+    return euler_angles_alternate
 
 
 def convert_S2_to_euler(s2):
@@ -376,14 +378,12 @@ def convert_S2_to_euler(s2):
     sx, sy, sz = s2
     x = np.arccos(sz)  # Polar angle
     z1 = np.arctan2(sy, sx)  # First Euler angle
-    angles = np.array([z1, x, np.zeros_like(x)])
-    angles_mod = np.mod(angles, 2 * np.pi)
-    angles_deg = np.rad2deg(angles_mod)
-    angles_deg_alternate = np.mod(alternate_euler_convention(angles_deg), 360)
+    angles = np.mod(np.array([z1, x, np.zeros_like(x)]), 2 * np.pi)
+    angles_alternate = np.mod(alternate_euler_convention(angles), 2 * np.pi)
     convention_psi = 0.0
-    angles_deg_alternate[-1, :] = convention_psi
+    angles_alternate[-1, :] = convention_psi
 
     mask = sx < 0
-    angles_deg[:, mask] = angles_deg_alternate[:, mask]
+    angles[:, mask] = angles_alternate[:, mask]
 
-    return angles_deg
+    return angles

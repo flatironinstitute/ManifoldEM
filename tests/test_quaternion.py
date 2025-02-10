@@ -4,7 +4,7 @@ from scipy.spatial.transform import Rotation
 from ManifoldEM.util import eul_to_quat
 from ManifoldEM.quaternion import (quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles,
                                    convert_euler_to_S2, q2Spider, qs_to_spider_euler_angles, psi_ang,
-                                   convert_S2_to_euler, alternate_euler_convention)
+                                   convert_S2_to_euler)
 
 
 def test_eul_to_quat():
@@ -108,32 +108,26 @@ def test_q2Spider():
 
     np.random.seed(0)
     euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
+    euler_angles[:, 1] = 0.5 * (euler_angles[:, 1] + np.pi)
 
     phi, theta, psi, = euler_angles.T
     raw_qs = eul_to_quat(phi, theta, psi, flip=True)
 
-    euler_angles_mem = np.rad2deg(np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T)
-    euler_angles_mem_alternate = alternate_euler_convention(euler_angles_mem)
+    euler_angles_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T
+    euler_angles_spider = qs_to_spider_euler_angles(raw_qs)
 
-    euler_angles_spider = np.rad2deg(qs_to_spider_euler_angles(raw_qs))
-    euler_angles_spider_alternate = alternate_euler_convention(euler_angles_spider)
+    # Euler angles are not unique, so check that they produce the same S2 points
+    s2_prod = quaternion_to_S2(raw_qs).T
+    s2_prod_scipy = Rotation.from_euler('ZYZ', euler_angles_mem.T).apply(np.array([0.0, 0.0, 1.0]))
+    s2_spider = Rotation.from_euler('ZYZ', euler_angles_spider.T).apply(np.array([0.0, 0.0, 1.0]))
+    assert np.allclose(s2_prod, s2_prod_scipy, atol=1e-4)
+    assert np.allclose(s2_prod, s2_spider, atol=1e-4)
 
-    euler_angles_mod_deg = np.mod(np.rad2deg(euler_angles).T, 360)
-    t1 = np.isclose(np.mod(euler_angles_spider, 360), euler_angles_mod_deg).all(axis=0)
-    t2 = np.isclose(euler_angles_spider_alternate, euler_angles_mod_deg).all(axis=0)
+    # also check quaternions, which are unique up to a sign
+    back_qs = Rotation.from_euler('zyz', euler_angles_spider.T).as_quat(scalar_first=True)
+    t1 = np.isclose(back_qs, raw_qs.T)
+    t2 = np.isclose(back_qs, -raw_qs.T)
     assert np.logical_xor(t1, t2).all()
-
-    t1 = np.isclose(np.mod(euler_angles_mem, 360), euler_angles_mod_deg).all(axis=0)
-    t2 = np.isclose(euler_angles_mem_alternate, euler_angles_mod_deg).all(axis=0)
-    assert np.logical_xor(t1, t2).all()
-
-    t1a = np.isclose(np.mod(euler_angles_spider, 360), np.mod(euler_angles_mem, 360)).all(axis=0)
-    t1b = np.isclose(np.mod(euler_angles_spider, 360), euler_angles_mem_alternate).all(axis=0)
-
-    t2a = np.isclose(euler_angles_spider_alternate, np.mod(euler_angles_mem, 360)).all(axis=0)
-    t2b = np.isclose(euler_angles_spider_alternate, euler_angles_mem_alternate).all(axis=0)
-    assert np.logical_xor(t1a, t1b).all()
-    assert np.logical_xor(t2a, t2b).all()
 
 
 def test_psi_ang():
@@ -147,7 +141,7 @@ def test_psi_ang():
     flip = True
     raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
     s2_mem = quaternion_to_S2(raw_qs)
-    projection_direction_euler_angles_mem = np.array([psi_ang(s2) for s2 in s2_mem.T]).T
+    projection_direction_euler_angles_mem = np.array([np.radians(psi_ang(s2)) for s2 in s2_mem.T]).T
 
     s2 = convert_euler_to_S2(euler_angles)
     projection_direction_euler_angles = convert_S2_to_euler(s2)

@@ -376,6 +376,7 @@ def euler_rot_matrix_3D_spider(Phi, Theta, Psi):
     np.ndarray
         A 3x3 rotation matrix.
     """
+    # yapf: disable
     R = np.array([
         [
             np.cos(Phi) * np.cos(Psi) * np.cos(Theta) + (-1) * np.sin(Phi) * np.sin(Psi),
@@ -393,6 +394,7 @@ def euler_rot_matrix_3D_spider(Phi, Theta, Psi):
             np.cos(Theta)
         ]
     ])
+    # yapf: enable
 
     return R
 
