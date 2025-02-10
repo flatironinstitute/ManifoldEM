@@ -124,9 +124,10 @@ def test_q2Spider():
     assert np.allclose(s2_prod, s2_spider, atol=1e-4)
 
     # also check quaternions, which are unique up to a sign
-    back_qs = Rotation.from_euler('zyz', euler_angles_spider.T).as_quat(scalar_first=True)
-    t1 = np.isclose(back_qs, raw_qs.T)
-    t2 = np.isclose(back_qs, -raw_qs.T)
+    back_qs_scalar_last = Rotation.from_euler('zyz', euler_angles_spider.T).as_quat().T
+    back_qs = np.vstack([back_qs_scalar_last[3], back_qs_scalar_last[0:3]])
+    t1 = np.isclose(back_qs, raw_qs)
+    t2 = np.isclose(back_qs, -raw_qs)
     assert np.logical_xor(t1, t2).all()
 
 
