@@ -213,7 +213,6 @@ def get_distance_CTF_local(
     filter_params: FilterParams,
     img_file_name: str,
     image_offsets: Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], Float64]],
-    relion_data: bool,
 ):
     """
     This function calculates squared Euclidean distances between images in similar projection directions,
@@ -230,8 +229,6 @@ def get_distance_CTF_local(
         Path to the file containing all raw images.
     image_offsets : tuple
         Offsets for each image, typically extracted from STAR files.
-    relion_data : bool
-        Flag indicating whether the data format is RELION (True) or another format (False).
 
     The function processes each image based on its index, applying normalization, filtering, and CTF correction.
     It aligns images in-plane using calculated psi angles and computes distances between all pairs of images in the
@@ -288,8 +285,8 @@ def get_distance_CTF_local(
     else:
         mask = annular_mask(0, n_pix / 2.0, n_pix, n_pix)
 
-    if relion_data:
-        img_data = mrcfile.mmap(img_file_name, "r").data
+    # Map of all images in provided stack file. (n_particles_tot, n_pix, n_pix)
+    img_data = mrcfile.mmap(img_file_name, "r").data
 
     # Total in-plane rotation for each particle
     rotations = np.zeros(n_particles)
@@ -297,21 +294,12 @@ def get_distance_CTF_local(
     # read images with conjugates
     for i_part in range(n_particles):
         particle_index = indices[i_part]
-        if not relion_data:  # spider data
-            start = n_pix**2 * particle_index * 4
-            img = np.memmap(
-                img_file_name,
-                dtype="float32",
-                offset=start,
-                mode="r",
-                shape=(n_pix, n_pix),
-            ).T
-        else:
-            shi = (
-                image_offsets[1][particle_index] - 0.5,
-                image_offsets[0][particle_index] - 0.5,
-            )
-            img = shift(img_data[particle_index], shi, order=3, mode="wrap")
+
+        shi = (
+            image_offsets[1][particle_index] - 0.5,
+            image_offsets[0][particle_index] - 0.5,
+        )
+        img = shift(img_data[particle_index], shi, order=3, mode="wrap")
 
         # flip images when opposite the S2 division plane
         if image_is_mirrored[particle_index]:
@@ -461,7 +449,6 @@ def op(prd_list: Union[List[int], None] = None, *argv):
         filter_params=filter_params,
         img_file_name=params.img_stack_file,
         image_offsets=prds.microscope_origin,
-        relion_data=params.is_relion_data,
     )
 
     progress1 = argv[0] if use_gui_progress else NullEmitter()

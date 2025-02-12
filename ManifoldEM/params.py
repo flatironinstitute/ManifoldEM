@@ -54,9 +54,6 @@ class Params:
     project_level: Annotated[
         ProjectLevel, ParamInfo("Current analysis level of project")
     ] = ProjectLevel.INIT
-    is_relion_data: Annotated[bool, ParamInfo("Is the code analyzing relion data?")] = (
-        True
-    )
     ncpu: Annotated[
         int, ParamInfo("Number of processes to use for multiprocessing", True)
     ] = 1

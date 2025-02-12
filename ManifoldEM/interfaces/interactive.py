@@ -75,7 +75,6 @@ def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, m
     params.particle_diameter = diameter
     params.ms_estimated_resolution = resolution
     params.aperture_index = aperture_index
-    params.is_relion_data = alignment.endswith('.star')
 
     params.ms_num_pixels = get_image_width_from_stack(params.img_stack_file)
     params.ncpu = multiprocessing.cpu_count()

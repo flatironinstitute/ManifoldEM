@@ -165,19 +165,12 @@ class S2ViewMayavi(HasTraits, S2ViewBase):
 
         mlab.clf(figure=self.fig2)
 
-        if params.is_relion_data:
-            mirror = self.df_vol[..., ::-1]
-            cplot = mlab.contour3d(mirror,
-                                   contours=self.isosurface_level,
-                                   color=(0.9, 0.9, 0.9),
-                                   figure=self.fig2)
-            cplot.actor.actor.orientation = np.array([0., -90., 0.])
-
-        else:
-            cplot = mlab.contour3d(self.df_vol,
-                                   contours=self.isosurface_level,
-                                   color=(0.9, 0.9, 0.9),
-                                   figure=self.fig2)
+        mirror = self.df_vol[..., ::-1]
+        cplot = mlab.contour3d(mirror,
+                               contours=self.isosurface_level,
+                               color=(0.9, 0.9, 0.9),
+                               figure=self.fig2)
+        cplot.actor.actor.orientation = np.array([0., -90., 0.])
 
         cplot.actor.actor.origin = np.array([len(self.df_vol) / 2, len(self.df_vol) / 2, len(self.df_vol) / 2])
         cplot.actor.actor.position = np.array([-len(self.df_vol) / 2, -len(self.df_vol) / 2, -len(self.df_vol) / 2])
