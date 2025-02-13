@@ -384,7 +384,7 @@ class EigenvectorsTab(QWidget):
             box.setText('<b>Confirm Conformational Coordinates</b>')
 
             msg = "Performing this action will initiate Belief Propagation for the current"\
-                   "PD anchors and generate the corresponding energy landscape and 3D volumes.\n"\
+                   "PD anchors and generate the corresponding probability landscape and 3D volumes.\n"\
                    "Do you want to proceed?"
         else:
             box.setWindowTitle("ManifoldEM Warning")

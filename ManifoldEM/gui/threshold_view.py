@@ -209,7 +209,7 @@ class ThreshAllCanvas(QDialog):
         self.entry_high = QDoubleSpinBox(self)
         self.entry_high.setDecimals(0)
         self.entry_high.setMinimum(90)
-        self.entry_high.setMaximum(10000)
+        self.entry_high.setMaximum(100000)
         self.entry_high.setValue(int(params.prd_thres_high))
 
         self.entry_low.valueChanged.connect(choose_thresholds)

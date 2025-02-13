@@ -68,14 +68,6 @@ class Erg1dMain(QDialog):
         layout.addWidget(self.label_distr, 9, 2, 1, 1)
         self.label_distr.show()
 
-        self.erg2occ = QComboBox(self)
-        self.erg2occ.addItem('Energy')
-        self.erg2occ.addItem('Occupancy')
-        self.erg2occ.setToolTip('Switch between energy and occupancy representations.')
-        self.erg2occ.currentIndexChanged.connect(self.update_selection)
-        layout.addWidget(self.erg2occ, 9, 3, 1, 1, QtCore.Qt.AlignLeft)
-        self.erg2occ.show()
-
         self.label_edge3 = QLabel('')
         self.label_edge3.setMargin(20)
         self.label_edge3.setLineWidth(1)
@@ -136,9 +128,8 @@ class Erg1dMain(QDialog):
 
 
     def update_selection(self):
-        plot_occupancy = self.erg2occ.currentText() == 'Occupancy'
         CC_index = 1 if self.chooseCC.currentText() == 'CC 1' else 2
-        self.plot_erg1d.update_figure(plot_occupancy, CC_index)
+        self.plot_erg1d.update_figure(CC_index)
 
 
     def choose_width(self):
@@ -201,7 +192,6 @@ class Erg1dMain(QDialog):
 
             self.button_traj.setDisabled(True)
             self.button_traj.setText('Computing 3D Trajectories')
-            self.erg2occ.setDisabled(True)
             self.entry_width.setDisabled(True)
 
             params.save()  #send new GUI data to parameters file
@@ -214,7 +204,6 @@ class Erg1dMain(QDialog):
             self.progress.setValue(0)
             self.button_traj.setDisabled(True)
             self.button_traj.setText('Computing 3D Trajectories')
-            self.erg2occ.setDisabled(True)
             self.entry_width.setDisabled(True)
 
             params.save()  #send new GUI data to parameters file
@@ -233,7 +222,6 @@ class Erg1dMain(QDialog):
             self.reprepare = 1
             self.button_traj.setText('Recompute 3D Trajectories')
             self.button_traj.setDisabled(False)
-            self.erg2occ.setDisabled(False)
             self.entry_width.setDisabled(False)
 
 
@@ -250,14 +238,12 @@ class Erg1dCanvas(FigureCanvas):
     def compute_initial_figure(self):
         self.fig.set_tight_layout(True)
         self.axes.set_xlabel('Conformational Coordinate 1', fontsize=6)
-        self.axes.set_ylabel('Energy (kcal/mol)', fontsize=6)
+        self.axes.set_ylabel('Occupancy', fontsize=6)
+        self.axes.set_title('1D Occupancy Map', fontsize=8)
 
 
-    def update_figure(self, plot_occupancies=False, CC_coord=1):
-        if plot_occupancies:
-            LS1d = np.fromfile(params.OM_file, dtype=int)
-        else:  # plot energies
-            LS1d = np.fromfile(params.OM1_file)  #energy path for plot
+    def update_figure(self, CC_coord=1):
+        occupancies = np.fromfile(params.OM_file, dtype=int)
 
         self.axes.clear()
         for tick in self.axes.xaxis.get_major_ticks():
@@ -267,14 +253,7 @@ class Erg1dCanvas(FigureCanvas):
         self.fig.set_tight_layout(True)
         self.axes.set_xlabel(f'Conformational Coordinate {CC_coord}', fontsize=6)
 
-        if plot_occupancies:
-            self.axes.plot(np.arange(1, 51), LS1d, linewidth=1, c='#d62728')  #C2
-            self.axes.set_title('1D Occupancy Map', fontsize=8)
-            self.axes.set_ylabel('Occupancy', fontsize=6)
-        else:
-            self.axes.plot(np.arange(1, 51), LS1d, linewidth=1, c='#1f77b4')  #C0
-            self.axes.set_title('1D Energy Path', fontsize=8)
-            self.axes.set_ylabel('Energy (kcal/mol)', fontsize=6)
+        self.axes.plot(np.arange(1, occupancies.size + 1), occupancies, linewidth=1, c='#d62728')
 
         self.axes.grid(linestyle='-', linewidth='0.5', color='lightgray', alpha=0.2)
         self.axes.autoscale()
@@ -282,15 +261,15 @@ class Erg1dCanvas(FigureCanvas):
         self.draw()
 
 
-class EnergeticsTab(QMainWindow):
+class ProbabilityTab(QMainWindow):
     def __init__(self, parent=None):
-        super(EnergeticsTab, self).__init__(parent)
+        super(ProbabilityTab, self).__init__(parent)
 
         self.erg_tab1 = Erg1dMain(self)
-        erg_tab2 = QWidget(self)  # Erg2dMain(self)
+        erg_tab2 = QWidget(self)
         erg_tabs = QTabWidget(self)
-        erg_tabs.addTab(self.erg_tab1, '1D Energy Path')
-        erg_tabs.addTab(erg_tab2, '2D Energy Landscape')
+        erg_tabs.addTab(self.erg_tab1, '1D Occupancy Map')
+        erg_tabs.addTab(erg_tab2, '2D Occupancy Map')
         erg_tabs.setTabEnabled(1, False)
         style = """QTabWidget::tab-bar{
                 alignment: center;

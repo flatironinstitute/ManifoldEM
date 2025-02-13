@@ -236,7 +236,7 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
 
             IMG1[i1:i2, i] = IMGT[:, tauind[0]]
             tauinds.append(tauind[0])
-        if is_full:  # second pass for energy_landscape
+        if is_full:  # second pass for probability_landscape
             #  adjust tau by comparing the IMG1s
             data = myio.fin1(params.get_psi2_file(prD, psinum))
             IMG1a = data['IMG1']
@@ -258,7 +258,6 @@ def psi_analysis_single(input_data, con_order_range, traj_name, is_full, psi_tru
 
 
 def _construct_input_data(prd_list: Union[List[int], None], N):
-    ll = []
     psi_nums_all = np.tile(np.array(range(params.num_psi)), (N, 1))  # numberofJobs x num_psis
     senses_all = np.tile(np.ones(params.num_psi), (N, 1))  # numberofJobs x num_psis
 
@@ -271,6 +270,7 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
         valid_prds = valid_prds.intersection(requested_prds)
 
     prds = data_store.get_prds()
+    jobs = []
     for prD in valid_prds:
         dist_file = params.get_dist_file(prD)
         psi_file = params.get_psi_file(prD)
@@ -279,9 +279,14 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
         senses = senses_all[prD, :]
         defocus = prds.get_defocus_by_prd(prD)
         psi_list = list(range(len(psinums)))  # list of incomplete psi values per PD
-        ll.append([dist_file, psi_file, EL_file, psinums, senses, prD, defocus, psi_list])
+        jobs.append([dist_file, psi_file, EL_file, psinums, senses, prD, defocus, psi_list])
 
-    return ll
+    # Sort by largest amount of work first, so the last job to run is always the shortest
+    indices_full = prds.thresholded_image_indices
+    image_counts = [len(indices_full[i]) for i in valid_prds]
+    jobs, _ = zip(*sorted(zip(jobs, image_counts), key=lambda x: x[1], reverse=True))
+
+    return jobs
 
 
 def op(prd_list: Union[List[int], None] = None, *argv):

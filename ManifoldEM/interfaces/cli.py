@@ -78,10 +78,10 @@ def get_parser():
     cc_parser.add_argument("input_file", type=str)
     add_relevant_params(cc_parser, ProjectLevel.FIND_CCS)
 
-    el_parser = subparsers.add_parser("energy-landscape", help="8: Calculate energy landscape",
+    el_parser = subparsers.add_parser("calc-probabilities", help="8: Calculate probability landscape",
                                       formatter_class=ArgumentDefaultsHelpFormatter)
     el_parser.add_argument("input_file", type=str)
-    add_relevant_params(el_parser, ProjectLevel.ENERGY_LANDSCAPE)
+    add_relevant_params(el_parser, ProjectLevel.PROBABILITY_LANDSCAPE)
 
     traj_parser = subparsers.add_parser("trajectory", help="9: Calculate trajectory",
                                         formatter_class=ArgumentDefaultsHelpFormatter)
@@ -178,8 +178,8 @@ def find_conformational_coordinates(args: Namespace):
     mem.find_conformational_coordinates(**args_to_dict(args))
 
 
-def energy_landscape(args: Namespace):
-    mem.energy_landscape(**args_to_dict(args))
+def probability_landscape(args: Namespace):
+    mem.probability_landscape(**args_to_dict(args))
 
 
 def compute_trajectory(args: Namespace):
@@ -294,7 +294,7 @@ _funcs = {
     "psi-analysis": psi_analysis,
     "nlsa-movie": nlsa_movie,
     "find-ccs": find_conformational_coordinates,
-    "energy-landscape": energy_landscape,
+    "calc-probabilities": probability_landscape,
     "trajectory": compute_trajectory,
     "mrcs2mrc": mrcs2mrc,
     "denoise": denoise,

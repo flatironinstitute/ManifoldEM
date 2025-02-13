@@ -8,6 +8,7 @@ from functools import partial
 from typing import List, Union
 
 from ManifoldEM import myio
+from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.util import NullEmitter, get_tqdm
 from ManifoldEM.core import makeMovie
@@ -33,14 +34,21 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
             print(f"Warning: requested invalid prds: {invalid_prds}")
         valid_prds = valid_prds.intersection(requested_prds)
 
-    ll = []
+    jobs = []
     for prD in valid_prds:
         image_file = '{}/topos/PrD_{}/class_avg.png'.format(params.out_dir, prD + 1)
         if os.path.exists(image_file):
             continue
-        ll.append([prD])
+        jobs.append([prD])
 
-    return ll
+    if jobs:
+        # Sort by largest amount of work first, so the last job to run is always the shortest
+        prds = data_store.get_prds()
+        indices_full = prds.thresholded_image_indices
+        image_counts = [len(indices_full[i]) for i in valid_prds]
+        jobs, _ = zip(*sorted(zip(jobs, image_counts), key=lambda x: x[1], reverse=True))
+
+    return jobs
 
 
 def movie(input_data, fps):

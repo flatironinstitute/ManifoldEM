@@ -72,3 +72,4 @@ def test_project_mask():
         # Check that our S2 conversion gives the same result
         mask_new = project_mask_test(vol, euler_new[i])
         assert np.allclose(mask_old, mask_new)
+

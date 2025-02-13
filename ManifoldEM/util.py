@@ -134,10 +134,6 @@ def calc_shannon(res: float, dia: float) -> float:
     return res / dia
 
 
-def calc_ang_width(aperture: int, resolution: float, diameter: float) -> float:
-    return min(aperture * resolution / diameter, 4 * np.sqrt(4 * np.pi))
-
-
 def debug_trace():
     from PyQt5.QtCore import pyqtRemoveInputHook
 

@@ -75,7 +75,6 @@ def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, m
     params.particle_diameter = diameter
     params.ms_estimated_resolution = resolution
     params.aperture_index = aperture_index
-    params.is_relion_data = alignment.endswith('.star')
 
     params.ms_num_pixels = get_image_width_from_stack(params.img_stack_file)
     params.ncpu = multiprocessing.cpu_count()
@@ -123,10 +122,10 @@ def find_conformational_coordinates(blas_threads=1, **kwargs):
         find_conformational_coords()
 
 
-def energy_landscape(blas_threads=1, **kwargs):
-    from ManifoldEM.energy_landscape import op as energy_landscape
+def probability_landscape(blas_threads=1, **kwargs):
+    from ManifoldEM.probability_landscape import op as probability_landscape
     with threadpool_limits(limits=blas_threads, user_api='blas'):
-        energy_landscape()
+        probability_landscape()
 
 
 def compute_trajectory(blas_threads=1, **kwargs):
