@@ -357,11 +357,10 @@ def get_wiener(CTF, posPath, posPsi1, ConOrder, num):
     return (wiener_dom, CTF1)
 
 
-def euler_rot_matrix_3D_spider(Phi, Theta, Psi, deg):
+def euler_rot_matrix_3D_spider(Phi, Theta, Psi):
     """
     This function calculates the rotation matrix for a given set of Euler angles
-    following the SPIDER convention. If 'deg' is True, the angles are first converted
-    to radians.
+    following the SPIDER convention.
 
     Parameters
     ----------
@@ -371,19 +370,13 @@ def euler_rot_matrix_3D_spider(Phi, Theta, Psi, deg):
         Euler angle theta
     Psi : float
         Euler angle psi
-    deg : bool
-        If True, angles are given in degrees; otherwise, in radians.
 
     Returns
     -------
     np.ndarray
         A 3x3 rotation matrix.
     """
-    if deg:
-        Phi = np.radians(Phi)
-        Theta = np.radians(Theta)
-        Psi = np.radians(Psi)
-
+    # yapf: disable
     R = np.array([
         [
             np.cos(Phi) * np.cos(Psi) * np.cos(Theta) + (-1) * np.sin(Phi) * np.sin(Psi),
@@ -401,12 +394,13 @@ def euler_rot_matrix_3D_spider(Phi, Theta, Psi, deg):
             np.cos(Theta)
         ]
     ])
+    # yapf: enable
 
     return R
 
 
 ## this usage of affine transform function with separate rotation and translation (offset)
-def rotate_volume_euler(vol, sym, deg):
+def rotate_volume_euler(vol, sym):
     """
     Rotates a 3D volume using Euler angles.
 
@@ -416,8 +410,6 @@ def rotate_volume_euler(vol, sym, deg):
         The input 3D volume to be rotated.
     sym : list or np.ndarray
         Euler angles [Phi, Theta, Psi] for the rotation.
-    deg : bool
-        Specifies if the Euler angles are in degrees.
 
     Returns
     -------
@@ -430,7 +422,7 @@ def rotate_volume_euler(vol, sym, deg):
     The 'nearest' mode is used for interpolation during the affine transformation.
     """
     dims = vol.shape
-    rotmat = euler_rot_matrix_3D_spider(sym[2], sym[1], sym[0], deg)
+    rotmat = euler_rot_matrix_3D_spider(sym[2], sym[1], sym[0])
 
     # if input euler angles are not already negative, then we have to take the inverse.
     T_inv = rotmat
@@ -442,7 +434,7 @@ def rotate_volume_euler(vol, sym, deg):
     return rho
 
 
-def get_euler_from_PD(PD, deg):
+def get_euler_from_PD(PD):
     """
     Converts projection direction (PD) to Euler angles and the associated quaternion.
 
@@ -450,35 +442,17 @@ def get_euler_from_PD(PD, deg):
     ----------
     PD : np.ndarray
         The projection direction (unit vector array (x, y, z)).
-    deg : int
-        Specifies the output format of the Euler angles. If 1, angles are in degrees;
-        if 2, angles are in degrees and normalized to [0, 360), otherwise it's returned in radians.
 
     Returns
     -------
-    tuple
-        tuple
-            Euler angles [Phi, Theta, Psi]
-        np.ndarray
-            The quaternion representation of the orientation.
+    np.ndarray
+        Euler angles [Phi, Theta, 0.0] (Psi is degenerate, so set to zero)
     """
     Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
     q1 = Qr / np.sqrt(sum(Qr**2))
 
-    phi, theta, psi = q2Spider(q1)
-
-    if deg == 1:
-        phi = phi * 180 / np.pi
-        theta = theta * 180 / np.pi
-        psi = psi * 180 / np.pi
-    elif deg == 2:
-        phi = (phi % (2 * np.pi)) * 180 / np.pi
-        theta = (theta % (2 * np.pi)) * 180 / np.pi
-        psi = (psi % (2 * np.pi)) * 180 / np.pi
-
-    sym = np.array([phi, theta, psi])
-
-    return sym, q1
+    phi, theta, _ = q2Spider(q1)
+    return np.array([phi, theta, 0.0])
 
 
 def project_mask(vol, PD):
@@ -514,13 +488,11 @@ def project_mask(vol, PD):
 
     vol = np.swapaxes(vol, 0, 2)
     nPix = vol.shape[0]
-    deg = 0
 
-    sym, _ = get_euler_from_PD(PD, deg)
-    sym[2] = 0  # as psi=0 , the input images have already been inplane rotated
+    sym = get_euler_from_PD(PD)
     sym = sym * (-1.)  # for inverse transformation
 
-    rho = rotate_volume_euler(vol, sym, deg)
+    rho = rotate_volume_euler(vol, sym)
 
     msk = np.sum(rho, axis=2)  # axis= 2 is z slice after swapping axes(0,2)
     msk = msk.reshape(nPix, nPix).T
