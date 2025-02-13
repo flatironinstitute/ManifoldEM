@@ -51,6 +51,13 @@ def test_eul_to_quat():
     permuted_YXY = np.vstack([-q2, -q3, -q1, q0]).T
     assert np.allclose(q_YXY, permuted_YXY, atol=atol)
 
+    # so called "spider" convention, w/ clockwise extrinsic rotations
+    # this should give the legacy results directly from the original code
+    extrinsic_zyz = 'zyz'
+    q_zyz = Rotation.from_euler(extrinsic_zyz, -euler_angles, degrees=False).as_quat()
+    permuted_zyz = np.vstack([q1, q2, q3, q0]).T
+    assert np.allclose(q_zyz, permuted_zyz, atol=atol)
+
 
 def test_quaternion_to_S2():
     n_euler_angles = 3
@@ -132,11 +139,11 @@ def test_q2Spider():
 
 
 def test_psi_ang():
-    n_euler_anlges = 3
-    n_ransom_samples = 1000
+    n_euler_angles = 3
+    n_random_samples = 1000
 
     np.random.seed(0)
-    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_ransom_samples, n_euler_anlges))
+    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
     flip = True

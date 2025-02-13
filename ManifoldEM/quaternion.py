@@ -335,8 +335,10 @@ def qs_to_spider_euler_angles(raw_qs: NDArray[Shape["4,Any"], Float]) -> NDArray
         3xN array of Euler angles in the "spider" convention
     """
     # https://www.ccpem.ac.uk/user_help/rotation_conventions.php
+    # Claims anti-clockwise, though clockwise gives the same results as legacy q2Spider routine...
     # "ZYZ anti-clockwise. (α,β,γ) is (ψ,θ,φ), note reversal because Spider defines its angles w.r.t external axes."
-    # so negate euler angles for counter-clockwise, and use lower case for extrinsic in scipy transforms
+    # so negate euler angles for clockwise, and use lower case for extrinsic in scipy transforms
+    #
     # python 3.9 doesn't have a scipy (1.14+) that supports the convenient scalar_first argument, so we need to permute to
     # get the scalar in the last position
     qs_scalar_last = np.vstack((raw_qs[1:4, :], raw_qs[0, :]))

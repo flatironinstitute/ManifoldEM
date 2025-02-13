@@ -50,9 +50,7 @@ def test_project_mask():
     euler_new = convert_S2_to_euler(s2.T).T
 
     def project_mask_test(vol, angs):
-        angs = np.flip(angs)
-
-        rotmat = Rotation.from_euler('zyz', angs, degrees=False).as_matrix()
+        rotmat = Rotation.from_euler('ZYZ', angs).as_matrix()
         cen_offset = c_in - np.dot(rotmat, c_out)
         rho = affine_transform(input=np.swapaxes(vol, 0, 2),
                                matrix=rotmat,
