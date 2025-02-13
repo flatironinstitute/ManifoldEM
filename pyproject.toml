@@ -91,3 +91,4 @@ column_limit = 119
 addopts = [
     "--import-mode=importlib",
 ]
+filterwarnings = 'ignore:.*is a deprecated alias for `np'
