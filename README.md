@@ -39,7 +39,7 @@ python3 -m venv ~/envs/manifoldem
 source ~/envs/manifoldem/bin/activate
 
 pip install --upgrade pip
-pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM[gui]"
+pip install "manifoldem[gui] @ git+ssh://git@github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
@@ -50,7 +50,7 @@ conda create -n manifoldem
 conda activate manifoldem
 
 conda install mayavi pyqt=5 python=3.10 -c conda-forge
-pip install "git+ssh://git@github.com/flatironinstitute/ManifoldEM[gui]"
+pip install "manifoldem[gui] @ git+ssh://git@github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
