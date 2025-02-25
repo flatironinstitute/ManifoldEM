@@ -63,14 +63,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Need to pin mayavi and vtk versions to one another, since pip does not do this properly
+# Mayavi 4.8.2 doesn't reliably run on multiple pythons
 gui = [
     "configobj",
     "fabric",
     "matplotlib",
-    "mayavi==4.8.2",
+    "mayavi@https://github.com/enthought/mayavi/zipball/main",
     "PyQt5",
-    "vtk==9.3.1",
+    "vtk",
 ]
 
 [project.scripts]
