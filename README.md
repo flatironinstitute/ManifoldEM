@@ -46,10 +46,9 @@ manifold-gui
 
 conda:
 ```bash
-conda create -n manifoldem
+conda create -n manifoldem python=3.10 -y
 conda activate manifoldem
 
-conda install mayavi pyqt=5 python=3.10 -c conda-forge
 pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
