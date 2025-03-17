@@ -335,7 +335,7 @@ If you find this code useful in your work, please cite
 
 
 ### License
-ManifoldEM Copyright (C) 2020-2023 Robert Blackwell, Ali Dashti, Joachim Frank, Sonya Hanson,
+ManifoldEM Copyright (C) 2020-2025 Robert Blackwell, Ali Dashti, Joachim Frank, Sonya Hanson,
 Hstau Liao, Suvrajit Maji, Ghoncheh Mashayekhi, Abbas Ourmazd, Peter Schwander, Evan Seitz
 
 The software, code sample and their documentation made available on this repository could
