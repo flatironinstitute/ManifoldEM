@@ -299,7 +299,7 @@ def get_distance_CTF_local(
             image_offsets[1][particle_index] - 0.5,
             image_offsets[0][particle_index] - 0.5,
         )
-        img = shift(img_data[particle_index], shi, order=3, mode="wrap")
+        img = shift(img_data[particle_index].astype(np.float64), shi, order=3, mode="wrap")
 
         # flip images when opposite the S2 division plane
         if image_is_mirrored[particle_index]:
