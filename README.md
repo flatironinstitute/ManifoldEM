@@ -1,6 +1,6 @@
 # ManifoldEM
 
-Note this is the Flatiron Institute fork of the [original
+Note this is the Flatiron Institute fork of the [original Python
 ManifoldEM](https://github.com/evanseitz/ManifoldEM_Python).  This particular fork is
 maintained by [Robert Blackwell](https://github.com/blackwer) and [Sonya
 Hanson](https://github.com/sonyahanson). This work has made significant contributions in
@@ -17,15 +17,12 @@ ManifoldEM on your own data sets. If you have any questions about ManifoldEM aft
 entire document, carefully check this GitHub forum for similar inquiries or, if no similar
 posts exist, create a new thread detailing your inquiry.
 
-This software was initially developed in the Frank research group at Columbia University
-(https://joachimfranklab.org) in collaboration with members from UWM (see below). The following
-resources may prove useful for a review of ManifoldEM history, theory and implementations:
-1. Dashti, A. et al. Trajectories of the ribosome as a Brownian nanomachine. PNAS, 2014.
-2. Dashti, A. et al. Retrieving functional pathways of biomolecules from single-particle
-   snapshots. Nature Communications, 2020.
+This software was initially developed in the [Frank lab](https://joachimfranklab.org) at Columbia University in collaboration with members from UWM (see below). The following resources may prove useful for a review of ManifoldEM history, theory and implementations:
+1. Dashti, A. et al. Trajectories of the ribosome as a Brownian nanomachine. PNAS, 2014. [DOI](https://doi.org/10.1073/pnas.1419276111)
+2. Dashti, A. et al. Retrieving functional pathways of biomolecules from single-particle snapshots. Nature Communications, 2020. [DOI](https://doi.org/10.1038/s41467-020-18403-x)
 3. Mashayekhi, G. ManifoldEM Matlab repository. https://github.com/GMashayekhi/ManifoldEM_Matlab
-4. Seitz, E. et al. Geometric machine learning informed by ground truth: Recovery of
-   conformational continuum from single-particle cryo-EM data of biomolecules. bioRxiv, 2021.
+4. Maji, S. et al. Propagation of Conformational Coordinates Across Angular Space in Mapping the Continuum of States from Cryo-EM Data by Manifold Embedding. JCIM, 2020. [DOI](https://doi.org/10.1021/acs.jcim.9b01115)
+5. Seitz, E. et al. Recovery of conformational continuum from single-particle cryo-EM images: Optimization of manifoldEM informed by Ground Truth. IEEE Transactions on Computational Imaging, 2022. [DOI](https://doi.org/10.1109/TCI.2022.3174801)
 
 ## Installation
 Should be installable in any modern python/conda environment (python 3.9+, though `mayavi` and
