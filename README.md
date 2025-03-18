@@ -11,7 +11,7 @@ the fork.
 
 This repository contains the Python software implementation of ManifoldEM for determination of
 conformational continua of macromolecules from single-particle cryo-EM data, as was first
-introduced by Dashti, et al. (2014). A detailed user manual is provided
+introduced by [Dashti, et al. (2014)](https://doi.org/10.1073/pnas.1419276111). A detailed user manual is provided
 [here](tutorial/README.md).  Carefully going through this manual will prepare you for running
 ManifoldEM on your own data sets. If you have any questions about ManifoldEM after reading this
 entire document, carefully check this GitHub forum for similar inquiries or, if no similar
