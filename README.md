@@ -24,6 +24,7 @@ This software was initially developed in the [Frank lab](https://joachimfranklab
 4. Maji, S. et al. Propagation of Conformational Coordinates Across Angular Space in Mapping the Continuum of States from Cryo-EM Data by Manifold Embedding. JCIM, 2020. [DOI](https://doi.org/10.1021/acs.jcim.9b01115)
 5. Seitz, E. et al. Recovery of conformational continuum from single-particle cryo-EM images: Optimization of manifoldEM informed by Ground Truth. IEEE Transactions on Computational Imaging, 2022. [DOI](https://doi.org/10.1109/TCI.2022.3174801)
 
+
 ## Installation
 Should be installable in any modern python/conda environment (python 3.9+, though `mayavi` and
 `pyqt` packages don't always immediately work with the most recent version of python). If you don't
@@ -306,6 +307,17 @@ Out[11]: (216, 192, 192)
 
 
 ### Contributions
+
+Current ManifoldEM Python team (alphabetically ordered):
+
+- Miro A. Astore, Flatiron Institute
+- Robert Blackwell, Flatiron Institute
+- Eduard Cruz-Chu, University of Wisconsin-Milwaukee
+- Raison Dsouza, University of Wisconsin-Madison
+- Sonya M. Hanson, Flatiron Institute
+- Anand A. Ojha, Flatiron Institute
+- Peter Schwander, University of Wisconsin-Milwaukee
+
 Original ManifoldEM Python team (alphabetically ordered):
 
 - Ali Dashti, University of Wisconsin-Milwaukee
@@ -324,11 +336,11 @@ individual contributions hard to track or ultimately meaningless.
 
 
 ### Attribution
-If you find this code useful in your work, please cite
+If you find this code useful in your work, please cite:
 
-{E. Seitz *et al.*, "ManifoldEM Python repository," *Zenodo*, 2021, doi: 10.5281/zenodo.5578874}
+A. Ojha et al., The ManifoldEM method for cryo-EM: a step-by-step breakdown accompanied by a modern Python implementation. *Acta Cryst.* (2025) D81, 89-104. [DOI](https://doi.org/10.1107/S2059798325001469)
 
-[![DOI](https://zenodo.org/badge/405477119.svg)](https://zenodo.org/badge/latestdoi/405477119)
+
 
 
 ### License
