@@ -142,6 +142,8 @@ Finally you can build volumes along this conformational coordinate. Note this re
 > manifold-cli utility denoise params_20260101_RyR_tutorial.toml
 ```
 
+Congrats! You have finished running FI-ManifoldEM on this dataset! You can use the Python API to further inspect your results following on [this notebook](https://github.com/flatironinstitute/ManifoldEM/blob/docs-updates/tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb).
+
 # Thyroglobulin Tutorial
 
 We will now walk through the analysis of a realistic-sized cryo-EM dataset (674,840 particles) with the FI-ManifoldEM pipeline. Note that though this is a synthetic dataset, the SNR has been decided to be similar to real data, and the pose distribution has been taken from a real dataset.
@@ -231,182 +233,21 @@ Here we only need to pick a single anchor node, but in most real cases you will 
 Once the anchor nodes have been selected you can move on by clicking 'Compile Results'.
 
 ### CLI
-TBD
+Anchor node selection is somewhat more intuitive to conduct within the GUI, but in the CLI-only tutorial above, we have outlined the steps for this, and refer the user to that section.
 
 ## Compile Results and Calculate Probability Distribution
 <img src="images/GUI-Compile.png">
 
 ## Volume Reconstruction
 
-### CLI
+Volume reconstruction is a CLI-only process, so is identical to the CLI-only tutorial above.
 
- ** Below to still be shortened.
+Finally you can build volumes along this conformational coordinate. Note this requires `relion`, and we recommend the second denoising step:
+```
+> manifold-cli -n 16 utility mrcs2mrc params_20260101_RyR_tutorial.toml
+> manifold-cli utility denoise params_20260101_RyR_tutorial.toml
+```
 
-## 7.2 Find Conformational Coordinates
-Once you have filled in the appropriate values for the parameters at the top of the Compilation tab,
-click the Find Conformational Coordinates button to initiate Optical Flow and Belief Propagation
-across your entire data set. These two procedures aim to select the correct eigenvector/sense
-combination for the user-defined conformational motion across all PDs. To achieve this, Optical
-Flow is first used to define the most prominent visual motions in the 2D NLSA movies in terms of
-feature vectors (based on a histogram of oriented gradients), which are calculated for every
-eigenvector/sense combination across all PDs. Next, the set of all feature vectors in each PD is
-compared to the set of all feature vectors in its immediate neighbors on the S2
-.
-Belief Propagation assesses the affinity between all pairwise-combinations of feature vectors
-between all neighboring PDs, ultimately giving each comparison a likelihood score for how well it
-conserves the intended conformational motion (defined by the PD anchors). These probabilities are
-propagated across the network of PDs until uncertainty is minimized on the global scale. After this
-process has been completed, you can check these eigenvector/sense assignments within the output
-file located at: outputs_<project name>/CC/comp_psi_sense_nodes.txt, and compare the
-fidelity of each PD’s assignment with the motions you see in the respective movie on the
-Eigenvectors tab.
+Congrats! You have finished running FI-ManifoldEM on this dataset! You can use the Python API to further inspect your results following on [this notebook](https://github.com/flatironinstitute/ManifoldEM/blob/docs-updates/tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb).
 
-The ManifoldEM Python suite also includes a feature to automatically find erroneous PDs by
-analysis of τ statistics. In certain situations, we have found that certain 2D NLSA outputs do not
-converge depending on the images contained in a particular PD, and therefore generate 2D NLSA
-movies that are “bad” (i.e., very noisy, jittery or almost completely static). This is also reflected as a
-relatively discrete, narrow τ-value distribution for such movies. Our automation strategy uses the
-interquartile range (IQR) to characterize the dispersion of the τ histograms for all movies across all
-PDs. From the distribution of all IQR values, we automatically determine the cutoff IQR value which
-separates relatively well spread-out histograms from the narrow ones. When all of the movies for a
-given PD are below that IQR cutoff value, we automatically remove the PD from interfering with
-belief propagation and obstructing final outputs.
 
-## 7.3 Energy Landscape
-Within the Energy Landscape module, for each PD’s chosen eigenvector, its corresponding τ
-parameterization is subdivided into 50 uniformly spaced bins (each representing a unique NLSA
-state), with the number of snapshots falling within each bin tallied towards its state’s occupancy (as
-is visualized in the right-hand side figure under Tau Analysis).
-In thermal equilibrium, we attribute differences in occupancy to differences in the molecules’ free
-energy via the Boltzmann factor ΔG/kB T = -ln(ns /n0), where ns is the number of snapshots in the
-current state and n0 is the occupancy of the maximum-occupancy state in the state space (Fischer et
-al., 2010; Agirrezabala et al., 2012). The lowest observable occupancy in the ensemble represented
-by the dataset, of one particle in a state, defines the highest measured free energy while the highest
-observable occupancy defines the lowest measured free energy. The Boltzmann constant kB is a
-physical constant that relates the average relative free energy of particles to their bulk temperature.
-(Please see the Compilation Parameters section for information on the temperature, T). The free
-energy of a state in this landscape is a thermodynamic quantity equivalent to the capacity of a
-system to do work. Finally, this occupancy/energy information is integrated across the chosen
-eigenvectors of all PDs, with the ordering of states within each defined via its Sense.
-When only one degree of freedom is desired (or available), the NLSA occupancies and images
-corresponding to the same CC content in different PD manifolds can be further compiled across S2
-to
-construct a 1D energy path and a set of corresponding reconstructed volumes. Although not
-available in this Beta release, the NLSA procedure is more complicated when two degrees of
-freedom are desired. For completeness, we note that after identification of two CCs, their respective
-eigenvectors for the current PD manifold are used to isolate a 2D subspace therein. On this {CC1,
-CC2} subspace, NLSA is performed independently along the directions of 180 uniformly-spaced
-radial lines in the range θ ∈ [0, π]. This yields a collection of point densities (i.e., 1D occupancy
-maps) n(τ,θ) for each θ. The collection of these 1D maps for all θ constitutes the 2D Radon transform
-of a yet unknown 2D density map (i.e., the desired 2D occupancy map). An inverse Radon transform
-is then applied to reconstruct the 2D density map. In addition, NLSA also retrieves the
-noise-reduced images at each point in this map. As in the 1D case, this procedure must next be
-performed for the eigenvector pairs corresponding to {CC1, CC2} in all other PD embeddings, from
-which noise-reduced volumes can be reconstructed to form 3D movies of concerted conformational
-motions.
-
-## 7.4 Recompile Results
-At any time after running Find Conformational Coordinates or Energy Landscape on the Compilation
-tab, you are given the option to recompile this information. This can be done via the Recompile
-Results button on the Eigenvectors tab (which was previously labelled Compile Results on the first
-run). Subsequent results will only change if you wish to change your previously assigned PD
-Anchors, PD Removals, Dimensions value (currently disabled in the Beta), or the Temperature value.
-
-## 8 Energetics Tab
-## 8.1 Energetics
-The Energetics tab provides a visualization of the resulting energy landscape (i.e., 1D Energy Path,
-for the Beta release) as integrated across all PDs, with the dimensionality d defined via the number
-of chosen conformational coordinates (d=1 in this Beta release). Using the View Distribution button,
-you can switch views between the 1D Occupancy Map and 1D Energy Path, showing the difference
-between the initial occupancies across all PDs and the resulting transformation via the Boltzmann
-factor.
-
-In the 1D Energy Path representation, energetic wells represent the most energetically favorable
-conformations along your chosen conformational coordinate. Likewise, energetic peaks represent
-thermodynamically improbable states which constrain transitions between neighboring wells.
-Given this context, if your energetics look biologically unnatural (completely flat as one example),
-you may want to recheck your anchor assignments on the Eigenvectors tab, with the possibility of
-redoing these calculations via the previously discussed Recompile Results button.
-Before computing your 3D trajectory files along this conformational coordinate, you can change
-how the states will be combined along the given trajectory via the Path Width option. The default
-value (1) will result in 50 output image stacks, where each stack combines information only from
-projections belonging to the state it corresponds to (one stack per state). As this value is increased,
-a sliding window is introduced along the trajectory such that additional information from
-neighboring states is included when building each of the 50 image stacks. For example, choosing 3
-for the Path Width will tell each image stack {1, … , 50} to include its own images along with those
-from its immediate neighbors; i.e., three microstates in total for each macrostate.
-
-While not available in the Beta release, we provide here a glimpse of the 2D functionality of the
-Python ManifoldEM GUI, which is a work in progress. As is planned, depending on the previous
-choice of dimensionality, plots on the Energetics tab will be either 1D or 2D. In the case of 2D, the
-user will be presented with a subsequent choice to define a path through the 2D energy landscape
-(Figure 4). Using this interface, points can be added onto this 2D plot to form a custom path, with
-corresponding integrated energy recorded. Alternatively, the user can elect to export this energy
-landscape for analysis with external pathfinding programs – such as POLARIS (Seitz and Frank,
-2020) – to potentially define a minimum-energy path of presumed biological significance. These
-trajectories can then be imported into the ManifoldEM GUI for use in its final computations. After a
-suitable path has been defined (if applicable), ManifoldEM will combine the NLSA movies from all
-states and PDs along that path into corresponding image stacks and alignment files. Post-processing
-modules, which are located external to the GUI in the ManifoldEM main folder hierarchy, can then be
-run to use the projections in these image stacks to reconstruct NLSA volumes. The final result of this
-framework is a sequence of successive 3D reconstructions along the chosen path, forming a 3D
-movie. In the case of the 1D Energy Path, this sequence demonstrates the conformational changes
-along a single CC.
-
-<img src="images/energetics_tab.png">
-Figure 4: 2D Energy Landscape tab showing outputs from the Ribosomal data set (Dashti et al., 2014), as
-viewed in Mac OS. A set of user-defined coordinates have been handpicked to form a path through the
-low-energy valley. This path can be used to generate the set of assets required to produce a final sequence of
-NLSA volumes. Alternatively, the path of least action can be imported (as generated via external programs;
-e.g., POLARIS) and similarly used.
-
-## 8.2 3D Trajectories
-Once you have selected a suitable path width, press the Compute 3D Trajectories button. During this
-process, the images from all states across all PDs are combined into 50 image stacks and alignment
-files, such that there is one image stack and corresponding alignment file for each state along your
-trajectory. Each image stack {1, … , 50} contains all of the particles across S2
-that fall within its
-corresponding bin (state), with the angular information and microscopy parameters of each image
-written into that stack’s alignment file.
-
-## 9 Post-processing
-After viewing the energy landscape (or energy path, for 1D) and computing 3D trajectories, a
-collection of image stacks (.mrcs) and corresponding alignment files (.star) will be exported into
-your outputs_<project_name>/bin directory. Each pairing in this collection coincides with one of
-the 50 conformational states for your chosen motion, with each state containing information from
-every PD across S2.
-
-## 9.1 Volume Reconstruction
-With these files generated, an external algorithm (RELION) can next be used to reconstruct 50
-volumes from this collection, representing a 3D movie displaying the chosen conformational
-motion. First, if you haven’t yet installed RELION, do so now via the instructions in Appendix A.
-Once installed, navigate to the outputs_<project_name>/post/1_vol directory in the CLI, and
-run the batch-reconstruction script there via: sh mrcs2mrc.sh.
-
-## 9.2 Noise Reduction
-After your 50 volume files have been produced via RELION’s reconstruction algorithm (as described
-in the previous section), you can elect to clean them via our external (to the GUI) post-processing
-scripts.
-
-The first choice is via Singular Value Decomposition (SVD). The corresponding scripts are designed
-to decompose your volume sequence into a series of modes, and eliminate noise by removing modes
-below a singular value threshold. These two SVD scripts can be found in the
-outputs_<project_name>/post/2_svd directory and include mrc2svd.sh and mrc2svd.py. You
-can run both scripts at once by navigating to the above folder in the CLI (making sure the
-ManifoldEM Anaconda environment is also activated) and inputting the command: sh mrc2svd.sh.
-(To note, for volume files with large box sizes, these computations may take considerable time; e.g.,
-hours). By default, the first and second eigenvector will be chosen as significant, and retained.
-During this initial run, a figure entitled mrc2svd.png will be saved, showing the eigenvalue
-spectrum for your data. After examining this plot, you can choose to rerun this procedure while
-retaining a different set of user-defined eigenvectors by first changing the Topo_list variable
-located at the top of mrc2svd.py, followed by again inputting the command sh mrc2svd.sh.
-The second choice for noise reduction is via the mrc2denoise.py script, where either a Gaussian or
-median filter can be applied to each volume. As well, the window size of the filter and range of states
-on which the filter is applied can also be altered using the overhead parameters.
-
-## 10 Citing Us and Asking Questions
-If ManifoldEM is useful in your work, please cite Dashti et al. (2014) and this ManifoldEM Python
-repository. If you have any questions about ManifoldEM after reading this entire document, carefully check the
-ManifoldEM GitHub forum for similar inquiries or, if no similar posts exist, create a new thread
-detailing your inquiry. As well, if you find any errors while reading this document, please let us
-know.
