@@ -236,7 +236,25 @@ Once the anchor nodes have been selected you can move on by clicking 'Compile Re
 Anchor node selection is somewhat more intuitive to conduct within the GUI, but in the CLI-only tutorial above, we have outlined the steps for this, and refer the user to that section.
 
 ## Compile Results and Calculate Probability Distribution
+
+In this next tab the Anchor nodes you selected are used to run optical flow and define senses on all other PDs with the 'Find Conformational Coordinates' button. 
+
 <img src="images/GUI-Compile.png">
+
+Finally you can click the 'Probabiity Landscape' button to achieve a 1D estimate of your distribution in the ManifoldEM space.
+
+<img src="images/GUI-landscape.png">
+
+Once here you can compute the 'Compute 3D Trajectories' and then proceed to the Volume Reconstruction step.
+
+
+### CLI
+
+```
+> manifold-cli -n 16 find-ccs params_20260101_RyR_tutorial.toml
+> manifold-cli -n 16 probability-landscape params_20260101_RyR_tutorial.toml
+> manifold-cli -n 16 trajectory params_20260101_RyR_tutorial.toml
+```
 
 ## Volume Reconstruction
 
