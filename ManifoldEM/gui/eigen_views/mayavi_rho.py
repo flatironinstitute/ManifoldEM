@@ -26,8 +26,9 @@ else:
 class _Mayavi_Rho(HasTraits):
     """View of electrostatic potential map"""
     scene3 = Instance(MlabSceneModel, ())
-    isosurface_level = Range(2, 9, 3, mode='enum')
+    isosurface_level = Range(2, 9, 4, mode='enum')
     volume_alpha = Enum(1.0, .8, .6, .4, .2, 0.0)
+    color_by = Enum('Cluster', 'Occupancy')
     phi = Str
     theta = Str
     click_on = 0
@@ -76,6 +77,37 @@ class _Mayavi_Rho(HasTraits):
     def __init__(self, parent):
         super(_Mayavi_Rho, self).__init__()
         self.parent = parent
+
+
+    @on_trait_change('color_by')
+    def _apply_coloring(self):
+        """Recolor the S2 scatter by connected-component cluster or by occupancy."""
+        if _disable_viz or not hasattr(self, 'splot'):
+            return
+
+        prds = data_store.get_prds()
+        # coloring is cosmetic; never let a VTK/LUT hiccup abort the scene build:
+        try:
+            lut = self.splot.module_manager.scalar_lut_manager
+            if self.color_by == 'Occupancy':
+                occupancy = np.asarray(prds.occupancy, dtype=float)
+                self.splot.mlab_source.scalars = occupancy
+                lut.lut_mode = 'jet'
+                # pin the range to the occupancy span so the busiest PDs map to
+                # the top (red) of the jet ramp; use_default_range can otherwise
+                # leave the range stuck at the previous (cluster_ids) scale.
+                lut.use_default_range = False
+                if occupancy.size:
+                    lut.data_range = np.array([occupancy.min(), occupancy.max()])
+                lut.show_scalar_bar = True
+                lut.scalar_bar.title = 'Occupancy'
+            else:
+                self.splot.mlab_source.scalars = prds.cluster_ids
+                lut.lut_mode = 'blue-red'
+                lut.use_default_range = True
+                lut.show_scalar_bar = False
+        except Exception as exc:
+            print(f"Warning: could not update PD coloring ({self.color_by}): {exc}")
 
 
     @on_trait_change('volume_alpha,isosurface_level')
@@ -138,6 +170,7 @@ class _Mayavi_Rho(HasTraits):
                                   figure=self.fig3)
             splot.actor.property.backface_culling = True
             splot.actor.actor.scale = scale_vec
+            self.splot = splot
 
             # =================================================================
             # S2 Anchors (sparse scatter):
@@ -178,6 +211,8 @@ class _Mayavi_Rho(HasTraits):
             tplot.actor.actor.position = np.zeros(3)
 
             self.trash_update = tplot.mlab_source
+
+            self._apply_coloring()
 
         else:  #only update anchors
             anchor_pos = s2_positions[:, list(prds.anchors.keys())]
@@ -286,6 +321,10 @@ class _Mayavi_Rho(HasTraits):
                          springy=True,
                          show_label=True,
                          tooltip='Change the isosurface level of the volume map above.'),
+                    Item('color_by',
+                         springy=True,
+                         show_label=True,
+                         tooltip='Color projection directions by connected-component cluster or by occupancy.'),
                 ),
                 show_border=False,
                 orientation='vertical'),

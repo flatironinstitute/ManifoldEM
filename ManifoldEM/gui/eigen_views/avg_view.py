@@ -75,11 +75,33 @@ class _AverageViewCanvas(FigureCanvas):
 
 
     def plot(self, index: int):
-        fname = os.path.join(params.out_dir, 'topos', f'PrD_{index}', 'class_avg.png')
+        fname = params.get_class_avg_path(index)
         img = mpimg.imread(fname)
         ax = self.figure.add_subplot(111)
         ax.clear()
         ax.set_title('2D Class Average', fontsize=6)
         ax.imshow(img, cmap='gray')
+        ax.axis('off')
+        self.draw()
+
+
+class _ClassAvgPanelCanvas(FigureCanvas):
+    """Embeddable 2D class-average view that updates with the selected PD and
+    tolerates a missing image (shows an empty frame)."""
+    def __init__(self, parent=None, width=2, height=2, dpi=200):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+        self.updateGeometry()
+
+
+    def plot(self, index: int):
+        ax = self.axes
+        ax.clear()
+        ax.set_title('2D Class Average', fontsize=6)
+        fname = params.get_class_avg_path(index)
+        if os.path.isfile(fname):
+            ax.imshow(mpimg.imread(fname), cmap='gray')
         ax.axis('off')
         self.draw()
