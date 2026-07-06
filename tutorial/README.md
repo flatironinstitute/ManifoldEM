@@ -81,12 +81,12 @@ manifold-cli -n 16 nlsa-movie params_20260101_RyR_tutorial.toml
 
 To move forward through the pipeline, it is good to check at least the NLSA movie for your most populated projection direction:
 ```python
- from ManifoldEM.data_store import data_store
- from ManifoldEM.params import params
- params.load('params_20260101_RyR_tutorial.toml')
- prds = data_store.get_prds()
- top_PD = np.argmax(prds.occupancy)
- print(f"The PD with the most images is {top_PD} with {prds.occupancy[top_PD]} images.")
+from ManifoldEM.data_store import data_store
+from ManifoldEM.params import params
+params.load('params_20260101_RyR_tutorial.toml')
+prds = data_store.get_prds()
+top_PD = np.argmax(prds.occupancy)
+print(f"The PD with the most images is {top_PD} with {prds.occupancy[top_PD]} images.")
 ```
 
 Which tells you "The PD with the most images is 52 with 565 images." Since Python is 0 index, we now migrate to `output/20260101_RyR_tutorial/topos` and open `PrD_53/psi_1.gif`.
@@ -136,11 +136,12 @@ Once these anchor nodes are defined, you can move forward with the belief propag
 > manifold-cli -n 16 trajectory params_20260101_RyR_tutorial.toml
 ```
 
-Finally you can build volumes along this conformational coordinate. Note this requires `relion`, and we recommend the second denoising step:
+Finally you can build volumes along this conformational coordinate. Note this requires `relion` (if you can use relion commands in your command line, this should just run, no fancy install required), and we recommend the second denoising step:
 ```
 > manifold-cli -n 16 utility mrcs2mrc params_20260101_RyR_tutorial.toml
 > manifold-cli utility denoise params_20260101_RyR_tutorial.toml
 ```
+These volumes can be found in the `postproc` folder.
 
 Congrats! You have finished running FI-ManifoldEM on this dataset! You can use the Python API to further inspect your results following on [this notebook](https://github.com/flatironinstitute/ManifoldEM/blob/docs-updates/tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb).
 
