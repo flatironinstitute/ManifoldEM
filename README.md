@@ -47,6 +47,13 @@ conda:
 conda create -n manifoldem python=3.10 -y
 conda activate manifoldem
 
+git clone --branch uwm https://github.com/flatironinstitute/ManifoldEM
+
+cd ManifoldEM
+
+pip install -e ".[gui]"
+
+
 pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
