@@ -30,18 +30,6 @@ Should be installable in any modern python/conda environment (python 3.9+, thoug
 `pyqt` packages don't always immediately work with the most recent version of python). If you don't
 need the gui, feel free to omit the "[gui]" part of the install command!
 
-python:
-```bash
-# create virtual environment. feel free to change the path!
-python3 -m venv ~/envs/manifoldem
-source ~/envs/manifoldem/bin/activate
-
-pip install --upgrade pip
-pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
-
-manifold-gui
-```
-
 conda:
 ```bash
 conda create -n manifoldem python=3.10 -y
@@ -53,8 +41,6 @@ cd ManifoldEM
 
 pip install -e ".[gui]"
 
-
-pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
