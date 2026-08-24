@@ -105,6 +105,11 @@ def op(input_data, posPath, tune, rad, visual, doSave):
     # psi is nS x num_psis
     # sigma is a scalar
     # mu is 1 x nS
+
+    # USD changes
+    print("USD changes : DO NOT TRIM MANIFOLD")
+
+    '''
     posPath1 = get_psiPath(psi, rad, 0)
     cc = 0
     while len(posPath1) < nS:
@@ -124,6 +129,7 @@ def op(input_data, posPath, tune, rad, visual, doSave):
         show_plot(lamb, psi, 'out loop')
 
     posPath = posPath[posPath1]
+    '''
 
     if doSave['Is']:
         myio.fout1(psi_file, lamb=lamb, psi=psi, sigma=sigma, mu=mu, posPath=posPath, ind=ind,
