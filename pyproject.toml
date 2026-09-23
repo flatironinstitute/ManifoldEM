@@ -50,7 +50,8 @@ dependencies = [
     "imageio",
     "nptyping",
     "numba",
-    "numpy",
+    # nptyping 2.5.0 (latest) imports np.bool8, removed in numpy 2.0:
+    "numpy<2",
     "mrcfile",
     "opencv-python-headless",
     "opencv-contrib-python",
@@ -63,14 +64,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Mayavi 4.8.2 doesn't reliably run on multiple pythons
+# RECOMMENDED: install the 3D stack (mayavi + vtk + pyqt) from conda-forge as a
+# matched binary set -- see the "conda" install section in README.md. The pip
+# route below is a best-effort fallback for non-conda environments.
+#
+# The failure mode this guards against: mayavi and vtk must come from the *same*
+# build. A mismatch (e.g. tvtk wrappers built against an older vtk, then run
+# against vtk >= 9.5) surfaces at render time as an undefined 'copy_global_ids'
+# trait on vtkPointData. conda-forge's mayavi 4.8.3 + vtk 9.4.x is a known-good
+# pair; vtk 9.5/9.6 are not. When installing via pip, also pass
+# --no-build-isolation so mayavi's tvtk generator wraps the vtk in your env
+# rather than pulling the newest vtk into an isolated build overlay.
 gui = [
     "configobj",
     "fabric",
     "matplotlib",
     "mayavi@https://github.com/enthought/mayavi/zipball/main",
     "PyQt5",
-    "vtk",
+    "vtk<9.5",
 ]
 
 [project.scripts]

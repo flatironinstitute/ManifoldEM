@@ -11,7 +11,50 @@ import numpy as np
 from ManifoldEM.params import params
 from ManifoldEM.data_store import data_store, Anchor, Sense
 from .eigen_views import (Mayavi_Rho, AverageViewWindow, BandwidthViewWindow, EigenSpectrumWindow,
-                          Vid2Canvas, PDSelectorWindow, CCDetailsView)
+                          Vid2Canvas, PDSelectorWindow, CCDetailsView, ClassAvgPanelCanvas)
+
+
+class OccupancySpinBox(QSpinBox):
+    """Spinbox whose up/down stepping follows a custom PD order (descending
+    occupancy) while the displayed value remains the original 1-based PD id."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._order = []
+
+    def set_order(self, order):
+        self._order = [int(i) for i in order]
+
+    def _position(self):
+        try:
+            return self._order.index(self.value())
+        except ValueError:
+            return None
+
+    def stepBy(self, steps):
+        if not self._order:
+            super().stepBy(steps)
+            return
+        pos = self._position()
+        if pos is None:
+            pos = 0
+        pos = max(0, min(len(self._order) - 1, pos + steps))
+        self.setValue(self._order[pos])
+
+    def stepEnabled(self):
+        # enable the arrows based on position within the occupancy order, not the
+        # numeric value: stepping follows the order, so the value alone (which can
+        # hit its numeric min/max mid-order) must not gate the arrows.
+        if not self._order:
+            return super().stepEnabled()
+        pos = self._position()
+        if pos is None:
+            return QAbstractSpinBox.StepUpEnabled | QAbstractSpinBox.StepDownEnabled
+        flags = QAbstractSpinBox.StepNone
+        if pos < len(self._order) - 1:
+            flags |= QAbstractSpinBox.StepUpEnabled
+        if pos > 0:
+            flags |= QAbstractSpinBox.StepDownEnabled
+        return flags
 
 
 def get_blank_pixmap(path: str):
@@ -47,6 +90,10 @@ class EigenvectorsTab(QWidget):
         self.layoutL.setContentsMargins(20, 20, 20, 20)
         self.layoutL.setSpacing(10)
 
+        self.layoutM = QGridLayout()
+        self.layoutM.setContentsMargins(20, 20, 20, 20)
+        self.layoutM.setSpacing(10)
+
         self.layoutR = QGridLayout()
         self.layoutR.setContentsMargins(20, 20, 20, 20)
         self.layoutR.setSpacing(10)
@@ -56,11 +103,21 @@ class EigenvectorsTab(QWidget):
         self.layoutB.setSpacing(10)
 
         self.widgetsL = QWidget()
+        self.widgetsM = QWidget()
         self.widgetsR = QWidget()
         self.widgetsB = QWidget()
         self.widgetsL.setLayout(self.layoutL)
+        self.widgetsM.setLayout(self.layoutM)
         self.widgetsR.setLayout(self.layoutR)
         self.widgetsB.setLayout(self.layoutB)
+
+        label_class_avg = QLabel("2D Class Average")
+        label_class_avg.setMargin(0)
+        label_class_avg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
+        self.layoutM.addWidget(label_class_avg, 0, 0, 1, 1)
+
+        self.class_avg_canvas = ClassAvgPanelCanvas(self)
+        self.layoutM.addWidget(self.class_avg_canvas, 1, 0, 5, 1)
 
         label_topos = QLabel("View Topos")
         label_topos.setMargin(0)
@@ -74,12 +131,13 @@ class EigenvectorsTab(QWidget):
         self.label_prd.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.layoutL.addWidget(self.label_prd, 6, 0, 1, 1)
 
-        self.entry_prd = QSpinBox(self)
+        self.entry_prd = OccupancySpinBox(self)
         self.entry_prd.setMinimum(1)
         self.entry_prd.setMaximum(1)
         self.entry_prd.setSuffix(f"  /  1")
         self.entry_prd.valueChanged.connect(self.on_prd_change)
-        self.entry_prd.setToolTip('Change the projection direction of the current view above.')
+        self.entry_prd.setToolTip('Step through projection directions in order of '
+                                  'descending occupancy (highest first).')
         self.layoutL.addWidget(self.entry_prd, 6, 1, 1, 2)
 
         self.entry_pop = QDoubleSpinBox(self)
@@ -200,8 +258,9 @@ class EigenvectorsTab(QWidget):
         # layout dividers:
         splitter1 = QSplitter(QtCore.Qt.Horizontal)
         splitter1.addWidget(self.widgetsL)
+        splitter1.addWidget(self.widgetsM)
         splitter1.addWidget(self.widgetsR)
-        splitter1.setStretchFactor(1, 1)
+        splitter1.setStretchFactor(2, 1)
 
         splitter2 = QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(splitter1)
@@ -331,6 +390,11 @@ class EigenvectorsTab(QWidget):
         self.update_pd_view()
         self.update_anchor_view()
         self.update_psi_view()
+        self.update_class_avg()
+
+
+    def update_class_avg(self):
+        self.class_avg_canvas.plot(self.user_prd_index)
 
 
     def update_psi_view(self):
@@ -349,10 +413,25 @@ class EigenvectorsTab(QWidget):
 
     def activate(self):
         prds = data_store.get_prds()
+
+        # step through PDs by descending occupancy (highest first), keeping the
+        # original 1-based PD id as the displayed/stored index:
+        occupancy_order = (np.argsort(prds.occupancy)[::-1] + 1).tolist()
+        self.entry_prd.set_order(occupancy_order)
         self.entry_prd.setMaximum(prds.n_thresholded)
         self.entry_prd.setSuffix(f"  /  {prds.n_thresholded}")
 
+        # build the 3d scene first: on_prd_change -> update_pd_view touches the
+        # mayavi figure, so the scene must exist before any prd update fires.
         self.viz2.update_scene3(init=True)
+
+        # select the highest-occupancy PD without prematurely emitting
+        # valueChanged (we drive the update explicitly via on_prd_change below):
+        if occupancy_order:
+            self.entry_prd.blockSignals(True)
+            self.entry_prd.setValue(occupancy_order[0])
+            self.entry_prd.blockSignals(False)
+
         self.on_prd_change()
         self.update_psi_view()
 

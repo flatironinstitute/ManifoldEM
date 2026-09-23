@@ -387,6 +387,9 @@ class Params:
     def get_topos_path(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, "topos", f"PrD_{prd}", f"topos_{index}.png")
 
+    def get_class_avg_path(self, prd: int) -> str:
+        return os.path.join(self.out_dir, "topos", f"PrD_{prd}", "class_avg.png")
+
     def get_psi_gif(self, prd: int, index: int) -> str:
         return os.path.join(self.out_dir, "topos", f"PrD_{prd}", f"psi_{index}.gif")
 

@@ -42,19 +42,39 @@ pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/Manifold
 manifold-gui
 ```
 
-conda:
+conda (recommended for the GUI):
 ```bash
 conda create -n manifoldem python=3.10 -y
 conda activate manifoldem
 
-pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
+# Install the 3D/Qt stack from conda-forge as a matched binary set. This avoids
+# the brittle pip build of mayavi against an incompatible vtk (see note below).
+conda install -c conda-forge mayavi pyqt vtk matplotlib "numpy<2" -y
+
+# Install ManifoldEM itself WITHOUT the [gui] extra, so pip doesn't try to
+# re-resolve/rebuild mayavi + vtk + PyQt over the conda-provided ones.
+pip install "manifoldem @ git+https://github.com/flatironinstitute/ManifoldEM"
 
 manifold-gui
 ```
 
-Note that when using conda, this bypasses conda's package management system and can lead to
-problems if you later install packages into this environment with `conda install`. It's
-recommended to keep an environment purely for `ManifoldEM`.
+Why the GUI dependencies are split out: `mayavi` and `vtk` must come from the *same* build. If
+they don't (e.g. pip building mayavi's `tvtk` wrappers against one vtk, then running against
+another), 3D rendering fails at runtime with an undefined `copy_global_ids` trait on
+`vtkPointData`. conda-forge ships a compatible pair (e.g. `mayavi` 4.8.3 + `vtk` 9.4.x); `vtk`
+9.5/9.6 are currently incompatible with the mayavi build. Also note `numpy` is held `< 2` because
+`nptyping` still imports the removed `np.bool8` alias.
+
+If you must use the pip `[gui]` extra in a non-conda environment, add `--no-build-isolation` so
+mayavi's wrapper generator targets the vtk already in your environment rather than pulling the
+newest vtk into an isolated build:
+```bash
+pip install "vtk<9.5"
+pip install --no-build-isolation "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
+```
+
+Note that when using conda this way, mixing the conda-managed packages with later `pip install`s
+can lead to problems. It's recommended to keep an environment purely for `ManifoldEM`.
 
 
 ## Running without 3D acceleration
