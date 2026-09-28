@@ -1,7 +1,5 @@
 """Utilities that can be defined with basically one function."""
 import os
-import io
-import zipfile
 import imageio
 import warnings
 import numpy as np
@@ -158,25 +156,16 @@ def makeMovie(IMG1, prD, psinum, fps):
     nframes = IMG1.shape[1]
     images = -IMG1
     gif_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')
-    zip_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.zip')
     frame_dt = 1000.0 / fps
-    with zipfile.ZipFile(zip_path, 'w') as fzip:
-        with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
-            movie_min, movie_max = np.min(images), np.max(images)
-            for i in range(nframes):
-                img = images[:, i].reshape(dim, dim)
-                frame = np.round(255 * (img - movie_min) / (movie_max - movie_min)).astype(np.uint8)
-                frame_path = 'frame{:02d}.png'.format(i)
-
-                b = io.BytesIO()
-                imageio.imwrite(b, frame, format='png')
-                b.seek(0)
-                fzip.writestr(frame_path, b.read())
-
-                writer.append_data(frame)
+    with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
+        movie_min, movie_max = np.min(images), np.max(images)
+        for i in range(nframes):
+            img = images[:, i].reshape(dim, dim)
+            frame = np.round(255 * (img - movie_min) / (movie_max - movie_min)).astype(np.uint8)
+            writer.append_data(frame)
 
 
-def fergusonE(D, logEps, a0=None):
+def fergusonE(D, logEps):
     """
     Fits a curve using a hyperbolic tangent function to the data provided and returns the optimized parameters.
 
@@ -188,8 +177,6 @@ def fergusonE(D, logEps, a0=None):
         An array of distances between data points.
     logEps : ndarray
         An array of logarithmic epsilon values to be used for curve fitting.
-    a0 : ndarray, default=None
-        Initial guess for the parameters of the hyperbolic tangent function. If None, a default value of ones(4) is used.
 
     Returns
     -------
@@ -217,8 +204,7 @@ def fergusonE(D, logEps, a0=None):
     - Copyright (c) Columbia University Evan Seitz 2019 (python version)
     """
 
-    if a0 is None:
-        a0 = np.ones(4)
+    a0 = np.ones(4)  # initial guess for the tanh parameters
 
     def fun(x, a, b, c, d):
         return d + c * np.tanh(a * x + b)
@@ -240,7 +226,7 @@ def fergusonE(D, logEps, a0=None):
     # curve fitting of a tanh():
     resnorm = np.inf
     while (resnorm > 100):
-        popt, pcov, infodict, mesg, ier = curve_fit(fun, logEps, logSumWij, p0=a0, full_output=True)
+        popt, pcov, _, _, ier = curve_fit(fun, logEps, logSumWij, p0=a0, full_output=True)
         resnorm = np.sum(np.sqrt(np.fabs(np.diag(pcov))))
         if ier < 1 or ier > 4:
             print(resnorm, popt, ier)

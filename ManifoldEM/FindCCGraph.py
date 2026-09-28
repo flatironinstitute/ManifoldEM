@@ -1,6 +1,3 @@
-import logging
-import sys
-
 import numpy as np
 from typing import Set, Any, Dict, Tuple, Union, List
 from nptyping import NDArray, Shape
@@ -10,8 +7,6 @@ from ManifoldEM.params import params
 from scipy.sparse import csr_matrix, tril, lil_matrix
 from scipy.sparse.csgraph import connected_components
 
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
 '''
 Copyright (c) Columbia University Suvrajit Maji 2019
 '''
@@ -50,11 +45,8 @@ def CreateGraphStruct(nStates: int,
 
     if pwDist.shape[0] > 0:
         nNodes = pwDist.shape[0]
-
-    elif AdjMat.shape[0] > 0:
-        nNodes = AdjMat.shape[0]
     else:
-        return -1
+        nNodes = AdjMat.shape[0]
 
     Nodes = range(nNodes)
     G = dict(nNodes=nNodes, Nodes=Nodes)
@@ -62,9 +54,6 @@ def CreateGraphStruct(nStates: int,
     # create state for each node
     if np.isscalar(nStates):
         nStates = nStates * np.ones(nNodes, dtype='int')
-        G.update(eqnStates=1)
-    else:
-        G.update(eqnStates=0)
 
     G.update(nStates=nStates)
     maxState = np.max(nStates)
@@ -152,15 +141,13 @@ function [Gsub,G] = getSubGraph(G,nodes)
 '''
 
 
-def getSubGraph(G, *nodes) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def getSubGraph(G) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     print("\nPerforming connected component analysis.")
     A = G['AdjMat']
     S, C = connected_components(A)
-    G.update(NodesConnComp=[], AdjConnComp=[])
+    G.update(NodesConnComp=[])
     for i in np.arange(S):
-        idxc = np.nonzero(C == i)[0]
-        G['NodesConnComp'].append(idxc)
-        G['AdjConnComp'].append(A[idxc][:, idxc])
+        G['NodesConnComp'].append(np.nonzero(C == i)[0])
 
     numConnComp = len(G['NodesConnComp'])
     print("Number of connected components:", numConnComp)
@@ -169,52 +156,25 @@ def getSubGraph(G, *nodes) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         print('The dataset may have regions of sparse S2 coverage or, check the input tesselation parameters.')
 
     Gsub = []
-    if not nodes:
-        # get all subgraphs
-        for i in range(numConnComp):
+    for i in range(numConnComp):
+        if len(G['NodesConnComp'][i]) == 1:
+            if numConnComp <= 5:  #only provide this print statement if number of components are 5 or less
+                print('Singlet Node in connected component', i)
 
-            if len(G['NodesConnComp'][i]) == 1:
-                if numConnComp <= 5:  #only provide this print statement if number of components are 5 or less
-                    print('Singlet Node in connected component', i)
-
-            nodes = G['NodesConnComp'][i]
-            if hasattr(G, 'AdjConn'):
-                Asub = G['AdjConnComp'][i]
-            else:
-                Asub = G['AdjMat'][nodes][:, nodes]
-
-            Gsub.append(CreateGraphStruct(G['maxState'], [], G['epsilon'], Asub))
-
-            # nnMat with the nodes in the subgraph only
-            Gsub[i]['nnMat'] = np.array(G['nnMat'])
-            Gsub[i]['originalNodes'] = nodes
-            einds = np.in1d(G['Edges'][:, 0], nodes) | np.in1d(G['Edges'][:, 1], nodes)
-            Gsub[i]['originalEdgeList'] = np.nonzero(einds)
-            Gsub[i]['originalEdges'] = G['Edges'][einds, :]
-
-    else:
-        # get the subgraph with the specified nodes only
+        nodes = G['NodesConnComp'][i]
         Asub = G['AdjMat'][nodes][:, nodes]
-        Gsub = CreateGraphStruct(G['MaxState'], [], [], Asub)
-        Gsub['originalNodes'] = nodes
-        einds = np.in1d(nodes, G['Edges'][:, 0]) or np.in1d(nodes, G['Edges'][:, 1])
-        Gsub['originalEdgeList'] = np.nonzero(einds)
-        Gsub['originalEdges'] = G['Edges'][einds, :]
+        Gsub.append(CreateGraphStruct(G['maxState'], [], G['epsilon'], Asub))
+
+        Gsub[i]['originalNodes'] = nodes
+        einds = np.in1d(G['Edges'][:, 0], nodes) | np.in1d(G['Edges'][:, 1], nodes)
+        Gsub[i]['originalEdgeList'] = np.nonzero(einds)
 
     return (Gsub, G)
 
 
-def CalcPairwiseDistS2(X, *argv):
+def CalcPairwiseDistS2(X):
     '''
-    [pwDotProd, pwDist] = CalcPairwiseDistS2(X, prD1, prD2)
-    pairwise projection angular - distance and Euclidean distance calculations
-    Input:
-        X: 3xN coordinate matrix
-        prD1: point 1 out of 1...N
-        prD2: point 2 out of 1...N
-    Output:
-        pwDotProd: dot product(angular distance) between the points
-        pwDist: Euclidean distance between the points
+    Pairwise Euclidean distances between the columns of a 3xN coordinate matrix.
 
     Author Suvrajit Maji, sm4073@cumc.columbia.edu
     Columbia University
@@ -223,35 +183,17 @@ def CalcPairwiseDistS2(X, *argv):
 
     Python version Hstau Liao copyright 2018
     '''
-    try:
-        assert (len(argv) == 0 or len(argv) == 2)
-    except AssertionError:
-        _logger.error('wrong nmber of arguments')
-        _logger.exception('wrong nmber of arguments')
-        raise
-        sys.exit(1)
-
-    if not argv:
-        UIdxs = np.arange(X.shape[1])
-        VIdxs = np.arange(X.shape[1])
-    else:
-        UIdxs = argv[0]
-        VIdxs = argv[1]
-    #For two sets of matrices U & V
-    U = X[:, UIdxs]
-    V = X[:, VIdxs]
-
-    # pairwise dot product
-    pwDotProd = np.dot(U.T, V)
+    # Separate copies keep numpy on the general matrix product: for operands that share memory
+    # it switches to a symmetric BLAS routine that rounds differently.
+    U = X.copy()
+    V = X.copy()
 
     # pairwise Euclidean distance
     Dsq = np.sum(U * U, axis=0).T + np.sum(V * V, axis=0) - 2 * np.dot(U.T, V)
-    # due to variable behaviour of python 2.7 libraries , the numpy matrix "*" and dot product above may produce
-    # different output when dealing with "small numbers",e.g. '0' may be 1e-7/1e-8
-    #Dsq[Dsq < 0.0] = 0.0
+    # clip rounding noise so that identical points get exactly zero distance
     Dsq[Dsq < 1e-6] = 0.0
     pwDist = np.sqrt(Dsq)
-    return (pwDotProd, pwDist)
+    return pwDist
 
 
 def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -263,7 +205,6 @@ def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[s
     max_state = 2 * num_psis
     if n_nodes_left > 1:
         epsilon = G['epsilon']  # save it later after update
-        G.update(nPsiModes=num_psis)
 
         print('Number of Graph Edges before prunning:', G['nEdges'])
         # prune edges corresponding to the bad nodes with actually removing those bad nodes by disconnecting the edges
@@ -273,7 +214,6 @@ def prune(G: Dict[str, Any], trash_ids: Set[int], num_psis: int) -> Tuple[Dict[s
         new_adj_mat[:, trash_list] = 0
 
         new_adj_mat = csr_matrix(new_adj_mat)
-        G.update(AdjMat=new_adj_mat)
 
         # Updated graph info
         G = CreateGraphStruct(G['maxState'], [], None, new_adj_mat)  # june 2020
@@ -307,7 +247,7 @@ def op(CG, nG, S20_th):
 
     if numPDs > 1:
         # Setting up the graph structure
-        pwDotProd, pwDist = CalcPairwiseDistS2(S20_th[:, PrDs])
+        pwDist = CalcPairwiseDistS2(S20_th[:, PrDs])
 
         mindist = np.min(pwDist[np.nonzero(pwDist)])  # 2*shAngWidth
 
@@ -318,7 +258,6 @@ def op(CG, nG, S20_th):
 
         # Updated graph info
         G = CreateGraphStruct(maxState, pwDist, epsilon)
-        G.update(nPsiModes=params.num_psi)
     else:
         G = CreateGraphStruct(maxState, [0], 0)
 

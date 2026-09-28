@@ -1,7 +1,7 @@
 import numpy as np
 
 from ManifoldEM.core import get_euler_from_PD, project_mask, euler_rot_matrix_3D_spider
-from ManifoldEM.quaternion import convert_euler_to_S2, convert_S2_to_euler
+from euler_reference import convert_euler_to_S2, convert_S2_to_euler
 from scipy.spatial.transform import Rotation
 from scipy.ndimage import affine_transform
 

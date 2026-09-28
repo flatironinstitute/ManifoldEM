@@ -52,8 +52,7 @@ def op(*argv):
 
     # added June 2020, S.M.
     traj_file2 = "{}name{}_vars.pkl".format(params.traj_file, params.traj_name)
-    myio.fout1(traj_file2, trajTaus=trajTaus, posPsi1All=posPsi1All, posPathAll=posPathAll,
-               xSelect=xSelect, tauAvg=tauAvg)
+    myio.fout1(traj_file2, tauAvg=tauAvg)
 
     # Section III
     if argv:

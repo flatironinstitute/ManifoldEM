@@ -27,7 +27,7 @@ def write_star(star_file, traj_file, df):
 
 
 
-def parse_star(starfile, skip, keep_index=False):
+def parse_star(starfile, skip):
     """
     Parses a STAR file and returns the data as a pandas DataFrame.
 
@@ -38,8 +38,6 @@ def parse_star(starfile, skip, keep_index=False):
     skip : int
         The number of lines to skip at the beginning of the file before starting.
         to look for headers. This is useful for skipping comments or metadata at the top of the file.
-    keep_index : bool, default=False
-        If True, keeps the original index (column number) in the header names. Defaults to False.
 
     Returns
     -------
@@ -51,8 +49,8 @@ def parse_star(starfile, skip, keep_index=False):
     -----
     - The function first scans the file to find headers (lines starting with "_rln"). It records
       these headers and determines where the data section starts.
-    - If `keep_index` is False, the function strips the leading "_rln" and trailing index number
-      from the header names, leaving a more readable column name.
+    - Column names are the header names without the leading underscore and the trailing
+      "#index" (e.g. "_rlnVoltage #1" becomes "rlnVoltage").
     - After identifying the headers and the start of the data section, the function reads the
       data into a pandas DataFrame, using the headers as column names.
     - This function is specifically tailored for STAR files used in cryo-EM data processing and
@@ -71,11 +69,7 @@ def parse_star(starfile, skip, keep_index=False):
                 if l.startswith("_rln"):
                     foundheader = True
                     lastheader = True
-                    if keep_index:
-                        head = l.rstrip()
-                    else:
-                        head = l.split('#')[0].rstrip().lstrip('_')
-                    headers.append(head)
+                    headers.append(l.split('#')[0].rstrip().lstrip('_'))
                 else:
                     lastheader = False
                 if foundheader and not lastheader:
@@ -87,7 +81,7 @@ def parse_star(starfile, skip, keep_index=False):
     return star
 
 
-def parse_star_optics(starfile:str, keep_index: bool=False):
+def parse_star_optics(starfile: str):
     """
     Parses the optics section of a STAR file and returns the data as a pandas DataFrame.
 
@@ -95,8 +89,6 @@ def parse_star_optics(starfile:str, keep_index: bool=False):
     ----------
     starfile : str
         The path to the STAR file to be parsed.
-    keep_index : bool, default=False
-        If True, keeps the original index (column number) in the header names. Defaults to False.
 
     Returns
     -------
@@ -111,8 +103,8 @@ def parse_star_optics(starfile:str, keep_index: bool=False):
     -----
     - The function scans the file for headers starting with "_rln". These headers define the columns
       of the optics section.
-    - If `keep_index` is False, the function cleans the header names by removing the leading "_rln"
-      and any trailing index number, making the column names more readable.
+    - Column names are the header names without the leading underscore and the trailing
+      "#index" (e.g. "_rlnVoltage #1" becomes "rlnVoltage").
     - The function reads only the first row of data under the headers into a DataFrame, assuming
       that the optics section contains a single set of parameters.
     - This function is useful for extracting optics-related metadata from STAR files used in
@@ -128,11 +120,7 @@ def parse_star_optics(starfile:str, keep_index: bool=False):
             if l.startswith("_rln"):
                 foundheader = True
                 lastheader = True
-                if keep_index:
-                    head = l.rstrip()
-                else:
-                    head = l.split('#')[0].rstrip().lstrip('_')
-                headers.append(head)
+                headers.append(l.split('#')[0].rstrip().lstrip('_'))
             else:
                 lastheader = False
             if foundheader and not lastheader:
@@ -144,7 +132,7 @@ def parse_star_optics(starfile:str, keep_index: bool=False):
     return (star, ln + 1)
 
 
-def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shape["*"], Float64],
+def get_align_data(align_star_file: str) -> tuple[tuple[NDArray[Shape["*"], Float64],
                                                                     NDArray[Shape["*"], Float64]],
                                                               NDArray[Shape["4,*"], Float64],
                                                               NDArray[Shape["*"], Float64],
@@ -157,9 +145,6 @@ def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shap
     ----------
     align_star_file : str
         Path to the STAR file containing alignment and microscope parameters.
-    flip : bool
-        Indicates whether to flip the sign of the psi component when converting
-        Euler angles to quaternions.
 
     Returns
     -------
@@ -197,12 +182,12 @@ def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shap
 
     if relion_old:
         skip = 0
-        df = parse_star(align_star_file, skip, keep_index=False)
+        df = parse_star(align_star_file, skip)
         df0 = df
     else:
         print('RELION Optics Group found.')
-        df0, skip = parse_star_optics(align_star_file, keep_index=False)
-        df = parse_star(align_star_file, skip, keep_index=False)
+        df0, skip = parse_star_optics(align_star_file)
+        df = parse_star(align_star_file, skip)
 
     try:
         params.ms_kilovolts = float(df0['rlnVoltage'].values[0])
@@ -239,6 +224,6 @@ def get_align_data(align_star_file: str, flip: bool) -> tuple[tuple[NDArray[Shap
         print("missing Euler angles")
         exit(1)
 
-    q = eul_to_quat(phi, theta, psi, flip)
+    q = eul_to_quat(phi, theta, psi)
 
     return (sh, q, U, V)

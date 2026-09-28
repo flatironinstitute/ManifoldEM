@@ -9,7 +9,7 @@ import h5py
 from dataclasses import dataclass
 
 from typing import List, Any, Tuple, Dict, Set
-from nptyping import NDArray, Shape, Int, Int64, Float64, Bool
+from nptyping import NDArray, Shape, Int, Float64, Bool
 from scipy.ndimage import shift
 from scipy.fftpack import fft2, ifft2
 
@@ -214,7 +214,6 @@ class PrdData:
             mask = np.array(f["msk2"])
             image_filter = np.array(f["image_filter"])
 
-        image_offsets = prds.microscope_origin
         image_offsets = np.empty((len(self._image_indices), 2))
         image_offsets[:, 0] = prds.microscope_origin[1][self._image_indices]
         image_offsets[:, 1] = prds.microscope_origin[0][self._image_indices]
@@ -381,8 +380,7 @@ class _ProjectionDirections:
 
     Properties
     ----------
-    Provides access to various subsets or transformations of the data, such as occupancy without duplication,
-    bin centers without duplication, anchor IDs, thresholded image indices, occupancy for thresholded IDs,
+    Provides access to derived data: anchor IDs, thresholded image indices, occupancy for thresholded IDs,
     the number of bins, and the number of thresholded entries.
     """
 
@@ -396,7 +394,6 @@ class _ProjectionDirections:
             NDArray[Shape["Any"], Float64], NDArray[Shape["Any"], Float64]
         ] = (np.empty(0), np.empty(0))
 
-        self.pos_raw: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3, 0))
         self.pos_full: NDArray[Shape["3,Any"], Float64] = np.empty(shape=(3, 0))
         self.quats_raw: NDArray[Shape["4,Any"], Float64] = np.empty(shape=(4, 0))
         self.quats_full: NDArray[Shape["4,Any"], Float64] = np.empty(shape=(4, 0))
@@ -468,21 +465,14 @@ class _ProjectionDirections:
                 os.environ.pop("MANIFOLD_REBUILD_DS")
 
             print("Calculating projection direction information")
-            self.microscope_origin, self.quats_raw, U, V = get_align_data(
-                params.align_param_file, flip=True
-            )
+            self.microscope_origin, self.quats_raw, U, V = get_align_data(params.align_param_file)
             df = (U + V) / 2
 
             plane_vec = np.array(params.tess_hemisphere_vec)
-            self.quats_raw = self.quats_raw
             self.quats_full, self.image_is_mirrored = collapse_to_half_space(
                 self.quats_raw, plane_vec
             )
-            self.pos_raw = quaternion_to_S2(self.quats_raw)
             self.pos_full = quaternion_to_S2(self.quats_full)
-
-            # double the number of data points by augmentation
-            df = np.concatenate((df, df))
 
             image_indices, bin_centers, occupancy, bin_ids = bin_and_threshold(
                 self.pos_full,

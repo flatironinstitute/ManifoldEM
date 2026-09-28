@@ -193,7 +193,7 @@ def hist_match(source, template):  # by ali_m
     return interp_t_values[bin_idx].reshape(oldshape)
 
 
-def eul_to_quat(phi, theta, psi, flip=True):
+def eul_to_quat(phi, theta, psi):
     """
     Converts Euler angles to quaternions.
 
@@ -205,8 +205,6 @@ def eul_to_quat(phi, theta, psi, flip=True):
         Array of rotations around the y-axis.
     psi : np.ndarray
         Array of rotations around the x-axis.
-    flip : bool, default=True
-        If True, flips the sign of the psi component. Defaults to True.
 
     Returns
     -------
@@ -219,15 +217,13 @@ def eul_to_quat(phi, theta, psi, flip=True):
     - The function constructs individual quaternions for rotations around the z, y, and x axes
       (qz, qy, qzs respectively) and then combines them through quaternion multiplication to
       obtain the final quaternion representing the combined rotation.
-    - The `flip` parameter can be used to adjust for different conventions in the definition
-      of rotations.
+    - As for phi and theta, the sine term of the psi rotation is negated.
     """
 
     zros = np.zeros(phi.shape[0])
     qz = np.vstack((np.cos(phi / 2), zros, zros, -np.sin(phi / 2)))
     qy = np.vstack((np.cos(theta / 2), zros, -np.sin(theta / 2), zros))
-    sp = -np.sin(psi / 2) if flip else np.sin(psi / 2)
-    qzs = np.vstack((np.cos(psi / 2), zros, zros, sp))
+    qzs = np.vstack((np.cos(psi / 2), zros, zros, -np.sin(psi / 2)))
     q = q_product(qzs, q_product(qy, qz))
     return q
 

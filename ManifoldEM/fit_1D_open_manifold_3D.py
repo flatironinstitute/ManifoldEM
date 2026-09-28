@@ -24,7 +24,7 @@ class _Params:
         The maximum allowed change in parameter 'tau' between iterations, controlling convergence criteria. Defaults to 0.01.
     """
 
-    # FIXME: missing doc for p/x/x_fit
+    # FIXME: missing doc for p/x
     def __init__(self):
         self.a: np.ndarray = None
         self.b: np.ndarray = None
@@ -35,7 +35,6 @@ class _Params:
         self.delta_tau_max: float = 0.01
         self.p: int = None
         self.x: np.ndarray = None
-        self.x_fit = None
 
 
 def _R_p(tau_p, a):
@@ -235,14 +234,6 @@ def fit_1D_open_manifold_3D(psi):
 
         a.a = coeff[0, :]
         a.b = coeff[1, :]
-
-        j_pi_tau = (
-            np.dot(np.linspace(0, 1, 1000).reshape(-1, 1), np.array([[1, 2, 3]]))
-            * np.pi
-        )
-        cos_j_pi_tau = np.cos(j_pi_tau)
-        tmp = a.a * cos_j_pi_tau
-        a.x_fit = tmp + a.b
 
         # solve for tau
         tau_old = tau

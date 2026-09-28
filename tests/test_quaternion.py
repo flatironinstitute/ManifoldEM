@@ -2,9 +2,9 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import (quaternion_to_S2, collapse_to_half_space, collapse_to_half_space_euler_angles,
-                                   convert_euler_to_S2, q2Spider, qs_to_spider_euler_angles, psi_ang,
-                                   convert_S2_to_euler)
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, q2Spider, psi_ang
+from euler_reference import (collapse_to_half_space_euler_angles, convert_euler_to_S2, qs_to_spider_euler_angles,
+                             convert_S2_to_euler)
 
 
 def test_eul_to_quat():
@@ -22,8 +22,7 @@ def test_eul_to_quat():
     euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
-    flip = True
-    raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
+    raw_qs = eul_to_quat(phi, theta, psi)
     q0, q1, q2, q3 = raw_qs
 
     intrinsic_zxz = 'ZXZ'
@@ -68,8 +67,7 @@ def test_quaternion_to_S2():
     euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
-    flip = True
-    raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
+    raw_qs = eul_to_quat(phi, theta, psi)
     s2_mem = quaternion_to_S2(raw_qs)
 
     s2 = convert_euler_to_S2(euler_angles)
@@ -90,8 +88,7 @@ def test_collapse_to_half_space():
     np.random.seed(0)
     euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
     phi, theta, psi, = euler_angles.T
-    flip = True
-    raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
+    raw_qs = eul_to_quat(phi, theta, psi)
     q_mem, is_mirrored_mem = collapse_to_half_space(raw_qs)
     s2_mem_collapsed = quaternion_to_S2(q_mem)
 
@@ -118,7 +115,7 @@ def test_q2Spider():
     euler_angles[:, 1] = 0.5 * (euler_angles[:, 1] + np.pi)
 
     phi, theta, psi, = euler_angles.T
-    raw_qs = eul_to_quat(phi, theta, psi, flip=True)
+    raw_qs = eul_to_quat(phi, theta, psi)
 
     euler_angles_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T
     euler_angles_spider = qs_to_spider_euler_angles(raw_qs)
@@ -146,8 +143,7 @@ def test_psi_ang():
     euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
 
     phi, theta, psi, = euler_angles.T
-    flip = True
-    raw_qs = eul_to_quat(phi, theta, psi, flip=flip)
+    raw_qs = eul_to_quat(phi, theta, psi)
     s2_mem = quaternion_to_S2(raw_qs)
     projection_direction_euler_angles_mem = np.array([np.radians(psi_ang(s2)) for s2 in s2_mem.T]).T
 

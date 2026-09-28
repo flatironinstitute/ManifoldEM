@@ -94,4 +94,6 @@ column_limit = 119
 addopts = [
     "--import-mode=importlib",
 ]
+# lets tests import the shared reference implementations in tests/euler_reference.py
+pythonpath = ["tests"]
 filterwarnings = 'ignore:.*is a deprecated alias for `np'
