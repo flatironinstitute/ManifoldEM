@@ -105,6 +105,15 @@ class Anchor:
         self.CC: int = CC
         self.sense: Sense = sense
 
+    def state_index(self, num_psis: int) -> int:
+        """
+        Index of this anchor's state in the belief-propagation state vector.
+
+        `CC` is 1-based (psi_1 ... psi_N, as numbered in the movies and the GUI). BP states are
+        0-based: forward senses occupy [0, num_psis) and reverse senses [num_psis, 2 * num_psis).
+        """
+        return self.CC - 1 + self.sense.to_index() * num_psis
+
 
 @dataclass
 class PrdInfo:

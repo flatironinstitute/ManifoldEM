@@ -234,11 +234,12 @@ def op(G, BPoptions, edgeMeasures, edgeMeasures_tblock, badNodesPsis, cc, *argv)
 
     print(f'anchorNodes: {anchor_nodes}')
 
+    # Anchor.CC is 1-based; state_index maps it to the 0-based BP state (reverse senses offset by NumPsis)
     for index, anchor_id in enumerate(fwd_anchor_ids):
-        anchorNodeMeasuresPlusOne[anch_list[anchor_id].CC, index] = anchorNodePotValexp
+        anchorNodeMeasuresPlusOne[anch_list[anchor_id].state_index(NumPsis), index] = anchorNodePotValexp
 
     for index, anchor_id in enumerate(rev_anchor_ids):
-        anchorNodeMeasuresMinusOne[anch_list[anchor_id].CC + NumPsis, index] = anchorNodePotValexp
+        anchorNodeMeasuresMinusOne[anch_list[anchor_id].state_index(NumPsis), index] = anchorNodePotValexp
 
     anchorNodeMeasures = np.hstack((anchorNodeMeasuresPlusOne, anchorNodeMeasuresMinusOne))
     nodePot, edgePot = MRFGeneratePotentials.op(G, anchor_nodes, anchorNodeMeasures, edgeMeasures, edgeMeasures_tblock)
