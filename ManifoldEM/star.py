@@ -75,7 +75,7 @@ def parse_star(starfile, skip):
                 if foundheader and not lastheader:
                     break
                 ln += 1
-    star = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None)
+    star = pd.read_table(starfile, skiprows=ln, delimiter=r'\s+', header=None)
     star.columns = headers
 
     return star
@@ -126,7 +126,7 @@ def parse_star_optics(starfile: str):
             if foundheader and not lastheader:
                 break
             ln += 1
-    star = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None, nrows=1)
+    star = pd.read_table(starfile, skiprows=ln, delimiter=r'\s+', header=None, nrows=1)
     star.columns = headers
 
     return (star, ln + 1)
