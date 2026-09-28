@@ -1,8 +1,6 @@
 import mrcfile
 import numpy as np
 import os
-import sys
-import pickle
 import traceback
 
 from typing import Any
@@ -130,21 +128,6 @@ def get_image_width_from_stack(stack_file: str):
     return img_width
 
 
-def calc_shannon(res: float, dia: float) -> float:
-    return res / dia
-
-
-def debug_trace():
-    from PyQt5.QtCore import pyqtRemoveInputHook
-
-    try:
-        from ipdb import set_trace
-    except:
-        from pdb import set_trace
-    pyqtRemoveInputHook()
-    set_trace()
-
-
 def debug_print(msg: str = ""):
     """
     Prints a debug message along with the caller's stack trace.
@@ -210,24 +193,6 @@ def hist_match(source, template):  # by ali_m
     return interp_t_values[bin_idx].reshape(oldshape)
 
 
-def histeq(src, thist):  # by Zagurskin; does not work well,
-    nbr_bins = len(thist)
-    bins = np.linspace(0, 1, nbr_bins + 1)
-    # hist, bins = np.histogram(src.flatten(), nbr_bins, normed=True)
-    hist, bb = np.histogram(src.flatten(), bins)  # nbr_bins, normed=True)
-
-    cdfsrc = hist.cumsum()  # cumulative distribution function
-    cdfsrc = (nbr_bins * cdfsrc / cdfsrc[-1]).astype(np.uint8)  # normalize
-
-    cdftint = thist.cumsum()  # cumulative distribution function
-    cdftint = (nbr_bins * cdftint / cdftint[-1]).astype(np.uint8)  # normalize
-
-    h2 = np.interp(src.flatten(), bins[:-1], cdfsrc)
-    h3 = np.interp(h2, cdftint, bins[:-1])
-
-    return h3
-
-
 def eul_to_quat(phi, theta, psi, flip=True):
     """
     Converts Euler angles to quaternions.
@@ -265,97 +230,6 @@ def eul_to_quat(phi, theta, psi, flip=True):
     qzs = np.vstack((np.cos(psi / 2), zros, zros, sp))
     q = q_product(qzs, q_product(qy, qz))
     return q
-
-
-def augment(q: NDArray[Shape["4,*"], Float64]):
-    """
-    Augments a set of quaternions by adding their conjugates to the set.
-
-    Parameters
-    ----------
-    q : np.ndarray
-        A numpy array of shape (4, N) representing a set of quaternions,
-        where N is the number of quaternions.
-
-    Returns
-    -------
-    ndarray
-        An augmented numpy array of shape (4, 2N) containing the original
-        set of quaternions followed by their conjugates.
-
-    Raises
-    ------
-    AssertionError
-        If the input array does not have the correct shape (i.e., does not
-        have 4 rows representing quaternions).
-
-    Notes
-    -----
-    - The conjugate of a quaternion [q0, q1, q2, q3] is defined as [-q1, q0, -q3, -q2].
-    - This function is useful for operations that require both a quaternion and its inverse,
-      such as applying rotations and their reversals.
-    """
-
-    try:
-        assert q.shape[0] > 3
-    except AssertionError:
-        _logger.error("subroutine augment: q has wrong dimensions")
-        _logger.exception("subroutine augment: q has wrong diemnsions")
-        raise
-        sys.exit(1)
-
-    qc = np.vstack((-q[1, :], q[0, :], -q[3, :], q[2, :]))
-    q = np.hstack((q, qc))
-
-    return q
-
-
-def make_indeces(inputGCs):
-    with open(inputGCs, "rb") as f:
-        param = pickle.load(f)
-    f.close()
-
-    GCnum = len(param["CGtot"])
-    prDs = len(param["CGtot"][0])
-
-    x1 = np.tile(range(prDs), (1, GCnum))
-    x2 = np.array([])
-    for i in range(GCnum):
-        x2 = np.append(x2, np.tile(i, (1, prDs)))
-    xAll = np.vstack((x1, x2)).astype(int)
-    xSelect = range(xAll.shape[1])
-
-    return xAll, xSelect
-
-
-def interv(s):
-    # return np.arange(-s/2,s/2)
-    if s % 2 == 0:
-        a = -s / 2
-        b = s / 2 - 1
-    else:
-        a = -(s - 1) / 2
-        b = (s - 1) / 2
-
-    return np.linspace(a, b, s)
-
-
-def filter_fourier(inp, sigma):
-    # filter Gauss
-    nPix1 = inp.shape[1]
-    nPix2 = inp.shape[0]
-    X, Y = np.meshgrid(interv(nPix1), interv(nPix2))
-    Rgrid = nPix2 / 2.0
-    Q = (1 / Rgrid) * np.sqrt(X**2 + Y**2)  # Q in units of Nyquist frequency
-
-    N = 4
-    G = np.sqrt(1.0 / (1 + (Q / sigma) ** (2 * N)))  # ButterWorth
-
-    # Filter images in Fourier space
-    G = np.fft.ifftshift(G)
-    inp = np.real(np.fft.ifft2(G * np.fft.fft2(inp)))
-
-    return inp
 
 
 def create_proportional_grid(N: int) -> NDArray[Shape["*,*"], Float64]:

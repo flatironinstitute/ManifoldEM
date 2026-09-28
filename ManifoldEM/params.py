@@ -16,10 +16,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 import numpy as np
 import os
-from pprint import pprint, pformat
+from pprint import pformat
 import toml
 import traceback
 from typing import Annotated, get_type_hints, get_args
+
+
+# Keys that older project files may still contain but that no longer exist. They are skipped
+# silently on load instead of triggering the unknown-parameter warning.
+_RETIRED_PARAMS = {"num_part", "width_2D"}
 
 
 class ProjectLevel(Enum):
@@ -61,7 +66,6 @@ class Params:
     img_stack_file: Annotated[str, ParamInfo("Image stack file (e.g., .mrcs)")] = ""
     align_param_file: Annotated[str, ParamInfo("Alignment file (e.g., .star)")] = ""
     mask_vol_file: Annotated[str, ParamInfo("Mask volume file (e.g., .mrc)")] = ""
-    num_part: Annotated[int, ParamInfo("Total number of particles in stack")] = 0
     eps: Annotated[
         float,
         ParamInfo(
@@ -227,7 +231,6 @@ class Params:
         ),
     ] = 50
     width_1D: Annotated[int, ParamInfo("Width of trajectory in 1D probability path")] = 1
-    width_2D: Annotated[int, ParamInfo("Width of trajectory in 2D probability path")] = 1
 
     #  reaction coordinates parameters:
     calc_optical_flow: Annotated[bool, ParamInfo("Compute optical flow vectors")] = True
@@ -235,7 +238,6 @@ class Params:
     opt_movie: dict = {
         "printFig": 0,
         "OFvisual": 0,
-        "visual_CC": 0,
         "flowVecPctThresh": 95,
     }
     opt_mask_type: Annotated[int, ParamInfo("0:None, 1:Annular, 2:Volumetric")] = 0
@@ -250,10 +252,6 @@ class Params:
     vis_s2_scale: Annotated[float, ParamInfo()] = 1.0
     vis_s2_density: Annotated[int, ParamInfo()] = 1000
     vis_s2_isosurface_level: Annotated[int, ParamInfo()] = 3
-
-    @property
-    def proj_file(self) -> str:
-        return f"params_{self.project_name}.toml"
 
     @property
     def ang_width(self) -> float:
@@ -286,10 +284,6 @@ class Params:
     @property
     def psi2_file(self) -> str:
         return os.path.join(self.psi2_dir, "S2_")
-
-    @property
-    def rho_file(self) -> str:
-        return os.path.join(self.OM_dir, "rho")
 
     @property
     def pd_file(self) -> str:
@@ -356,18 +350,6 @@ class Params:
         return os.path.join(self.traj_dir, "traj_")
 
     @property
-    def euler_dir(self) -> str:
-        return os.path.join(self.out_dir, "topos", "Euler_PrD")
-
-    @property
-    def ref_ang_file(self) -> str:
-        return os.path.join(self.euler_dir, "PrD_map.txt")
-
-    @property
-    def ref_ang_file1(self) -> str:
-        return os.path.join(self.euler_dir, "PrD_map1.txt")
-
-    @property
     def bin_dir(self) -> str:
         return os.path.join(self.out_dir, "bin")
 
@@ -412,13 +394,6 @@ class Params:
 
     def get_bad_nodes_psis_tau_file_prd(self, prd_index: int):
         return os.path.join(self.CC_dir_temp, f"bad_nodes_tau_prD_{prd_index}.pkl")
-
-    def get_user_params(self) -> dict[str, Annotated]:
-        return {
-            k: v
-            for k, v in get_type_hints(self, include_extras=True).items()
-            if hasattr(v, "__metadata__") and v.__metadata__[0].user_param
-        }
 
     def get_params_for_level(
         self, level: ProjectLevel, first_appearance=True, user_only=True
@@ -483,6 +458,8 @@ class Params:
 
         valid_params = dir(Params)
         for param, val in indict["params"].items():
+            if param in _RETIRED_PARAMS:
+                continue
             if param not in valid_params:
                 print(traceback.format_stack()[-2].split("\n")[0])
                 print(f"Warning: param '{param}' not found in parameters module")
@@ -491,9 +468,6 @@ class Params:
                     setattr(self, param, ProjectLevel(val))
                 else:
                     setattr(self, param, val)
-
-    def print(self):
-        pprint(self.asdict())
 
     def create_dir(self):
         os.makedirs(self.dist_dir, exist_ok=True)
@@ -506,7 +480,6 @@ class Params:
         os.makedirs(self.CC_dir, exist_ok=True)
         os.makedirs(self.CC_OF_dir, exist_ok=True)
         os.makedirs(self.CC_meas_dir, exist_ok=True)
-        os.makedirs(self.euler_dir, exist_ok=True)
         os.makedirs(self.postproc_mrcs2mrc_dir, exist_ok=True)
         os.makedirs(self.postproc_denoise_dir, exist_ok=True)
 

@@ -117,14 +117,6 @@ def load_state(args):
     params.load(args.input_file)
 
     params.ncpu = args.ncpu
-    if hasattr(args, "path_width"):
-        if args.path_width is None:
-            return
-        if args.path_width < 1 or args.path_width > 5:
-            print("path-width argument must be on the interval [1, 5]")
-            sys.exit(1)
-        params.width_1D = args.path_width
-
     params.save()
 
 
@@ -143,11 +135,6 @@ def args_to_dict(args: Namespace) -> dict:
         params.ncpu = kwargs.pop('ncpu')
 
     return kwargs
-
-
-def threshold(args):
-    params.project_level = ProjectLevel.BINNING
-    params.save()
 
 
 def init(args: Namespace):

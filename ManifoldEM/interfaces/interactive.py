@@ -83,52 +83,48 @@ def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, m
     params.save()
 
 
-def load(project_file: str):
-    params.load(project_file)
-
-
 def threshold(**kwargs):
     params.project_level = ProjectLevel.BINNING
     params.save()
 
 
-def calc_distance(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
+def calc_distance(prd_list: Union[list[int], None] = None, **kwargs):
     from ManifoldEM.calc_distance import op as calc_distance
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         calc_distance(prd_list)
 
 
-def manifold_analysis(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
+def manifold_analysis(prd_list: Union[list[int], None] = None, **kwargs):
     from ManifoldEM.manifold_analysis import op as manifold_analysis
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         manifold_analysis(prd_list)
 
 
-def psi_analysis(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
+def psi_analysis(prd_list: Union[list[int], None] = None, **kwargs):
     from ManifoldEM.psi_analysis import op as psi_analysis
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         psi_analysis(prd_list)
 
 
-def nlsa_movie(prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs):
+def nlsa_movie(prd_list: Union[list[int], None] = None, **kwargs):
     from ManifoldEM.nlsa_movie import op as nlsa_movie
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         nlsa_movie(prd_list)
 
 
-def find_conformational_coordinates(blas_threads=1, **kwargs):
+def find_conformational_coordinates(**kwargs):
     from ManifoldEM.find_conformational_coords import op as find_conformational_coords
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         find_conformational_coords()
 
 
-def probability_landscape(blas_threads=1, **kwargs):
+def probability_landscape(**kwargs):
     from ManifoldEM.probability_landscape import op as probability_landscape
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         probability_landscape()
 
 
-def compute_trajectory(blas_threads=1, **kwargs):
+def compute_trajectory(**kwargs):
     from ManifoldEM.trajectory import op as trajectory
-    with threadpool_limits(limits=blas_threads, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
         trajectory()
