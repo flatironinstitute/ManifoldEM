@@ -76,16 +76,15 @@ def load_session(toml_path) -> "VizSession":
 def _load_project(toml_path: Path):
     """Load the project into ManifoldEM's `params` and `data_store` singletons.
 
-    Builds `pd_data.pkl` if it is missing or out of date with the thresholds, then re-reads it,
-    so that edits saved elsewhere (the CLI, another kernel) are picked up. Like the CLI, this
-    changes into the directory of the project file.
+    Re-reads `pd_data.pkl`, so that edits saved elsewhere (the CLI, another kernel, another
+    session in this kernel) are picked up, and builds it if it is missing or out of date with the
+    thresholds. Like the CLI, this changes into the directory of the project file.
     """
     from ManifoldEM.data_store import data_store
     from ManifoldEM.params import params
 
     params.load(str(toml_path))
-    prds = data_store.get_prds()
-    prds.load()
+    prds = data_store.get_prds(reload=True)
     return params, prds
 
 

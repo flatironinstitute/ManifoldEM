@@ -22,6 +22,9 @@ Changes made prior to the Flatiron fork not included.
     * **Changes results:** belief propagation used anchors off by one, so an anchor set on psi 1
       was propagated as psi 2 (and a REV anchor on the last psi crashed)
     * matplotlib is a core dependency now, so an install without extras can run the whole pipeline
+    * Tutorial notebook helpers: with two projects loaded in one kernel, an edit could re-bin a
+      project and so wipe its anchors and trash PrDs. `data_store.get_prds(reload=True)` re-reads
+      `pd_data.pkl` of the project `params` points to.
     * Tutorial notebook plots:
       * The diffusion-map panel no longer fails on PrDs that lost images in trimming. It colours
         the images that were kept by their in-plane rotation, in degrees (not radians, as the label said).

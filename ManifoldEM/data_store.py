@@ -659,13 +659,24 @@ class _DataStore:
             cls.instance = super(_DataStore, cls).__new__(cls)
         return cls.instance
 
-    def get_prds(self):
+    def get_prds(self, reload: bool = False):
         """
+        Parameters
+        ----------
+        reload : bool, default=False
+            Discard the cached data and re-read it from `params.pd_file` (or rebuild it if that file
+            doesn't exist). Use this when the file may have changed since it was cached: another
+            process saved it, or `params` now points to a different project. Without it, a cache
+            that holds another project with different thresholds is rebuilt from this project's
+            alignment file, which clears this project's anchors and trash.
+
         Returns
         -------
         _ProjectionDirections
             Singular _ProjectionDirections instance, updating the cache if necessary.
         """
+        if reload:
+            self._projection_directions = _ProjectionDirections()
         self._projection_directions.update()
         return self._projection_directions
 
