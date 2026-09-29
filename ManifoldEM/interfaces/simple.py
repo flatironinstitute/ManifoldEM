@@ -117,6 +117,7 @@ def find_conformational_coordinates(blas_threads=1, **kwargs):
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
+    data_store.require_analysis()
     nlsa_movies = data_store.get_all_nlsa_movies()
 
     with threadpool_limits(limits=blas_threads, user_api="blas"):
@@ -137,6 +138,7 @@ def probability_landscape(**kwargs):
     import numpy as np
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
+    data_store.require_analysis(conformational_coords=True)
     active_prds, psinums, senses = data_store.get_active_psinums_and_senses()
     taus = data_store.get_taus_prd_list(active_prds)
 

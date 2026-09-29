@@ -13,8 +13,6 @@ from dataclasses import dataclass
 
 from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape, Int, Float, Float64, Bool
-from scipy.ndimage import shift
-from scipy.fftpack import fft2, ifft2
 
 from ManifoldEM.FindCCGraph import prune
 from ManifoldEM.params import params
@@ -22,8 +20,7 @@ from ManifoldEM.star import get_align_data
 from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
 from ManifoldEM.S2tessellation import bin_and_threshold
 from ManifoldEM.FindCCGraph import op as FindCCGraph
-import ManifoldEM.myio as myio
-from ManifoldEM.util import get_CTFs, rotate_fill
+from ManifoldEM.util import get_CTFs
 
 
 class Sense(Enum):
@@ -186,6 +183,7 @@ class PrdData:
         if prd_index >= prds.n_bins:
             raise ValueError("Invalid prd index")
 
+        data_store.require_analysis([prd_index])
         self._image_indices = prds.thresholded_image_indices[prd_index]
         self._dist_data = None
         self._raw_images = None
@@ -194,10 +192,11 @@ class PrdData:
         self._EL_data = None
         self._CTF = None
 
-        with h5py.File(params.get_dist_file(prd_index), "r") as f:
-            rotations = np.array(f["rotations"])
-            mask = np.array(f["msk2"])
-            image_filter = np.array(f["image_filter"])
+        with data_store.open_analysis() as f:
+            image_data = f[f"prd_{prd_index}/image_data"]
+            rotations = image_data["rotations"][:]
+            mask = image_data["mask"][:]
+            image_filter = image_data["filter"][:]
 
         image_offsets = np.empty((len(self._image_indices), 2))
         image_offsets[:, 0] = prds.microscope_origin[1][self._image_indices]
@@ -221,54 +220,35 @@ class PrdData:
             image_mask=mask,
         )
 
-    def _load_psi_data(self):
-        if self._psi_data is None:
-            psi_file = params.get_psi_file(self._info.prd_index)
-            if os.path.isfile(psi_file):
-                self._psi_data = myio.fin1(psi_file)
-            else:
-                msg = f"Embedding data file not found: {psi_file}"
-                raise FileNotFoundError(msg)
-
-        return self._psi_data
-
-    def _load_EL_data(self):
-        if self._EL_data is None:
-            EL_file = params.get_EL_file(self._info.prd_index)
-            if os.path.isfile(EL_file):
-                self._EL_data = myio.fin1(EL_file)
-            else:
-                msg = f"EL data file not found: {EL_file}"
-                raise FileNotFoundError(msg)
-
-        return self._EL_data
-
-    def _load_dist_data(self):
-        if self._dist_data is None:
-            dist_file = params.get_dist_file(self._info.prd_index)
-            if os.path.isfile(dist_file):
-                self._dist_data = myio.fin1(dist_file)
-            else:
-                msg = f"Distance data file not found: {dist_file}"
-                raise FileNotFoundError(msg)
-
-        return self._dist_data
-
     @property
     def info(self):
         return self._info
 
     @property
     def psi_data(self):
-        return self._load_psi_data()
+        """The diffusion-map embedding of the images that the manifold trimming kept (`posPath`)."""
+        if self._psi_data is None:
+            self._psi_data = data_store.get_embedding_data(self._info.prd_index)
+        return self._psi_data
 
     @property
     def EL_data(self):
-        return self._load_EL_data()
+        """The NLSA data of the psi that find-ccs chose for this PrD (IMG1: its movie, n_frames x n_pix x n_pix)."""
+        if self._EL_data is None:
+            data_store.require_analysis([self._info.prd_index], conformational_coords=True)
+            with data_store.open_analysis() as f:
+                psinum = int(f[f"prd_{self._info.prd_index}/psinum"][()])
+            if psinum < 0:
+                raise ValueError(f"PrD {self._info.prd_index} has no conformational coordinate (psinum -1)")
+            self._EL_data = data_store.get_nlsa_data(self._info.prd_index, psinum)
+        return self._EL_data
 
     @property
     def dist_data(self):
-        return self._load_dist_data()
+        """The distances between the PrD's images (D), and their Wiener-filtered average (imgAvg)."""
+        if self._dist_data is None:
+            self._dist_data = data_store.distance_data(self._info.prd_index)
+        return self._dist_data
 
     @property
     def raw_images(self):
@@ -289,38 +269,18 @@ class PrdData:
 
     @property
     def transformed_images(self):
+        """The images as decompose used them: centred, mirrored, filtered, rotated in-plane and masked."""
         if self._transformed_images is None:
-            img_stack_data = data_store.get_image_stack_data()
-            imgAll = np.empty(
-                shape=(
-                    len(self._image_indices),
-                    params.ms_num_pixels,
-                    params.ms_num_pixels,
-                ),
-                dtype=np.float32,
+            from ManifoldEM.prd_analysis import get_raw_images, transform_images
+
+            self._transformed_images = transform_images(
+                get_raw_images(params.img_stack_file, self._image_indices),
+                self.info.image_filter,
+                self.info.image_mask,
+                self.info.image_offsets,
+                self.info.image_rotations,
+                self.info.image_mirrored,
             )
-
-            for i, idx in enumerate(self._image_indices):
-                imgAll[i] = img_stack_data[idx]
-
-                imgAll[i] = shift(
-                    imgAll[i],
-                    (
-                        self.info.image_offsets[i, 0] - 0.5,
-                        self.info.image_offsets[i, 1] - 0.5,
-                    ),
-                    order=3,
-                    mode="wrap",
-                )
-
-                if self.info.image_mirrored[i]:
-                    imgAll[i] = np.flipud(imgAll[i])
-
-                imgAll[i] = ifft2(fft2(imgAll[i]) * self.info.image_filter).real
-                imgAll[i] = rotate_fill(imgAll[i], self.info.image_rotations[i])
-                imgAll[i] = imgAll[i] * self.info.image_mask
-
-            self._transformed_images = imgAll
 
         return self._transformed_images
 
@@ -787,6 +747,33 @@ class _DataStore:
             self._image_stack_data = mrcfile.mmap(params.img_stack_file, "r").data
 
         return self._image_stack_data
+
+    def require_analysis(self, prd_indices=None, conformational_coords: bool = False):
+        """
+        Raises an error that says what to run if prd_analysis.h5 lacks the decomposition of the given
+        PrDs (default: every PrD that isn't trashed), or, with `conformational_coords`, their psinums
+        and senses from find-ccs.
+        """
+        path = params.analysis_file
+        if not os.path.isfile(path):
+            msg = f"{path} not found: run `manifold-cli decompose` first."
+            if os.path.isdir(os.path.join(params.out_dir, "distances")):
+                msg += (
+                    " This project was made by an earlier version of ManifoldEM, with distances/, "
+                    "diff_maps/ and psi_analysis/ instead of prd_analysis.h5. Those files aren't read "
+                    "any more: re-run the project from decompose."
+                )
+            raise FileNotFoundError(msg)
+
+        if prd_indices is None:
+            prd_indices = self.get_active_prd_indices()
+        with self.open_analysis() as f:
+            missing = [int(i) for i in prd_indices if f"prd_{i}" not in f]
+            no_coords = [int(i) for i in prd_indices if f"prd_{i}" in f and "psinum" not in f[f"prd_{i}"]]
+        if missing:
+            raise ValueError(f"PrDs {missing} (0-based) aren't in {path}: run `manifold-cli decompose` for them.")
+        if conformational_coords and no_coords:
+            raise ValueError(f"No conformational coordinates in {path}: run `manifold-cli find-ccs` first.")
 
     def open_analysis(self, mode: str = "r") -> h5py.File:
         """

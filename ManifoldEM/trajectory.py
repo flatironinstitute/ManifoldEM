@@ -213,6 +213,7 @@ def build_trajectory():
     # Copyright (c) Columbia University Suvrajit Maji 2020 (python version)
 
     params.load()
+    data_store.require_analysis(conformational_coords=True)
     active_prds, psinums, senses = data_store.get_active_psinums_and_senses()
     taus = data_store.get_taus_prd_list(active_prds)
     prds = data_store.get_prds()

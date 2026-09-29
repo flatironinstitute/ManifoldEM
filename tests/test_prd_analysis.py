@@ -1,5 +1,8 @@
+import os
+
 import mrcfile
 import numpy as np
+import pytest
 
 from ManifoldEM.data_store import data_store
 from ManifoldEM.interfaces.simple import decompose
@@ -62,3 +65,31 @@ def test_decompose_reads_float16_stacks(make_project):
 
     with data_store.open_analysis() as f:
         assert np.isfinite(f["prd_0/distances/D"][:]).all()
+
+
+def test_prd_data_reads_the_decomposition(make_project):
+    params.load(str(make_project("v")))
+    data_store.get_prds(reload=True)
+    params.ncpu = 1
+    decompose(prd_list=[0])
+
+    prd = data_store.get_prd_data(0)
+    n_images = len(prd.info.raw_image_indices)
+    assert prd.dist_data["D"].shape == (n_images, n_images)
+    assert prd.psi_data["psi"].shape[0] == len(prd.psi_data["posPath"])
+    images, _, _ = get_transformed_images_CTFs_and_image_data(0)
+    np.testing.assert_array_equal(prd.transformed_images, images)  # the pipeline's own transform
+    with pytest.raises(ValueError, match="find-ccs"):
+        prd.EL_data
+
+
+def test_steps_after_decompose_say_what_to_run(make_project):
+    params.load(str(make_project("o")))
+    data_store.get_prds(reload=True)
+    with pytest.raises(FileNotFoundError, match="decompose"):
+        data_store.require_analysis()
+
+    # a project from before prd_analysis.h5
+    os.makedirs(os.path.join(params.out_dir, "distances"))
+    with pytest.raises(FileNotFoundError, match="earlier version of ManifoldEM"):
+        data_store.get_prd_data(0)
