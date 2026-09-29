@@ -1,7 +1,5 @@
 import copy
-import numba
 import numpy as np
-from scipy import optimize
 
 from typing import Any
 from nptyping import NDArray, Shape, Bool, Float
@@ -10,65 +8,6 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 """
-
-
-@numba.jit(nopython=True)
-def _q_product_single(q1, q2):
-    """
-    Computes the product of two quaternions using Numba for JIT compilation.
-
-    Parameters
-    ----------
-    q1 : np.ndarray
-        The first quaternion as a NumPy array.
-    q2 : np.ndarray
-        The second quaternion as a NumPy array.
-
-    Returns
-    -------
-    np.ndarray
-        The product of the two quaternions as a new NumPy array.
-
-    Notes
-    -----
-    This function is optimized for performance with Numba's nopython mode, ensuring
-    that the computation is compiled to machine code for faster execution. Designed
-    for use with the `q2Spider` function.
-    """
-    return np.array([
-        q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
-        q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
-        q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1],
-        q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0],
-    ])
-
-
-@numba.jit(nopython=True)
-def _optfunc(a, q):
-    """
-    Optimized function to compute a quaternion operation, intended for use for the optimizer in `q2Spider`.
-
-    Parameters
-    ----------
-    a : np.ndarray
-        A NumPy array representing angles.
-    q : np.ndarray
-        A target quaternion for the operation.
-
-    Returns
-    -------
-    np.ndarray
-        The result of the quaternion operation as a NumPy array.
-
-    This function constructs three quaternions based on the input angles 'a', performs
-    quaternion multiplication, and compares the result to the target quaternion 'q'.
-    It is optimized with Numba's nopython mode for faster execution.
-    """
-    b = 0.5 * a
-    q1 = np.array([np.cos(b[0]), 0., 0., -np.sin(b[0])])
-    q2 = np.array([np.cos(b[1]), 0., -np.sin(b[1]), 0.])
-    q3 = np.array([np.cos(b[2]), 0., 0., -np.sin(b[2])])
-    return q - _q_product_single(q3, _q_product_single(q2, q1))
 
 
 def quaternion_to_S2(q: NDArray[Shape["4,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
@@ -141,49 +80,35 @@ def collapse_to_half_space(
     return (q, is_mirrored)
 
 
-def q2Spider(q):
+def pd_to_spider_euler(PD: NDArray[Shape["3"], Float]) -> tuple[float, float, float]:
     """
-    Converts a quaternion to a rotation sequence in the Spider 3D convention.
+    Euler angles, in radians, of the shortest rotation that takes the z-axis to a projection direction.
+
+    The rotation is the quaternion [1 + z, y, -x, 0] (normalized) for PD = (x, y, z), written in the
+    Spider ZYZ convention. Of its two Euler representations, this returns the one with theta in
+    [0, pi]: phi = atan2(y, x), theta = arccos(z), psi = -phi. At the poles, phi = psi = 0.
 
     Parameters
     ----------
-    q : np.ndarray
-        A quaternion represented as a 1D NumPy array of shape [4].
+    PD : np.ndarray
+        The projection direction, a 3-vector; it is normalized here.
 
     Returns
     -------
-    tuple[float]
-        A tuple (phi, theta, psi) representing the rotation sequence in radians.
+    tuple[float, float, float]
+        (phi, theta, psi)
 
-    The function normalizes the input quaternion to ensure it represents a valid rotation.
-    It then uses an optimization process to find the Euler angles (phi, theta, psi) that correspond
-    to the given quaternion. The Spider 3D convention is used, which is common in cryo-EM for
-    representing 3D orientations.
-
-    Note:
-    - This function assumes the input quaternion is a unit quaternion.
-    - The optimization process uses the Levenberg-Marquardt algorithm through scipy's least_squares method.
-    - Copyright (c) Columbia University Hstau Liao 2018 (python version)
+    Notes
+    -----
+    This replaces a least-squares fit (`q2Spider`) that started at phi = theta = psi = 0, which is
+    gimbal lock. There, the fit sometimes stopped at its start point, depending on the state of the
+    process, and it always did within about 1e-5 of x = 0. Where it converged, it agreed with this
+    to about 1e-10 for x > 0, and gave the other representation, (phi + pi, -theta, psi + pi), for x < 0.
     """
-    # assert unit quaternion
-    q = q / np.linalg.norm(q)
-
-    def dev1(a):
-        return _optfunc(a, q)
-
-    lb = -np.inf
-    ub = np.inf
-    tol = 1e-12
-
-    a0 = np.array([0, 0, 0])
-    res = optimize.least_squares(dev1, a0, bounds=(lb, ub), ftol=tol, method='lm')
-    a = res.x
-
-    phi = a[0]
-    theta = a[1]
-    psi = a[2]
-
-    return (phi, theta, psi)
+    x, y, z = np.asarray(PD, dtype=float).ravel() / np.linalg.norm(PD)
+    phi = float(np.arctan2(y, x))
+    theta = float(np.arctan2(np.hypot(x, y), z))
+    return (phi, theta, -phi)
 
 
 def q_product(q, s):
@@ -244,9 +169,7 @@ def psi_ang(PD: NDArray[Shape["3,1"], Float]) -> tuple[float, float, float]:
     tuple[float,float,float]
         Euler angles: phi, theta, psi
     """
-    Qr = np.array([1 + PD[2], PD[1], -PD[0], 0])
-    Qr = Qr / np.sqrt(np.sum(Qr**2))
-    phi, theta, psi = q2Spider(Qr)
+    phi, theta, _ = pd_to_spider_euler(PD)
 
     phi = np.mod(phi, 2 * np.pi) * (180 / np.pi)
     theta = np.mod(theta, 2 * np.pi) * (180 / np.pi)

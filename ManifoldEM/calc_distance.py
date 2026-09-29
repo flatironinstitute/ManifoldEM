@@ -17,7 +17,7 @@ from ManifoldEM import myio
 from ManifoldEM.core import annular_mask, project_mask
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
-from ManifoldEM.quaternion import q2Spider, quaternion_to_S2
+from ManifoldEM.quaternion import pd_to_spider_euler, quaternion_to_S2
 from ManifoldEM.util import (
     get_tqdm,
     create_proportional_grid,
@@ -140,15 +140,10 @@ def psi_ang(ref_vec: NDArray[Shape["3"], Float64]) -> float:
     Returns
     -------
     float
-        The psi angle in degrees.
+        The psi angle, in degrees in [0, 360), of the shortest rotation from the z-axis to `ref_vec`
+        (see `quaternion.pd_to_spider_euler`).
     """
-    # FIXME: Doc needs way more clarity
-    Qr = np.array([1 + ref_vec[2], ref_vec[1], -ref_vec[0], 0])
-    L2 = np.sum(Qr**2)
-    if L2 == 0.0:
-        return 0.0
-    Qr = Qr / L2
-    _, _, psi = q2Spider(Qr)
+    _, _, psi = pd_to_spider_euler(ref_vec)
 
     psi = np.mod(psi, 2 * np.pi) * (180 / np.pi)
     return psi

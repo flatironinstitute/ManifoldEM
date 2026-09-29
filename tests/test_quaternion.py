@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from ManifoldEM.util import eul_to_quat
-from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, q2Spider, psi_ang
+from ManifoldEM.quaternion import quaternion_to_S2, collapse_to_half_space, pd_to_spider_euler, psi_ang, q_product
 from euler_reference import (collapse_to_half_space_euler_angles, convert_euler_to_S2, qs_to_spider_euler_angles,
                              convert_S2_to_euler)
 
@@ -106,33 +106,49 @@ def test_collapse_to_half_space():
     assert np.allclose(is_mirrored_mem, is_mirrored)
 
 
-def test_q2Spider():
-    n_euler_angles = 3
-    n_random_samples = 1000
+def _spider_quat(phi, theta, psi):
+    """The quaternion of Spider Euler angles, composed as the fit that pd_to_spider_euler replaced did."""
+    def about_z(a):
+        return np.array([np.cos(a / 2), 0.0, 0.0, -np.sin(a / 2)])
 
+    def about_y(a):
+        return np.array([np.cos(a / 2), 0.0, -np.sin(a / 2), 0.0])
+
+    return q_product(about_z(psi), q_product(about_y(theta), about_z(phi))).ravel()
+
+
+def test_pd_to_spider_euler():
     np.random.seed(0)
-    euler_angles = np.random.uniform(low=-np.pi, high=np.pi, size=(n_random_samples, n_euler_angles))
-    euler_angles[:, 1] = 0.5 * (euler_angles[:, 1] + np.pi)
+    PDs = np.random.normal(size=(3, 1000))
+    # the hemisphere edge x = 0, where the fit failed, both poles, and x < 0
+    edge_cases = [[0, 0.8, 0.6], [1e-7, -0.8, 0.6], [-1e-7, 0.8, -0.6], [0, 0, 1], [0, 0, -1], [0, 1e-9, 1],
+                  [-0.5, 0.5, 0.1]]
+    PDs = np.hstack([PDs, np.array(edge_cases, dtype=float).T])
+    PDs /= np.linalg.norm(PDs, axis=0)
 
-    phi, theta, psi, = euler_angles.T
-    raw_qs = eul_to_quat(phi, theta, psi)
+    wrap = lambda a: (np.asarray(a) + np.pi) % (2 * np.pi) - np.pi  # noqa: E731
+    for PD in PDs.T:
+        phi, theta, psi = pd_to_spider_euler(PD)
+        assert 0 <= theta <= np.pi
+        assert psi == -phi
 
-    euler_angles_mem = np.array([q2Spider(raw_q) for raw_q in raw_qs.T]).T
-    euler_angles_spider = qs_to_spider_euler_angles(raw_qs)
+        # the Euler angles point the z-axis at PD
+        assert np.allclose(Rotation.from_euler('ZYZ', [phi, theta, psi]).apply([0.0, 0.0, 1.0]), PD)
 
-    # Euler angles are not unique, so check that they produce the same S2 points
-    s2_prod = quaternion_to_S2(raw_qs).T
-    s2_prod_scipy = Rotation.from_euler('ZYZ', euler_angles_mem.T).apply(np.array([0.0, 0.0, 1.0]))
-    s2_spider = Rotation.from_euler('ZYZ', euler_angles_spider.T).apply(np.array([0.0, 0.0, 1.0]))
-    assert np.allclose(s2_prod, s2_prod_scipy, atol=1e-4)
-    assert np.allclose(s2_prod, s2_spider, atol=1e-4)
+        # ... and give exactly the shortest rotation from z to PD (undefined at the south pole)
+        Qr = np.array([1 + PD[2], PD[1], -PD[0], 0.0])
+        if np.linalg.norm(Qr) < 1e-12:
+            continue
+        Qr /= np.linalg.norm(Qr)
+        assert np.allclose(_spider_quat(phi, theta, psi), Qr)
 
-    # also check quaternions, which are unique up to a sign
-    back_qs_scalar_last = Rotation.from_euler('zyz', euler_angles_spider.T).as_quat().T
-    back_qs = np.vstack([back_qs_scalar_last[3], back_qs_scalar_last[0:3]])
-    t1 = np.isclose(back_qs, raw_qs)
-    t2 = np.isclose(back_qs, -raw_qs)
-    assert np.logical_xor(t1, t2).all()
+        # scipy's conversion gives the same angles, or their other representation; at the north pole
+        # (gimbal lock) only phi + psi is defined
+        if theta > 1e-6:
+            ref = qs_to_spider_euler_angles(Qr.reshape(4, 1)).ravel()
+            other = ref + np.array([np.pi, 0.0, np.pi]) - np.array([0.0, 2 * ref[1], 0.0])
+            ours = np.array([phi, theta, psi])
+            assert np.allclose(wrap(ours - ref), 0, atol=1e-9) or np.allclose(wrap(ours - other), 0, atol=1e-9)
 
 
 def test_psi_ang():

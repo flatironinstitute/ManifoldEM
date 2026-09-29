@@ -25,6 +25,15 @@ Changes made prior to the Flatiron fork not included.
   * Fixed
     * **Changes results:** belief propagation used anchors off by one, so an anchor set on psi 1
       was propagated as psi 2 (and a REV anchor on the last psi crashed)
+    * **Changes results:** the Euler angles of a projection direction came from a least-squares fit
+      (`q2Spider`) that started at gimbal lock. Depending on the state of the process, it sometimes
+      stopped at its start point, and it always did within about 1e-5 of the hemisphere edge
+      (x = 0). Particles it failed on were written to the trajectory `.star` files with rot = tilt = 0
+      (a quarter of the particles in one test run). A PrD whose reference direction it failed on had
+      all its images rotated by a wrong in-plane angle in `calc-distance`. The angles are now
+      computed in closed form. Where the fit worked, the results are the same to 1e-13 degrees. With
+      a non-default `tess_hemisphere_vec`, PrDs at x < 0 now use the equivalent frame rotated by 180
+      degrees (images and angles together), which also fixes PrDs whose particles straddle x = 0.
     * matplotlib is a core dependency now, so an install without extras can run the whole pipeline
     * Tutorial notebook helpers: with two projects loaded in one kernel, an edit could re-bin a
       project and so wipe its anchors and trash PrDs. `data_store.get_prds(reload=True)` re-reads

@@ -8,7 +8,7 @@ from scipy.ndimage import affine_transform
 from scipy.optimize import curve_fit, OptimizeWarning
 
 from ManifoldEM.params import params
-from ManifoldEM.quaternion import q2Spider
+from ManifoldEM.quaternion import pd_to_spider_euler
 
 warnings.simplefilter(action='ignore', category=OptimizeWarning)
 
@@ -418,10 +418,7 @@ def get_euler_from_PD(PD):
     np.ndarray
         Euler angles [Phi, Theta, 0.0] (Psi is degenerate, so set to zero)
     """
-    Qr = np.array([1 + PD[2], PD[1], -PD[0], 0]).T
-    q1 = Qr / np.sqrt(sum(Qr**2))
-
-    phi, theta, _ = q2Spider(q1)
+    phi, theta, _ = pd_to_spider_euler(PD)
     return np.array([phi, theta, 0.0])
 
 

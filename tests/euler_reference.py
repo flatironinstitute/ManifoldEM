@@ -1,7 +1,7 @@
 """Reference implementations used as test oracles.
 
 scipy-based Euler angle / S2 conversions, moved here from ManifoldEM.quaternion because only the
-tests use them: they check the package's own routines (q2Spider, collapse_to_half_space,
+tests use them: they check the package's own routines (pd_to_spider_euler, collapse_to_half_space,
 core.get_euler_from_PD, ...) against these independent implementations.
 """
 from typing import Any, Tuple
@@ -73,7 +73,7 @@ def qs_to_spider_euler_angles(raw_qs: NDArray[Shape["4,Any"], Float]) -> NDArray
         3xN array of Euler angles in the "spider" convention
     """
     # https://www.ccpem.ac.uk/user_help/rotation_conventions.php
-    # Claims anti-clockwise, though clockwise gives the same results as legacy q2Spider routine...
+    # Claims anti-clockwise, though clockwise gives the same results as the legacy q2Spider routine...
     # "ZYZ anti-clockwise. (α,β,γ) is (ψ,θ,φ), note reversal because Spider defines its angles w.r.t external axes."
     # so negate euler angles for clockwise, and use lower case for extrinsic in scipy transforms
     #
@@ -83,30 +83,10 @@ def qs_to_spider_euler_angles(raw_qs: NDArray[Shape["4,Any"], Float]) -> NDArray
     return -Rotation.from_quat(qs_scalar_last.T).as_euler('zyz').T
 
 
-def alternate_euler_convention(euler_angles: NDArray[Shape["3,Any"], Float]) -> NDArray[Shape["3,Any"], Float]:
-    """
-    FIXME -- what's going on here?
-    Maps Euler angles in the ??? convention to the ??? convention
-
-    Parameters
-    ----------
-    euler_angles_deg : np.ndarray
-        3xN array of Euler angles in the ??? convention
-
-    Returns
-    -------
-    np.ndarray
-        3xN array of Euler angles in the ??? convention
-    """
-    euler_angles_alternate = np.mod(((euler_angles.T - np.array([np.pi, 0, np.pi])) * np.array([1, -1, 1])).T,
-                                    2 * np.pi)
-    return euler_angles_alternate
-
-
 def convert_S2_to_euler(s2):
     """
-    FIXME -- what's going on here?
-    Maps unit vectors representing positions on in S2 to Euler angles in the ??? convention.
+    Maps unit vectors on S2 (projection directions) to the Euler angles (phi, theta, 0) that
+    `quaternion.psi_ang` returns: phi = atan2(y, x) and theta = arccos(z), in radians in [0, 2 pi).
 
     Parameters
     ----------
@@ -116,17 +96,9 @@ def convert_S2_to_euler(s2):
     Returns
     -------
     np.ndarray
-        3xN array of Euler angles in the ??? convention
+        3xN array of Euler angles
     """
     sx, sy, sz = s2
-    x = np.arccos(sz)  # Polar angle
-    z1 = np.arctan2(sy, sx)  # First Euler angle
-    angles = np.mod(np.array([z1, x, np.zeros_like(x)]), 2 * np.pi)
-    angles_alternate = np.mod(alternate_euler_convention(angles), 2 * np.pi)
-    convention_psi = 0.0
-    angles_alternate[-1, :] = convention_psi
-
-    mask = sx < 0
-    angles[:, mask] = angles_alternate[:, mask]
-
-    return angles
+    theta = np.arccos(sz)  # polar angle
+    phi = np.arctan2(sy, sx)
+    return np.mod(np.array([phi, theta, np.zeros_like(theta)]), 2 * np.pi)
