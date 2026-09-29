@@ -13,21 +13,32 @@ project between CLI steps: occupancy thresholds, anchors, trash PrDs and the
 trajectory path width. They save through ManifoldEM's `params` and
 `data_store`, so the CLI picks the changes up. PrD and ψ numbers are 1-based,
 as in the `topos/PrD_N/psi_K.gif` movies.
+
+Every method reads the project from disk again, so it shows the results of CLI steps run in
+the meantime, and edits saved by another kernel.
 """
 from __future__ import annotations
 
 import base64
-import pickle
+import contextlib
+import io
+import os
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
-import h5py
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from PIL import Image
 from scipy import stats
+
+from ManifoldEM import myio
+from ManifoldEM.data_store import Anchor, Sense, data_store
+from ManifoldEM.FindCCGraph import prune
+from ManifoldEM.params import ProjectLevel, params
 
 
 # The directory the kernel started in (the notebook's, under Jupyter). Relative project paths are
@@ -53,51 +64,35 @@ def load_session(toml_path) -> "VizSession":
     relative to the directory the notebook was started in. Like the CLI, this changes into the
     project's directory.
     """
-    from ManifoldEM.params import params
-
     toml_path = (_START_DIR / Path(toml_path).expanduser()).resolve()
     if not toml_path.is_file():
         raise FileNotFoundError(f"No project file at {toml_path}; set PROJECT_TOML to your params_<project>.toml.")
     print(f"Using TOML file: {toml_path}")
 
-    params.load(str(toml_path))
-    project_name = params.project_name
-    print(f"project_name: {project_name}")
-
-    output_dir = toml_path.parent / params.out_dir
-    pkl_path = output_dir / "pd_data.pkl"
-    if not pkl_path.exists():
-        # Right after `manifold-cli init` the particles haven't been binned yet.
-        print(f"{pkl_path} not found; binning the particles into projection directions…")
-        _load_project(toml_path)
-    print(f"Loading: {pkl_path}")
-    with open(pkl_path, "rb") as f:
-        pd_data = pickle.load(f)
-
-    print(f"\nLoaded keys: {list(pd_data.keys())[:6]}…")
-    print(f"  bin_centers       : {pd_data['bin_centers'].shape}")
-    print(f"  occupancy_full    : {pd_data['occupancy_full'].shape}")
-    print(f"  pos_thresholded   : {pd_data['pos_thresholded'].shape}")
-    print(f"  thres_low / high  : {pd_data['thres_low']} / {pd_data['thres_high']}")
-
-    return VizSession(pd_data=pd_data, output_dir=output_dir, project_name=project_name,
-                      toml_path=toml_path, num_psi=params.num_psi,
-                      states_per_coord=params.states_per_coord, traj_name=params.traj_name)
+    viz = VizSession(toml_path)
+    prds = viz._project()
+    print(f"project_name: {params.project_name}")
+    print(f"Loaded: {Path(params.pd_file).resolve()}")
+    print(f"  bin_centers       : {prds.bin_centers.shape}")
+    print(f"  occupancy_full    : {prds.occupancy_full.shape}")
+    print(f"  pos_thresholded   : {prds.pos_thresholded.shape}")
+    print(f"  thres_low / high  : {prds.thres_low} / {prds.thres_high}")
+    return viz
 
 
 def _load_project(toml_path: Path):
-    """Load the project into ManifoldEM's `params` and `data_store` singletons.
+    """Point ManifoldEM's `params` and `data_store` singletons at the project, and return its PrDs.
 
-    Re-reads `pd_data.pkl`, so that edits saved elsewhere (the CLI, another kernel, another
-    session in this kernel) are picked up, and builds it if it is missing or out of date with the
-    thresholds. Like the CLI, this changes into the directory of the project file.
+    Re-reads the project file and `pd_data.pkl`, so that edits saved elsewhere (the CLI, another
+    kernel, another session in this kernel) are picked up, and builds `pd_data.pkl` if it is
+    missing or out of date with the thresholds. Like the CLI, this changes into the directory of
+    the project file.
     """
-    from ManifoldEM.data_store import data_store
-    from ManifoldEM.params import params
-
     params.load(str(toml_path))
-    prds = data_store.get_prds(reload=True)
-    return params, prds
+    if not os.path.isfile(params.pd_file):
+        # Right after `manifold-cli init` the particles haven't been binned yet.
+        print(f"{Path(params.pd_file).resolve()} not found; binning the particles into projection directions…")
+    return data_store.get_prds(reload=True)
 
 
 class VizSession:
@@ -108,63 +103,62 @@ class VizSession:
     object owns that state so the notebook cells stay one-liners.
     """
 
-    def __init__(self, pd_data: dict, output_dir: Path, project_name: str, toml_path: Path,
-                 num_psi: int, states_per_coord: int, traj_name: str):
-        self.pd_data = pd_data
-        self.output_dir = Path(output_dir)
-        self.project_name = project_name
+    def __init__(self, toml_path: Path):
         self.toml_path = Path(toml_path)
-        self.num_psi = num_psi
-        self.states_per_coord = states_per_coord
-        self.traj_name = traj_name
-        self.topos_dir = self.output_dir / "topos"
-
-        self._cc_data: Optional[dict] = None
-        self._traj_data: Optional[dict] = None
 
         # populated when interactive viewers are displayed
         self._sphere_fig = None
         self._prd_slider = None
-        self._on_sphere_click = None
 
-    # ── lazy data loaders ───────────────────────────────────────────────
-    @property
-    def cc_data(self) -> dict:
-        if self._cc_data is None:
-            with open(self.output_dir / "CC" / "CC_file.pkl", "rb") as f:
-                self._cc_data = pickle.load(f)
-        return self._cc_data
+    # ─────────────────────────────────────────────────────────────────────
+    # Data access. Everything the viewers read from the project goes through
+    # here; the paths come from `params`, so call `_project()` first.
+    # (origin/in-memory keeps the per-PrD outputs in one prd_analysis.h5.)
+    # ─────────────────────────────────────────────────────────────────────
+    def _project(self):
+        """Point `params` and `data_store` at this project, re-read from disk, and return its PrDs."""
+        return _load_project(self.toml_path)
 
-    @property
-    def traj_data(self) -> dict:
-        if self._traj_data is None:
-            traj_dir = self.output_dir / "traj"
-            with open(traj_dir / f"traj_name{self.traj_name}.pkl", "rb") as f:
-                main = pickle.load(f)
-            with open(traj_dir / f"traj_name{self.traj_name}_vars.pkl", "rb") as f:
-                vars_ = pickle.load(f)
-            self._traj_data = {"main": main, "vars": vars_}
-        return self._traj_data
+    @staticmethod
+    def _topos_dir(prd_num: int) -> Path:
+        # manifold-analysis writes eig_spec.txt here, nlsa-movie class_avg.png and the psi_K.gif movies
+        return Path(params.out_dir, "topos", f"PrD_{prd_num}")
+
+    @staticmethod
+    def _psi_gifs(prd_num: int) -> list:
+        gifs = (Path(params.get_psi_gif(prd_num, k)) for k in range(1, params.num_psi + 1))
+        return [g for g in gifs if g.is_file()]
+
+    @staticmethod
+    def _cc_data() -> dict:
+        return myio.fin1(params.CC_file)
+
+    @staticmethod
+    def _trajectory_data():
+        """The state histogram `hUn` (probability-landscape) and `tauAvg` (trajectory)."""
+        stem = f"{params.traj_file}name{params.traj_name}"
+        return myio.fin1(f"{stem}.pkl")["hUn"], myio.fin1(f"{stem}_vars.pkl")["tauAvg"]
 
     # ─────────────────────────────────────────────────────────────────────
     # S2 sphere
     # ─────────────────────────────────────────────────────────────────────
     def show_s2_sphere(self, interactive: bool = True):
+        prds = self._project()
         if interactive:
-            self._show_s2_sphere_interactive()
+            self._show_s2_sphere_interactive(prds)
         else:
-            self._show_s2_sphere_static()
+            self._show_s2_sphere_static(prds)
 
-    def _build_sphere_traces(self):
+    @staticmethod
+    def _build_sphere_traces(prds):
         import plotly.graph_objects as go
 
-        pd = self.pd_data
-        bin_centers = pd["bin_centers"]
-        occupancy = pd["occupancy_full"]
-        pos_thres = pd["pos_thresholded"]
-        phi_thres = pd["phi_thresholded"]
-        theta_thres = pd["theta_thresholded"]
-        pos_full = pd["pos_full"]
+        bin_centers = prds.bin_centers
+        occupancy = prds.occupancy_full
+        pos_thres = prds.pos_thresholded
+        phi_thres = prds.phi_thresholded
+        theta_thres = prds.theta_thresholded
+        pos_full = prds.pos_full
 
         rng = np.random.default_rng(42)
         n_show = min(5000, pos_full.shape[1])
@@ -212,16 +206,15 @@ class VizSession:
         )
         return sphere, bins_trace, thres_trace, particles_trace
 
-    def _show_s2_sphere_interactive(self):
+    def _show_s2_sphere_interactive(self, prds):
         import plotly.graph_objects as go
 
         widgets, display = _widgets()
-        pd = self.pd_data
-        sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces()
+        sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces(prds)
 
         fig = go.FigureWidget(data=[sphere, bins_trace, thres_trace, particles_trace])
         fig.update_layout(
-            title=dict(text="S2 Orientation Distribution — " + self.project_name, x=0.5),
+            title=dict(text="S2 Orientation Distribution — " + params.project_name, x=0.5),
             scene=dict(
                 xaxis=dict(title="x", showgrid=False, zeroline=False),
                 yaxis=dict(title="y", showgrid=False, zeroline=False),
@@ -238,26 +231,28 @@ class VizSession:
         )
         avg_out = widgets.Output()
 
-        phi_thres = pd["phi_thresholded"]
-        theta_thres = pd["theta_thresholded"]
-        occupancy = pd["occupancy_full"]
-        thres_ids = list(pd["thres_ids"])
+        # the values the sphere shows; re-run the cell after changing the thresholds
+        phi_thres = prds.phi_thresholded
+        theta_thres = prds.theta_thresholded
+        occupancy = prds.occupancy
+        thres_low, thres_high = prds.thres_low, prds.thres_high
 
         def on_click(trace, points, selector):
             if not points.point_inds:
                 return
             pd_idx = points.point_inds[0]
             prd_num = pd_idx + 1
-            img_path = self.topos_dir / f"PrD_{prd_num}" / "class_avg.png"
+            self._project()
+            img_path = self._topos_dir(prd_num) / "class_avg.png"
             status_label.value = (
                 f"  PrD {prd_num}  |  φ={phi_thres[pd_idx]:.1f}°  "
                 f"θ={theta_thres[pd_idx]:.1f}°  |  "
-                f"occ = {occupancy[thres_ids[pd_idx]]}"
+                f"occ = {occupancy[pd_idx]}"
             )
             with avg_out:
                 avg_out.clear_output(wait=True)
                 if not img_path.exists():
-                    print(f"File not found: {img_path}")
+                    print(f"File not found: {img_path.resolve()}")
                     return
                 fig2, axes = plt.subplots(1, 2, figsize=(9, 4.5))
                 img = mpimg.imread(str(img_path))
@@ -265,15 +260,14 @@ class VizSession:
                 axes[0].set_title(
                     f"2D Class Average  —  PrD {prd_num}\n"
                     f"φ={phi_thres[pd_idx]:.1f}°  θ={theta_thres[pd_idx]:.1f}°  "
-                    f"occ={occupancy[thres_ids[pd_idx]]}",
+                    f"occ={occupancy[pd_idx]}",
                     fontsize=11,
                 )
                 axes[0].axis("off")
-                occ_active = [occupancy[thres_ids[i]] for i in range(len(thres_ids))]
-                axes[1].bar(range(1, len(thres_ids) + 1), occ_active, color="steelblue", edgecolor="none")
-                axes[1].bar(prd_num, occ_active[pd_idx], color="crimson", label=f"PrD {prd_num}")
-                axes[1].axhline(pd["thres_low"], color="red", lw=1, ls="--", label="low thresh")
-                axes[1].axhline(pd["thres_high"], color="green", lw=1, ls="--", label="high thresh")
+                axes[1].bar(range(1, len(occupancy) + 1), occupancy, color="steelblue", edgecolor="none")
+                axes[1].bar(prd_num, occupancy[pd_idx], color="crimson", label=f"PrD {prd_num}")
+                axes[1].axhline(thres_low, color="red", lw=1, ls="--", label="low thresh")
+                axes[1].axhline(thres_high, color="green", lw=1, ls="--", label="high thresh")
                 axes[1].set_xlabel("PrD number")
                 axes[1].set_ylabel("Occupancy")
                 axes[1].set_title("Occupancy of active PDs", fontsize=11)
@@ -286,28 +280,26 @@ class VizSession:
 
         fig.data[2].on_click(on_click)
         self._sphere_fig = fig
-        self._on_sphere_click = on_click
 
         display(widgets.VBox([fig, status_label, avg_out]))
         print(
-            f"Active PDs: {pd['pos_thresholded'].shape[1]}  |  "
-            f"Total bins: {len(pd['occupancy_full'])}  |  "
-            f"Total particles: {pd['pos_full'].shape[1]}"
+            f"Active PDs: {prds.pos_thresholded.shape[1]}  |  "
+            f"Total bins: {len(prds.occupancy_full)}  |  "
+            f"Total particles: {prds.pos_full.shape[1]}"
         )
 
-    def _show_s2_sphere_static(self):
+    def _show_s2_sphere_static(self, prds):
         """Render the Plotly sphere as a static PNG (via kaleido) so GitHub displays it."""
-        pd = self.pd_data
         try:
             import plotly.graph_objects as go
         except ImportError as e:
             print(f"(Plotly unavailable — {e}; falling back to matplotlib)")
-            self._show_s2_sphere_static_mpl()
+            self._show_s2_sphere_static_mpl(prds)
         else:
-            sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces()
+            sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces(prds)
             fig = go.Figure(data=[sphere, bins_trace, thres_trace, particles_trace])
             fig.update_layout(
-                title=dict(text=f"S2 Orientation Distribution — {self.project_name}", x=0.5),
+                title=dict(text=f"S2 Orientation Distribution — {params.project_name}", x=0.5),
                 scene=dict(
                     xaxis=dict(title="x", showgrid=False, zeroline=False),
                     yaxis=dict(title="y", showgrid=False, zeroline=False),
@@ -321,21 +313,21 @@ class VizSession:
                 fig.show(renderer="png", width=900, height=680, scale=2)
             except (ValueError, ImportError) as e:
                 print(f"(Plotly PNG export unavailable — {e}; falling back to matplotlib)")
-                self._show_s2_sphere_static_mpl()
+                self._show_s2_sphere_static_mpl(prds)
 
-        pt = pd["pos_thresholded"]
+        pt = prds.pos_thresholded
         print(
-            f"Active PDs: {pt.shape[1]}  |  Total bins: {len(pd['occupancy_full'])}  |  "
-            f"Total particles: {pd['pos_full'].shape[1]}  "
+            f"Active PDs: {pt.shape[1]}  |  Total bins: {len(prds.occupancy_full)}  |  "
+            f"Total particles: {prds.pos_full.shape[1]}  "
             "[static view — set INTERACTIVE=True for clickable diamonds]"
         )
 
-    def _show_s2_sphere_static_mpl(self):
-        """Matplotlib fallback for environments without kaleido."""
-        pd = self.pd_data
-        bc = pd["bin_centers"]
-        occ = pd["occupancy_full"]
-        pt = pd["pos_thresholded"]
+    @staticmethod
+    def _show_s2_sphere_static_mpl(prds):
+        """Matplotlib fallback for environments without plotly or kaleido."""
+        bc = prds.bin_centers
+        occ = prds.occupancy_full
+        pt = prds.pos_thresholded
 
         fig = plt.figure(figsize=(8, 7))
         ax = fig.add_subplot(111, projection="3d")
@@ -349,7 +341,7 @@ class VizSession:
         cb = plt.colorbar(sc, ax=ax, shrink=0.6, pad=0.05)
         cb.set_label("Occupancy (particles/bin)")
         ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
-        ax.set_title(f"S2 Orientation Distribution — {self.project_name}")
+        ax.set_title(f"S2 Orientation Distribution — {params.project_name}")
         ax.legend(loc="upper left", fontsize=9)
         ax.set_box_aspect((1, 1, 1))
         plt.tight_layout()
@@ -359,8 +351,9 @@ class VizSession:
     # Per-PrD eigenvector viewer
     # ─────────────────────────────────────────────────────────────────────
     def show_prd_viewer(self, default_prd: int = 1, interactive: bool = True):
+        prds = self._project()
         if interactive:
-            self._show_prd_viewer_interactive(default_prd)
+            self._show_prd_viewer_interactive(prds, default_prd)
         else:
             self._render_prd_static(default_prd)
 
@@ -372,15 +365,14 @@ class VizSession:
                 f'<small>{path.stem}</small></div>')
 
     def _render_prd_scree(self, prd_num: int):
-        prd_dir = self.topos_dir / f"PrD_{prd_num}"
-        eig_file = prd_dir / "eig_spec.txt"
+        eig_file = self._topos_dir(prd_num) / "eig_spec.txt"
         if not eig_file.exists():
-            print(f"eig_spec.txt not found: {eig_file}")
+            print(f"eig_spec.txt not found: {eig_file.resolve()}")
             return
         data = np.loadtxt(eig_file)
         eig_idx = data[:, 0].astype(int)
         eig_val = data[:, 1]
-        n_gifs = len(list(prd_dir.glob("psi_*.gif")))
+        n_gifs = len(self._psi_gifs(prd_num))
 
         fig_s, ax = plt.subplots(figsize=(6, 3.5))
         ax.bar(eig_idx, eig_val, color="steelblue", edgecolor="none")
@@ -394,14 +386,12 @@ class VizSession:
         plt.show()
 
     def _render_prd_movies(self, prd_num: int):
+        _, display = _widgets()
         from IPython.display import HTML
 
-        _, display = _widgets()
-        prd_dir = self.topos_dir / f"PrD_{prd_num}"
-        gifs = sorted(prd_dir.glob("psi_*.gif"),
-                      key=lambda p: int(p.stem.split("_")[1]))
+        gifs = self._psi_gifs(prd_num)
         if not gifs:
-            print(f"No .gif files found in {prd_dir}")
+            print(f"No .gif files found in {self._topos_dir(prd_num).resolve()}")
             return
         html_parts = [f'<h4 style="margin:6px 0">PrD {prd_num} — eigenvector movies</h4>']
         html_parts += [self._gif_html(g) for g in gifs]
@@ -409,14 +399,11 @@ class VizSession:
 
     def _render_prd_static(self, prd_num: int):
         """Render the scree plot + a static grid of the eigenvector movie thumbnails (first frame)."""
-        from PIL import Image
-        prd_dir = self.topos_dir / f"PrD_{prd_num}"
         self._render_prd_scree(prd_num)
 
-        gifs = sorted(prd_dir.glob("psi_*.gif"),
-                      key=lambda p: int(p.stem.split("_")[1]))
+        gifs = self._psi_gifs(prd_num)
         if not gifs:
-            print(f"No .gif files found in {prd_dir}")
+            print(f"No .gif files found in {self._topos_dir(prd_num).resolve()}")
             return
         n = len(gifs)
         cols = min(4, n)
@@ -435,14 +422,12 @@ class VizSession:
         plt.tight_layout()
         plt.show()
 
-    def _show_prd_viewer_interactive(self, default_prd: int = 1):
+    def _show_prd_viewer_interactive(self, prds, default_prd: int = 1):
         widgets, display = _widgets()
-        pd = self.pd_data
-        n_prds = pd["pos_thresholded"].shape[1]
-        phi_thres = pd["phi_thresholded"]
-        theta_thres = pd["theta_thresholded"]
-        occupancy = pd["occupancy_full"]
-        thres_ids = list(pd["thres_ids"])
+        n_prds = prds.n_thresholded
+        phi_thres = prds.phi_thresholded
+        theta_thres = prds.theta_thresholded
+        occupancy = prds.occupancy
 
         prd_slider = widgets.IntSlider(
             value=default_prd, min=1, max=n_prds, step=1, description="PrD:",
@@ -461,10 +446,11 @@ class VizSession:
         def render(change):
             prd_num = prd_slider.value
             pd_idx = prd_num - 1
+            self._project()
             prd_info.value = (
                 f"PrD {prd_num}  |  φ={phi_thres[pd_idx]:.1f}°  "
                 f"θ={theta_thres[pd_idx]:.1f}°  |  "
-                f"occ = {occupancy[thres_ids[pd_idx]]}"
+                f"occ = {occupancy[pd_idx]}"
             )
             with scree_out:
                 scree_out.clear_output(wait=True)
@@ -485,31 +471,29 @@ class VizSession:
         if interactive and self._prd_slider is not None:
             self._show_diffusion_map_interactive()
         else:
+            self._project()
             self._render_diffusion_map(default_prd, static_note=not interactive)
 
     def _render_diffusion_map(self, prd_num: int, static_note: bool = False):
         pd_idx = prd_num - 1
-        dist_file = self.output_dir / "distances" / f"IMGs_prD_{pd_idx}.h5"
-        diffmap_file = self.output_dir / "diff_maps" / f"gC_trimmed_psi_prD_{pd_idx}.h5"
-
-        missing = [p for p in (dist_file, diffmap_file) if not p.exists()]
+        missing = [p for p in (params.get_dist_file(pd_idx), params.get_psi_file(pd_idx)) if not os.path.isfile(p)]
         if missing:
             for p in missing:
-                print(f"Not found: {p}")
+                print(f"Not found: {Path(p).resolve()}")
             return
 
-        with h5py.File(dist_file, "r") as f:
-            D = f["D"][:]
-            rotations = f["rotations"][:]
-        with h5py.File(diffmap_file, "r") as f:
-            psi = f["psi"][:]
-            logEps = f["logEps"][:]
-            logSumWij = f["logSumWij"][:]
-            popt = f["popt"][:]
-            sigma = float(f["sigma"][()])
-            R_sq = float(f["R_squared"][()])
-            mu = f["mu"][:]
-            posPath = f["posPath"][:]
+        prd = data_store.get_prd_data(pd_idx)
+        D = prd.dist_data["D"]
+        rotations = prd.info.image_rotations
+        psi_data = prd.psi_data
+        psi = psi_data["psi"]
+        logEps = psi_data["logEps"]
+        logSumWij = psi_data["logSumWij"]
+        popt = psi_data["popt"]
+        sigma = float(psi_data["sigma"])
+        R_sq = float(psi_data["R_squared"])
+        mu = psi_data["mu"]
+        posPath = psi_data["posPath"]
 
         # posPath lists the images kept after trimming; row i of psi and mu belongs to image posPath[i]
         N = D.shape[0]
@@ -582,6 +566,7 @@ class VizSession:
             prd_num = self._prd_slider.value
             with dm_out:
                 dm_out.clear_output(wait=True)
+                self._project()
                 self._render_diffusion_map(prd_num)
 
         self._prd_slider.observe(render, names="value")
@@ -592,7 +577,8 @@ class VizSession:
     # CC voting
     # ─────────────────────────────────────────────────────────────────────
     def show_cc_voting(self, interactive: bool = True):
-        cc = self.cc_data
+        self._project()
+        cc = self._cc_data()
         psinums_all = cc["psinums"][0]
         senses_all = cc["senses"][0]
         n_prd_cc = len(psinums_all)
@@ -606,8 +592,8 @@ class VizSession:
         axes_cc[0].set_xlabel("PrD number", fontsize=12)
         axes_cc[0].set_ylabel("Chosen ψ index (1-indexed)", fontsize=12)
         axes_cc[0].set_title("CC voting — chosen ψ per PrD", fontsize=12)
-        axes_cc[0].set_yticks(range(1, self.num_psi + 1))
-        axes_cc[0].set_yticklabels([f"ψ{k}" for k in range(1, self.num_psi + 1)])
+        axes_cc[0].set_yticks(range(1, params.num_psi + 1))
+        axes_cc[0].set_yticklabels([f"ψ{k}" for k in range(1, params.num_psi + 1)])
         handles = [Patch(fc="tomato", label="FWD (+1)"), Patch(fc="steelblue", label="REV (−1)")]
         if len(unassigned):
             for ax in axes_cc:
@@ -623,7 +609,7 @@ class VizSession:
         axes_cc[1].set_yticks([-1, 0, 1])
         axes_cc[1].set_yticklabels(["−1 REV", "0", "+1 FWD"])
 
-        plt.suptitle(f"SENSE quality  —  {self.project_name}", fontsize=13, y=1.02)
+        plt.suptitle(f"SENSE quality  —  {params.project_name}", fontsize=13, y=1.02)
         plt.tight_layout()
         plt.show()
 
@@ -633,8 +619,8 @@ class VizSession:
                 self._sphere_fig.data[2].marker.colorscale = "Turbo"
                 self._sphere_fig.data[2].marker.colorbar = dict(
                     title="Chosen ψ", thickness=14, x=1.20,
-                    tickvals=list(range(1, self.num_psi + 1)),
-                    ticktext=[f"ψ{k}" for k in range(1, self.num_psi + 1)],
+                    tickvals=list(range(1, params.num_psi + 1)),
+                    ticktext=[f"ψ{k}" for k in range(1, params.num_psi + 1)],
                 )
 
         psis, counts = np.unique(psinums_all[psinums_all >= 0] + 1, return_counts=True)
@@ -648,26 +634,26 @@ class VizSession:
     # ─────────────────────────────────────────────────────────────────────
     def show_optical_flow(self, default_prd: int = 1, default_psi: int = 1,
                           interactive: bool = True):
+        prds = self._project()
         if interactive:
-            self._show_optical_flow_interactive(default_prd, default_psi)
+            self._show_optical_flow_interactive(prds, default_prd, default_psi)
         else:
             self._render_optical_flow(default_prd, default_psi, static_note=True)
 
     def _render_optical_flow(self, prd_num: int, psi_num: int, static_note: bool = False):
         pd_idx = prd_num - 1
         psi_idx = psi_num - 1
-        psinums_all = self.cc_data["psinums"][0]
+        psinums_all = self._cc_data()["psinums"][0]
         chosen_psi = int(psinums_all[pd_idx])
         star = " ★" if psi_idx == chosen_psi else ""
 
-        of_file = self.output_dir / "CC" / "CC_OF" / f"OF_prD_{pd_idx}.pkl"
-        img_path = self.topos_dir / f"PrD_{prd_num}" / "class_avg.png"
+        of_file = params.get_CC_OF_file(pd_idx)
+        img_path = self._topos_dir(prd_num) / "class_avg.png"
 
-        if not of_file.exists():
-            print(f"OF file not found: {of_file}")
+        if not os.path.isfile(of_file):
+            print(f"OF file not found: {Path(of_file).resolve()}")
             return
-        with open(of_file, "rb") as f:
-            of_data = pickle.load(f)
+        of_data = myio.fin1(of_file)
         fv = of_data["FlowVecPrD"]
         if psi_idx >= len(fv) or fv[psi_idx] is None:
             print(f"No OF data for ψ{psi_num} at PrD {prd_num}")
@@ -722,20 +708,19 @@ class VizSession:
             print(f"[static view — showing PrD {prd_num}, ψ{psi_num}. "
                   "Set INTERACTIVE=True for the PrD/ψ sliders.]")
 
-    def _show_optical_flow_interactive(self, default_prd: int = 1, default_psi: int = 1):
+    def _show_optical_flow_interactive(self, prds, default_prd: int = 1, default_psi: int = 1):
         widgets, display = _widgets()
         prd_slider = self._prd_slider
         if prd_slider is None:
-            n_prds = self.pd_data["pos_thresholded"].shape[1]
             prd_slider = widgets.IntSlider(
-                value=default_prd, min=1, max=n_prds, step=1, description="PrD:",
+                value=default_prd, min=1, max=prds.n_thresholded, step=1, description="PrD:",
                 style={"description_width": "initial"},
                 layout=widgets.Layout(width="420px"),
             )
             self._prd_slider = prd_slider
 
         psi_slider = widgets.IntSlider(
-            value=default_psi, min=1, max=self.num_psi, step=1, description="ψ:",
+            value=default_psi, min=1, max=params.num_psi, step=1, description="ψ:",
             style={"description_width": "initial"},
             layout=widgets.Layout(width="320px"),
         )
@@ -744,6 +729,7 @@ class VizSession:
         def render(change):
             with of_out:
                 of_out.clear_output(wait=True)
+                self._project()
                 self._render_optical_flow(prd_slider.value, psi_slider.value)
 
         prd_slider.observe(render, names="value")
@@ -756,9 +742,9 @@ class VizSession:
     # Trajectory probability landscape (no widgets — always static)
     # ─────────────────────────────────────────────────────────────────────
     def show_trajectory(self, interactive: bool = True):  # interactive kept for API symmetry
-        td = self.traj_data
-        hUn = td["main"]["hUn"].astype(float)
-        tauAvg = td["vars"]["tauAvg"]
+        self._project()
+        hUn, tauAvg = self._trajectory_data()
+        hUn = hUn.astype(float)
         n_states = len(hUn)
         state_ax = np.arange(1, n_states + 1)
 
@@ -775,7 +761,7 @@ class VizSession:
         ax1.bar(state_ax, prob, color="steelblue", edgecolor="none", width=0.85, alpha=0.85)
         ax1.set_xlabel("Conformational state (τ bin)", fontsize=12)
         ax1.set_ylabel(r"Probability  $P(\tau)$", fontsize=12)
-        ax1.set_title(f"Probability per state  —  {self.project_name}\n"
+        ax1.set_title(f"Probability per state  —  {params.project_name}\n"
                       f"Total particles: {int(hUn.sum())}  |  {n_states} states", fontsize=11)
 
         ax2.plot(state_ax, neg_log_p, "o-", color="crimson", lw=2, ms=5,
@@ -803,13 +789,6 @@ class VizSession:
     # Project edits between CLI steps (formerly made in the GUI):
     # occupancy thresholds, anchors, trash PrDs and trajectory path width
     # ─────────────────────────────────────────────────────────────────────
-    def _project(self):
-        return _load_project(self.toml_path)
-
-    def _refresh(self):
-        with open(self.output_dir / "pd_data.pkl", "rb") as f:
-            self.pd_data = pickle.load(f)
-
     @staticmethod
     def _prd_index(prds, prd: int) -> int:
         if not 1 <= int(prd) <= prds.n_thresholded:
@@ -823,14 +802,14 @@ class VizSession:
         Bins with at least `low` particles become PrDs, and each PrD keeps at most `high` of them.
         Passing `low`/`high` only previews them; `set_thresholds` applies them.
         """
-        pd = self.pd_data
-        low = int(pd["thres_low"] if low is None else low)
-        high = int(pd["thres_high"] if high is None else high)
-        occ = np.asarray(pd["occupancy_full"])
+        prds = self._project()
+        low = int(prds.thres_low if low is None else low)
+        high = int(prds.thres_high if high is None else high)
+        occ = np.asarray(prds.occupancy_full)
         keep = occ >= low
         used = np.minimum(occ[keep], high)
 
-        bc = pd["bin_centers"]
+        bc = prds.bin_centers
         phi = np.arctan2(bc[1], bc[0])
         theta = np.degrees(np.arccos(np.clip(bc[2], -1.0, 1.0)))
 
@@ -855,14 +834,14 @@ class VizSession:
         plt.colorbar(sc, ax=ax2, pad=0.1, label="Occupancy (particles/bin)")
         ax2.set_ylim(0, 180)
         ax2.set_title("PrDs on S2  (angle φ, radius θ in degrees)", fontsize=11)
-        plt.suptitle(f"Occupancy thresholds  —  {self.project_name}", fontsize=12)
+        plt.suptitle(f"Occupancy thresholds  —  {params.project_name}", fontsize=12)
         plt.tight_layout()
         plt.show()
 
         print(f"low={low}, high={high}: {n_keep} PrDs use {used.sum()} of {occ.sum()} particles "
               f"({occ[~keep].sum()} are in bins below low, {(occ[keep] - used).sum()} are over high)")
-        if (low, high) != (pd["thres_low"], pd["thres_high"]):
-            print(f"[preview only: the project uses low={pd['thres_low']}, high={pd['thres_high']}. "
+        if (low, high) != (prds.thres_low, prds.thres_high):
+            print(f"[preview only: the project uses low={prds.thres_low}, high={prds.thres_high}. "
                   "Apply with viz.set_thresholds(low, high).]")
 
     def set_thresholds(self, low: int, high: int):
@@ -871,10 +850,8 @@ class VizSession:
         The particles are re-binned right away, which renumbers the PrDs: all anchors and trash
         PrDs are cleared, and every step from calc-distance on has to be run again.
         """
-        from ManifoldEM.params import ProjectLevel
-
         low, high = int(low), int(high)
-        params, prds = self._project()
+        prds = self._project()
         if (low, high) == (prds.thres_low, prds.thres_high):
             print(f"The thresholds are already low={low}, high={high}; nothing changed.")
             return
@@ -886,8 +863,7 @@ class VizSession:
         params.prd_thres_low, params.prd_thres_high = low, high
         params.project_level = ProjectLevel.BINNING
         params.save(str(self.toml_path))
-        _load_project(self.toml_path)  # re-bins because the thresholds changed
-        self._refresh()
+        self._project()  # re-bins because the thresholds changed
 
         print(f"Thresholds set to low={low}, high={high}: {n_prds} PrDs. "
               "Run calc-distance and the later steps (again).")
@@ -900,9 +876,7 @@ class VizSession:
         `sense` is "FWD" or "REV". Choose it so that every anchor shows the same physical motion
         (e.g. open → closed). Replaces any existing anchor on the PrD.
         """
-        from ManifoldEM.data_store import Anchor, Sense
-
-        params, prds = self._project()
+        prds = self._project()
         idx = self._prd_index(prds, prd)
         if not 1 <= int(psi) <= params.num_psi:
             raise ValueError(f"ψ must be between 1 and num_psi={params.num_psi}.")
@@ -917,19 +891,17 @@ class VizSession:
 
         prds.insert_anchor(idx, Anchor(int(psi), sense))
         prds.save()
-        self._refresh()
         print(f"PrD {prd} anchored on ψ{psi} {sense.name}  ({len(prds.anchors)} anchors)")
 
     def remove_anchor(self, prd: int):
         """Remove the anchor from PrD `prd`, if it has one."""
-        _, prds = self._project()
+        prds = self._project()
         idx = self._prd_index(prds, prd)
         if idx not in prds.anchors:
             print(f"PrD {prd} has no anchor.")
             return
         prds.remove_anchor(idx)
         prds.save()
-        self._refresh()
         print(f"Removed the anchor from PrD {prd}  ({len(prds.anchors)} anchors)")
 
     def trash_prd(self, *prd_nums: int):
@@ -937,21 +909,19 @@ class VizSession:
 
         Trashing a PrD also removes its anchor.
         """
-        _, prds = self._project()
+        prds = self._project()
         for idx in [self._prd_index(prds, p) for p in prd_nums]:
             prds.trash_ids.add(idx)
             prds.remove_anchor(idx)
         prds.save()
-        self._refresh()
         print(f"Trashed PrD {', '.join(map(str, prd_nums))}  ({len(prds.trash_ids)} in the trash)")
 
     def untrash_prd(self, *prd_nums: int):
         """Take PrDs out of the trash again."""
-        _, prds = self._project()
+        prds = self._project()
         for idx in [self._prd_index(prds, p) for p in prd_nums]:
             prds.trash_ids.discard(idx)
         prds.save()
-        self._refresh()
         print(f"Restored PrD {', '.join(map(str, prd_nums))}  ({len(prds.trash_ids)} in the trash)")
 
     def show_anchors(self, interactive: bool = True):  # interactive kept for API symmetry
@@ -961,8 +931,8 @@ class VizSession:
         PrDs removed. The PrDs of a component without an anchor get no conformational coordinate
         and are left out of the landscape and trajectories; with no anchors, find-ccs stops early.
         """
-        params, prds = self._project()
-        components = _graph_components(params, prds)
+        prds = self._project()
+        components = _graph_components(prds)
         anchors, trash = prds.anchors, sorted(prds.trash_ids)
         phi = np.radians(prds.phi_thresholded)
         theta = np.asarray(prds.theta_thresholded)
@@ -985,7 +955,7 @@ class VizSession:
                 ax.annotate(str(i + 1), (phi[i], theta[i]), textcoords="offset points",
                             xytext=(7, 5), fontsize=8)
         ax.set_ylim(0, 180)
-        ax.set_title(f"Anchors and trash PrDs  —  {self.project_name}\n"
+        ax.set_title(f"Anchors and trash PrDs  —  {params.project_name}\n"
                      "(angle φ, radius θ in degrees; labels are PrD numbers)", fontsize=11)
         ax.legend(loc="upper left", bbox_to_anchor=(1.1, 1.0), fontsize=8)
         plt.tight_layout()
@@ -1012,26 +982,20 @@ class VizSession:
         Each of the `states_per_coord - width + 1` output volumes pools the particles of `width`
         adjacent states along the conformational coordinate.
         """
-        params, _ = self._project()
+        self._project()
         if not 1 <= int(width) <= params.states_per_coord:
             raise ValueError(f"The width must be between 1 and states_per_coord={params.states_per_coord}.")
         previous = params.width_1D
         params.width_1D = int(width)
         params.save(str(self.toml_path))
         print(f"Path width set to {width} (was {previous}); it takes effect the next time the trajectory step runs.")
-        if int(width) > previous and any((self.output_dir / "bin").glob("*.star")):
+        if int(width) > previous and any(Path(params.bin_dir).glob("*.star")):
             print("A wider path writes fewer volumes, and the trajectory step doesn't delete the old ones: "
                   "clear bin/ before rerunning it.")
 
 
-def _graph_components(params, prds) -> list:
+def _graph_components(prds) -> list:
     """Connected components of the PrD neighbour graph without the trash PrDs, as find-ccs sees them."""
-    import contextlib
-    import io
-    from copy import deepcopy
-
-    from ManifoldEM.FindCCGraph import prune
-
     G = prds.neighbor_graph
     if prds.trash_ids:
         with contextlib.redirect_stdout(io.StringIO()):  # prune() reports the graph sizes

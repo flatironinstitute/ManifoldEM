@@ -29,6 +29,9 @@ Changes made prior to the Flatiron fork not included.
     * Tutorial notebook helpers: with two projects loaded in one kernel, an edit could re-bin a
       project and so wipe its anchors and trash PrDs. `data_store.get_prds(reload=True)` re-reads
       `pd_data.pkl` of the project `params` points to.
+    * Tutorial notebook: the CC voting, optical-flow and trajectory views kept showing the files as
+      they were when first read, so re-running `find-ccs` or `trajectory` didn't show up until the
+      setup cell ran again. Every view now reads the project again.
     * Tutorial notebook plots:
       * The diffusion-map panel no longer fails on PrDs that lost images in trimming. It colours
         the images that were kept by their in-plane rotation, in degrees (not radians, as the label said).
