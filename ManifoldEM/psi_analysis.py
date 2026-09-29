@@ -18,7 +18,7 @@ from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.core import L2_distance, svdRF, get_wiener
 from ManifoldEM.data_store import data_store
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
-from ManifoldEM.util import NullEmitter, get_tqdm, get_CTFs, rotate_fill
+from ManifoldEM.util import get_tqdm, get_CTFs, rotate_fill
 
 
 def _corr(a, b, n, m):
@@ -289,15 +289,13 @@ def _construct_input_data(prd_list: Union[List[int], None], N):
     return jobs
 
 
-def op(prd_list: Union[List[int], None] = None, *argv):
+def op(prd_list: Union[List[int], None] = None):
     print("Computing the NLSA snapshots...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)
-    use_gui_progress = len(argv) > 0
 
     input_data = _construct_input_data(prd_list, params.prd_n_active)
     n_jobs = len(input_data)
-    progress3 = argv[0] if use_gui_progress else NullEmitter()
     local_psi_func = partial(psi_analysis_single,
                              con_order_range=params.con_order_range,
                              traj_name=params.traj_name,
@@ -306,19 +304,15 @@ def op(prd_list: Union[List[int], None] = None, *argv):
 
     tqdm = get_tqdm()
     if params.ncpu == 1:
-        for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+        for datai in tqdm(input_data, total=n_jobs):
             local_psi_func(datai)
-            progress3.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm(enumerate(pool.imap_unordered(local_psi_func, input_data)),
-                             total=n_jobs,
-                             disable=use_gui_progress):
-                progress3.emit(int(99 * i / n_jobs))
+            for _ in tqdm(pool.imap_unordered(local_psi_func, input_data), total=n_jobs):
+                pass
 
     if not prd_list:
         params.project_level = ProjectLevel.PSI_ANALYSIS
         params.save()
 
     params.save()
-    progress3.emit(100)

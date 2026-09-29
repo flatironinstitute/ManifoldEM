@@ -8,7 +8,6 @@ from functools import partial
 from ManifoldEM import myio
 from ManifoldEM.params import params
 from ManifoldEM.CC.OpticalFlowMovie import SelectFlowVec
-from ManifoldEM.util import NullEmitter
 from fasthog import hog_from_gradient as histogram_from_gradients
 
 
@@ -267,41 +266,27 @@ def divide1(N, G):
     return ll
 
 
-def op(G, nodeEdgeNumRange, *argv):
+def op(G, nodeEdgeNumRange):
     multiprocessing.set_start_method('fork', force=True)
 
     params.load()
 
-    nodeRange = nodeEdgeNumRange[0]
     edgeNumRange = nodeEdgeNumRange[1]
     if len(edgeNumRange) == 0:
         edgeNumRange = range(G['nEdges'])
-    numberofJobs = len(nodeRange) + len(edgeNumRange)
     flowVecPctThresh = params.opt_movie['flowVecPctThresh']
-
-    offset = 0
-    if argv:
-        progress5 = argv[0]
-    else:
-        progress5 = NullEmitter()
 
     #extract info for psi selection/sense of ref and psi candidates for nbr
     input_data = divide1(edgeNumRange, G)  # changed Nov 30, 2018, S.M.
 
-    if argv:
-        offset = numberofJobs - len(input_data)
-        progress5.emit(int((offset / float(numberofJobs)) * 99))
-
     if params.ncpu == 1:  # avoids the multiprocessing package
-        for i, datai in enumerate(input_data):
+        for datai in input_data:
             ComputeEdgeMeasurePairWisePsiAll(datai, G, flowVecPctThresh)
-            if argv:
-                progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in enumerate(pool.imap_unordered(
+            for _ in pool.imap_unordered(
                     partial(ComputeEdgeMeasurePairWisePsiAll, G=G, flowVecPctThresh=flowVecPctThresh),
-                    input_data)):
-                progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
+                    input_data):
+                pass
 
     params.save()

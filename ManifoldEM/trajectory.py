@@ -6,7 +6,7 @@ from ManifoldEM import writeRelionS2, myio
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 
-def op(*argv):
+def op():
     """This script prepares the image stacks and orientations for 3D reconstruction."""
     # Copyright (c) UWM, Ali Dashti 2016 (matlab version)
     # Copyright (c) Columbia Univ Hstau Liao 2018 (python version)
@@ -55,16 +55,9 @@ def op(*argv):
     myio.fout1(traj_file2, tauAvg=tauAvg)
 
     # Section III
-    if argv:
-        writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, argv[0])
-    else:
-        writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg)
+    writeRelionS2.op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg)
 
     params.project_level = ProjectLevel.TRAJECTORY
     params.save()
-
-    if argv:
-        progress7 = argv[0]
-        progress7.emit(100)
 
     print('finished manifold embedding!')

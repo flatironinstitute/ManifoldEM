@@ -8,7 +8,7 @@ import pandas
 import numpy as np
 
 from ManifoldEM import myio, util, quaternion, star
-from ManifoldEM.util import NullEmitter, get_tqdm
+from ManifoldEM.util import get_tqdm
 from ManifoldEM.params import params
 '''
 Copyright (c) UWM, Ali Dashti 2016 (matlab version)
@@ -126,15 +126,13 @@ def concatenate_bin(i_bin, numberOfJobs, batch_size):
     star.write_star(ang_file, traj_file_rel, df)
 
 
-def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
+def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg):
     multiprocessing.set_start_method('fork', force=True)
 
     numberOfJobs = len(xSelect)
     batch_size = 20
     pathw = params.width_1D
     xSelect = np.array(xSelect)
-    use_gui_progress = len(argv) > 0
-    progress = argv[0] if use_gui_progress else NullEmitter()
     tqdm = get_tqdm()
 
     print('Extracting and writing individual trajectory data from selected projection directions...')
@@ -152,20 +150,12 @@ def op(trajTaus, posPsi1All, posPathAll, xSelect, tauAvg, *argv):
         input_data.append((xSel, traj_bin_file))
 
     with multiprocessing.Pool(processes=params.ncpu) as pool:
-        for i, _ in tqdm(enumerate(pool.imap_unordered(extractor, input_data)),
-                         total=len(input_data),
-                         disable=use_gui_progress):
-            progress.emit(int(49 * i / len(input_data)))
-
-    progress.emit(50)
+        for _ in tqdm(pool.imap_unordered(extractor, input_data), total=len(input_data)):
+            pass
 
     print('Concatenating prd trajectory data into bins')
     concatenator = partial(concatenate_bin, numberOfJobs=numberOfJobs, batch_size=batch_size)
     input_data = range(0, params.states_per_coord - pathw + 1)
     with multiprocessing.Pool(processes=params.ncpu) as pool:
-        for i, _ in tqdm(enumerate(pool.imap_unordered(concatenator, input_data)),
-                         total=len(input_data),
-                         disable=use_gui_progress):
-            progress.emit(int(50 + 49 * i / len(input_data)))
-
-    progress.emit(100)
+        for _ in tqdm(pool.imap_unordered(concatenator, input_data), total=len(input_data)):
+            pass

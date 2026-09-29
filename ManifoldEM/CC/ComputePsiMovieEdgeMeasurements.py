@@ -301,7 +301,7 @@ def checkBadPsis(trash_list, tau_occ_thresh=0.35):
     return trash_list_out, num_nodesAllBadPsis
 
 
-def op(G, nodeRange, edgeNumRange, *argv):
+def op(G, nodeRange, edgeNumRange):
 
     nodeEdgeNumRange = [nodeRange, edgeNumRange]
 
@@ -310,7 +310,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
     if params.calc_optical_flow:
         print('\n1.Now computing optical flow vectors for all (selected) PrDs...\n')
         # Optical flow vectors for each psi-movies of each node are saved to disk
-        ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange, *argv)
+        ComputeOpticalFlowPrDAll.op(nodeEdgeNumRange)
 
     # FIXME: this codepath is never reached (experimental)
 
@@ -380,10 +380,7 @@ def op(G, nodeRange, edgeNumRange, *argv):
         print('\n2.Now computing pairwise edge-measurements...\n')
         # measures for creating potentials later on
         # edgeMeasures files for each edge (pair of nodes) are saved to disk
-        if argv:
-            ComputeMeasureEdgeAll.op(G, nodeEdgeNumRange, argv[0])
-        else:
-            ComputeMeasureEdgeAll.op(G, nodeEdgeNumRange)
+        ComputeMeasureEdgeAll.op(G, nodeEdgeNumRange)
 
     # Step 3. Extract the pairwise edge measurements
     # to be used for node-potential and edge-potential calculations

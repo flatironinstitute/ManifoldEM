@@ -19,7 +19,6 @@ from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.quaternion import q2Spider, quaternion_to_S2
 from ManifoldEM.util import (
-    NullEmitter,
     get_tqdm,
     create_proportional_grid,
     get_CTFs,
@@ -413,7 +412,7 @@ def _construct_input_data(prd_list, thresholded_indices, quats_full, defocus):
     return jobs
 
 
-def op(prd_list: Union[List[int], None] = None, *argv):
+def op(prd_list: Union[List[int], None] = None):
     """
     This function calculates squared Euclidean distances between images within each prd bin,
     incorporating Contrast Transfer Function (CTF) correction. `params.ncpu` prds are run
@@ -424,13 +423,10 @@ def op(prd_list: Union[List[int], None] = None, *argv):
     prd_list : Union[List[int], None], default=None
         List of prds to process. If `None`, use `thresholded_indices`, otherwise use the intersection of `prd_list` and
         `thresholded_indices`. When `None`, also increments the `params.project_level` when complete.
-    *argv : tuple
-        If another argument is supplied, it's assumed to be for progress tracking when using the QT gui. Not for users.
     """
     print("Computing the distances...")
     params.load()
     multiprocessing.set_start_method("fork", force=True)
-    use_gui_progress = len(argv) > 0
 
     prds = data_store.get_prds()
 
@@ -451,25 +447,18 @@ def op(prd_list: Union[List[int], None] = None, *argv):
         image_offsets=prds.microscope_origin,
     )
 
-    progress1 = argv[0] if use_gui_progress else NullEmitter()
     tqdm = get_tqdm()
     if params.ncpu == 1:
-        for i, datai in tqdm(
-            enumerate(input_data), total=n_jobs, disable=use_gui_progress
-        ):
+        for datai in tqdm(input_data, total=n_jobs):
             local_distance_func(datai)
-            progress1.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm(
-                enumerate(pool.imap_unordered(local_distance_func, input_data)),
-                total=n_jobs,
-                disable=use_gui_progress,
+            for _ in tqdm(
+                pool.imap_unordered(local_distance_func, input_data), total=n_jobs
             ):
-                progress1.emit(int(99 * i / n_jobs))
+                pass
 
     if prd_list is None:
         params.project_level = ProjectLevel.CALC_DISTANCE
 
     params.save()
-    progress1.emit(100)

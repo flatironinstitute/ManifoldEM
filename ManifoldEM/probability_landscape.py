@@ -9,7 +9,7 @@ from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.psi_analysis import psi_analysis_single
-from ManifoldEM.util import NullEmitter, debug_print
+from ManifoldEM.util import debug_print
 
 """
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -97,7 +97,7 @@ def divide1(R, psiNumsAll, sensesAll):
     return ll
 
 
-def op(*argv):
+def op():
     params.load()
 
     multiprocessing.set_start_method("fork", force=True)
@@ -111,13 +111,6 @@ def op(*argv):
     sensesAll = data["senses"]
     isFull = 1
     input_data = divide1(R, psiNumsAll, sensesAll)
-    if argv:
-        progress6 = argv[0]
-        offset = len(R) - len(input_data)
-        progress6.emit(int((offset / float(len(R))) * 99))
-    else:
-        progress6 = NullEmitter()
-        offset = 0
 
     print(f"Processing {len(input_data)} projection directions.")
 
@@ -130,16 +123,13 @@ def op(*argv):
     )
 
     if params.ncpu == 1:  # avoids the multiprocessing package
-        for i, datai in enumerate(input_data):
+        for datai in input_data:
             local_func(datai)
-            progress6.emit(int(((offset + i) / len(R)) * 99))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in enumerate(pool.imap_unordered(local_func, input_data)):
-                progress6.emit(((offset + i) / len(R)) * 99)
+            for _ in pool.imap_unordered(local_func, input_data):
+                pass
 
     probability_landscape_local()
     params.project_level = ProjectLevel.PROBABILITY_LANDSCAPE
     params.save()
-
-    progress6.emit(100)

@@ -20,7 +20,7 @@ def force_remove(*paths):
             os.remove(path)
 
 
-def op(*argv):
+def op():
     params.load()
 
     nodeOutputFile = os.path.join(params.CC_dir, 'comp_psi_sense_nodes.txt')
@@ -100,7 +100,7 @@ def op(*argv):
     # Step 2: compute the pairwise edge measurements for all psi - psi movies
     # Step 3: Extract the pairwise edge measurements to be used for node-potential and edge-potential calculations
     edgeMeasures, edgeMeasures_tblock, badNodesPsisBlock = \
-        ComputePsiMovieEdgeMeasurements.op(G, nodeRange, edgeNumRange, *argv)
+        ComputePsiMovieEdgeMeasurements.op(G, nodeRange, edgeNumRange)
 
     # Setup and run the Optimization: Belief propagation
     print('\n4.Running Global optimization to estimate state probability of all nodes ...')
@@ -163,7 +163,3 @@ def op(*argv):
 
     params.project_level = ProjectLevel.FIND_CCS
     params.save()
-
-    if argv:
-        progress5 = argv[0]
-        progress5.emit(int(100))

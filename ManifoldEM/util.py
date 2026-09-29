@@ -17,31 +17,6 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 """
 
 
-class NullEmitter:
-    """
-    A class that provides a no-operation (no-op) implementation of an emmitter for progress tracking
-    for tqdm/QT progress bars.
-
-    This class is designed to be used in contexts where an emitter is required by the interface,
-    but no actual emitting action is desired.
-    """
-
-    def emit(self, percent):
-        """
-        No-op method that does nothing.
-
-        Parameters
-        ----------
-        percent : int
-            The percentage of the progress that has been completed. Ignored.
-
-        Returns
-        -------
-        None
-        """
-        pass
-
-
 def get_tqdm():
     """
     Get jupyter version of tqdm function if in jupyter notebook, otherwise returns the terminal variant.

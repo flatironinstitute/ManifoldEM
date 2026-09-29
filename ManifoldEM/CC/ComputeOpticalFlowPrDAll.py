@@ -9,7 +9,6 @@ import numpy as np
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params
-from ManifoldEM.util import NullEmitter
 from ManifoldEM.CC import OpticalFlowMovie, LoadPrDPsiMoviesMasked
 
 
@@ -156,13 +155,11 @@ def ComputeOptFlowPrDPsiAll1(input_data):
 
 
 # If computing for a specified set of nodes, then call the function with nodeRange
-def op(node_edge_num_range, *argv):
+def op(node_edge_num_range):
     params.load()
     multiprocessing.set_start_method('fork', force=True)
 
     node_range = node_edge_num_range[0]
-    edge_num_range = node_edge_num_range[1]
-    numberofJobs = len(node_range) + len(edge_num_range)
     input_data = _construct_input_data(node_range)
 
     if params.find_bad_psi_tau:
@@ -193,22 +190,13 @@ def op(node_edge_num_range, *argv):
                        NodesPsisTauOcc=nodes_psis_tau_occ,
                        NodesPsisTauVals=nodes_psis_tau_vals)
 
-    if argv:
-        offset = len(node_range) - len(input_data)
-        progress5 = argv[0]
-        progress5.emit(int((offset / float(numberofJobs)) * 99))
-    else:
-        progress5 = NullEmitter()
-        offset = 0
-
     if params.ncpu == 1:  # avoids the multiprocessing package
-        for i, datai in enumerate(input_data):
+        for datai in input_data:
             ComputeOptFlowPrDPsiAll1(datai)
-            progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in enumerate(pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data)):
-                progress5.emit(int(((offset + i) / float(numberofJobs)) * 99))
+            for _ in pool.imap_unordered(ComputeOptFlowPrDPsiAll1, input_data):
+                pass
 
     # for now individual files were written and are being combined here
     if params.find_bad_psi_tau:

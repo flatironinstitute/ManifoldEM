@@ -10,7 +10,7 @@ from typing import List, Union
 from ManifoldEM import myio
 from ManifoldEM.data_store import data_store
 from ManifoldEM.params import params, ProjectLevel
-from ManifoldEM.util import NullEmitter, get_tqdm
+from ManifoldEM.util import get_tqdm
 from ManifoldEM.core import makeMovie
 '''
 % scriptPsinlsa_movie
@@ -78,30 +78,25 @@ def movie(input_data, fps):
     imageio.imwrite(image_file, img)
 
 
-def op(prd_list: Union[List[int], None] = None, *argv):
+def op(prd_list: Union[List[int], None] = None):
     print("Making the 2D movies...")
     params.load()
     multiprocessing.set_start_method('fork', force=True)
-    use_gui_progress = len(argv) > 0
 
     input_data = _construct_input_data(prd_list, params.prd_n_active)
     n_jobs = len(input_data)
-    progress4 = argv[0] if use_gui_progress else NullEmitter()
     movie_local = partial(movie, fps=params.nlsa_fps)
 
     tqdm = get_tqdm()
     if params.ncpu == 1:  # avoids the multiprocessing package
-        for i, datai in tqdm(enumerate(input_data), total=n_jobs, disable=use_gui_progress):
+        for datai in tqdm(input_data, total=n_jobs):
             movie_local(datai)
-            progress4.emit(int(99 * i / n_jobs))
     else:
         with multiprocessing.Pool(processes=params.ncpu) as pool:
-            for i, _ in tqdm(enumerate(pool.imap_unordered(movie_local, input_data)),
-                             total=n_jobs, disable=use_gui_progress):
-                progress4.emit(int(99 * i / n_jobs))
+            for _ in tqdm(pool.imap_unordered(movie_local, input_data), total=n_jobs):
+                pass
 
     if not prd_list:
         params.project_level = ProjectLevel.NLSA_MOVIE
 
     params.save()
-    progress4.emit(100)
