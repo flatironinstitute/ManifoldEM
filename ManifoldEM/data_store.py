@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 from dataclasses import dataclass
 
-from typing import List, Any, Tuple, Dict, Set, cast
+from typing import List, Any, Tuple, Dict, Set
 from nptyping import NDArray, Shape, Int, Float, Float64, Bool
 from scipy.ndimage import shift
 from scipy.fftpack import fft2, ifft2
@@ -695,6 +695,35 @@ class ProjectionDirections:
         return len(self.thres_ids)
 
 
+class H5Dataset:
+    """
+    A read-only reference to a dataset in an HDF5 file, for passing to pool workers.
+
+    It pickles as (file path, dataset name), and each read opens the file read-only and closes it
+    again. So workers read their own data, and no process keeps the file open: HDF5 file locking
+    stops everyone else from opening a file that one process holds open for writing.
+    """
+
+    def __init__(self, path: str, name: str):
+        self.path = path
+        self.name = name
+        with h5py.File(path, "r") as f:
+            dataset = f[name]
+            self.shape, self.dtype = dataset.shape, dataset.dtype
+
+    def __getitem__(self, key):
+        with h5py.File(self.path, "r") as f:
+            return f[self.name][key]
+
+    def __array__(self, dtype=None, copy=None):
+        data = self[()]
+        return data if dtype is None else data.astype(dtype)
+
+
+def _read_group(group: h5py.Group) -> dict:
+    return {k: _read_group(v) if isinstance(v, h5py.Group) else v[()] for k, v in group.items()}
+
+
 class _DataStore:
     """
     Implements the Singleton design pattern to ensure a single instance of the data store.
@@ -711,7 +740,6 @@ class _DataStore:
 
     _projection_directions = ProjectionDirections()
     _image_stack_data = None
-    _analysis_handle = None
 
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -756,33 +784,34 @@ class _DataStore:
 
         return self._image_stack_data
 
-    def get_analysis_handle(self):
-        if not self._analysis_handle:
-            self._analysis_handle = h5py.File(params.analysis_file, "a")
-        return self._analysis_handle
+    def open_analysis(self, mode: str = "r") -> h5py.File:
+        """
+        Opens the project's prd_analysis.h5. Use it in a `with` block, and open it for writing
+        ("a") only while writing: while it is open for writing, no other process can open it.
+        """
+        return h5py.File(params.analysis_file, mode)
 
-    def close_analysis_handle(self):
-        if self._analysis_handle is not None:
-            self._analysis_handle.close()
-            self._analysis_handle = None
+    def analysis_data(self, prd_index: int) -> dict:
+        with self.open_analysis() as f:
+            return _read_group(f[f"prd_{prd_index}"])
 
-    def analysis_data(self, prd_index: int):
-        f = self.get_analysis_handle()
-        return f.get(f"prd_{prd_index}")
-
-    def distance_data(self, prd_index: int):
-        return self.analysis_data(prd_index).get("distances")
+    def distance_data(self, prd_index: int) -> dict:
+        with self.open_analysis() as f:
+            return _read_group(f[f"prd_{prd_index}/distances"])
 
     def get_class_avg(self, prd_index: int):
-        return np.array(self.analysis_data(prd_index)["distances"]["imgAvg"])
+        with self.open_analysis() as f:
+            return f[f"prd_{prd_index}/distances/imgAvg"][()]
 
-    def get_embedding_data(self, prd_index: int):
-        return self.analysis_data(prd_index)["embedding_data"]
+    def get_embedding_data(self, prd_index: int) -> dict:
+        with self.open_analysis() as f:
+            return _read_group(f[f"prd_{prd_index}/embedding_data"])
 
     def get_nlsa_data(self, prd_index: int, psi_index: int):
         if psi_index >= params.num_psi:
             return None
-        return self.analysis_data(prd_index)[f"nlsa_data_{psi_index}"]
+        with self.open_analysis() as f:
+            return _read_group(f[f"prd_{prd_index}/nlsa_data_{psi_index}"])
 
     def get_active_psinums_and_senses(
         self,
@@ -791,10 +820,10 @@ class _DataStore:
         NDArray[Shape["Any"], Int],
         NDArray[Shape["Any"], Int],
     ]:
-        data = self.get_analysis_handle()
         active_prds = self.get_active_prd_indices()
-        psinums = np.asarray([data[f"prd_{i}"]["psinum"][()] for i in active_prds], dtype=int)
-        senses = np.asarray([data[f"prd_{i}"]["sense"][()] for i in active_prds], dtype=int)
+        with self.open_analysis() as data:
+            psinums = np.asarray([data[f"prd_{i}"]["psinum"][()] for i in active_prds], dtype=int)
+            senses = np.asarray([data[f"prd_{i}"]["sense"][()] for i in active_prds], dtype=int)
         return active_prds, psinums, senses
 
     def get_active_prd_indices(self) -> NDArray[Shape["Any"], Int]:
@@ -802,14 +831,8 @@ class _DataStore:
         return np.array(sorted(list(set(range(prds.n_thresholded)) - prds.trash_ids)))
 
     def get_taus(self, prd_index: int) -> list[NDArray[Shape["Any"], Float]]:
-        data = self.get_analysis_handle()
-        return cast(
-            list[NDArray[Shape["Any"], Float]],
-            [
-                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"][:]
-                for j in range(params.num_psi)
-            ],
-        )
+        with self.open_analysis() as data:
+            return [data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"][:] for j in range(params.num_psi)]
 
     def get_taus_prd_list(self, prd_list: List[int] | NDArray[Shape["Any"], Int]):
         return [self.get_taus(i) for i in prd_list]
@@ -820,15 +843,12 @@ class _DataStore:
     def get_all_taus(self):
         return self.get_taus_prd_list(list(range(self.get_prds().n_thresholded)))
 
-    def get_nlsa_movies(self, prd_index: int) -> list[NDArray[Shape["Any,Any"], Float]]:
-        data = self.get_analysis_handle()
-        return cast(
-            list[NDArray[Shape["Any,Any"], Float]],
-            [
-                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["IMG1"]
-                for j in range(params.num_psi)
-            ],
-        )
+    def get_nlsa_movies(self, prd_index: int) -> list[H5Dataset]:
+        """References to the prd's NLSA movies (one per psi), which are read when used."""
+        return [
+            H5Dataset(params.analysis_file, f"prd_{prd_index}/nlsa_data_{j}/IMG1")
+            for j in range(params.num_psi)
+        ]
 
     def get_nlsa_movies_prd_list(
         self, prd_list: List[int] | NDArray[Shape["Any"], Int]

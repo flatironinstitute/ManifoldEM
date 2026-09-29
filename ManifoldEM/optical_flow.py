@@ -869,7 +869,7 @@ def find_conformational_coords(
     nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
     num_psi: int,
     return_all_output: bool = False,
-    output_handle: None | h5py.File = None,
+    output_file: None | str = None,
     flow_vec_pct_thresh: float = 0.95,
     allow_empty_clusters: bool = False,
     allow_bad_psi_tau: bool = True,
@@ -928,6 +928,8 @@ def find_conformational_coords(
         prds, num_psi, G, options, edge_measures, bad_nodes_psis_block
     )
 
+    # opened for writing only now: while it is open for writing, the workers above couldn't read it
+    output_handle = h5py.File(output_file, "a") if output_file else None
     if output_handle:
         edges = G["Edges"]
         for index in flow_map.keys():
@@ -974,7 +976,7 @@ def find_conformational_coords(
                 overwrite=True,
             )
 
-        output_handle.flush()
+        output_handle.close()
 
     progress_bar.emit(100)
 

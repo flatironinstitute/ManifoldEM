@@ -613,7 +613,7 @@ def get_transformed_images_CTFs_and_image_data(prd_index: int):
 
 
 def run_nlsa_second_pass(
-    prd_index: int, data_handle: h5py.Group, dtype: type = np.float32
+    prd_index: int, analysis_file: str, dtype: type = np.float32
 ) -> NDArray[Shape["Any,Any,Any"], Float]:
     """
     Generates NLSA data for a given projection direction. This is used in generating the trajectory data.
@@ -625,8 +625,8 @@ def run_nlsa_second_pass(
     ----------
     prd_index : int
         The index of the projection direction to analyze.
-    data_handle : h5pickle.Group
-        The HDF5 group where project data is stored. This should have the embedding, image, distances, and psinum data.
+    analysis_file : str
+        The project's prd_analysis.h5, with the prd's embedding, image, distances and psinum data.
     dtype : type, default=np.float32
         The data type to use for the NLSA images.
 
@@ -637,26 +637,22 @@ def run_nlsa_second_pass(
 
     Notes
     -----
-    The data handle needs to be passed in since this routine is typically called from a
-    multiprocessing context. hdf5 does not play nice with forks, so this allows h5pickle to do
-    its thing in the main process and pass the handle to the worker processes.
+    This usually runs in a pool worker, so it opens the analysis file itself, read-only.
     """
     transformed_images, image_CTFs, _ = get_transformed_images_CTFs_and_image_data(
         prd_index
     )
 
-    local_handle = cast(h5py.Group, data_handle[f"prd_{prd_index}"])
-    embed_data = cast(h5py.Group, local_handle["embedding_data"])
-    image_data = cast(h5py.Group, local_handle["image_data"])
-    distances_data = cast(h5py.Group, local_handle["distances"])
-    psi_index = int(cast(h5py.Dataset, local_handle["psinum"])[()])
+    with h5py.File(analysis_file, "r") as f:
+        local_handle = cast(h5py.Group, f[f"prd_{prd_index}"])
+        psi_index = int(local_handle["psinum"][()])
+        image_indices = local_handle["embedding_data/posPath"][:]
+        psi = local_handle["embedding_data/psi"][:]
+        DD = local_handle["distances/D"][:]
+        mask = local_handle["image_data/mask"][:]
 
-    image_indices = cast(h5py.Dataset, embed_data["posPath"])[:]
-    psi = cast(h5py.Dataset, embed_data["psi"])[:]
     psi_sorted_ind = np.argsort(psi[:, psi_index])
-    DD = cast(h5py.Dataset, distances_data["D"])[:]
     DD = DD[psi_sorted_ind][:, psi_sorted_ind]
-    mask = cast(h5py.Dataset, image_data["mask"])[:]
     con_order = len(image_indices) // params.con_order_range
 
     nlsa_images, _, _, _, _, _, _, _ = NLSA(

@@ -107,12 +107,12 @@ def decompose(
 ):
     from ManifoldEM.prd_analysis import prd_analysis
 
-    with threadpool_limits(limits=blas_threads, user_api="blas"):
+    with threadpool_limits(limits=blas_threads, user_api="blas"), data_store.open_analysis("a") as output_handle:
         prd_analysis(
             None,
             prd_list,
             return_output=False,
-            output_handle=data_store.get_analysis_handle(),
+            output_handle=output_handle,
             ncpu=params.ncpu,
             progress_bar=progress_bar,
         )
@@ -128,7 +128,6 @@ def find_conformational_coordinates(
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
-    data_handle = data_store.get_analysis_handle()
     nlsa_movies = data_store.get_all_nlsa_movies()
     taus = data_store.get_all_taus()
 
@@ -139,7 +138,7 @@ def find_conformational_coordinates(
             taus,
             None,
             params.num_psi,
-            output_handle=data_handle,
+            output_file=params.analysis_file,
             flow_vec_pct_thresh=params.opt_movie["flowVecPctThresh"],
             ncpu=params.ncpu,
             progress_bar=progress_bar,

@@ -7,9 +7,9 @@ import os
 
 from functools import partial
 from tempfile import NamedTemporaryFile
-from typing import Any, cast
+from typing import Any
 
-from ManifoldEM.data_store import data_store
+from ManifoldEM.data_store import data_store, H5Dataset
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.star import write_star
 from ManifoldEM import quaternion
@@ -143,7 +143,7 @@ def write_relion_s2(
         with h5py.File(f_tmp.name, "w") as f:
             print(f"Using {f_tmp.name} for temporary storage of NLSA data")
             nlsa_builder = partial(
-                run_nlsa_second_pass, data_handle=data_store.get_analysis_handle(), dtype=np.float16
+                run_nlsa_second_pass, analysis_file=params.analysis_file, dtype=np.float16
             )
 
             desc = "Generating full NLSA movies..."
@@ -165,35 +165,36 @@ def write_relion_s2(
                         f[str(i)] = nlsa_movie
                         progress_bar.emit(int(49 * i / n_prds))
 
-            nlsa_movies = [f[str(i)] for i in prd_indices]
-            con_orders = [psi_sorted_quats_by_prd[i].shape[1] // params.con_order_range for i in prd_indices]
+        # read in the workers below, once the file is closed for writing
+        nlsa_movies = [H5Dataset(f_tmp.name, str(i)) for i in prd_indices]
+        con_orders = [psi_sorted_quats_by_prd[i].shape[1] // params.con_order_range for i in prd_indices]
 
-            concatenator = partial(
-                concatenate_bin,
-                nlsa_movies=nlsa_movies,
-                taubins_by_prd=taubins,
-                phis_by_prd=phis,
-                thetas_by_prd=thetas,
-                psis_by_prd=psis,
-                states_per_coord=params.states_per_coord,
-                pixel_size=params.ms_pixel_size,
-                con_orders=con_orders,
-                out_dir=params.bin_dir,
-            )
-            bins = range(0, params.states_per_coord - pathw + 1)
-            desc = "Outputting RELION stacks and star files..."
-            if params.ncpu == 1:
-                for i in tqdm(bins, desc=desc):
-                    concatenator(i)
+        concatenator = partial(
+            concatenate_bin,
+            nlsa_movies=nlsa_movies,
+            taubins_by_prd=taubins,
+            phis_by_prd=phis,
+            thetas_by_prd=thetas,
+            psis_by_prd=psis,
+            states_per_coord=params.states_per_coord,
+            pixel_size=params.ms_pixel_size,
+            con_orders=con_orders,
+            out_dir=params.bin_dir,
+        )
+        bins = range(0, params.states_per_coord - pathw + 1)
+        desc = "Outputting RELION stacks and star files..."
+        if params.ncpu == 1:
+            for i in tqdm(bins, desc=desc):
+                concatenator(i)
+                progress_bar.emit(int(50 + 49 * i / len(bins)))
+        else:
+            with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
+                for i, _ in tqdm(
+                    enumerate(pool.imap_unordered(concatenator, bins)),
+                    total=len(bins),
+                    desc=desc,
+                ):
                     progress_bar.emit(int(50 + 49 * i / len(bins)))
-            else:
-                with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
-                    for i, _ in tqdm(
-                        enumerate(pool.imap_unordered(concatenator, bins)),
-                        total=len(bins),
-                        desc=desc,
-                    ):
-                        progress_bar.emit(int(50 + 49 * i / len(bins)))
 
     progress_bar.emit(100)
 
@@ -210,7 +211,11 @@ def build_trajectory(progress_bar: Any = NullEmitter()):
     prds = data_store.get_prds()
     image_indices_by_prd = prds.thresholded_image_indices
 
-    data_handle = data_store.get_analysis_handle()
+    with data_store.open_analysis() as data_handle:
+        psi_sorted_indices_by_prd = [
+            data_handle[f"prd_{i_prd}/nlsa_data_{psinums[i]}/psi_sorted_ind"][:]
+            for i, i_prd in enumerate(active_prds)
+        ]
 
     active_tau_by_prd = []
     tau_avg = np.array([])
@@ -218,13 +223,7 @@ def build_trajectory(progress_bar: Any = NullEmitter()):
     psi_sorted_quats_by_prd: list[NDArray] = []
     for i, i_prd in enumerate(active_prds):
         i_psi = psinums[i]
-        psi_sorted_indices = cast(
-            NDArray[Shape["Any"], Int],
-            cast(
-                h5py.Dataset,
-                data_handle[f"prd_{i_prd}/nlsa_data_{i_psi}/psi_sorted_ind"],
-            )[:],
-        )
+        psi_sorted_indices = psi_sorted_indices_by_prd[i]
         sorted_raw_indices = image_indices_by_prd[i_prd][psi_sorted_indices]
         psi_sorted_quats_by_prd.append(quats_full[:, sorted_raw_indices])
 
