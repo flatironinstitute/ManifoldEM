@@ -4,7 +4,7 @@ if not "OMP_NUM_THREADS" in os.environ:
     os.environ["OMP_NUM_THREADS"] = "1"
 
 import sys
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+from argparse import SUPPRESS, ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from typing import Union
 import ManifoldEM
 from ManifoldEM.params import params, ProjectLevel
@@ -20,7 +20,9 @@ def get_parser():
     parser.add_argument("-n", "--ncpu", type=int, default=1)
     subparsers = parser.add_subparsers(help=None, dest="command")
 
-    def add_relevant_params(subparser, level: ProjectLevel, prefix: str = ""):
+    def add_relevant_params(subparser, level: ProjectLevel, prefix: str = "", new_project: bool = False):
+        # A new project starts from the defaults. For an existing one, only the flags that are given
+        # change it: the others are left out of the parsed arguments (SUPPRESS), not reset to defaults.
         annotated_params = params.get_params_for_level(level)
         for param, (paramtype, paraminfo) in annotated_params.items():
             if paraminfo.user_param:
@@ -31,8 +33,8 @@ def get_parser():
                     f"--{param}",
                     metavar=paramtype.__name__.upper(),
                     type=paramtype,
-                    default=default,
-                    help=f"{prefix}{paraminfo.description}",
+                    default=default if new_project else SUPPRESS,
+                    help=f"{prefix}{paraminfo.description}" + ("" if new_project else " (default: the project's value)"),
                 )
 
     init_parser = subparsers.add_parser(
@@ -79,7 +81,7 @@ def get_parser():
         help="Replace existing project with same name automatically",
     )
     for level in ProjectLevel:
-        add_relevant_params(init_parser, level, f"[{level.name}] ")
+        add_relevant_params(init_parser, level, f"[{level.name}] ", new_project=True)
 
     threshold_parser = subparsers.add_parser(
         "threshold",
@@ -175,16 +177,21 @@ def get_parser():
 
 
 def load_state(args):
-    if args.command == "init":
-        return
-    fname_front = args.input_file.split("params_", 1)[1]
-    fname_sans = os.path.splitext(fname_front)[0]
-    params.project_name = fname_sans
+    """Loads the project and applies the parameter flags given. For an existing project, the result is
+    saved before the step runs, so the flags stay in effect for this step (which may reload the
+    project file) and for the later ones. `init` saves the new project itself."""
+    if args.command != "init":
+        fname_front = args.input_file.split("params_", 1)[1]
+        fname_sans = os.path.splitext(fname_front)[0]
+        params.project_name = fname_sans
 
-    params.load(args.input_file)
+        params.load(args.input_file)
 
-    params.ncpu = args.ncpu
-    params.save()
+        params.ncpu = args.ncpu
+
+    set_params(args)
+    if args.command != "init":
+        params.save()
 
 
 def _parse_prd_list(prd_list: str) -> Union[list[int], None]:
@@ -373,7 +380,6 @@ def main():
     main_args = parser.parse_args()
 
     load_state(main_args)
-    set_params(main_args)
     _funcs[main_args.command](main_args)
 
 
