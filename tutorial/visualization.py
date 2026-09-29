@@ -24,6 +24,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from scipy import stats
 
@@ -491,18 +492,21 @@ class VizSession:
             mu = f["mu"][:]
             posPath = f["posPath"][:]
 
+        # posPath lists the images kept after trimming; row i of psi and mu belongs to image posPath[i]
         N = D.shape[0]
         logEps_opt = -popt[1] / popt[0]
         dim_est = 2 * popt[0] * popt[2]
         tanh_fit = popt[3] + popt[2] * np.tanh(popt[0] * logEps + popt[1])
-        D_ord = D[np.ix_(posPath, posPath)]
+        by_psi1 = posPath[np.argsort(psi[:, 0])]
+        D_ord = D[np.ix_(by_psi1, by_psi1)]
 
         fig1, axes1 = plt.subplots(1, 2, figsize=(12, 4.8))
         im = axes1[0].imshow(D_ord, cmap="viridis", aspect="auto", interpolation="nearest")
         plt.colorbar(im, ax=axes1[0], fraction=0.046, pad=0.04)
-        axes1[0].set_title(f"Distance matrix (posPath order)  —  PrD {prd_num}  (N={N})", fontsize=11)
-        axes1[0].set_xlabel("Particle index (posPath)")
-        axes1[0].set_ylabel("Particle index (posPath)")
+        axes1[0].set_title(f"Distance matrix, sorted by ψ₁  —  PrD {prd_num}\n"
+                           f"({len(posPath)} of {N} images kept after trimming)", fontsize=11)
+        axes1[0].set_xlabel("Image (sorted by ψ₁)")
+        axes1[0].set_ylabel("Image (sorted by ψ₁)")
 
         axes1[1].plot(logEps, logSumWij, ".", color="steelblue", ms=3, alpha=0.6, label="data")
         axes1[1].plot(logEps, tanh_fit, "-", color="limegreen", lw=2, label="tanh fit")
@@ -530,14 +534,15 @@ class VizSession:
 
         psi1 = psi[:, 0]
         psi2 = psi[:, 1]
+        rot_kept = np.mod(rotations[posPath] + 180, 360) - 180  # degrees, wrapped to [-180, 180)
         colorings = [
-            (posPath.astype(float), "posPath (conformational order)", "viridis"),
-            (mu, "μ (Riemannian density)", "plasma"),
-            (rotations, "In-plane rotation (rad)", "RdBu"),
+            (psi[:, 2], "ψ₃", "viridis", None, None),
+            (mu, "μ (Riemannian density)", "plasma", None, None),
+            (rot_kept, "In-plane rotation (°)", "twilight", -180, 180),
         ]
         fig2, axes2 = plt.subplots(1, 3, figsize=(14, 4.2))
-        for ax, (c, clabel, cmap) in zip(axes2, colorings):
-            sc = ax.scatter(psi1, psi2, c=c, cmap=cmap, s=14, alpha=0.75, linewidths=0)
+        for ax, (c, clabel, cmap, vmin, vmax) in zip(axes2, colorings):
+            sc = ax.scatter(psi1, psi2, c=c, cmap=cmap, vmin=vmin, vmax=vmax, s=14, alpha=0.75, linewidths=0)
             plt.colorbar(sc, ax=ax, fraction=0.046, pad=0.04, label=clabel)
             ax.set_xlabel("ψ₁", fontsize=11)
             ax.set_ylabel("ψ₂", fontsize=11)
@@ -576,6 +581,8 @@ class VizSession:
         n_prd_cc = len(psinums_all)
         prd_nums = np.arange(1, n_prd_cc + 1)
         colors_sense = ["tomato" if s > 0 else "steelblue" for s in senses_all]
+        # find-ccs writes ψ = -1, sense 0 for PrDs without a coordinate (trashed, isolated, or no usable ψ)
+        unassigned = prd_nums[psinums_all < 0]
 
         fig_cc, axes_cc = plt.subplots(1, 2, figsize=(14, 4.5))
         axes_cc[0].bar(prd_nums, psinums_all + 1, color=colors_sense, edgecolor="none", width=0.85)
@@ -584,11 +591,12 @@ class VizSession:
         axes_cc[0].set_title("CC voting — chosen ψ per PrD", fontsize=12)
         axes_cc[0].set_yticks(range(1, self.num_psi + 1))
         axes_cc[0].set_yticklabels([f"ψ{k}" for k in range(1, self.num_psi + 1)])
-        axes_cc[0].legend(
-            handles=[Patch(fc="tomato", label="FWD (+1)"),
-                     Patch(fc="steelblue", label="REV (−1)")],
-            fontsize=10, loc="upper right",
-        )
+        handles = [Patch(fc="tomato", label="FWD (+1)"), Patch(fc="steelblue", label="REV (−1)")]
+        if len(unassigned):
+            for ax in axes_cc:
+                ax.plot(unassigned, np.zeros(len(unassigned)), "x", color="grey", ms=8, mew=2, clip_on=False)
+            handles.append(Line2D([], [], ls="", marker="x", color="grey", ms=8, mew=2, label="no coordinate"))
+        axes_cc[0].legend(handles=handles, fontsize=10, loc="upper right")
 
         axes_cc[1].bar(prd_nums, senses_all, color=colors_sense, edgecolor="none", width=0.85)
         axes_cc[1].axhline(0, color="k", lw=0.8, ls="--")
@@ -612,8 +620,11 @@ class VizSession:
                     ticktext=[f"ψ{k}" for k in range(1, self.num_psi + 1)],
                 )
 
-        unique_psis = dict(zip(*np.unique(psinums_all + 1, return_counts=True)))
+        psis, counts = np.unique(psinums_all[psinums_all >= 0] + 1, return_counts=True)
+        unique_psis = {int(k): int(n) for k, n in zip(psis, counts)}
         print(f"CC data loaded: {n_prd_cc} PrDs  |  ψ choices: {unique_psis}")
+        if len(unassigned):
+            print(f"No coordinate: PrD {', '.join(map(str, unassigned))}")
 
     # ─────────────────────────────────────────────────────────────────────
     # Optical flow
@@ -727,7 +738,7 @@ class VizSession:
         display(widgets.VBox([widgets.HBox([prd_slider, psi_slider]), of_out]))
 
     # ─────────────────────────────────────────────────────────────────────
-    # Trajectory free-energy (no widgets — always static)
+    # Trajectory probability landscape (no widgets — always static)
     # ─────────────────────────────────────────────────────────────────────
     def show_trajectory(self, interactive: bool = True):  # interactive kept for API symmetry
         td = self.traj_data
@@ -738,24 +749,24 @@ class VizSession:
 
         prob = hUn / hUn.sum()
         prob_safe = np.where(prob > 0, prob, np.nan)
-        dG = -np.log(prob_safe)
-        dG -= np.nanmin(dG)
+        neg_log_p = -np.log(prob_safe)
+        neg_log_p -= np.nanmin(neg_log_p)
 
         tau_kde = stats.gaussian_kde(tauAvg, bw_method=0.05)
         tau_grid = np.linspace(0, 1, 200)
         tau_pdf = tau_kde(tau_grid)
 
         fig_prob, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
-        ax1.bar(state_ax, hUn, color="steelblue", edgecolor="none", width=0.85, alpha=0.85)
+        ax1.bar(state_ax, prob, color="steelblue", edgecolor="none", width=0.85, alpha=0.85)
         ax1.set_xlabel("Conformational state (τ bin)", fontsize=12)
-        ax1.set_ylabel("Particle count  hUn", fontsize=12)
-        ax1.set_title(f"State histogram  —  {self.project_name}\n"
+        ax1.set_ylabel(r"Probability  $P(\tau)$", fontsize=12)
+        ax1.set_title(f"Probability per state  —  {self.project_name}\n"
                       f"Total particles: {int(hUn.sum())}  |  {n_states} states", fontsize=11)
 
-        ax2.plot(state_ax, dG, "o-", color="crimson", lw=2, ms=5,
-                 label=r"$-\ln P(\tau)$  [k$_B$T]")
+        ax2.plot(state_ax, neg_log_p, "o-", color="crimson", lw=2, ms=5,
+                 label=r"$-\ln P(\tau)$")
         ax2.set_xlabel("Conformational state (τ bin)", fontsize=12)
-        ax2.set_ylabel(r"$\Delta G(\tau)$  [k$_B$T]", fontsize=12, color="crimson")
+        ax2.set_ylabel(r"$-\ln P(\tau)$  (relative to its minimum)", fontsize=12, color="crimson")
         ax2.tick_params(axis="y", labelcolor="crimson")
 
         ax2b = ax2.twinx()
@@ -767,7 +778,7 @@ class VizSession:
         lines1, labels1 = ax2.get_legend_handles_labels()
         lines2, labels2 = ax2b.get_legend_handles_labels()
         ax2.legend(lines1 + lines2, labels1 + labels2, fontsize=10, loc="upper center")
-        ax2.set_title("Free-energy landscape  —  −ln P(τ)", fontsize=11)
+        ax2.set_title("Probability landscape  —  −ln P(τ)", fontsize=11)
 
         plt.tight_layout()
         plt.show()

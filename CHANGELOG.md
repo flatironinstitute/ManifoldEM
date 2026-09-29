@@ -22,6 +22,14 @@ Changes made prior to the Flatiron fork not included.
     * **Changes results:** belief propagation used anchors off by one, so an anchor set on psi 1
       was propagated as psi 2 (and a REV anchor on the last psi crashed)
     * matplotlib is a core dependency now, so an install without extras can run the whole pipeline
+    * Tutorial notebook plots:
+      * The diffusion-map panel no longer fails on PrDs that lost images in trimming. It colours
+        the images that were kept by their in-plane rotation, in degrees (not radians, as the label said).
+      * The panel's distance matrix is sorted by psi 1. `posPath` is the list of images kept after
+        trimming, not a conformational order.
+      * The CC voting plot marks PrDs that have no coordinate. It used to leave them as gaps and
+        count them as "psi 0".
+      * The trajectory section shows the probability P and -ln P, not a free energy in k_BT
   * Outputs and project files
     * No longer written: `topos/PrD_*/psi_*.zip` frame archives (the GIFs remain), the empty
       `topos/Euler_PrD/` directory, and the unread keys of the trajectory `_vars.pkl` (only
