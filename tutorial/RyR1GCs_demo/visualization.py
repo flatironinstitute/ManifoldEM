@@ -3,6 +3,12 @@
 Each `VizSession.show_*` method renders either a live ipywidgets/Plotly
 viewer (`interactive=True`) or a static matplotlib snapshot that GitHub's
 notebook viewer can display (`interactive=False`).
+
+The `set_*`, `remove_anchor`, `trash_prd` and `untrash_prd` methods edit the
+project between CLI steps: occupancy thresholds, anchors, trash PrDs and the
+trajectory path width. They save through ManifoldEM's `params` and
+`data_store`, so the CLI picks the changes up. PrD and ψ numbers are 1-based,
+as in the `topos/PrD_N/psi_K.gif` movies.
 """
 from __future__ import annotations
 
@@ -55,6 +61,10 @@ def load_session(toml_file_name: Optional[str] = None, cwd: Optional[Path] = Non
 
     output_dir = cwd / "output" / project_name
     pkl_path = output_dir / "pd_data.pkl"
+    if not pkl_path.exists():
+        # Right after `manifold-cli init` the particles haven't been binned yet.
+        print(f"{pkl_path} not found; binning the particles into projection directions…")
+        _load_project(toml_path)
     print(f"Loading: {pkl_path}")
     with open(pkl_path, "rb") as f:
         pd_data = pickle.load(f)
@@ -65,7 +75,24 @@ def load_session(toml_file_name: Optional[str] = None, cwd: Optional[Path] = Non
     print(f"  pos_thresholded   : {pd_data['pos_thresholded'].shape}")
     print(f"  thres_low / high  : {pd_data['thres_low']} / {pd_data['thres_high']}")
 
-    return VizSession(pd_data=pd_data, output_dir=output_dir, project_name=project_name)
+    return VizSession(pd_data=pd_data, output_dir=output_dir, project_name=project_name,
+                      toml_path=toml_path)
+
+
+def _load_project(toml_path: Path):
+    """Load the project into ManifoldEM's `params` and `data_store` singletons.
+
+    Builds `pd_data.pkl` if it is missing or out of date with the thresholds, then re-reads it,
+    so that edits saved elsewhere (the CLI, another kernel) are picked up. Like the CLI, this
+    changes into the directory of the project file.
+    """
+    from ManifoldEM.data_store import data_store
+    from ManifoldEM.params import params
+
+    params.load(str(toml_path))
+    prds = data_store.get_prds()
+    prds.load()
+    return params, prds
 
 
 class VizSession:
@@ -76,10 +103,12 @@ class VizSession:
     object owns that state so the notebook cells stay one-liners.
     """
 
-    def __init__(self, pd_data: dict, output_dir: Path, project_name: str):
+    def __init__(self, pd_data: dict, output_dir: Path, project_name: str,
+                 toml_path: Optional[Path] = None):
         self.pd_data = pd_data
         self.output_dir = Path(output_dir)
         self.project_name = project_name
+        self.toml_path = Path(toml_path) if toml_path else None
         self.topos_dir = self.output_dir / "topos"
 
         self._cc_data: Optional[dict] = None
@@ -747,3 +776,245 @@ class VizSession:
         plt.tight_layout()
         plt.show()
         print(f"hUn: min={hUn.min():.0f}  max={hUn.max():.0f}  total={hUn.sum():.0f}")
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Project edits between CLI steps (formerly made in the GUI):
+    # occupancy thresholds, anchors, trash PrDs and trajectory path width
+    # ─────────────────────────────────────────────────────────────────────
+    def _project(self):
+        if self.toml_path is None:
+            raise RuntimeError("This session has no project file; create it with load_session().")
+        return _load_project(self.toml_path)
+
+    def _refresh(self):
+        with open(self.output_dir / "pd_data.pkl", "rb") as f:
+            self.pd_data = pickle.load(f)
+
+    @staticmethod
+    def _prd_index(prds, prd: int) -> int:
+        if not 1 <= int(prd) <= prds.n_thresholded:
+            raise ValueError(f"There is no PrD {prd}; PrD numbers run from 1 to {prds.n_thresholded}.")
+        return int(prd) - 1
+
+    def show_thresholds(self, low: Optional[int] = None, high: Optional[int] = None,
+                        interactive: bool = True):  # interactive kept for API symmetry
+        """Plot every S2 bin's occupancy against the low/high thresholds (the current ones by default).
+
+        Bins with at least `low` particles become PrDs, and each PrD keeps at most `high` of them.
+        Passing `low`/`high` only previews them; `set_thresholds` applies them.
+        """
+        pd = self.pd_data
+        low = int(pd["thres_low"] if low is None else low)
+        high = int(pd["thres_high"] if high is None else high)
+        occ = np.asarray(pd["occupancy_full"])
+        keep = occ >= low
+        used = np.minimum(occ[keep], high)
+
+        bc = pd["bin_centers"]
+        phi = np.arctan2(bc[1], bc[0])
+        theta = np.degrees(np.arccos(np.clip(bc[2], -1.0, 1.0)))
+
+        fig = plt.figure(figsize=(13, 5))
+        ax1 = fig.add_subplot(1, 2, 1)
+        occ_sorted = np.sort(occ)[::-1]
+        rank = np.arange(1, len(occ) + 1)
+        n_keep = int(keep.sum())
+        ax1.plot(rank[:n_keep], occ_sorted[:n_keep], ".", ms=3, color="steelblue", label="become PrDs")
+        ax1.plot(rank[n_keep:], occ_sorted[n_keep:], ".", ms=3, color="lightgrey", label="below low")
+        ax1.axhline(low, color="red", lw=1, ls="--", label=f"low = {low}")
+        ax1.axhline(high, color="green", lw=1, ls="--", label=f"high = {high}")
+        ax1.set_xlabel("S2 bin (sorted by occupancy)")
+        ax1.set_ylabel("Occupancy (particles/bin)")
+        ax1.set_title(f"{n_keep} of {len(occ)} bins become PrDs", fontsize=11)
+        ax1.legend(fontsize=9)
+
+        ax2 = fig.add_subplot(1, 2, 2, projection="polar")
+        ax2.scatter(phi[~keep], theta[~keep], s=4, color="lightgrey", linewidths=0)
+        sc = ax2.scatter(phi[keep], theta[keep], s=14, c=occ[keep], cmap="viridis",
+                         edgecolors="k", linewidths=0.3)
+        plt.colorbar(sc, ax=ax2, pad=0.1, label="Occupancy (particles/bin)")
+        ax2.set_ylim(0, 180)
+        ax2.set_title("PrDs on S2  (angle φ, radius θ in degrees)", fontsize=11)
+        plt.suptitle(f"Occupancy thresholds  —  {self.project_name}", fontsize=12)
+        plt.tight_layout()
+        plt.show()
+
+        print(f"low={low}, high={high}: {n_keep} PrDs use {used.sum()} of {occ.sum()} particles "
+              f"({occ[~keep].sum()} are in bins below low, {(occ[keep] - used).sum()} are over high)")
+        if (low, high) != (pd["thres_low"], pd["thres_high"]):
+            print(f"[preview only: the project uses low={pd['thres_low']}, high={pd['thres_high']}. "
+                  "Apply with viz.set_thresholds(low, high).]")
+
+    def set_thresholds(self, low: int, high: int):
+        """Apply new occupancy thresholds, like `manifold-cli threshold --prd_thres_low … --prd_thres_high …`.
+
+        The particles are re-binned right away, which renumbers the PrDs: all anchors and trash
+        PrDs are cleared, and every step from calc-distance on has to be run again.
+        """
+        from ManifoldEM.params import ProjectLevel
+
+        low, high = int(low), int(high)
+        params, prds = self._project()
+        if (low, high) == (prds.thres_low, prds.thres_high):
+            print(f"The thresholds are already low={low}, high={high}; nothing changed.")
+            return
+        n_prds = int(np.sum(prds.occupancy_full >= low))
+        if n_prds < 3:
+            raise ValueError(f"Only {n_prds} bins have at least {low} particles; at least 3 PrDs are needed.")
+        n_anchors, n_trash = len(prds.anchors), len(prds.trash_ids)
+
+        params.prd_thres_low, params.prd_thres_high = low, high
+        params.project_level = ProjectLevel.BINNING
+        params.save(str(self.toml_path))
+        _load_project(self.toml_path)  # re-bins because the thresholds changed
+        self._refresh()
+
+        print(f"Thresholds set to low={low}, high={high}: {n_prds} PrDs. "
+              "Run calc-distance and the later steps (again).")
+        if n_anchors or n_trash:
+            print(f"Cleared the anchors ({n_anchors}) and trash PrDs ({n_trash}), since the PrD numbers changed.")
+
+    def set_anchor(self, prd: int, psi: int, sense: str = "FWD"):
+        """Anchor PrD `prd` for find-ccs: its motion is the ψ`psi` movie (psi_`psi`.gif) played `sense`.
+
+        `sense` is "FWD" or "REV". Choose it so that every anchor shows the same physical motion
+        (e.g. open → closed). Replaces any existing anchor on the PrD.
+        """
+        from ManifoldEM.data_store import Anchor, Sense
+
+        params, prds = self._project()
+        idx = self._prd_index(prds, prd)
+        if not 1 <= int(psi) <= params.num_psi:
+            raise ValueError(f"ψ must be between 1 and num_psi={params.num_psi}.")
+        if isinstance(sense, str):
+            if sense.upper() not in ("FWD", "REV"):
+                raise ValueError('sense must be "FWD" or "REV".')
+            sense = Sense[sense.upper()]
+        else:
+            sense = Sense(sense)
+        if idx in prds.trash_ids:
+            raise ValueError(f"PrD {prd} is in the trash; call untrash_prd({prd}) first.")
+
+        prds.insert_anchor(idx, Anchor(int(psi), sense))
+        prds.save()
+        self._refresh()
+        print(f"PrD {prd} anchored on ψ{psi} {sense.name}  ({len(prds.anchors)} anchors)")
+
+    def remove_anchor(self, prd: int):
+        """Remove the anchor from PrD `prd`, if it has one."""
+        _, prds = self._project()
+        idx = self._prd_index(prds, prd)
+        if idx not in prds.anchors:
+            print(f"PrD {prd} has no anchor.")
+            return
+        prds.remove_anchor(idx)
+        prds.save()
+        self._refresh()
+        print(f"Removed the anchor from PrD {prd}  ({len(prds.anchors)} anchors)")
+
+    def trash_prd(self, *prd_nums: int):
+        """Leave PrDs out of find-ccs and everything after it (landscape and trajectories).
+
+        Trashing a PrD also removes its anchor.
+        """
+        _, prds = self._project()
+        for idx in [self._prd_index(prds, p) for p in prd_nums]:
+            prds.trash_ids.add(idx)
+            prds.remove_anchor(idx)
+        prds.save()
+        self._refresh()
+        print(f"Trashed PrD {', '.join(map(str, prd_nums))}  ({len(prds.trash_ids)} in the trash)")
+
+    def untrash_prd(self, *prd_nums: int):
+        """Take PrDs out of the trash again."""
+        _, prds = self._project()
+        for idx in [self._prd_index(prds, p) for p in prd_nums]:
+            prds.trash_ids.discard(idx)
+        prds.save()
+        self._refresh()
+        print(f"Restored PrD {', '.join(map(str, prd_nums))}  ({len(prds.trash_ids)} in the trash)")
+
+    def show_anchors(self, interactive: bool = True):  # interactive kept for API symmetry
+        """Show the anchors and trash PrDs on S2, and check that every connected component has an anchor.
+
+        find-ccs propagates each anchor's ψ and sense along the PrD neighbour graph, with the trash
+        PrDs removed. The PrDs of a component without an anchor get no conformational coordinate
+        and are left out of the landscape and trajectories; with no anchors, find-ccs stops early.
+        """
+        params, prds = self._project()
+        components = _graph_components(params, prds)
+        anchors, trash = prds.anchors, sorted(prds.trash_ids)
+        phi = np.radians(prds.phi_thresholded)
+        theta = np.asarray(prds.theta_thresholded)
+
+        fig = plt.figure(figsize=(10, 6.5))
+        ax = fig.add_subplot(111, projection="polar")
+        cmap = plt.get_cmap("tab10")
+        for k, comp in enumerate(components):
+            label = f"component {k + 1} ({len(comp)} PrDs)"
+            if not any(i in anchors for i in comp):
+                label += " — no anchor"
+            ax.scatter(phi[comp], theta[comp], s=30, color=cmap(k % 10), linewidths=0, label=label)
+        if trash:
+            ax.scatter(phi[trash], theta[trash], s=40, marker="x", color="grey", label=f"trash ({len(trash)})")
+        if anchors:
+            ids = sorted(anchors)
+            ax.scatter(phi[ids], theta[ids], s=220, marker="*", color="gold", edgecolors="k",
+                       linewidths=0.8, zorder=3, label=f"anchors ({len(ids)})")
+            for i in ids:
+                ax.annotate(str(i + 1), (phi[i], theta[i]), textcoords="offset points",
+                            xytext=(7, 5), fontsize=8)
+        ax.set_ylim(0, 180)
+        ax.set_title(f"Anchors and trash PrDs  —  {self.project_name}\n"
+                     "(angle φ, radius θ in degrees; labels are PrD numbers)", fontsize=11)
+        ax.legend(loc="upper left", bbox_to_anchor=(1.1, 1.0), fontsize=8)
+        plt.tight_layout()
+        plt.show()
+
+        occupancy = prds.occupancy
+        for k, comp in enumerate(components):
+            here = [i for i in comp if i in anchors]
+            if here:
+                listed = ", ".join(f"PrD {i + 1} ψ{anchors[i].CC} {anchors[i].sense.name}" for i in here)
+                print(f"component {k + 1:>2} ({len(comp):>3} PrDs): {listed}")
+            else:
+                top = max(comp, key=lambda i: occupancy[i])
+                print(f"component {k + 1:>2} ({len(comp):>3} PrDs): NO ANCHOR  "
+                      f"(most populated: PrD {top + 1}, {occupancy[top]} particles)")
+        if trash:
+            print(f"trash: PrD {', '.join(str(i + 1) for i in trash)}")
+        if not anchors:
+            print("No anchors yet: find-ccs needs at least one. Use viz.set_anchor(prd, psi, sense).")
+
+    def set_path_width(self, width: int):
+        """Set the trajectory path width `width_1D` for the next `manifold-cli trajectory` run.
+
+        Each of the `states_per_coord - width + 1` output volumes pools the particles of `width`
+        adjacent states along the conformational coordinate.
+        """
+        params, _ = self._project()
+        if not 1 <= int(width) <= params.states_per_coord:
+            raise ValueError(f"The width must be between 1 and states_per_coord={params.states_per_coord}.")
+        previous = params.width_1D
+        params.width_1D = int(width)
+        params.save(str(self.toml_path))
+        print(f"Path width set to {width} (was {previous}); it takes effect the next time the trajectory step runs.")
+        if int(width) > previous and any((self.output_dir / "bin").glob("*.star")):
+            print("A wider path writes fewer volumes, and the trajectory step doesn't delete the old ones: "
+                  "clear bin/ before rerunning it.")
+
+
+def _graph_components(params, prds) -> list:
+    """Connected components of the PrD neighbour graph without the trash PrDs, as find-ccs sees them."""
+    import contextlib
+    import io
+    from copy import deepcopy
+
+    from ManifoldEM.FindCCGraph import prune
+
+    G = prds.neighbor_graph
+    if prds.trash_ids:
+        with contextlib.redirect_stdout(io.StringIO()):  # prune() reports the graph sizes
+            G, _ = prune(deepcopy(G), prds.trash_ids, params.num_psi)
+    components = [sorted(int(i) for i in np.atleast_1d(c)) for c in G["NodesConnComp"]]
+    return [c for c in components if not set(c) <= prds.trash_ids]
