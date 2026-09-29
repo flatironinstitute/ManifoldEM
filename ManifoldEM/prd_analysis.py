@@ -264,7 +264,7 @@ def get_raw_images(
     Returns
     -------
     ndarray
-        A 3D NumPy array of shape (N, H, W) containing the images,
+        A 3D float64 NumPy array of shape (N, H, W) containing the images,
         where N is the number of images and H and W are the image dimensions.
 
     Raises
@@ -280,7 +280,9 @@ def get_raw_images(
         if len(images.shape) != 3:
             raise ValueError("Image stack must be 3D")
 
-    return images[image_indices, :, :]
+        # float64, as main's calc_distance (f966d95): transform_images works in place, so a float32
+        # stack was rounded after every step, and scipy's shift can't take float16 stacks
+        return images[image_indices, :, :].astype(np.float64)
 
 
 def transform_images(

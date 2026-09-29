@@ -1,3 +1,4 @@
+import mrcfile
 import numpy as np
 
 from ManifoldEM.data_store import data_store
@@ -49,3 +50,15 @@ def test_parallel_decompose_of_selected_prds_writes_each_to_its_own_group(make_p
         assert sorted(f) == ["prd_1", "prd_3"]
         for i in (1, 3):
             assert len(f[f"prd_{i}/image_data/rotations"]) == len(prds.thresholded_image_indices[i])
+
+
+def test_decompose_reads_float16_stacks(make_project):
+    params.load(str(make_project("h")))
+    data_store.get_prds(reload=True)
+    with mrcfile.open(params.img_stack_file, "r+") as m:
+        m.set_data(m.data.astype(np.float16))
+    params.ncpu = 1
+    decompose(prd_list=[0])
+
+    with data_store.open_analysis() as f:
+        assert np.isfinite(f["prd_0/distances/D"][:]).all()
