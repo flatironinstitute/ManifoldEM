@@ -849,9 +849,6 @@ class _DataStore:
     def get_taus_prd_list(self, prd_list: List[int] | NDArray[Shape["Any"], Int]):
         return [self.get_taus(i) for i in prd_list]
 
-    def get_all_taus(self):
-        return self.get_taus_prd_list(list(range(self.get_prds().n_thresholded)))
-
     def get_nlsa_movies(self, prd_index: int) -> list[H5Dataset]:
         """References to the prd's NLSA movies (one per psi), which are read when used."""
         return [

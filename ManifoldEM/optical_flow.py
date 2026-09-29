@@ -174,41 +174,12 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1.0, 1.0, 1.0), option
     return stackout
 
 
-def find_bad_node_psi_tau(tau, tau_occ_thresh=0.33):
-    quartile_1, quartile_3 = np.percentile(tau, [25, 75])
-    iqr = quartile_3 - quartile_1
-
-    ## Sept 2021
-    # check if the tau value distribution have more than one narrow ranges far apart
-    # this will artifically make the IQR value high giving the illusion of a wide tau
-    # distribution. This cases need to be checked and set the IQR to a low value=0.01
-    taubins = 50
-    tau_h, _ = np.histogram(tau, bins=taubins)  # there are 50 states
-    tau_h = np.array(tau_h)
-    tau_nz = np.where(tau_h > 0.0)[0].size
-    tau_occ = tau_nz / float(taubins)
-
-    # if number of states present in tau values is less than occ_thresh=30%?then there are lot of
-    # missing states,
-    # tau_occ_thresh = 0.35 # 35% conservative here? # could input through p.py / gui ?
-    badPsi = int((iqr < 0.02) or (tau_occ <= tau_occ_thresh))
-
-    return badPsi, iqr, tau_occ
-
-
 def load_prd_psi_movies_masked(
     nlsa_movies: list[NDArray[Shape["Any,Any"], Float]] | list[h5py.Dataset],
-    taus: list[NDArray[Shape["Any"], Float]] | list[h5py.Dataset],
     mask: None | NDArray[Shape["Any,Any"], Float],
-    find_bad_psi_tau: bool,
-    tau_occ_thresh: float,
 ):
     num_psi = len(nlsa_movies)
     movie_prd_psis = [np.empty(0)] * num_psi
-    tau_prd_psis = [np.empty(0)] * num_psi
-    bad_psis = []
-    tau_psis_iqr = []
-    tau_psis_occ = []
 
     if len(nlsa_movies[0].shape) == 3:
         n_pix = nlsa_movies[0].shape[1]
@@ -226,22 +197,11 @@ def load_prd_psi_movies_masked(
 
     for psinum in range(num_psi):
         IMG1 = np.array(nlsa_movies[psinum])
-        tau = np.array(taus[psinum])
 
         # FIXME: Why is this negative?
         movie_prd_psis[psinum] = -IMG1 * mask
-        tau_prd_psis[psinum] = tau
 
-        if find_bad_psi_tau:
-            b, tauIQR, tauOcc = find_bad_node_psi_tau(tau, tau_occ_thresh)
-            tau_psis_iqr.append(tauIQR)
-            tau_psis_occ.append(tauOcc)
-            if b:
-                bad_psis.append(psinum)
-        else:
-            bad_psis = []
-
-    return movie_prd_psis, bad_psis, tau_prd_psis, tau_psis_iqr, tau_psis_occ
+    return movie_prd_psis
 
 
 def optical_flow_movie(
@@ -381,21 +341,9 @@ def compute_psi_movie_optical_flow(movie):
 
 def optical_flow(
     nlsa_movies: list[NDArray[Shape["Any,Any"], Float]],
-    taus: list[NDArray[Shape["Any"], Float]],
     mask: None | NDArray[Shape["Any,Any"], Float] = None,
-    find_bad_psi_tau: bool = True,
-    tau_occ_thresh: float = 0.33,
 ):
-    # load movie and tau param first
-    (
-        movie_prd_psi,
-        badNodesPsisTau,
-        NodesPsisTauVals,
-        NodesPsisTauIQR,
-        NodesPsisTauOcc,
-    ) = load_prd_psi_movies_masked(
-        nlsa_movies, taus, mask, find_bad_psi_tau, tau_occ_thresh
-    )
+    movie_prd_psi = load_prd_psi_movies_masked(nlsa_movies, mask)
 
     num_psi = len(nlsa_movies)
     # calculate OF for each psi-movie
@@ -405,29 +353,19 @@ def optical_flow(
             movie_prd_psi[psi_index],
         )
 
-    return dict(
-        FlowVecPrD=FlowVecPrD,
-        badNodesPsisTau=np.array(badNodesPsisTau),
-        NodesPsisTauIQR=NodesPsisTauIQR,
-        NodesPsisTauOcc=NodesPsisTauOcc,
-        NodesPsisTauVals=NodesPsisTauVals,
-    )
+    return dict(FlowVecPrD=FlowVecPrD)
 
 
 def optical_flow_movie_list(
     nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]]
     | list[list[h5py.Dataset]],
-    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
     mask: None | list[NDArray[Shape["Any,Any"], Float]],
-    find_bad_psi_tau: bool,
     ncpu: int = 1,
 ):
     input_data = [
         dict(
             nlsa_movies=nlsa_movies[i],
-            taus=taus[i],
             mask=mask[i] if mask else None,
-            find_bad_psi_tau=find_bad_psi_tau,
         )
         for i in range(len(nlsa_movies))
     ]
@@ -812,27 +750,6 @@ def compute_edge_measures_all(
     return edge_measures, edge_measures_tblock, bad_nodes_psis_block
 
 
-def collate_bad_psi_tau(n_nodes: int, n_psi: int, flow_map: dict[int, dict[str, Any]]):
-    bad_nodes_psis_tau = np.zeros((n_nodes, n_psi)).astype(int)
-    nodes_psis_tau_IQR = np.zeros((n_nodes, n_psi)) + 5.0
-    nodes_psis_tau_occ = np.zeros((n_nodes, n_psi))
-    nodes_psis_tau_vals = [[None]] * n_nodes
-
-    for prd, data in flow_map.items():
-        if len(data["badNodesPsisTau"]):
-            bad_nodes_psis_tau[prd, np.array(data["badNodesPsisTau"])] = -100
-        nodes_psis_tau_IQR[prd, :] = data["NodesPsisTauIQR"]
-        nodes_psis_tau_occ[prd, :] = data["NodesPsisTauOcc"]
-        nodes_psis_tau_vals[prd] = data["NodesPsisTauVals"]
-
-    return (
-        bad_nodes_psis_tau,
-        nodes_psis_tau_IQR,
-        nodes_psis_tau_occ,
-        nodes_psis_tau_vals,
-    )
-
-
 def calculate_probability_landscape(
     psinums: NDArray[Shape["Any"], Integer],
     senses: NDArray[Shape["Any"], Integer],
@@ -898,14 +815,12 @@ def write_conformational_coords(
 def find_conformational_coords(
     prds: ProjectionDirections,
     nlsa_movies: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
-    taus: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
     nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
     num_psi: int,
     return_all_output: bool = False,
     output_file: None | str = None,
     flow_vec_pct_thresh: float = 0.95,
     allow_empty_clusters: bool = False,
-    allow_bad_psi_tau: bool = True,
     ncpu: int = 1,
 ):
     G, Gsub = prds.prune_graphs()
@@ -933,9 +848,7 @@ def find_conformational_coords(
     flow_prds = [int(i) for i in node_range]
     flow_list = optical_flow_movie_list(
         [nlsa_movies[i] for i in flow_prds],
-        [taus[i] for i in flow_prds],
         [nlsa_mask[i] for i in flow_prds] if nlsa_mask else None,
-        allow_bad_psi_tau,
         ncpu,
     )
     flow_map = {prd: flow_list[k] for k, prd in enumerate(flow_prds)}
@@ -950,11 +863,6 @@ def find_conformational_coords(
             flow_vec_pct_thresh,
             ncpu,
         )
-    )
-
-    # This data is collected but was not used in the production code (params.use_pruned_graph was False)
-    bad_nodes_psis_tau, nodes_psis_tau_IQR, nodes_psis_tau_occ, nodes_psis_tau_vals = (
-        collate_bad_psi_tau(G["nNodes"], num_psi, flow_map)
     )
 
     options = BeliefPropagationOptions()

@@ -30,6 +30,16 @@ _RETIRED_PARAMS = {
     "vis_s2_scale",
     "vis_s2_density",
     "vis_s2_isosurface_level",
+    # read only by the pipeline modules that origin/in-memory replaced, or by nothing since then
+    "nlsa_fps",
+    "n_reaction_coords",
+    "calc_optical_flow",
+    "calc_all_edge_measures",
+    "opt_mask_type",
+    "opt_mask_param",
+    "find_bad_psi_tau",
+    "tau_occ_thresh",
+    "use_pruned_graph",
 }
 
 
@@ -191,12 +201,6 @@ class Params:
     ] = 5
 
     # NLSA parameters:
-    nlsa_fps: Annotated[
-        float,
-        ParamInfo(
-            "Frames per second for generated movies", True, [ProjectLevel.DECOMPOSITION]
-        ),
-    ] = 5.0
     con_order_range: Annotated[
         int,
         ParamInfo(
@@ -223,9 +227,6 @@ class Params:
     ] = 3
 
     # probability landscape parameters:
-    n_reaction_coords: Annotated[
-        int, ParamInfo("Number of reaction coordinates for probability landscape")
-    ] = 1
     traj_name: Annotated[
         str, ParamInfo("Filename modifier for exported (2D) trajectories")
     ] = "1"
@@ -238,21 +239,9 @@ class Params:
     width_1D: Annotated[int, ParamInfo("Width of trajectory in 1D probability path")] = 1
 
     #  reaction coordinates parameters:
-    calc_optical_flow: Annotated[bool, ParamInfo("Compute optical flow vectors")] = True
-    calc_all_edge_measures: Annotated[bool, ParamInfo('Compute "edge measures"')] = True
     opt_movie: dict = {
-        "printFig": 0,
-        "OFvisual": 0,
         "flowVecPctThresh": 95,
     }
-    opt_mask_type: Annotated[int, ParamInfo("0:None, 1:Annular, 2:Volumetric")] = 0
-    opt_mask_param: Annotated[
-        int, ParamInfo("for either none, radius (Int), or iso(Int)")
-    ] = 0
-
-    find_bad_psi_tau: Annotated[bool, ParamInfo()] = True
-    tau_occ_thresh: Annotated[float, ParamInfo()] = 0.35
-    use_pruned_graph: Annotated[bool, ParamInfo()] = False
 
     @property
     def ang_width(self) -> float:

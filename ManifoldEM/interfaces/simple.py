@@ -124,13 +124,11 @@ def find_conformational_coordinates(blas_threads=1, **kwargs):
     # FIXME: The simple interface shouldn't force the user to use analysis store
     prds = data_store.get_prds()
     nlsa_movies = data_store.get_all_nlsa_movies()
-    taus = data_store.get_all_taus()
 
     with threadpool_limits(limits=blas_threads, user_api="blas"):
         find_conformational_coords(
             prds,
             nlsa_movies,
-            taus,
             None,
             params.num_psi,
             output_file=params.analysis_file,
