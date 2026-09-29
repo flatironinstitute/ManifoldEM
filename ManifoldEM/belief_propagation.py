@@ -85,12 +85,12 @@ def initialize_anchor_node_measures(
 
     print(f"anchorNodes: {anchor_nodes}")
 
-    # FIXME: I assume the CC field should be indexed from 0 (i.e. CC-1)
+    # Anchor.CC is 1-based; state_index maps it to the 0-based BP state (reverse senses offset by num_psi)
     for index, anchor_id in enumerate(fwd_anchor_ids):
-        measures_fwd[anchor[anchor_id].CC, index] = measure_val
+        measures_fwd[anchor[anchor_id].state_index(num_psi), index] = measure_val
 
     for index, anchor_id in enumerate(rev_anchor_ids):
-        measures_rev[anchor[anchor_id].CC + num_psi, index] = measure_val
+        measures_rev[anchor[anchor_id].state_index(num_psi), index] = measure_val
 
     return anchor_nodes, np.hstack((measures_fwd, measures_rev))
 
