@@ -12,7 +12,7 @@ The `set_*`, `remove_anchor`, `trash_prd` and `untrash_prd` methods edit the
 project between CLI steps: occupancy thresholds, anchors, trash PrDs and the
 trajectory path width. They save through ManifoldEM's `params` and
 `data_store`, so the CLI picks the changes up. PrD and ψ numbers are 1-based,
-as in the `topos/PrD_N/psi_K.gif` movies.
+as in the ψ movies of `show_prd_viewer`.
 
 Every method reads the project from disk again, so it shows the results of CLI steps run in
 the meantime, and edits saved by another kernel.
@@ -27,7 +27,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
-import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
@@ -35,7 +34,6 @@ from matplotlib.patches import Patch
 from PIL import Image
 from scipy import stats
 
-from ManifoldEM import myio
 from ManifoldEM.data_store import Anchor, Sense, data_store
 from ManifoldEM.FindCCGraph import prune
 from ManifoldEM.params import ProjectLevel, params
@@ -112,32 +110,77 @@ class VizSession:
 
     # ─────────────────────────────────────────────────────────────────────
     # Data access. Everything the viewers read from the project goes through
-    # here; the paths come from `params`, so call `_project()` first.
-    # (origin/in-memory keeps the per-PrD outputs in one prd_analysis.h5.)
+    # here: prd_analysis.h5, through data_store, which opens it read-only for
+    # each read (so it never blocks a CLI step), and the landscape file.
+    # The paths come from `params`, so call `_project()` first.
     # ─────────────────────────────────────────────────────────────────────
     def _project(self):
         """Point `params` and `data_store` at this project, re-read from disk, and return its PrDs."""
         return _load_project(self.toml_path)
 
     @staticmethod
-    def _topos_dir(prd_num: int) -> Path:
-        # manifold-analysis writes eig_spec.txt here, nlsa-movie class_avg.png and the psi_K.gif movies
-        return Path(params.out_dir, "topos", f"PrD_{prd_num}")
+    def _analysis_missing(prd_num: Optional[int] = None, conformational_coords: bool = False) -> bool:
+        """If the pipeline hasn't written what a view needs yet, print what to run and return True."""
+        try:
+            data_store.require_analysis(None if prd_num is None else [prd_num - 1], conformational_coords)
+        except (FileNotFoundError, ValueError) as e:
+            print(e)
+            return True
+        return False
 
     @staticmethod
-    def _psi_gifs(prd_num: int) -> list:
-        gifs = (Path(params.get_psi_gif(prd_num, k)) for k in range(1, params.num_psi + 1))
-        return [g for g in gifs if g.is_file()]
+    def _class_avg(prd_num: int):
+        """The PrD's Wiener-filtered class average (decompose), scaled to [0, 1]."""
+        img = data_store.get_class_avg(prd_num - 1)
+        return (img - img.min()) / (img.max() - img.min())
 
     @staticmethod
-    def _cc_data() -> dict:
-        return myio.fin1(params.CC_file)
+    def _eigenvalues(prd_num: int):
+        """The PrD's diffusion-map eigenvalues, from index 1 (index 0 is the trivial one)."""
+        return data_store.get_embedding_data(prd_num - 1)["lamb"][1:]
+
+    @staticmethod
+    def _psi_movie_frames(prd_num: int) -> list:
+        """The NLSA movie of each ψ (decompose), as uint8 frames scaled over the whole movie."""
+        movies = []
+        for movie in data_store.get_nlsa_movies(prd_num - 1):
+            frames = -np.asarray(movie, dtype=float)
+            low, high = frames.min(), frames.max()
+            movies.append(np.round(255 * (frames - low) / (high - low)).astype(np.uint8))
+        return movies
+
+    @staticmethod
+    def _cc_data():
+        """Every PrD's ψ (0-based) and sense from find-ccs; ψ = -1 and sense 0 where it found none."""
+        n_prds = data_store.get_prds().n_thresholded
+        with data_store.open_analysis() as f:
+            # a trashed PrD may not have been decomposed at all
+            psinums = np.array([int(f[f"prd_{i}/psinum"][()]) if f"prd_{i}/psinum" in f else -1 for i in range(n_prds)])
+            senses = np.array([int(f[f"prd_{i}/sense"][()]) if f"prd_{i}/sense" in f else 0 for i in range(n_prds)])
+        return psinums, senses
+
+    @staticmethod
+    def _flow_vectors(prd_num: int):
+        """The optical flow of each of the PrD's ψ movies (find-ccs), or None for a PrD outside the
+        anchored components, for which find-ccs computes none."""
+        with data_store.open_analysis() as f:
+            flow = f.get(f"prd_{prd_num - 1}/flow_data/flow_map")
+            if flow is None:
+                return None
+            return [
+                {d: {k: flow[f"FlowVecPrD_{j}/{d}/{k}"][()] for k in ("Vx", "Vy", "Mag")} for d in ("FWD", "REV")}
+                for j in range(params.num_psi)
+            ]
 
     @staticmethod
     def _trajectory_data():
-        """The state histogram `hUn` (probability-landscape) and `tauAvg` (trajectory)."""
-        stem = f"{params.traj_file}name{params.traj_name}"
-        return myio.fin1(f"{stem}.pkl")["hUn"], myio.fin1(f"{stem}_vars.pkl")["tauAvg"]
+        """The state occupancy and the normalised taus it is the histogram of (probability-landscape)."""
+        path = Path(params.probability_landscape_file)
+        if not path.is_file():
+            print(f"{path.resolve()} not found: run `manifold-cli probability-landscape` first.")
+            return None
+        with np.load(path) as landscape:
+            return landscape["occupancy"], landscape["tau_avg"]
 
     # ─────────────────────────────────────────────────────────────────────
     # S2 sphere
@@ -243,7 +286,6 @@ class VizSession:
             pd_idx = points.point_inds[0]
             prd_num = pd_idx + 1
             self._project()
-            img_path = self._topos_dir(prd_num) / "class_avg.png"
             status_label.value = (
                 f"  PrD {prd_num}  |  φ={phi_thres[pd_idx]:.1f}°  "
                 f"θ={theta_thres[pd_idx]:.1f}°  |  "
@@ -251,12 +293,10 @@ class VizSession:
             )
             with avg_out:
                 avg_out.clear_output(wait=True)
-                if not img_path.exists():
-                    print(f"File not found: {img_path.resolve()}")
+                if self._analysis_missing(prd_num):
                     return
                 fig2, axes = plt.subplots(1, 2, figsize=(9, 4.5))
-                img = mpimg.imread(str(img_path))
-                axes[0].imshow(img, cmap="gray" if img.ndim == 2 else None)
+                axes[0].imshow(self._class_avg(prd_num), cmap="gray")
                 axes[0].set_title(
                     f"2D Class Average  —  PrD {prd_num}\n"
                     f"φ={phi_thres[pd_idx]:.1f}°  θ={theta_thres[pd_idx]:.1f}°  "
@@ -357,22 +397,23 @@ class VizSession:
         else:
             self._render_prd_static(default_prd)
 
-    def _gif_html(self, path: Path, width: int = 180) -> str:
-        with open(path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
+    @staticmethod
+    def _gif_html(frames, label: str, width: int = 180) -> str:
+        """An animated GIF (5 frames per second) of the uint8 frames, embedded in HTML."""
+        images = [Image.fromarray(frame) for frame in frames]
+        gif = io.BytesIO()
+        images[0].save(gif, format="GIF", save_all=True, append_images=images[1:], duration=200, loop=0)
+        b64 = base64.b64encode(gif.getvalue()).decode()
         return (f'<div style="display:inline-block;margin:4px;text-align:center">'
                 f'<img src="data:image/gif;base64,{b64}" width="{width}"><br>'
-                f'<small>{path.stem}</small></div>')
+                f'<small>{label}</small></div>')
 
     def _render_prd_scree(self, prd_num: int):
-        eig_file = self._topos_dir(prd_num) / "eig_spec.txt"
-        if not eig_file.exists():
-            print(f"eig_spec.txt not found: {eig_file.resolve()}")
+        if self._analysis_missing(prd_num):
             return
-        data = np.loadtxt(eig_file)
-        eig_idx = data[:, 0].astype(int)
-        eig_val = data[:, 1]
-        n_gifs = len(self._psi_gifs(prd_num))
+        eig_val = self._eigenvalues(prd_num)
+        eig_idx = np.arange(1, len(eig_val) + 1)
+        n_gifs = params.num_psi
 
         fig_s, ax = plt.subplots(figsize=(6, 3.5))
         ax.bar(eig_idx, eig_val, color="steelblue", edgecolor="none")
@@ -389,33 +430,29 @@ class VizSession:
         _, display = _widgets()
         from IPython.display import HTML
 
-        gifs = self._psi_gifs(prd_num)
-        if not gifs:
-            print(f"No .gif files found in {self._topos_dir(prd_num).resolve()}")
+        if self._analysis_missing(prd_num):
             return
         html_parts = [f'<h4 style="margin:6px 0">PrD {prd_num} — eigenvector movies</h4>']
-        html_parts += [self._gif_html(g) for g in gifs]
+        html_parts += [self._gif_html(m, f"psi_{k}") for k, m in enumerate(self._psi_movie_frames(prd_num), 1)]
         display(HTML("".join(html_parts)))
 
     def _render_prd_static(self, prd_num: int):
         """Render the scree plot + a static grid of the eigenvector movie thumbnails (first frame)."""
+        if self._analysis_missing(prd_num):
+            return
         self._render_prd_scree(prd_num)
 
-        gifs = self._psi_gifs(prd_num)
-        if not gifs:
-            print(f"No .gif files found in {self._topos_dir(prd_num).resolve()}")
-            return
-        n = len(gifs)
+        movies = self._psi_movie_frames(prd_num)
+        n = len(movies)
         cols = min(4, n)
         rows = (n + cols - 1) // cols
         fig, axes = plt.subplots(rows, cols, figsize=(3 * cols, 3 * rows))
         axes = np.atleast_2d(axes).reshape(rows, cols)
         for ax in axes.ravel():
             ax.axis("off")
-        for ax, gif in zip(axes.ravel(), gifs):
-            with Image.open(gif) as im:
-                ax.imshow(np.asarray(im.convert("L")), cmap="gray")
-            ax.set_title(gif.stem, fontsize=9)
+        for k, (ax, movie) in enumerate(zip(axes.ravel(), movies), 1):
+            ax.imshow(movie[0], cmap="gray")
+            ax.set_title(f"psi_{k}", fontsize=9)
         plt.suptitle(f"PrD {prd_num} — eigenvector movies (first frame)\n"
                      "[static view — set INTERACTIVE=True for animated GIFs]",
                      fontsize=11)
@@ -476,10 +513,7 @@ class VizSession:
 
     def _render_diffusion_map(self, prd_num: int, static_note: bool = False):
         pd_idx = prd_num - 1
-        missing = [p for p in (params.get_dist_file(pd_idx), params.get_psi_file(pd_idx)) if not os.path.isfile(p)]
-        if missing:
-            for p in missing:
-                print(f"Not found: {Path(p).resolve()}")
+        if self._analysis_missing(prd_num):
             return
 
         prd = data_store.get_prd_data(pd_idx)
@@ -578,9 +612,9 @@ class VizSession:
     # ─────────────────────────────────────────────────────────────────────
     def show_cc_voting(self, interactive: bool = True):
         self._project()
-        cc = self._cc_data()
-        psinums_all = cc["psinums"][0]
-        senses_all = cc["senses"][0]
+        if self._analysis_missing(conformational_coords=True):
+            return
+        psinums_all, senses_all = self._cc_data()
         n_prd_cc = len(psinums_all)
         prd_nums = np.arange(1, n_prd_cc + 1)
         colors_sense = ["tomato" if s > 0 else "steelblue" for s in senses_all]
@@ -651,21 +685,21 @@ class VizSession:
     def _render_optical_flow(self, prd_num: int, psi_num: int, static_note: bool = False):
         pd_idx = prd_num - 1
         psi_idx = psi_num - 1
-        psinums_all = self._cc_data()["psinums"][0]
+        if self._analysis_missing(prd_num, conformational_coords=True):
+            return
+        psinums_all, _ = self._cc_data()
         chosen_psi = int(psinums_all[pd_idx])
         star = " ★" if psi_idx == chosen_psi else ""
 
-        of_file = params.get_CC_OF_file(pd_idx)
-        img_path = self._topos_dir(prd_num) / "class_avg.png"
-
-        if not os.path.isfile(of_file):
-            print(f"OF file not found: {Path(of_file).resolve()}")
+        fv = self._flow_vectors(prd_num)
+        if fv is None:
+            print(f"No optical flow for PrD {prd_num}: find-ccs computes it only for the PrDs of the "
+                  "anchored components, not for trashed PrDs.")
             return
-        of_data = myio.fin1(of_file)
-        fv = of_data["FlowVecPrD"]
-        if psi_idx >= len(fv) or fv[psi_idx] is None:
+        if psi_idx >= len(fv):
             print(f"No OF data for ψ{psi_num} at PrD {prd_num}")
             return
+        bg = self._class_avg(prd_num)
 
         entry = fv[psi_idx]
         H, W = np.shape(next(iter(entry.values()))["Vx"])  # the size of the movie frames
@@ -686,12 +720,7 @@ class VizSession:
             vy = np.asarray(vec["Vy"], dtype=float)
             mag = np.asarray(vec["Mag"], dtype=float)
 
-            if img_path.exists():
-                bg = plt.imread(str(img_path))
-                ax.imshow(bg, cmap="gray" if bg.ndim == 2 else None,
-                          extent=[0, W, H, 0], origin="upper", alpha=0.6)
-            else:
-                ax.imshow(mag, cmap="hot", extent=[0, W, H, 0], origin="upper", alpha=0.4)
+            ax.imshow(bg, cmap="gray", extent=[0, W, H, 0], origin="upper", alpha=0.6)
 
             u_sub = vx[Yg, Xg]
             v_sub = -vy[Yg, Xg]
@@ -751,7 +780,10 @@ class VizSession:
     # ─────────────────────────────────────────────────────────────────────
     def show_trajectory(self, interactive: bool = True):  # interactive kept for API symmetry
         self._project()
-        hUn, tauAvg = self._trajectory_data()
+        landscape = self._trajectory_data()
+        if landscape is None:
+            return
+        hUn, tauAvg = landscape
         hUn = hUn.astype(float)
         n_states = len(hUn)
         state_ax = np.arange(1, n_states + 1)
@@ -879,7 +911,7 @@ class VizSession:
             print(f"Cleared the anchors ({n_anchors}) and trash PrDs ({n_trash}), since the PrD numbers changed.")
 
     def set_anchor(self, prd: int, psi: int, sense: str = "FWD"):
-        """Anchor PrD `prd` for find-ccs: its motion is the ψ`psi` movie (psi_`psi`.gif) played `sense`.
+        """Anchor PrD `prd` for find-ccs: its motion is the ψ`psi` movie (psi_`psi` in `show_prd_viewer`) played `sense`.
 
         `sense` is "FWD" or "REV". Choose it so that every anchor shows the same physical motion
         (e.g. open → closed). Replaces any existing anchor on the PrD.
