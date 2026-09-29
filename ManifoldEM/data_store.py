@@ -820,11 +820,16 @@ class _DataStore:
         NDArray[Shape["Any"], Int],
         NDArray[Shape["Any"], Int],
     ]:
+        """
+        The PrDs that are not trashed and have a conformational coordinate (find-ccs gives
+        psinum -1 to the others), with their psinums and senses.
+        """
         active_prds = self.get_active_prd_indices()
         with self.open_analysis() as data:
             psinums = np.asarray([data[f"prd_{i}"]["psinum"][()] for i in active_prds], dtype=int)
             senses = np.asarray([data[f"prd_{i}"]["sense"][()] for i in active_prds], dtype=int)
-        return active_prds, psinums, senses
+        assigned = psinums >= 0
+        return active_prds[assigned], psinums[assigned], senses[assigned]
 
     def get_active_prd_indices(self) -> NDArray[Shape["Any"], Int]:
         prds = self.get_prds()
@@ -836,9 +841,6 @@ class _DataStore:
 
     def get_taus_prd_list(self, prd_list: List[int] | NDArray[Shape["Any"], Int]):
         return [self.get_taus(i) for i in prd_list]
-
-    def get_active_taus(self):
-        return self.get_taus_prd_list(self.get_active_prd_indices())
 
     def get_all_taus(self):
         return self.get_taus_prd_list(list(range(self.get_prds().n_thresholded)))

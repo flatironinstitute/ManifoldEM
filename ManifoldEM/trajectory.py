@@ -163,8 +163,9 @@ def write_relion_s2(
                         f[str(i)] = nlsa_movie
 
         # read in the workers below, once the file is closed for writing
-        nlsa_movies = [H5Dataset(f_tmp.name, str(i)) for i in prd_indices]
-        con_orders = [psi_sorted_quats_by_prd[i].shape[1] // params.con_order_range for i in prd_indices]
+        # the temporary file and the per-PrD lists are indexed by position in prd_indices, not by PrD
+        nlsa_movies = [H5Dataset(f_tmp.name, str(i)) for i in range(n_prds)]
+        con_orders = [psi_sorted_quats_by_prd[i].shape[1] // params.con_order_range for i in range(n_prds)]
 
         concatenator = partial(
             concatenate_bin,
@@ -201,7 +202,7 @@ def build_trajectory():
 
     params.load()
     active_prds, psinums, senses = data_store.get_active_psinums_and_senses()
-    taus = data_store.get_active_taus()
+    taus = data_store.get_taus_prd_list(active_prds)
     prds = data_store.get_prds()
     image_indices_by_prd = prds.thresholded_image_indices
 

@@ -470,7 +470,7 @@ def validate_anchor_nodes(G, anchor_list, trash_ids, anchors, allow_empty_cluste
 
 
 def get_cluster_nodes_edges(
-    Gsub, anchor_ids: list[int], num_clusters: int, allow_empty_clusters: bool
+    Gsub, anchor_ids: list[int], num_clusters: int, allow_empty_clusters: bool, trash_ids=frozenset()
 ):
     nodelCsel = []
     edgelCsel = []
@@ -487,15 +487,18 @@ def get_cluster_nodes_edges(
         else:
             cluster_no_anchor.append(i)
 
-    if cluster_no_anchor:
+    # pruning isolates every trashed PrD: those components need no anchor, and get no coordinate
+    missing = [i for i in cluster_no_anchor if not set(Gsub[i]["originalNodes"]) <= set(trash_ids)]
+    if missing:
+        missing_prds = [sorted(int(n) for n in Gsub[i]["originalNodes"]) for i in missing]
         print(
-            f"Warning: anchor node(s) in connected components {cluster_no_anchor} NOT selected."
+            f"Warning: no anchor in connected components {missing}, with the PrDs (0-based) {missing_prds}."
         )
         if not allow_empty_clusters:
             raise ValueError(
-                "Some (or all) of the anchor nodes are NOT in the Graph node list. "
-                "Run this routine again with allow_empty_clusters=True or with at least "
-                "one anchor in each connected component to proceed."
+                f"No anchor in the connected components with the PrDs (0-based) {missing_prds}. "
+                "Anchor at least one PrD in each connected component, or run this routine again "
+                "with allow_empty_clusters=True to leave those PrDs without a coordinate."
             )
 
     node_range = np.sort(np.concatenate(nodelCsel))
@@ -880,7 +883,7 @@ def find_conformational_coords(
         return psinums, senses
 
     node_range, edge_num_range, cluster_no_anchor = get_cluster_nodes_edges(
-        Gsub, anchor_list, num_clusters, allow_empty_clusters
+        Gsub, anchor_list, num_clusters, allow_empty_clusters, prds.trash_ids
     )
     G.update(ConnCompNoAnchor=cluster_no_anchor)
 

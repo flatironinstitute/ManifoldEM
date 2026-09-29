@@ -146,8 +146,8 @@ def probability_landscape(**kwargs):
     import numpy as np
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
-    _, psinums, senses = data_store.get_active_psinums_and_senses()
-    taus = data_store.get_active_taus()
+    active_prds, psinums, senses = data_store.get_active_psinums_and_senses()
+    taus = data_store.get_taus_prd_list(active_prds)
 
     occupancy, tau_avg = calculate_probability_landscape(psinums, senses, taus, params.states_per_coord)
     fname = params.probability_landscape_file
