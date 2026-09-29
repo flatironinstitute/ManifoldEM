@@ -1,6 +1,8 @@
-"""Plotting helpers for the RyR1GCs ManifoldEM tutorial notebook.
+"""Plotting helpers for the ManifoldEM tutorial notebook.
 
-Each `VizSession.show_*` method renders either a live ipywidgets/Plotly
+`load_session(toml_path)` loads a project from its `params_<project>.toml` file and returns
+a `VizSession`; project-specific values (such as `num_psi` and `states_per_coord`) come from
+that file. Each `VizSession.show_*` method renders either a live ipywidgets/Plotly
 viewer (`interactive=True`) or a static matplotlib snapshot that GitHub's
 notebook viewer can display (`interactive=False`).
 
@@ -13,7 +15,6 @@ as in the `topos/PrD_N/psi_K.gif` movies.
 from __future__ import annotations
 
 import base64
-import importlib
 import pickle
 from pathlib import Path
 from typing import Optional
@@ -27,39 +28,30 @@ from matplotlib.patches import Patch
 from scipy import stats
 
 
-def _load_toml(toml_path: Path) -> dict:
-    try:
-        toml_parser = importlib.import_module("tomllib")
-    except ModuleNotFoundError:
-        toml_parser = importlib.import_module("tomli")
-    with toml_path.open("rb") as f:
-        return toml_parser.load(f)
+# The directory the kernel started in (the notebook's, under Jupyter). Relative project paths are
+# resolved against it, because loading a project changes into the project's directory.
+_START_DIR = Path.cwd()
 
 
-def load_session(toml_file_name: Optional[str] = None, cwd: Optional[Path] = None) -> "VizSession":
-    """Locate the project TOML, load pd_data.pkl, and return a VizSession."""
-    cwd = Path(cwd) if cwd else Path.cwd()
+def load_session(toml_path) -> "VizSession":
+    """Load the project whose params file is `toml_path`, and return a VizSession.
 
-    if toml_file_name is None:
-        candidates = sorted(cwd.glob("*.toml"))
-        if not candidates:
-            raise FileNotFoundError(f"No .toml file found in {cwd}.")
-        toml_file_name = candidates[0].name
-        print(f"Auto-detected TOML: {toml_file_name}")
+    `toml_path` is the `params_<project>.toml` that `manifold-cli init` wrote. A relative path is
+    relative to the directory the notebook was started in. Like the CLI, this changes into the
+    project's directory.
+    """
+    from ManifoldEM.params import params
 
-    toml_file_name = toml_file_name.strip()
-    if not toml_file_name.endswith(".toml"):
-        toml_file_name += ".toml"
-
-    toml_path = cwd / toml_file_name
+    toml_path = (_START_DIR / Path(toml_path).expanduser()).resolve()
+    if not toml_path.is_file():
+        raise FileNotFoundError(f"No project file at {toml_path}; set PROJECT_TOML to your params_<project>.toml.")
     print(f"Using TOML file: {toml_path}")
 
-    toml_config = _load_toml(toml_path)
-    params_section = toml_config.get("params", toml_config)
-    project_name = params_section.get("project_name", "")
+    params.load(str(toml_path))
+    project_name = params.project_name
     print(f"project_name: {project_name}")
 
-    output_dir = cwd / "output" / project_name
+    output_dir = toml_path.parent / params.out_dir
     pkl_path = output_dir / "pd_data.pkl"
     if not pkl_path.exists():
         # Right after `manifold-cli init` the particles haven't been binned yet.
@@ -76,7 +68,8 @@ def load_session(toml_file_name: Optional[str] = None, cwd: Optional[Path] = Non
     print(f"  thres_low / high  : {pd_data['thres_low']} / {pd_data['thres_high']}")
 
     return VizSession(pd_data=pd_data, output_dir=output_dir, project_name=project_name,
-                      toml_path=toml_path)
+                      toml_path=toml_path, num_psi=params.num_psi,
+                      states_per_coord=params.states_per_coord, traj_name=params.traj_name)
 
 
 def _load_project(toml_path: Path):
@@ -103,12 +96,15 @@ class VizSession:
     object owns that state so the notebook cells stay one-liners.
     """
 
-    def __init__(self, pd_data: dict, output_dir: Path, project_name: str,
-                 toml_path: Optional[Path] = None):
+    def __init__(self, pd_data: dict, output_dir: Path, project_name: str, toml_path: Path,
+                 num_psi: int, states_per_coord: int, traj_name: str):
         self.pd_data = pd_data
         self.output_dir = Path(output_dir)
         self.project_name = project_name
-        self.toml_path = Path(toml_path) if toml_path else None
+        self.toml_path = Path(toml_path)
+        self.num_psi = num_psi
+        self.states_per_coord = states_per_coord
+        self.traj_name = traj_name
         self.topos_dir = self.output_dir / "topos"
 
         self._cc_data: Optional[dict] = None
@@ -131,9 +127,9 @@ class VizSession:
     def traj_data(self) -> dict:
         if self._traj_data is None:
             traj_dir = self.output_dir / "traj"
-            with open(traj_dir / "traj_name1.pkl", "rb") as f:
+            with open(traj_dir / f"traj_name{self.traj_name}.pkl", "rb") as f:
                 main = pickle.load(f)
-            with open(traj_dir / "traj_name1_vars.pkl", "rb") as f:
+            with open(traj_dir / f"traj_name{self.traj_name}_vars.pkl", "rb") as f:
                 vars_ = pickle.load(f)
             self._traj_data = {"main": main, "vars": vars_}
         return self._traj_data
@@ -586,8 +582,8 @@ class VizSession:
         axes_cc[0].set_xlabel("PrD number", fontsize=12)
         axes_cc[0].set_ylabel("Chosen ψ index (1-indexed)", fontsize=12)
         axes_cc[0].set_title("CC voting — chosen ψ per PrD", fontsize=12)
-        axes_cc[0].set_yticks(range(1, 9))
-        axes_cc[0].set_yticklabels([f"ψ{k}" for k in range(1, 9)])
+        axes_cc[0].set_yticks(range(1, self.num_psi + 1))
+        axes_cc[0].set_yticklabels([f"ψ{k}" for k in range(1, self.num_psi + 1)])
         axes_cc[0].legend(
             handles=[Patch(fc="tomato", label="FWD (+1)"),
                      Patch(fc="steelblue", label="REV (−1)")],
@@ -612,8 +608,8 @@ class VizSession:
                 self._sphere_fig.data[2].marker.colorscale = "Turbo"
                 self._sphere_fig.data[2].marker.colorbar = dict(
                     title="Chosen ψ", thickness=14, x=1.20,
-                    tickvals=list(range(1, 9)),
-                    ticktext=[f"ψ{k}" for k in range(1, 9)],
+                    tickvals=list(range(1, self.num_psi + 1)),
+                    ticktext=[f"ψ{k}" for k in range(1, self.num_psi + 1)],
                 )
 
         unique_psis = dict(zip(*np.unique(psinums_all + 1, return_counts=True)))
@@ -650,8 +646,8 @@ class VizSession:
             return
 
         entry = fv[psi_idx]
-        step = 16
-        H, W = 336, 336
+        H, W = np.shape(next(iter(entry.values()))["Vx"])  # the size of the movie frames
+        step = max(1, W // 21)  # 16 px for a 336-px box
         ys = np.arange(step // 2, H, step)
         xs = np.arange(step // 2, W, step)
         Xg, Yg = np.meshgrid(xs, ys)
@@ -713,7 +709,7 @@ class VizSession:
             self._prd_slider = prd_slider
 
         psi_slider = widgets.IntSlider(
-            value=default_psi, min=1, max=8, step=1, description="ψ:",
+            value=default_psi, min=1, max=self.num_psi, step=1, description="ψ:",
             style={"description_width": "initial"},
             layout=widgets.Layout(width="320px"),
         )
@@ -754,7 +750,7 @@ class VizSession:
         ax1.set_xlabel("Conformational state (τ bin)", fontsize=12)
         ax1.set_ylabel("Particle count  hUn", fontsize=12)
         ax1.set_title(f"State histogram  —  {self.project_name}\n"
-                      f"Total particles: {int(hUn.sum())}  |  50 states", fontsize=11)
+                      f"Total particles: {int(hUn.sum())}  |  {n_states} states", fontsize=11)
 
         ax2.plot(state_ax, dG, "o-", color="crimson", lw=2, ms=5,
                  label=r"$-\ln P(\tau)$  [k$_B$T]")
@@ -782,8 +778,6 @@ class VizSession:
     # occupancy thresholds, anchors, trash PrDs and trajectory path width
     # ─────────────────────────────────────────────────────────────────────
     def _project(self):
-        if self.toml_path is None:
-            raise RuntimeError("This session has no project file; create it with load_session().")
         return _load_project(self.toml_path)
 
     def _refresh(self):

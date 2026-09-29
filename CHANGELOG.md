@@ -14,6 +14,10 @@ Changes made prior to the Flatiron fork not included.
     * Tutorial notebook helpers for what used to need the GUI: occupancy thresholds, anchors, trash
       PrDs and the trajectory path width (`viz.show_thresholds`, `viz.set_anchor`,
       `viz.trash_prd`, `viz.show_anchors`, `viz.set_path_width`, ...)
+  * Changed
+    * The tutorial notebook works for any project. It moved to `tutorial/`, its setup cell takes the
+      path of the project's `.toml` file (`PROJECT_TOML`), and the number of psis and states, the
+      trajectory name and the image size come from the project instead of the RyR1 tutorial
   * Fixed
     * **Changes results:** belief propagation used anchors off by one, so an anchor set on psi 1
       was propagated as psi 2 (and a REV anchor on the last psi crashed)

@@ -40,8 +40,8 @@ problems if you later install packages into this environment with `conda install
 recommended to keep an environment purely for `ManifoldEM`.
 
 The tutorial notebook also needs Jupyter; its first cell installs the plotting packages it uses.
-Start it from your project directory (the one with the `params_<project>.toml` file), with the
-notebook and its `visualization.py` copied there.
+Open it where it is, next to its `visualization.py`, and set `PROJECT_TOML` in its setup cell to
+your project's `params_<project>.toml`.
 
 # Preprocessing your cryo-EM data
 
@@ -178,7 +178,7 @@ manifold-cli init -p 20260101_thyroglobulin_tutorial -a cryoem_heterogeneity_cha
 
 In the case of this thyroglobulin tutorial, we will need to adjust thresholds, however the default minimum number of images for a given PD is 100 and the default maximum number is 2000. If you find these thresholds acceptable, you can move onto the next step directly for your dataset.
 
-To choose the thresholds, open the tutorial notebook in the project directory and look at the occupancy of the orientation bins with `viz.show_thresholds()`. `viz.show_thresholds(low=250)` previews a low threshold of 250, the value for this tutorial, and `viz.set_thresholds(low=250, high=2000)` applies it. The CLI equivalent is:
+To choose the thresholds, open the tutorial notebook with `PROJECT_TOML` set to this project's `.toml` file and look at the occupancy of the orientation bins with `viz.show_thresholds()`. `viz.show_thresholds(low=250)` previews a low threshold of 250, the value for this tutorial, and `viz.set_thresholds(low=250, high=2000)` applies it. The CLI equivalent is:
 ```
 manifold-cli threshold --prd_thres_low 250 params_20260101_thyroglobulin_tutorial.toml
 ```
