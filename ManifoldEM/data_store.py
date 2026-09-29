@@ -170,12 +170,12 @@ class PrdData:
     ctf_images : ndarray
         The Contrast Transfer Function (CTF) images associated with the projection direction.
     dist_data : dict
-        The distance information between images in the projection direction, including transformed images
-        in the `transformed_images` attribute, and the CTF images in the `ctf_images` attribute.
+        The distances between the projection direction's images (D) and their Wiener-filtered
+        average (imgAvg), from prd_analysis.h5.
     psi_data : dict
-        The embedding data associated with the projection direction.
+        The diffusion-map embedding (psi, lamb, posPath, ...) of the images the manifold trimming kept.
     EL_data : dict
-        The NLSA/eigenvalue data associated with the projection direction.
+        The NLSA data (IMG1, the movie, n_frames x n_pix x n_pix; tau; ...) of the psi that find-ccs chose.
     """
 
     def __init__(self, prd_index: int):

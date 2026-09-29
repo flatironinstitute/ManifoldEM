@@ -75,22 +75,19 @@ message and exit.
 % manifold-cli
 ManifoldEM version: 0.4.0
 
-usage: manifold-cli [-h] [-n NCPU] {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,probability-landscape,trajectory,utility} ...
+usage: manifold-cli [-h] [-n NCPU] {init,threshold,decompose,find-ccs,probability-landscape,trajectory,utility} ...
 
 Command-line interface for ManifoldEM package
 
 positional arguments:
-  {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,probability-landscape,trajectory,utility}
+  {init,threshold,decompose,find-ccs,probability-landscape,trajectory,utility}
     init                0: Initialize new project
     threshold           1: Set upper/lower thresholds for principal direction detection
-    calc-distance       2: Calculate S2 distances
-    manifold-analysis   3: Initial embedding
-    psi-analysis        4: Analyze images to get psis
-    nlsa-movie          5: Create 2D psi movies
-    find-ccs            7: Find conformational coordinates
+    decompose           2: Embed images onto manifold and decompose
+    find-ccs            3: Find conformational coordinates
     probability-landscape
-                        8: Calculate probability landscape
-    trajectory          9: Calculate trajectory
+                        4: Calculate probability landscape
+    trajectory          5: Calculate trajectory
     utility             Utility functions
 
 options:
@@ -98,7 +95,7 @@ options:
   -n NCPU, --ncpu NCPU
 ```
 
-The output shows that there are nine sub-commands listed in the order they belong in the
+The output shows that there are six sub-commands listed in the order they belong in the
 pipeline (and some utility functions). Some commands support additional arguments, especially
 the `init` command, which creates a new project in your current working directory. To see how
 to use a given command, simply run the command with a following `-h` flag, e.g.
@@ -107,9 +104,9 @@ to use a given command, simply run the command with a following `-h` flag, e.g.
 % manifold-cli init -h
 ManifoldEM version: 0.4.0
 
-usage: manifold-cli init [-h] -p STR [-v FILEPATH] [-a FILEPATH] [-i FILEPATH] [-m FILEPATH] -s FLOAT -d FLOAT -r FLOAT [-x INT] [-o] [--eps FLOAT] [--prd_thres_low INT]
-                         [--prd_thres_high INT] [--tess_hemisphere_vec STR] [--tess_hemisphere_type STR] [--distance_filter_type STR] [--distance_filter_cutoff_freq FLOAT]
-                         [--distance_filter_order INT] [--num_psi INT] [--nlsa_tune INT] [--con_order_range INT] [--nlsa_fps FLOAT]
+usage: manifold-cli init [-h] -p STR [-v FILEPATH] [-a FILEPATH] [-i FILEPATH] [-m FILEPATH] -s FLOAT -d FLOAT -r FLOAT [-x INT] [-o] [--eps FLOAT]
+                         [--prd_thres_low INT] [--prd_thres_high INT] [--tess_hemisphere_vec STR] [--tess_hemisphere_type STR] [--distance_filter_type STR]
+                         [--distance_filter_cutoff_freq FLOAT] [--distance_filter_order INT] [--num_psi INT] [--con_order_range INT] [--nlsa_tune INT]
 
 options:
   -h, --help            show this help message and exit
@@ -133,16 +130,15 @@ options:
   --tess_hemisphere_type STR
                         [BINNING] Technique to tesselate sphere. Valid options: ["lovisolo_silva", "fibonacci"] (default: lovisolo_silva)
   --distance_filter_type STR
-                        [CALC_DISTANCE] Filter type for image preprocessing. Valid: {"Butter", "Gauss"} (default: Butter)
+                        [DECOMPOSITION] Filter type for image preprocessing. Valid: {"Butter", "Gauss"} (default: Butter)
   --distance_filter_cutoff_freq FLOAT
-                        [CALC_DISTANCE] Nyquist cutoff frequency for filter (default: 0.5)
+                        [DECOMPOSITION] Nyquist cutoff frequency for filter (default: 0.5)
   --distance_filter_order INT
-                        [CALC_DISTANCE] Order of Filter ("Butter" only) (default: 8)
-  --num_psi INT         [CALC_DISTANCE] Number of eigenfunctions for analysis (default: 8)
-  --nlsa_tune INT       [MANIFOLD_ANALYSIS] Diffusion map tuning parameter (default: 3)
+                        [DECOMPOSITION] Order of Filter ("Butter" only) (default: 8)
+  --num_psi INT         [DECOMPOSITION] Number of eigenfunctions for analysis (default: 8)
   --con_order_range INT
-                        [PSI_ANALYSIS] Coarse-graining factor of probability landscape (default: 50)
-  --nlsa_fps FLOAT      [NLSA_MOVIE] Frames per second for generated movies (default: 5.0)
+                        [DECOMPOSITION] Coarse-graining factor of probability landscape (default: 50)
+  --nlsa_tune INT       [DECOMPOSITION] Diffusion map tuning parameter (default: 3)
 ```
 
 An example invocation then might look like
@@ -152,55 +148,40 @@ manifold-cli init -a J310/from_csparc.star -i J310/signal_subtracted.mrcs -s 1.2
 ```
 
 Parameters are set when the project is created, as `--num_psi 5` (the number of leading
-eigenvectors, "psis", to analyze) is here, or later by editing the project's `.toml` file. The
-average volume (`-v`) is optional and currently unused.
+eigenvectors, "psis", to analyze) is here, or later: with the same flag on the step that uses the
+parameter (`manifold-cli decompose --num_psi 5 ...`), which saves it to the project, or by editing
+the project's `.toml` file. Flags you don't give leave the project's values alone. The average
+volume (`-v`) is optional and currently unused.
 
 The rest of the commands will take as their final argument the "toml" file generated from the
-initialization step. Let's set the image count thresholds and calculate the distance matrices next
-as an example. Note the `-n 16` _before_ the sub-command. Most processing steps support this
+initialization step. Let's set the image count thresholds and decompose the projection directions
+next as an example. Note the `-n 16` _before_ the sub-command. Most processing steps support this
 option, which specifies how many workers to use in processing. In most cases you want roughly the
 output of the `nproc` command. My workstation has 16 physical cores, so I specify 16 below for the
-matrix calculation step. Supplying `-n` for commands that don't support parallel processing is
-harmless.
+decomposition. Supplying `-n` for commands that don't support parallel processing is harmless.
 
 ```
 % manifold-cli threshold --prd_thres_low 100 --prd_thres_high 4000 params_my_J310_analysis.toml
 ManifoldEM version: 0.4.0
 
 Changing param prd_thres_high from 2000 to 4000
-% manifold-cli -n 16 calc-distance params_my_J310_analysis.toml
-ManifoldEM version: 0.4.0
-
-Computing the distances...
-Calculating projection direction information
-RELION Optics Group found.
-Number of PDs: 145
-Neighborhood epsilon: 0.05338763021220811
-Number of Graph Edges: (982, 2)
-
-Performing connected component analysis.
-Number of connected components: 2
-Number of Graph Edges: (518, 2)
-Number of Graph Edges: (464, 2)
-100%|███████████████████████████████| 145/145 [00:11<00:00, 12.17it/s]
+% manifold-cli -n 16 decompose params_my_J310_analysis.toml &> /dev/null
 ```
 
-This has created a significant amount of data stored in the `output/my_J310_analysis/distances` --
-one HDF5 file (`IMGs_prD_<N>.h5`) for each projection direction. The [tutorial
-notebook](tutorial/Visualization_Notebook.ipynb) visualizes these and the later outputs,
-and the files can also be inspected with the usual Python tooling (e.g. `h5py`).
-
-Let's finish up the first major stage of the pipeline. I'm hiding the output for clarity's sake.
-
-```
-% manifold-cli -n 16 manifold-analysis params_my_J310_analysis.toml &> /dev/null
-% manifold-cli -n 16 psi-analysis params_my_J310_analysis.toml &> /dev/null
-% manifold-cli -n 16 nlsa-movie params_my_J310_analysis.toml &> /dev/null
-```
+For each projection direction, `decompose` calculates the distances between its images, embeds them
+with diffusion maps, trims the outliers from the manifold, and makes an NLSA movie along each psi.
+Everything goes into one HDF5 file, `output/my_J310_analysis/prd_analysis.h5`, with a group
+`prd_<N>` per projection direction. The [tutorial notebook](tutorial/Visualization_Notebook.ipynb)
+visualizes it and the later outputs, and the file can also be inspected with the usual Python
+tooling (e.g. `h5py`) or through the Python interface below. Projects made by earlier versions of
+ManifoldEM, with `distances/`, `diff_maps/` and `psi_analysis/` directories instead, aren't read any
+more: re-run them from `decompose`.
 
 At this point you choose the anchors: projection directions whose conformational coordinate you set
 by hand (the psi movie that shows the motion, and its sense), which the next step propagates to the
-others. The [tutorial notebook](tutorial/Visualization_Notebook.ipynb) shows the movies
+others. `decompose` starts you off with a guess: for each connected component, psi 1 played forward
+on its most populated projection direction, unless that one already has an anchor. Check the
+guesses. The [tutorial notebook](tutorial/Visualization_Notebook.ipynb) shows the movies
 and saves anchors and trash (excluded) projection directions to the project, e.g.
 `viz.set_anchor(prd=53, psi=1, sense="FWD")`; the [tutorial](tutorial/README.md) walks through it.
 Here I set a few anchors and will continue on...
@@ -224,14 +205,12 @@ documented and accessible via the `python` `help` interface. An example ipython 
 ```
 In [1]: from ManifoldEM.data_store import data_store
    ...: from ManifoldEM.params import params
-   ...: params.load('params_J310.toml')
+   ...: params.load('params_my_J310_analysis.toml')
    ...: prd = data_store.get_prd_data(117)
-   ...: npix = params.ms_num_pixels
    ...: print(prd)
 prd_index: 117
 S2_bin_index: 17310
 bin_center: [ 0.01355376 -0.00546575  0.9998932 ]
-n_images: 216
 occupancy: 216
 trash: False
 anchor: True
@@ -254,13 +233,13 @@ class PrdData(builtins.object)
  |      The filtered and "in-plane" rotated images associated with the projection direction.
  |  ctf_images : ndarray
  |      The Contrast Transfer Function (CTF) images associated with the projection direction.
- |  psi_data : dict
- |      The embedding data associated with the projection direction.
- |  EL_data : dict
- |      The NLSA/eigenvalue data associated with the projection direction.
  |  dist_data : dict
- |      The distance information between images in the projection direction, including transformed images
- |      in the `transformed_images` attribute.
+ |      The distances between the projection direction's images (D) and their Wiener-filtered
+ |      average (imgAvg), from prd_analysis.h5.
+ |  psi_data : dict
+ |      The diffusion-map embedding (psi, lamb, posPath, ...) of the images the manifold trimming kept.
+ |  EL_data : dict
+ |      The NLSA data (IMG1, the movie, n_frames x n_pix x n_pix; tau; ...) of the psi that find-ccs chose.
  |
  |  ...
  |
@@ -270,6 +249,8 @@ class PrdData(builtins.object)
  |  EL_data
  |
  |  ctf_images
+ |
+ |  dist_data
  |
  |  info
  |
@@ -284,16 +265,16 @@ class PrdData(builtins.object)
 
 In [3]: import matplotlib.pyplot as plt
 
-In [4]: plt.imshow(prd.EL_data['IMG1'][:,-1].reshape(npix, npix))
+In [4]: plt.imshow(prd.EL_data['IMG1'][-1])  # the last frame of the chosen psi's movie
 Out[4]: <matplotlib.image.AxesImage at 0x7fde924838b0>
 
 In [5]: plt.show()
 
 In [6]: prd.EL_data.keys()
-Out[6]: dict_keys(['IMG1', 'IMGT', 'posPath', 'PosPsi1', 'psirec', 'tau', 'psiC1', 'mu', 'VX', 'sdiag', 'Topo_mean', 'tauinds'])
+Out[6]: dict_keys(['IMG1', 'Topo_mean', 'VX', 'mu', 'psiC1', 'psi_sorted_ind', 'psirec', 'sdiag', 'tau', 'tauinds'])
 
 In [7]: prd.psi_data.keys()
-Out[7]: dict_keys(['lamb', 'psi', 'sigma', 'mu', 'posPath', 'ind', 'logEps', 'logSumWij', 'popt', 'R_squared'])
+Out[7]: dict_keys(['R_squared', 'lamb', 'logEps', 'logSumWij', 'mu', 'popt', 'posPath', 'psi', 'sigma'])
 
 In [8]: prd.raw_images.shape
 Out[8]: (216, 192, 192)

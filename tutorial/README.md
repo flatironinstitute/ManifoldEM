@@ -71,11 +71,10 @@ This is a pretty small dataset that you can run on a laptop or desktop, for whic
 
 ```
 manifold-cli init -p 20260101_RyR_tutorial -a RyR1GCs_clustRem.star -i RyR1GCs_clustRem.mrcs -s 1.255 -d 360 -r 5.0 -x 4 
-manifold-cli -n 16 calc-distance params_20260101_RyR_tutorial.toml
-manifold-cli -n 16 manifold-analysis params_20260101_RyR_tutorial.toml
-manifold-cli -n 16 psi-analysis params_20260101_RyR_tutorial.toml
-manifold-cli -n 16 nlsa-movie params_20260101_RyR_tutorial.toml
+manifold-cli -n 16 decompose params_20260101_RyR_tutorial.toml
 ```
+
+`decompose` calculates the distances between the images of each projection direction (PD), embeds them, and makes an NLSA movie along each of the leading eigenvectors (psis), all stored in `output/20260101_RyR_tutorial/prd_analysis.h5`.
 
 To move forward through the pipeline, it is good to check at least the NLSA movie for your most populated projection direction:
 ```python
@@ -88,7 +87,7 @@ top_PD = np.argmax(prds.occupancy)
 print(f"The PD with the most images is {top_PD} with {prds.occupancy[top_PD]} images.")
 ```
 
-Which tells you "The PD with the most images is 52 with 565 images." Since Python is 0 index, we now migrate to `output/20260101_RyR_tutorial/topos` and open `PrD_53/psi_1.gif`.
+Which tells you "The PD with the most images is 52 with 565 images." Now watch its psi 1 movie. In the [tutorial notebook](Visualization_Notebook.ipynb), `viz.show_prd_viewer(default_prd=53, interactive=True)` plays it; PD numbers there count from 1, so PD 52 here is PD 53 there. From Python, `data_store.get_nlsa_movies(52)[0]` reads its frames.
 
 ![](images/psi_1.gif)
 
@@ -119,7 +118,7 @@ Note that while there are many things to consider when picking anchor nodes besi
 > print(f"In cluster1, the PD with the most images is {cluster1[top_PD_cluster1]} with {prds.occupancy[cluster1[top_PD_cluster1]]} images.")
 ```
 
-Which will give you "In cluster1, the PD with the most images is 45 with 450 images." - So now we can look at `PrD_46/psi_1.gif`. If you look at this gif you can see the 'arms' are moving down, while in the first movie they are moving up, so we will this define them as anchor nodes with opposite senses as follows:
+Which will give you "In cluster1, the PD with the most images is 45 with 450 images." - So now we can look at its psi 1 movie (PD 46 in the notebook). In this movie you can see the 'arms' are moving down, while in the first movie they are moving up. `decompose` has already put a psi 1 FWD anchor on PDs 52 and 45, its guess for the most populated PD of each cluster, so we set them again, the second one with the opposite sense:
 
 ```
 from ManifoldEM.data_store import Anchor, Sense
@@ -128,7 +127,7 @@ prds.insert_anchor(45, Anchor(sense=Sense.REV))
 prds.save()
 ```
 
-The [tutorial notebook](Visualization_Notebook.ipynb) does the same without the index bookkeeping. `viz.show_anchors()` plots the PDs by cluster and names the most populated PD of each cluster that has no anchor yet, `viz.show_prd_viewer(default_prd=53, interactive=True)` plays the movies, and PD numbers there count from 1, like the `PrD_N` folders:
+The [tutorial notebook](Visualization_Notebook.ipynb) does the same without the index bookkeeping. `viz.show_anchors()` plots the PDs by cluster and names the most populated PD of each cluster that has no anchor yet, `viz.show_prd_viewer(default_prd=53, interactive=True)` plays the movies, and PD numbers there count from 1:
 
 ```python
 viz.set_anchor(prd=53, psi=1, sense="FWD")
@@ -188,25 +187,24 @@ manifold-cli threshold --prd_thres_low 250 params_20260101_thyroglobulin_tutoria
 
 While this is the core of the method, it is actually the simplest part for the user to interact with. One aspect of these steps however, is that they are quite computationally expensive, so we recommend running them on a cluster if possible for large datasets, such as the one we are using for this thyroglobulin tutorial. You can run them in an interactive job or by submitting directly to your cluster, however you prefer, and assign the correct number of processors using the `-n` flag. Note that FI-ManifoldEM is not currently GPU-compatible, so be sure to allocate only CPU nodes.
 
-Broadly, the four steps here are:
-- The **Distance Calculation** (`calc-distance`) constructs the distances graph, in which the similarity of each image to the other images in each PD is calculated.
-- The **Embedding** step (`manifold-analysis`) uses the previous distance calculations to create nonlinear conformational manifolds via diffusion maps. This embedding automatically yields orthogonal coordinates (eigenvectors) ranked according to eigenvalue, with each coordinate assumed to describe a set of concerted changes.
-- In **Spectral Analysis** (`psi-analysis`) the initial embeddings are mapped back into a more discernable coordinate space using Nonlinear Laplacian Spectral Analysis (NLSA). The characteristic NLSA images (topos) and their evolutions (chronos) from these supervectors are then extracted, and each topo/chrono pair constitutes an element of a biorthogonal decomposition of the conformational changes along the given eigenvector. Noise-reduced snapshots can be reconstructed from the topo/chrono pairs with significant (above-noise) singular values and
+`decompose` runs four stages for every PD:
+- The **Distance Calculation** constructs the distances graph, in which the similarity of each image to the other images in each PD is calculated.
+- The **Embedding** uses the previous distance calculations to create nonlinear conformational manifolds via diffusion maps. This embedding automatically yields orthogonal coordinates (eigenvectors) ranked according to eigenvalue, with each coordinate assumed to describe a set of concerted changes.
+- In **Spectral Analysis** the initial embeddings are mapped back into a more discernable coordinate space using Nonlinear Laplacian Spectral Analysis (NLSA). The characteristic NLSA images (topos) and their evolutions (chronos) from these supervectors are then extracted, and each topo/chrono pair constitutes an element of a biorthogonal decomposition of the conformational changes along the given eigenvector. Noise-reduced snapshots can be reconstructed from the topo/chrono pairs with significant (above-noise) singular values and
 embedded to obtain the manifold characteristic of the conformational changes along the selected line. This embedding results in a new set of eigenvectors in a different space, to high accuracy forming a 1-dimensional manifold with known eigenfunctions {cos(kπτ) | k ∈ ℤ+
 } parameterized by a conformational parameter τ.
-- From this process 2D **NLSA Movies** (`nlsa-movie`) can be generated, designed to represent the conformational signal corresponding to the eigenvector chosen from the initially-embedded manifold. In total, NLSA is performed for each of the leading k eigenvectors independently, such that k 2D NLSA movies are constructed for each PD.
+- From this process 2D **NLSA Movies** are made, designed to represent the conformational signal corresponding to the eigenvector chosen from the initially-embedded manifold. In total, NLSA is performed for each of the leading k eigenvectors independently, such that k 2D NLSA movies are constructed for each PD.
+
+Everything is stored in the project's `prd_analysis.h5`, and the tutorial notebook shows it.
 
 ```
-manifold-cli -n 96 calc-distance params_20260101_thyroglobulin_tutorial.toml
-manifold-cli -n 96 manifold-analysis params_20260101_thyroglobulin_tutorial.toml
-manifold-cli -n 96 psi-analysis params_20260101_thyroglobulin_tutorial.toml
-manifold-cli -n 96 nlsa-movie params_20260101_thyroglobulin_tutorial.toml
+manifold-cli -n 96 decompose params_20260101_thyroglobulin_tutorial.toml
 ```
 
 ## Inspecting Eigenvectors and Aligning Conformational Coordinates
 In this section you use the tutorial notebook to inspect your NLSA movies and pick anchor nodes for belief propagation.
 
-There are many things to explore here, but generally the best place to start is your most populated PD. `viz.show_anchors()` plots the PDs by connected component and, for each component that has no anchor yet, names its most populated PD. For this thyroglobulin dataset with these particular parameters, PD 1059 has the most particles with 994 particles. `viz.show_prd_viewer(default_prd=1059, interactive=True)` shows its eigenvalue spectrum and NLSA movies (`psi_1` … `psi_8`), so you can judge whether it is appropriate to assign as an anchor node. If it is, anchor it on the psi that shows the motion:
+There are many things to explore here, but generally the best place to start is your most populated PD. `decompose` has already anchored the most populated PD of each connected component on psi 1, played forward: a guess to check, not a choice. `viz.show_anchors()` plots the PDs by connected component, with their anchors, and names the most populated PD of any component that has no anchor. For this thyroglobulin dataset with these particular parameters, PD 1059 has the most particles with 994 particles. `viz.show_prd_viewer(default_prd=1059, interactive=True)` shows its eigenvalue spectrum and NLSA movies (`psi_1` … `psi_8`), so you can judge whether it is appropriate to assign as an anchor node. If it is, anchor it on the psi that shows the motion:
 ```python
 viz.set_anchor(prd=1059, psi=1, sense="FWD")
 ```

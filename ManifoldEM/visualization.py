@@ -888,7 +888,7 @@ class VizSession:
         """Apply new occupancy thresholds, like `manifold-cli threshold --prd_thres_low … --prd_thres_high …`.
 
         The particles are re-binned right away, which renumbers the PrDs: all anchors and trash
-        PrDs are cleared, and every step from calc-distance on has to be run again.
+        PrDs are cleared, and every step from decompose on has to be run again.
         """
         low, high = int(low), int(high)
         prds = self._project()
@@ -906,7 +906,7 @@ class VizSession:
         self._project()  # re-bins because the thresholds changed
 
         print(f"Thresholds set to low={low}, high={high}: {n_prds} PrDs. "
-              "Run calc-distance and the later steps (again).")
+              "Run decompose and the later steps (again).")
         if n_anchors or n_trash:
             print(f"Cleared the anchors ({n_anchors}) and trash PrDs ({n_trash}), since the PrD numbers changed.")
 
