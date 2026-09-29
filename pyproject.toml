@@ -48,6 +48,7 @@ dependencies = [
     "fasthog",
     "h5py",
     "imageio",
+    "matplotlib",
     "nptyping",
     "numba",
     "numpy",
@@ -66,7 +67,6 @@ dependencies = [
 gui = [
     "configobj",
     "fabric",
-    "matplotlib",
     "mayavi@https://github.com/enthought/mayavi/zipball/main",
     "PyQt5",
     "vtk",
