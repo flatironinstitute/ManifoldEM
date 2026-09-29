@@ -33,14 +33,13 @@ _RETIRED_PARAMS = {
 }
 
 
-# Project files store the integer value, so keep the numbering stable (6 was the GUI's PrD selection).
+# Project files store the integer value, so keep the numbering stable. `decompose` replaced the
+# steps 2-5 (calc-distance, manifold-analysis, psi-analysis, nlsa-movie) and took the last one's
+# value; 6 was the GUI's PrD selection.
 class ProjectLevel(Enum):
     INIT = 0
     BINNING = 1
-    CALC_DISTANCE = 2
-    MANIFOLD_ANALYSIS = 3
-    PSI_ANALYSIS = 4
-    NLSA_MOVIE = 5
+    DECOMPOSITION = 5
     FIND_CCS = 7
     PROBABILITY_LANDSCAPE = 8
     TRAJECTORY = 9
@@ -155,19 +154,19 @@ class Params:
         ParamInfo(
             'Filter type for image preprocessing. Valid: {"Butter", "Gauss"}',
             True,
-            [ProjectLevel.CALC_DISTANCE],
+            [ProjectLevel.DECOMPOSITION],
         ),
     ] = "Butter"
     distance_filter_cutoff_freq: Annotated[
         float,
         ParamInfo(
-            "Nyquist cutoff frequency for filter", True, [ProjectLevel.CALC_DISTANCE]
+            "Nyquist cutoff frequency for filter", True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 0.5
     distance_filter_order: Annotated[
         int,
         ParamInfo(
-            'Order of Filter ("Butter" only)', True, [ProjectLevel.CALC_DISTANCE]
+            'Order of Filter ("Butter" only)', True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 8
 
@@ -184,18 +183,18 @@ class Params:
     num_psi: Annotated[
         int,
         ParamInfo(
-            "Number of eigenfunctions for analysis", True, [ProjectLevel.CALC_DISTANCE]
+            "Number of eigenfunctions for analysis", True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 8
     rad: Annotated[
-        int, ParamInfo("Manifold pruning"), True, [ProjectLevel.MANIFOLD_ANALYSIS]
+        int, ParamInfo("Manifold pruning"), True, [ProjectLevel.DECOMPOSITION]
     ] = 5
 
     # NLSA parameters:
     nlsa_fps: Annotated[
         float,
         ParamInfo(
-            "Frames per second for generated movies", True, [ProjectLevel.NLSA_MOVIE]
+            "Frames per second for generated movies", True, [ProjectLevel.DECOMPOSITION]
         ),
     ] = 5.0
     con_order_range: Annotated[
@@ -204,7 +203,7 @@ class Params:
             "Coarse-graining factor of probability landscape",
             True,
             [
-                ProjectLevel.PSI_ANALYSIS,
+                ProjectLevel.DECOMPOSITION,
                 ProjectLevel.PROBABILITY_LANDSCAPE,
                 ProjectLevel.TRAJECTORY,
             ],
@@ -219,7 +218,7 @@ class Params:
         ParamInfo(
             "Diffusion map tuning parameter",
             True,
-            [ProjectLevel.MANIFOLD_ANALYSIS, ProjectLevel.PSI_ANALYSIS],
+            [ProjectLevel.DECOMPOSITION],
         ),
     ] = 3
 
@@ -268,88 +267,24 @@ class Params:
         )
 
     @property
-    def user_dir(self) -> str:
-        return "output"
-
-    @property
     def out_dir(self) -> str:
-        return os.path.join(self.user_dir, self.project_name)
-
-    @property
-    def psi_file(self) -> str:
-        return os.path.join(self.psi_dir, "gC_trimmed_psi_")
-
-    @property
-    def psi2_file(self) -> str:
-        return os.path.join(self.psi2_dir, "S2_")
+        return os.path.join("output", self.project_name)
 
     @property
     def pd_file(self) -> str:
         return os.path.join(self.out_dir, "pd_data.pkl")
 
     @property
-    def dist_dir(self) -> str:
-        return os.path.join(self.out_dir, "distances")
-
-    @property
-    def dist_file(self) -> str:
-        return os.path.join(self.dist_dir, "IMGs_")
-
-    @property
-    def psi_dir(self) -> str:
-        return os.path.join(self.out_dir, "diff_maps")
-
-    @property
-    def psi2_dir(self) -> str:
-        return os.path.join(self.out_dir, "psi_analysis")
-
-    @property
-    def EL_dir(self) -> str:
-        return os.path.join(self.out_dir, f"ELConc{self.con_order_range}")
-
-    @property
-    def OM_dir(self) -> str:
-        return os.path.join(self.EL_dir, "OM")
-
-    @property
-    def OM_file(self) -> str:
-        return os.path.join(self.OM_dir, "S2_OM.npy")
-
-    @property
-    def traj_dir(self) -> str:
-        return os.path.join(self.out_dir, "traj")
-
-    @property
-    def CC_dir(self) -> str:
-        return os.path.join(self.out_dir, "CC")
-
-    @property
-    def CC_dir_temp(self) -> str:
-        return os.path.join(self.CC_dir, "temp")
-
-    @property
-    def bad_nodes_psis_tau_file(self) -> str:
-        return os.path.join(self.CC_dir, "bad_nodes_psis_tau.pkl")
-
-    @property
-    def CC_file(self) -> str:
-        return os.path.join(self.CC_dir, "CC_file.pkl")
-
-    @property
-    def CC_meas_dir(self) -> str:
-        return os.path.join(self.CC_dir, "CC_meas")
-
-    @property
-    def CC_OF_dir(self) -> str:
-        return os.path.join(self.CC_dir, "CC_OF")
-
-    @property
-    def traj_file(self) -> str:
-        return os.path.join(self.traj_dir, "traj_")
+    def analysis_file(self) -> str:
+        return os.path.join(self.out_dir, "prd_analysis.h5")
 
     @property
     def bin_dir(self) -> str:
         return os.path.join(self.out_dir, "bin")
+
+    @property
+    def probability_landscape_file(self) -> str:
+        return os.path.join(self.out_dir, "probability_landscape.npz")
 
     @property
     def postproc_mrcs2mrc_dir(self) -> str:
@@ -358,35 +293,6 @@ class Params:
     @property
     def postproc_denoise_dir(self) -> str:
         return os.path.join(self.out_dir, "postproc", "denoise")
-
-    def get_topos_path(self, prd: int, index: int) -> str:
-        return os.path.join(self.out_dir, "topos", f"PrD_{prd}", f"topos_{index}.png")
-
-    def get_psi_gif(self, prd: int, index: int) -> str:
-        return os.path.join(self.out_dir, "topos", f"PrD_{prd}", f"psi_{index}.gif")
-
-    def get_EL_file(self, prd_index: int):
-        return os.path.join(self.EL_dir, f"S2_prD_{prd_index}.pkl")
-
-    def get_CC_OF_file(self, prd_index: int):
-        return os.path.join(self.CC_OF_dir, f"OF_prD_{prd_index}.pkl")
-
-    def get_CC_meas_file(self, edge_index: int, prd_index: int, nbr_index: int) -> str:
-        return os.path.join(
-            self.CC_meas_dir, f"meas_edge_prDs_{edge_index}_{prd_index}_{nbr_index}.h5"
-        )
-
-    def get_psi_file(self, prd_index: int):
-        return f"{self.psi_file}prD_{prd_index}.h5"
-
-    def get_psi2_file(self, prd_index: int, psi_index: int):
-        return f"{self.psi2_file}prD_{prd_index}_psi_{psi_index}.h5"
-
-    def get_dist_file(self, prd_index: int):
-        return f"{self.dist_file}prD_{prd_index}.h5"
-
-    def get_bad_nodes_psis_tau_file_prd(self, prd_index: int):
-        return os.path.join(self.CC_dir_temp, f"bad_nodes_tau_prD_{prd_index}.pkl")
 
     def get_params_for_level(
         self, level: ProjectLevel, first_appearance=True, user_only=True
@@ -458,23 +364,14 @@ class Params:
                 print(f"Warning: param '{param}' not found in parameters module")
             else:
                 if param == "project_level":
-                    setattr(self, param, ProjectLevel(val))
+                    # levels 2-4 were the first three of the steps that `decompose` replaced
+                    setattr(self, param, ProjectLevel(ProjectLevel.BINNING.value if val in (2, 3, 4) else val))
                 else:
                     setattr(self, param, val)
 
     def create_dir(self):
-        os.makedirs(self.dist_dir, exist_ok=True)
-        os.makedirs(self.psi_dir, exist_ok=True)
-        os.makedirs(self.psi2_dir, exist_ok=True)
-        os.makedirs(self.EL_dir, exist_ok=True)
-        os.makedirs(self.OM_dir, exist_ok=True)
-        os.makedirs(self.traj_dir, exist_ok=True)
+        os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(self.bin_dir, exist_ok=True)
-        os.makedirs(self.CC_dir, exist_ok=True)
-        os.makedirs(self.CC_OF_dir, exist_ok=True)
-        os.makedirs(self.CC_meas_dir, exist_ok=True)
-        os.makedirs(self.postproc_mrcs2mrc_dir, exist_ok=True)
-        os.makedirs(self.postproc_denoise_dir, exist_ok=True)
 
     def __repr__(self):
         return pformat(self.asdict())

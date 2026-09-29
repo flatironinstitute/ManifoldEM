@@ -1,4 +1,6 @@
+import h5py
 import mrcfile
+import multiprocessing
 import numpy as np
 import traceback
 
@@ -15,6 +17,14 @@ Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Copyright (c) Columbia University Hstau Liao 2018 (python version)
 """
+
+
+class NullEmitter:
+    """No-op progress emitter, still used as a default argument by the modules merged from
+    origin/in-memory; removed together with those arguments (D15)."""
+
+    def emit(self, percent):
+        pass
 
 
 def get_tqdm():
@@ -62,10 +72,10 @@ def get_image_width_from_stack(stack_file: str):
     """
     img_width = 0
     if stack_file.endswith(".mrcs") or stack_file.endswith(".mrc"):
-        mrc = mrcfile.mmap(params.img_stack_file, mode="r")
+        mrc = mrcfile.mmap(stack_file, mode="r")
         if not mrc.is_image_stack():
             mrc.close()
-            mrc = mrcfile.mmap(params.img_stack_file, mode="r+")
+            mrc = mrcfile.mmap(stack_file, mode="r+")
             mrc.set_image_stack()
 
         img_width = mrc.data[0].shape[0]
@@ -310,7 +320,9 @@ def get_CTFs(
     return ctf
 
 
-def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Shape["*,*"], Float64]:
+def rotate_fill(
+    img: NDArray[Shape["*,*"], Float64], angle: float
+) -> NDArray[Shape["*,*"], Float64]:
     """
     Rotates an image by a given angle and fills the output image by repeating the input image.
 
@@ -326,4 +338,112 @@ def rotate_fill(img: NDArray[Shape["*,*"], Float64], angle: float) -> NDArray[Sh
     ndarray
         The rotated image as a 2D NumPy array.
     """
-    return rotate(img, angle, reshape=False, mode='grid-wrap')
+    return rotate(img, angle, reshape=False, mode="grid-wrap")
+
+
+def annotate_hdf_hierachy(group: h5py.Group, data: None | dict = None) -> dict:
+    """
+    Recursively annotates the hierarchy of an HDF5 group.
+
+    Parameters
+    ----------
+    group : h5py.Group
+        The group to annotate.
+    data : dict, optional
+        The data dictionary to populate. If None, a new dictionary is created. Defaults to None.
+
+    Returns
+    -------
+    dict
+        A dictionary representing the hierarchy. The keys are the group names, with datasets represented as tuples
+        containing the number of dimensions and the data type.
+    """
+    if data is None:
+        data = {}
+    for key, item in group.items():
+        if isinstance(item, h5py.Group):
+            data[key] = {}
+            data[key] = annotate_hdf_hierachy(item, data[key])
+        elif isinstance(item, h5py.Dataset):
+            data[key] = (len(item.shape) if item.shape else 0, item.dtype.name)
+        else:
+            # Shouldn't be possible to reach this point
+            data[key] = None
+
+    return data
+
+
+def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any], overwrite=False):
+    """Recursively writes a dictionary to an HDF5 group.
+    Data must be something convertible to an HDF5 dataset (e.g. a numpy array).
+    Adds groups based on dictionary keys. Existing data will be overwritten.
+
+    Params
+    ------
+    group: h5py.Group
+        Group (including root h5py.File object) to write
+    data: dict[Any, Any]
+        Any data you want to dump. Key must be trivially convertible to a string.
+        Lists will be converted to have the list key suffixed by the index (i.e. {key}_{i}).
+    """
+    for key, item in data.items():
+        if overwrite and str(key) in group:
+            del group[key]
+
+        if isinstance(item, dict):
+            sub_group = group.create_group(str(key))
+            recursive_dict_to_hdf5(sub_group, item, overwrite)
+        elif isinstance(item, list):
+            for i, sub_item in enumerate(item):
+                keyi = f"{key}_{i}"
+                if overwrite and keyi in group:
+                    del group[keyi]
+
+                if isinstance(sub_item, dict):
+                    sub_group = group.create_group(keyi)
+                    recursive_dict_to_hdf5(sub_group, sub_item, overwrite)
+                else:
+                    group.create_dataset(keyi, data=sub_item)
+        else:
+            group.create_dataset(str(key), data=item)
+
+
+def dispatch_func(
+    func,
+    input_data: list[Any],
+    desc: str = "",
+    ncpu: int = 1,
+    progress_bar=NullEmitter(),
+    progress_bounds=(0, 100),
+):
+    tqdm = get_tqdm()
+    progress_min, progress_max = progress_bounds
+    data: dict[int, Any] = {}
+    if ncpu == 1:
+        for i in tqdm(
+            range(len(input_data)),
+            desc=desc,
+        ):
+            data[i] = func(input_data[i])
+            progress = int(
+                progress_min + i / len(input_data) * (progress_max - progress_min)
+            )
+            progress_bar.emit(progress)
+    else:
+        with multiprocessing.Pool(ncpu) as pool:
+            for i, result in tqdm(
+                enumerate(pool.imap(func, input_data)),
+                total=len(input_data),
+                desc=desc,
+            ):
+                data[i] = result
+                progress = int(
+                    progress_min + i / len(input_data) * (progress_max - progress_min)
+                )
+                progress_bar.emit(progress)
+
+    return data
+
+
+def dispatch_helper(kwargs, func):
+    return func(**kwargs)

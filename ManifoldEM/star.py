@@ -12,16 +12,14 @@ Copyright (c) Columbia University Evan Seitz 2021
 '''
 
 
-def write_star(star_file, traj_file, df):
-    params.load()
-
+def write_star(star_file, traj_file, phi, theta, psi, pixel_size):
     with open(star_file, 'w') as text_file:
         text_file.write(
             '\ndata_ \n \nloop_ \n \n_rlnImageName #1 \n_rlnAnglePsi #2 \n_rlnAngleTilt #3 \n_rlnAngleRot #4 \n_rlnDetectorPixelSize #5 \n_rlnMagnification #6 \n'
         )
-        for i in range(len(df)):
+        for i in range(len(phi)):
             text_file.write('%s@%s %s %s %s %s %s\n' %
-                            (i + 1, traj_file, df.psi[i], df.theta[i], df.phi[i], params.ms_pixel_size, 10000.0))
+                            (i + 1, traj_file, psi[i], theta[i], phi[i], pixel_size, 10000.0))
             # Note: DetectorPixelSize and Magnification required by relion_reconstruct; 10000 used here such that we can always put in the user-defined pixel size...
             # ...since it may be obtained via calibration (see user manual); since Pixel Size = Detector Pixel Size [um] / Magnification --> [Angstroms]
 

@@ -1,18 +1,20 @@
 import os
 
+from copy import deepcopy
 from enum import Enum
+import h5py
 import mrcfile
 import numbers
 import numpy as np
 import pickle
-import h5py
 from dataclasses import dataclass
 
-from typing import List, Any, Tuple, Dict, Set
-from nptyping import NDArray, Shape, Int, Float64, Bool
+from typing import List, Any, Tuple, Dict, Set, cast
+from nptyping import NDArray, Shape, Int, Float, Float64, Bool
 from scipy.ndimage import shift
 from scipy.fftpack import fft2, ifft2
 
+from ManifoldEM.FindCCGraph import prune
 from ManifoldEM.params import params
 from ManifoldEM.star import get_align_data
 from ManifoldEM.quaternion import collapse_to_half_space, quaternion_to_S2
@@ -301,7 +303,10 @@ class PrdData:
 
                 imgAll[i] = shift(
                     imgAll[i],
-                    (self.info.image_offsets[i, 0] - 0.5, self.info.image_offsets[i, 1] - 0.5),
+                    (
+                        self.info.image_offsets[i, 0] - 0.5,
+                        self.info.image_offsets[i, 1] - 0.5,
+                    ),
                     order=3,
                     mode="wrap",
                 )
@@ -337,7 +342,7 @@ class PrdData:
         return self._info.__repr__()
 
 
-class _ProjectionDirections:
+class ProjectionDirections:
     """
     Manages and processes projection direction data, including thresholds, bin centers, defocus values, and more.
 
@@ -383,7 +388,7 @@ class _ProjectionDirections:
         self.thres_ids: list[int] = []
         self.occupancy_full: NDArray[Shape["Any"], Int] = np.empty(0, dtype=int)
 
-        self.anchors: Dict[int, Anchor] = {}
+        self._anchors: Dict[int, Anchor] = {}
         self.trash_ids: Set[int] = set()
 
         self.neighbor_graph: Dict[str, Any] = {}
@@ -412,16 +417,22 @@ class _ProjectionDirections:
             pd_file = params.pd_file
 
         with open(pd_file, "rb") as f:
-            self.__dict__.update(pickle.load(f))
+            data = pickle.load(f)
+        # pd_data.pkl stores the anchors under "anchors"; files written by origin/in-memory used "_anchors"
+        if "anchors" in data:
+            data["_anchors"] = data.pop("anchors")
+        self.__dict__.update(data)
 
     def save(self):
         """
         Saves the current projection direction metadata (this object) to a file.
         """
+        data = dict(self.__dict__)
+        data["anchors"] = data.pop("_anchors")
         with open(params.pd_file, "wb") as f:
-            pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
 
-    def update(self):
+    def update(self, force_rebuild=0):
         """
         Updates/builds the projection direction data based on external parameters or
         files. If data is uninitialized, the threshold values have changed, or the environment
@@ -433,7 +444,7 @@ class _ProjectionDirections:
             self.load(params.pd_file)
 
         # If uninitialized or things have changed, actually update
-        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", 0))
+        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", force_rebuild))
         if (
             force_rebuild
             or self.pos_full.size == 0
@@ -442,7 +453,8 @@ class _ProjectionDirections:
         ):
             if force_rebuild:
                 print("Rebuilding data store")
-                os.environ.pop("MANIFOLD_REBUILD_DS")
+                if "MANIFOLD_REBUILD_DS" in os.environ:
+                    os.environ.pop("MANIFOLD_REBUILD_DS")
 
             print("Calculating projection direction information")
             self.microscope_origin, self.quats_raw, U, V = get_align_data(params.align_param_file)
@@ -472,7 +484,7 @@ class _ProjectionDirections:
             self.thres_ids = bin_ids
             self.occupancy_full = occupancy
 
-            self.anchors = {}
+            self._anchors = {}
             self.trash_ids = set()
 
             self.pos_thresholded = self.bin_centers[:, self.thres_ids]
@@ -504,6 +516,39 @@ class _ProjectionDirections:
 
             params.save()
             self.save()
+
+    def remove_trashed_anchors(self):
+        for id in self.trash_ids:
+            if id in self._anchors:
+                print(f"Warning: Removing anchor point ({id}) that was trashed")
+                self._anchors.pop(id)
+
+    def prune_graphs(self):
+        if self.trash_ids:
+            print(f"Pruning graph with {len(self.trash_ids)} trash PDs")
+            self.neighbor_graph_pruned, self.neighbor_subgraph_pruned = prune(
+                deepcopy(self.neighbor_graph), self.trash_ids, params.num_psi
+            )
+        else:
+            self.neighbor_graph_pruned, self.neighbor_subgraph_pruned = (
+                deepcopy(self.neighbor_graph),
+                deepcopy(self.neighbor_subgraph),
+            )
+
+        return self.neighbor_graph_pruned, self.neighbor_subgraph_pruned
+
+    def guess_and_mark_anchors(self):
+        """
+        Guesses and inserts a single anchor node for each cluster. The anchor node is the projection
+        direction with the highest occupancy. Sense is assumed to be the default 'FWD'.
+        The user should verify the sense manually.
+        """
+        for color in set(self.cluster_ids):
+            anchor_id = int(np.argmax((self.cluster_ids == color) * self.occupancy))
+            print(
+                f"Guessing anchor node {anchor_id} for cluster {color}. Verify the 'sense' manually!"
+            )
+            self.insert_anchor(anchor_id, Anchor())
 
     def insert_anchor(self, id: int, anchor: Anchor):
         """
@@ -568,6 +613,19 @@ class _ProjectionDirections:
             The defocus values for the images in the given projection direction.
         """
         return self.defocus[self.thresholded_image_indices[prd_index]]
+
+    @property
+    def anchors(self):
+        """
+        Returns the dictionary of anchor points.
+
+        Returns
+        -------
+        Dict[int, Anchor]
+            The dictionary of anchor points.
+        """
+        self.remove_trashed_anchors()
+        return self._anchors
 
     @property
     def anchor_ids(self):
@@ -640,19 +698,20 @@ class _ProjectionDirections:
 class _DataStore:
     """
     Implements the Singleton design pattern to ensure a single instance of the data store.
-    This class acts as a manager for _ProjectionDirections, providing global access to projection
+    This class acts as a manager for ProjectionDirections, providing global access to projection
     direction data and functionalities.
 
     Methods
     -------
     get_prds()
-        Updates and returns the _ProjectionDirections instance, ensuring the data is current.
+        Updates and returns the ProjectionDirections instance, ensuring the data is current.
     get_image_stack_data()
         Returns the image stack data from the associated project mrcs file.
     """
 
-    _projection_directions = _ProjectionDirections()
+    _projection_directions = ProjectionDirections()
     _image_stack_data = None
+    _analysis_handle = None
 
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -672,11 +731,11 @@ class _DataStore:
 
         Returns
         -------
-        _ProjectionDirections
-            Singular _ProjectionDirections instance, updating the cache if necessary.
+        ProjectionDirections
+            Singular ProjectionDirections instance, updating the cache if necessary.
         """
         if reload:
-            self._projection_directions = _ProjectionDirections()
+            self._projection_directions = ProjectionDirections()
         self._projection_directions.update()
         return self._projection_directions
 
@@ -688,14 +747,99 @@ class _DataStore:
         """
         Returns
         -------
-        mrcfile.mmap
-            Singular mrcfile.mmap().data instance for the image stack file.
+        numpy.mmap
+            Singular numpy.mmap().data instance for the image stack file.
         """
 
         if self._image_stack_data is None:
             self._image_stack_data = mrcfile.mmap(params.img_stack_file, "r").data
 
         return self._image_stack_data
+
+    def get_analysis_handle(self):
+        if not self._analysis_handle:
+            self._analysis_handle = h5py.File(params.analysis_file, "a")
+        return self._analysis_handle
+
+    def close_analysis_handle(self):
+        if self._analysis_handle is not None:
+            self._analysis_handle.close()
+            self._analysis_handle = None
+
+    def analysis_data(self, prd_index: int):
+        f = self.get_analysis_handle()
+        return f.get(f"prd_{prd_index}")
+
+    def distance_data(self, prd_index: int):
+        return self.analysis_data(prd_index).get("distances")
+
+    def get_class_avg(self, prd_index: int):
+        return np.array(self.analysis_data(prd_index)["distances"]["imgAvg"])
+
+    def get_embedding_data(self, prd_index: int):
+        return self.analysis_data(prd_index)["embedding_data"]
+
+    def get_nlsa_data(self, prd_index: int, psi_index: int):
+        if psi_index >= params.num_psi:
+            return None
+        return self.analysis_data(prd_index)[f"nlsa_data_{psi_index}"]
+
+    def get_active_psinums_and_senses(
+        self,
+    ) -> Tuple[
+        NDArray[Shape["Any"], Int],
+        NDArray[Shape["Any"], Int],
+        NDArray[Shape["Any"], Int],
+    ]:
+        data = self.get_analysis_handle()
+        active_prds = self.get_active_prd_indices()
+        psinums = np.asarray([data[f"prd_{i}"]["psinum"][()] for i in active_prds], dtype=int)
+        senses = np.asarray([data[f"prd_{i}"]["sense"][()] for i in active_prds], dtype=int)
+        return active_prds, psinums, senses
+
+    def get_active_prd_indices(self) -> NDArray[Shape["Any"], Int]:
+        prds = self.get_prds()
+        return np.array(sorted(list(set(range(prds.n_thresholded)) - prds.trash_ids)))
+
+    def get_taus(self, prd_index: int) -> list[NDArray[Shape["Any"], Float]]:
+        data = self.get_analysis_handle()
+        return cast(
+            list[NDArray[Shape["Any"], Float]],
+            [
+                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["tau"][:]
+                for j in range(params.num_psi)
+            ],
+        )
+
+    def get_taus_prd_list(self, prd_list: List[int] | NDArray[Shape["Any"], Int]):
+        return [self.get_taus(i) for i in prd_list]
+
+    def get_active_taus(self):
+        return self.get_taus_prd_list(self.get_active_prd_indices())
+
+    def get_all_taus(self):
+        return self.get_taus_prd_list(list(range(self.get_prds().n_thresholded)))
+
+    def get_nlsa_movies(self, prd_index: int) -> list[NDArray[Shape["Any,Any"], Float]]:
+        data = self.get_analysis_handle()
+        return cast(
+            list[NDArray[Shape["Any,Any"], Float]],
+            [
+                data[f"prd_{prd_index}"][f"nlsa_data_{j}"]["IMG1"]
+                for j in range(params.num_psi)
+            ],
+        )
+
+    def get_nlsa_movies_prd_list(
+        self, prd_list: List[int] | NDArray[Shape["Any"], Int]
+    ):
+        return [self.get_nlsa_movies(i) for i in prd_list]
+
+    def get_active_nlsa_movies(self):
+        return self.get_nlsa_movies_prd_list(self.get_active_prd_indices())
+
+    def get_all_nlsa_movies(self):
+        return self.get_nlsa_movies_prd_list(list(range(self.get_prds().n_thresholded)))
 
 
 data_store = _DataStore()

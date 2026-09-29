@@ -41,7 +41,7 @@ def make_project(tmp_path, monkeypatch):
     from the default `params`. Loading a project changes the working directory, so the fixture
     restores it afterwards.
     """
-    from ManifoldEM.interfaces.interactive import init
+    from ManifoldEM.interfaces.simple import init
 
     _write_inputs(tmp_path, np.random.default_rng(0))
     monkeypatch.chdir(tmp_path)

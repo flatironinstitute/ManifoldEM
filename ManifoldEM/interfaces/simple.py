@@ -1,12 +1,26 @@
 from ManifoldEM.params import params, ProjectLevel
+from ManifoldEM.data_store import data_store
 import os
 import shutil
 from typing import Union
 from threadpoolctl import threadpool_limits
 
-def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, mask_volume: str,
-         pixel_size: float, diameter: float, resolution: float, aperture_index: int, overwrite: bool,
-         **kwargs):
+from ManifoldEM.util import NullEmitter
+
+
+def init(
+    project_name: str,
+    avg_volume: str,
+    alignment: str,
+    image_stack: str,
+    mask_volume: str,
+    pixel_size: float,
+    diameter: float,
+    resolution: float,
+    aperture_index: int,
+    overwrite: bool,
+    **kwargs,
+):
     """
     Initializes a new project with specified parameters, including project directory creation
     and parameter storage.
@@ -53,13 +67,13 @@ def init(project_name: str, avg_volume: str, alignment: str, image_stack: str, m
     import multiprocessing
 
     params.project_name = project_name
-    proj_file = f'params_{params.project_name}.toml'
+    proj_file = f"params_{params.project_name}.toml"
 
     if os.path.isfile(proj_file) or os.path.isdir(params.out_dir):
-        response = 'y' if overwrite else None
-        while response not in ('y', 'n'):
+        response = "y" if overwrite else None
+        while response not in ("y", "n"):
             response = input("Project appears to exist. Overwrite? y/n\n").lower()
-        if response == 'n':
+        if response == "n":
             print("Aborting")
             return 1
         print("Removing previous project")
@@ -88,43 +102,70 @@ def threshold(**kwargs):
     params.save()
 
 
-def calc_distance(prd_list: Union[list[int], None] = None, **kwargs):
-    from ManifoldEM.calc_distance import op as calc_distance
-    with threadpool_limits(limits=1, user_api='blas'):
-        calc_distance(prd_list)
+def decompose(
+    prd_list: Union[list[int], None] = None, blas_threads=1, progress_bar=NullEmitter(), **kwargs
+):
+    from ManifoldEM.prd_analysis import prd_analysis
+
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        prd_analysis(
+            None,
+            prd_list,
+            return_output=False,
+            output_handle=data_store.get_analysis_handle(),
+            ncpu=params.ncpu,
+            progress_bar=progress_bar,
+        )
+
+    params.project_level = ProjectLevel.DECOMPOSITION
+    params.save()
 
 
-def manifold_analysis(prd_list: Union[list[int], None] = None, **kwargs):
-    from ManifoldEM.manifold_analysis import op as manifold_analysis
-    with threadpool_limits(limits=1, user_api='blas'):
-        manifold_analysis(prd_list)
+def find_conformational_coordinates(
+    blas_threads=1, progress_bar=NullEmitter(), **kwargs
+):
+    from ManifoldEM.optical_flow import find_conformational_coords
 
+    # FIXME: The simple interface shouldn't force the user to use analysis store
+    prds = data_store.get_prds()
+    data_handle = data_store.get_analysis_handle()
+    nlsa_movies = data_store.get_all_nlsa_movies()
+    taus = data_store.get_all_taus()
 
-def psi_analysis(prd_list: Union[list[int], None] = None, **kwargs):
-    from ManifoldEM.psi_analysis import op as psi_analysis
-    with threadpool_limits(limits=1, user_api='blas'):
-        psi_analysis(prd_list)
-
-
-def nlsa_movie(prd_list: Union[list[int], None] = None, **kwargs):
-    from ManifoldEM.nlsa_movie import op as nlsa_movie
-    with threadpool_limits(limits=1, user_api='blas'):
-        nlsa_movie(prd_list)
-
-
-def find_conformational_coordinates(**kwargs):
-    from ManifoldEM.find_conformational_coords import op as find_conformational_coords
-    with threadpool_limits(limits=1, user_api='blas'):
-        find_conformational_coords()
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        find_conformational_coords(
+            prds,
+            nlsa_movies,
+            taus,
+            None,
+            params.num_psi,
+            output_handle=data_handle,
+            flow_vec_pct_thresh=params.opt_movie["flowVecPctThresh"],
+            ncpu=params.ncpu,
+            progress_bar=progress_bar,
+        )
+        params.project_level = ProjectLevel.FIND_CCS
+        params.save()
 
 
 def probability_landscape(**kwargs):
-    from ManifoldEM.probability_landscape import op as probability_landscape
-    with threadpool_limits(limits=1, user_api='blas'):
-        probability_landscape()
+    from ManifoldEM.optical_flow import calculate_probability_landscape
+    import numpy as np
+
+    # FIXME: The simple interface shouldn't force the user to use analysis store
+    _, psinums, senses = data_store.get_active_psinums_and_senses()
+    taus = data_store.get_active_taus()
+
+    occupancy, tau_avg = calculate_probability_landscape(psinums, senses, taus, params.states_per_coord)
+    fname = params.probability_landscape_file
+    print(f"Probability landscape calculated. Saving to {fname}")
+    np.savez(fname, occupancy=occupancy, tau_avg=tau_avg)
+    params.project_level = ProjectLevel.PROBABILITY_LANDSCAPE
+    params.save()
 
 
-def compute_trajectory(**kwargs):
-    from ManifoldEM.trajectory import op as trajectory
-    with threadpool_limits(limits=1, user_api='blas'):
-        trajectory()
+def compute_trajectory(blas_threads=1, progress_bar=NullEmitter(), **kwargs):
+    from ManifoldEM.trajectory import build_trajectory
+
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        build_trajectory(progress_bar=progress_bar)

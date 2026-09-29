@@ -27,7 +27,7 @@ def lowpassfilt(im, sig):
     return im
 
 
-def op(im1, im2, uInitial, vInitial, sigma=1.0, alpha=0.001, Niter=8, verbose=False):
+def hornschunck_simple(im1, im2, uInitial, vInitial, sigma=1.0, alpha=0.001, Niter=8):
     """
     im1: image at t=0
     im2: image at t=1
@@ -54,7 +54,7 @@ def op(im1, im2, uInitial, vInitial, sigma=1.0, alpha=0.001, Niter=8, verbose=Fa
     [fx, fy, ft] = computeDerivatives(im1, im2)
 
     # Iteration to reduce error
-    for it in range(Niter):
+    for _ in range(Niter):
         # Compute local averages of the flow vectors
         uAvg = filter2(U, HSKERN)
         vAvg = filter2(V, HSKERN)
