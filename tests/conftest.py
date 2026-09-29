@@ -1,9 +1,12 @@
 """A tiny ManifoldEM project for tests: synthetic particle orientations, set up by `manifold-cli init`."""
 import os
 
+import matplotlib
 import mrcfile
 import numpy as np
 import pytest
+
+matplotlib.use("Agg")  # the notebook views draw figures; never open windows
 
 from ManifoldEM.params import params
 
