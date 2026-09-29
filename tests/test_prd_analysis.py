@@ -37,3 +37,15 @@ def test_second_pass_reproduces_the_first_on_a_trimmed_prd(make_project):
     assert second.shape[0] == len(first["tau"])
     # IMG1 is stored as float16 (rounding error up to ~1e-3 here); without the posPath fix the frames differ by ~4
     np.testing.assert_allclose(second[first["tauinds"]], first["IMG1"].astype(float), atol=5e-3)
+
+
+def test_parallel_decompose_of_selected_prds_writes_each_to_its_own_group(make_project):
+    params.load(str(make_project("p")))
+    prds = data_store.get_prds(reload=True)
+    params.ncpu = 2
+    decompose(prd_list=[3, 1])
+
+    with data_store.open_analysis() as f:
+        assert sorted(f) == ["prd_1", "prd_3"]
+        for i in (1, 3):
+            assert len(f[f"prd_{i}/image_data/rotations"]) == len(prds.thresholded_image_indices[i])

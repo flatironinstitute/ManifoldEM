@@ -742,6 +742,8 @@ def prd_analysis(
         prd_indices = list(range(prds.n_thresholded))
     else:
         prd_indices = list(prd_indices)
+    # largest PrDs first, so that the last job to run is always a short one (as main's 5eac7d8)
+    prd_indices.sort(key=lambda i: len(prds.thresholded_image_indices[i]), reverse=True)
 
     tqdm = get_tqdm()
     prd_data: dict[int, Any] = {}
@@ -765,7 +767,7 @@ def prd_analysis(
         # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
         with multiprocessing.get_context("fork").Pool(ncpu) as pool:
             for i, result in tqdm(
-                enumerate(pool.imap(run_pipeline, prd_indices)),
+                zip(prd_indices, pool.imap(run_pipeline, prd_indices)),
                 total=len(prd_indices),
                 desc="Running manifold decomposition...",
             ):
