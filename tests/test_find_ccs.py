@@ -45,6 +45,11 @@ def test_rerun_replaces_the_flow_data(tmp_path):
         assert (f["prd_0/flow_data/flow_map/Vx"][:] == 2.0).all()
         assert (f["prd_1/psinum"][()], f["prd_1/sense"][()]) == (-1, 0)
 
+    # PrD 0 trashed in a later run: its flow data goes with the run it came from
+    write_conformational_coords(out, np.array([-1, -1]), np.array([0, 0]), {})
+    with h5py.File(out, "r") as f:
+        assert "flow_data" not in f["prd_0"]
+
 
 class _AllAnchored:
     """PrDs 0 and 1 anchored, PrD 2 trashed: nothing left to propagate."""

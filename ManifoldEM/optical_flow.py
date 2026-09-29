@@ -863,9 +863,10 @@ def write_conformational_coords(
     flow_data: None | dict[int, dict[str, Any]] = None,
 ):
     """
-    Writes every PrD's psinum and sense (-1 and 0 for the PrDs without a coordinate), and replaces
-    the flow data of the PrDs in `flow_data`. Opened for writing only now: while it is open for
-    writing, the optical-flow workers couldn't read it.
+    Writes every PrD's psinum and sense (-1 and 0 for the PrDs without a coordinate) and the flow
+    data of the PrDs in `flow_data`, and removes the flow data of the other PrDs, which is from an
+    earlier run. Opened for writing only now: while it is open for writing, the optical-flow workers
+    couldn't read it.
     """
     with h5py.File(output_file, "a") as output_handle:
         for index in range(len(psinums)):
@@ -883,12 +884,13 @@ def write_conformational_coords(
             else:
                 group["psinum"] = psinums[index]
 
-        for index, data in (flow_data or {}).items():
+        flow_data = flow_data or {}
+        for index in range(len(psinums)):
             group = output_handle[f"prd_{index}"]
             if "flow_data" in group:
-                print(f"Deleting existing 'flow_data' group in 'prd_{index}'")
                 del group["flow_data"]
-            recursive_dict_to_hdf5(group.create_group("flow_data"), data)
+            if index in flow_data:
+                recursive_dict_to_hdf5(group.create_group("flow_data"), flow_data[index])
 
 
 def find_conformational_coords(
