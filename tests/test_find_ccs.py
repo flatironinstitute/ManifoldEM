@@ -63,7 +63,7 @@ class _AllAnchored:
 
 def test_all_anchored_prds_are_written(tmp_path):
     out = _analysis_file(tmp_path / "prd_analysis.h5", 3)
-    find_conformational_coords(_AllAnchored(), None, None, 8, output_file=out)
+    find_conformational_coords(_AllAnchored(), None, 8, output_file=out)
 
     with h5py.File(out, "r") as f:
         assert [f[f"prd_{i}/psinum"][()] for i in range(3)] == [1, 0, -1]

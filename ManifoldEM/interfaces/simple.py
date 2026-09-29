@@ -129,7 +129,6 @@ def find_conformational_coordinates(blas_threads=1, **kwargs):
         find_conformational_coords(
             prds,
             nlsa_movies,
-            None,
             params.num_psi,
             output_file=params.analysis_file,
             flow_vec_pct_thresh=params.opt_movie["flowVecPctThresh"],

@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import copy
 import h5py
-import math
 import numpy as np
-import warnings
 
 from cv2 import calcOpticalFlowFarneback
 from fasthog import hog_from_gradient as histogram_from_gradients
@@ -13,7 +11,7 @@ from nptyping import Integer, NDArray, Float, Shape
 from typing import Any, Union
 from numpy import linalg as LA
 import numpy.typing as npt
-from ManifoldEM.data_store import ProjectionDirections
+from ManifoldEM.data_store import H5Dataset, ProjectionDirections
 from ManifoldEM.util import (
     recursive_dict_to_hdf5,
     dispatch_func,
@@ -59,12 +57,12 @@ def rescale_linear(M, edgeNumRange, mvalrange):
     return M_scaled
 
 
-def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1.0, 1.0, 1.0), option=1):
+def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1.0, 1.0, 1.0)):
     """
     3D Anisotropic diffusion.
 
     Usage:
-    stackout = anisodiff(stack, niter, kappa, gamma, option)
+    stackout = anisodiff3(stack, niter, kappa, gamma, step)
 
     Arguments:
             stack  - input stack
@@ -116,12 +114,6 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1.0, 1.0, 1.0), option
     July 2012 translated to Python
     """
 
-    # ...you could always diffuse each color channel independently if you
-    # really want
-    if stack.ndim == 4:
-        warnings.warn("Only grayscale stacks allowed, converting to 3D matrix")
-        stack = stack.mean(3)
-
     # initialize output array
     stack = stack.astype("float32")
     stackout = stack.copy()
@@ -144,15 +136,10 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1.0, 1.0, 1.0), option
         deltaS[:, :-1, :] = np.diff(stackout, axis=1)
         deltaE[:, :, :-1] = np.diff(stackout, axis=2)
 
-        # conduction gradients (only need to compute one per dim!)
-        if option == 1:
-            gD = np.exp(-((deltaD / kappa) ** 2.0)) / step[0]
-            gS = np.exp(-((deltaS / kappa) ** 2.0)) / step[1]
-            gE = np.exp(-((deltaE / kappa) ** 2.0)) / step[2]
-        elif option == 2:
-            gD = 1.0 / (1.0 + (deltaD / kappa) ** 2.0) / step[0]
-            gS = 1.0 / (1.0 + (deltaS / kappa) ** 2.0) / step[1]
-            gE = 1.0 / (1.0 + (deltaE / kappa) ** 2.0) / step[2]
+        # conduction gradients (only need to compute one per dim!), Perona-Malik equation 1
+        gD = np.exp(-((deltaD / kappa) ** 2.0)) / step[0]
+        gS = np.exp(-((deltaS / kappa) ** 2.0)) / step[1]
+        gE = np.exp(-((deltaE / kappa) ** 2.0)) / step[2]
 
         # update matrices
         D = gD * deltaD
@@ -174,52 +161,14 @@ def anisodiff3(stack, niter=1, kappa=50, gamma=0.1, step=(1.0, 1.0, 1.0), option
     return stackout
 
 
-def load_prd_psi_movies_masked(
-    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]] | list[h5py.Dataset],
-    mask: None | NDArray[Shape["Any,Any"], Float],
-):
-    num_psi = len(nlsa_movies)
-    movie_prd_psis = [np.empty(0)] * num_psi
-
-    if len(nlsa_movies[0].shape) == 3:
-        n_pix = nlsa_movies[0].shape[1]
-    elif len(nlsa_movies[0].shape) == 2:
-        n_pix = math.isqrt(nlsa_movies[0].shape[0])
-        if n_pix * n_pix != nlsa_movies[0].shape[0]:
-            raise ValueError(
-                "Invalid movie shape. Dimension 0 must be a perfect square"
-            )
-    else:
-        raise ValueError("Invalid movie list")
-
-    if mask is None:
-        mask = np.ones((n_pix, n_pix))
-
-    for psinum in range(num_psi):
-        IMG1 = np.array(nlsa_movies[psinum])
-
-        # FIXME: Why is this negative?
-        movie_prd_psis[psinum] = -IMG1 * mask
-
-    return movie_prd_psis
-
-
 def optical_flow_movie(
     movie,
     blockSize_avg,
     label,
     InitialFlowVec: Union[None, dict] = None,
 ):
-    # for display
-    num_frames = movie.shape[0]
-    if len(movie.shape) == 3:
-        dim = movie.shape[1]
-    elif len(movie.shape) == 2:
-        dim = int(np.sqrt(movie.shape[1]))
-    else:
-        raise ValueError("Invalid movie shape")
-
-    movie = np.resize(movie, (num_frames, dim, dim))
+    # movie: (n_frames, n_pix, n_pix)
+    num_frames, dim = movie.shape[:2]
 
     if not (label == "FWD" or label == "REV"):
         msg = f"Invalid label '{label}'. Must be either 'FWD' or 'REV'"
@@ -234,15 +183,8 @@ def optical_flow_movie(
         FlowVec = {}
 
     if not InitialFlowVec:
-        do_filterImage = False
-        sig = 2.0  # sigma for lowpass gauss filter
-        OF_Type = "GF-HS"  # GF for initial estimates and then HS
-
-        # only print for the first movie
-        if OF_Type == "GF" or OF_Type == "GF-HS":
-            do_filterImage = True
-            if OF_Type == "GF-HS":
-                sig = 1.5
+        # Gunnar-Farneback flow as the initial estimate for Horn-Schunck, on low-pass filtered frames
+        sig = 1.5  # sigma for lowpass gauss filter
 
         # use a median fitler for the optical flow vector field
         movie = anisodiff3(
@@ -251,7 +193,6 @@ def optical_flow_movie(
             kappa=50,
             gamma=0.1,
             step=(5.0, 3.0, 3.0),
-            option=1,
         )
 
         # average the movie
@@ -265,15 +206,10 @@ def optical_flow_movie(
             AvgMov[b, :, :] = np.mean(blockMovie, axis=0, dtype=np.float64)
 
         # start Optical flow algorithm
-        ImgFrame_prev = AvgMov[0, :, :]
-        if do_filterImage:
-            ImgFrame_prev = lowpassfilt(ImgFrame_prev, sig)
+        ImgFrame_prev = lowpassfilt(AvgMov[0, :, :], sig)
 
         for frameno in range(0, numAvgFrames):
-            ImgFrame_curr = AvgMov[frameno, :, :]
-
-            if do_filterImage:
-                ImgFrame_curr = lowpassfilt(ImgFrame_curr, sig)
+            ImgFrame_curr = lowpassfilt(AvgMov[frameno, :, :], sig)
 
             flow = calcOpticalFlowFarneback(
                 ImgFrame_prev,
@@ -290,11 +226,9 @@ def optical_flow_movie(
             Vx = flow[:, :, 0]
             Vy = flow[:, :, 1]
 
-            uInit = Vx  # if both methods are used , GF will provide intial estimates
-            vInit = Vy  # if both methods are used , GF will provide intial estimates
-
+            # GF provides the initial estimates for HS
             Vx, Vy = hornschunck_simple(
-                ImgFrame_prev, ImgFrame_curr, uInit, vInit, sig, 2.0, 200
+                ImgFrame_prev, ImgFrame_curr, Vx, Vy, sig, 2.0, 200
             )
 
             VxM = VxM + Vx
@@ -339,40 +273,25 @@ def compute_psi_movie_optical_flow(movie):
     return dict(FWD=flow_vec_fwd, REV=flow_vec_rev)
 
 
-def optical_flow(
-    nlsa_movies: list[NDArray[Shape["Any,Any"], Float]],
-    mask: None | NDArray[Shape["Any,Any"], Float] = None,
-):
-    movie_prd_psi = load_prd_psi_movies_masked(nlsa_movies, mask)
-
+def optical_flow(nlsa_movies: list[NDArray[Shape["Any,Any,Any"], Float]]):
     num_psi = len(nlsa_movies)
     # calculate OF for each psi-movie
     FlowVecPrD = [{}] * num_psi
     for psi_index in range(num_psi):
-        FlowVecPrD[psi_index] = compute_psi_movie_optical_flow(
-            movie_prd_psi[psi_index],
-        )
+        # FIXME: Why is this negative?
+        movie = -np.asarray(nlsa_movies[psi_index], dtype=np.float64)
+        FlowVecPrD[psi_index] = compute_psi_movie_optical_flow(movie)
 
     return dict(FlowVecPrD=FlowVecPrD)
 
 
 def optical_flow_movie_list(
-    nlsa_movies: list[list[NDArray[Shape["Any,Any"], Float]]]
-    | list[list[h5py.Dataset]],
-    mask: None | list[NDArray[Shape["Any,Any"], Float]],
+    nlsa_movies: list[list[NDArray[Shape["Any,Any,Any"], Float]]] | list[list[H5Dataset]],
     ncpu: int = 1,
 ):
-    input_data = [
-        dict(
-            nlsa_movies=nlsa_movies[i],
-            mask=mask[i] if mask else None,
-        )
-        for i in range(len(nlsa_movies))
-    ]
-
     return dispatch_func(
         partial(dispatch_helper, func=optical_flow),
-        input_data,
+        [dict(nlsa_movies=movies) for movies in nlsa_movies],
         "Computing Optical Flow",
         ncpu=ncpu,
     )
@@ -448,199 +367,48 @@ def get_cluster_nodes_edges(
 
 
 def select_flow_vec(flow_vec, flow_vec_pct_thresh):
-    # this will work for all elements for any ndarray [m x m x d],
-    # Here for half-split movies we have d = 2, i.e. stack of two m x m matrix
+    # keep only the flow vectors whose magnitude is above the given percentile
     VxM, VyM = flow_vec["Vx"], flow_vec["Vy"]
     FMagMat = flow_vec["Mag"]
     magThresh = np.percentile(FMagMat.flatten(), flow_vec_pct_thresh)
     not_magThIdx = np.where(FMagMat <= magThresh)
 
-    FMagSel = np.copy(FMagMat)
-    FMagSel[not_magThIdx] = 0.0
-
-    FOrientSel = np.copy(flow_vec["Orient"])
-    FOrientSel[not_magThIdx] = -np.Inf
-
-    # selecting which flow vectors to keep for analysis
     VxMSel, VyMSel = np.copy(VxM), np.copy(VyM)
     VxMSel[not_magThIdx] = 0.0
     VyMSel[not_magThIdx] = 0.0
 
-    return dict(Vx=VxMSel, Vy=VyMSel, Orient=FOrientSel, Mag=FMagSel)
+    return dict(Vx=VxMSel, Vy=VyMSel)
 
 
 def HOGOpticalFlow(flowVec):
-    cell_size = (4, 4)
-    cells_per_block = (2, 2)
-    n_bins = 9
-    signed_orientation = True
-    norm_type = "L2-Hys"
-
-    hog_params = dict(
-        cell_size=cell_size, cells_per_block=cells_per_block, n_bins=n_bins
+    return histogram_from_gradients(
+        flowVec["Vx"].astype(np.float64),
+        flowVec["Vy"].astype(np.float64),
+        cell_size=(4, 4),
+        cells_per_block=(2, 2),
+        n_bins=9,
+        signed=True,
+        norm_type="L2-Hys",
     )
-    VxDim = flowVec["Vx"].shape
-    if len(VxDim) > 2:
-        VxStackDim = VxDim[2]
-
-        tempH = []
-        for d in range(0, VxStackDim):
-            gx = flowVec["Vx"][:, :, d].astype(np.float64)
-            gy = flowVec["Vy"][:, :, d].astype(np.float64)
-
-            tH = histogram_from_gradients(
-                gx,
-                gy,
-                cell_size=cell_size,
-                cells_per_block=cells_per_block,
-                n_bins=n_bins,
-                signed=signed_orientation,
-                norm_type=norm_type,
-            )
-            tempH.append(tH)
-
-        H = np.array(tempH)
-        dims = np.shape(H)
-        if len(dims) > 3:
-            H = np.moveaxis(H, 0, -1)
-    else:
-        gx = flowVec["Vx"].astype(np.float64)
-        gy = flowVec["Vy"].astype(np.float64)
-
-        H = histogram_from_gradients(
-            gx,
-            gy,
-            cell_size=cell_size,
-            cells_per_block=cells_per_block,
-            n_bins=n_bins,
-            signed=signed_orientation,
-            norm_type=norm_type,
-        )
-
-    return H, hog_params
 
 
-# Compare how similar two Matrices/Images are.
-# TODO: Implement error checking for wrong or, improper inputs
-# Check for NaN or Inf outputs , etc.
-def compare_orient_matrix(flow_vec_a, flow_vec_b, norm_type="l2"):
-    if norm_type not in ["l1", "l2"]:
-        raise ValueError("Invalid norm_type. Must be either 'l1' or 'l2'")
-
-    HOGFA, hog_params = HOGOpticalFlow(flow_vec_a)
-    HOGFB, hog_params = HOGOpticalFlow(flow_vec_b)
-
-    # The dimensions of HOGFA and HOGFB should always match given the number of movie blocks created for movie A and B
-    # if for some reason the number of blocks for movie A and B are different, then this check is a fail safe to make
-    # the code still work
-    hogDimA = HOGFA.shape
-
-    hoffset = 1.25
-    distHOGAB = []
-    distHOGAB_tblock = []
-    isBadPsiAB_block = []
-    hp = np.ceil(hogDimA[0] / hog_params["cell_size"][0]).astype(int)
-    num_hogel_th = np.ceil(0.2 * (hp**2) * hogDimA[2]).astype(int)
-
-    if len(hogDimA) > 3:
-        distHOGAB_tblock = np.zeros((hogDimA[3], 1))
-        isBadPsiA_block = np.zeros((hogDimA[3], 1))
-        isBadPsiB_block = np.zeros((hogDimA[3], 1))
-
-        for j in range(hogDimA[3]):
-            if np.count_nonzero(HOGFA[:, :, :, j]) <= num_hogel_th:
-                HOGFA[:, :, :, j] = (
-                    np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
-                )
-                isBadPsiA_block[j] = 1
-
-            if np.count_nonzero(HOGFB[:, :, :, j]) <= num_hogel_th:
-                HOGFB[:, :, :, j] = (
-                    np.random.random(np.shape(HOGFB[:, :, :, j])) + hoffset
-                )
-                isBadPsiB_block[j] = 1
-
-            if norm_type == "l1":
-                distHOGAB_tblock[j] = np.sum(
-                    np.abs(HOGFA[:, :, :, j] - HOGFB[:, :, :, j])
-                )
-            elif norm_type == "l2":
-                distHOGAB_tblock[j] = LA.norm(HOGFA[:, :, :, j] - HOGFB[:, :, :, j])
-
-        isBadPsiAB_block = [isBadPsiA_block.T, isBadPsiB_block.T]
-
-    # this should be done after the adjustments of the zero matrix to a matrix with high random numbers
-    if norm_type == "l1":
-        distHOGAB = np.sum(np.abs(HOGFA - HOGFB))
-    elif norm_type == "l2":
-        distHOGAB = LA.norm(HOGFA - HOGFB)
-
-    return [distHOGAB, distHOGAB_tblock, isBadPsiAB_block]
-
-
-def compare_psi_movies_optical_flow(FlowVecSelA, FlowVecSelB):
-    # Analysis of the flow matrix
-    psiMovFlowOrientMeasures = dict(Values=[], Values_tblock=[])
-    Values, Values_tblock, isBadPsiAB_block = compare_orient_matrix(
-        FlowVecSelA, FlowVecSelB
-    )
-    psiMovFlowOrientMeasures.update(Values=Values, Values_tblock=Values_tblock)
-
-    return psiMovFlowOrientMeasures, isBadPsiAB_block
-
-
-def compute_measures_psi_movies_optical_flow(
-    FlowVecSelAFWD, FlowVecSelBFWD, FlowVecSelBREV
-):
-    psiMovOFMeasuresFWD, isBadPsiAB_blockF = compare_psi_movies_optical_flow(
-        FlowVecSelAFWD, FlowVecSelBFWD
-    )
-    psiMovMFWD = psiMovOFMeasuresFWD["Values"]
-    psiMovMFWD_tblock = psiMovOFMeasuresFWD["Values_tblock"]
-
-    psiMovOFMeasuresREV, isBadPsiAB_blockR = compare_psi_movies_optical_flow(
-        FlowVecSelAFWD, FlowVecSelBREV
-    )
-    psiMovMREV = psiMovOFMeasuresREV["Values"]
-    psiMovMREV_tblock = psiMovOFMeasuresREV["Values_tblock"]
-
-    psiMovieOFmeasures = dict(
-        MeasABFWD=psiMovMFWD,
-        MeasABFWD_tblock=psiMovMFWD_tblock,
-        MeasABREV=psiMovMREV,
-        MeasABREV_tblock=psiMovMREV_tblock,
-    )
-    return psiMovieOFmeasures, isBadPsiAB_blockF
+def compare_orient_matrix(flow_vec_a, flow_vec_b):
+    """How different two flow fields are: the l2 distance between their histograms of oriented gradients."""
+    return LA.norm(HOGOpticalFlow(flow_vec_a) - HOGOpticalFlow(flow_vec_b))
 
 
 def compute_edge_measure_pair_wise_all_psi(
-    prd_index: int,
-    neighb_prd_index: int,
-    edge_num: int,
     flow_vec_prd: list[dict[str, Any]],
     flow_vec_nbr_prd: list[dict[str, Any]],
-    n_edges: int,
-    n_nodes: int,
     flow_vec_pct_thresh: float,
 ):
+    """
+    The (num_psi, 2 * num_psi) edge measure between a PrD and its neighbour: for each psi movie of the
+    PrD played forward, its difference to each psi movie of the neighbour played forward, then reversed.
+    """
     num_psi = len(flow_vec_prd)
-
-    if len(flow_vec_prd[0]["FWD"]["Vx"].shape) > 2:
-        numtblocks = flow_vec_prd[0]["FWD"]["Vx"].shape[2]
-    else:
-        numtblocks = 1
-
-    measure_OF_nbr_fwd = np.empty((n_edges, num_psi, num_psi))
-    measure_OF_nbr_rev = np.empty((n_edges, num_psi, num_psi))
-
-    if numtblocks > 1:
-        measure_OF_nbr_fwd_tblock = np.empty((n_edges, num_psi, num_psi * numtblocks))
-        measure_OF_nbr_rev_tblock = np.empty((n_edges, num_psi, num_psi * numtblocks))
-    else:
-        measure_OF_nbr_fwd_tblock = np.empty(0)
-        measure_OF_nbr_rev_tblock = np.empty(0)
-
-    bad_nodes_psis_block = np.zeros((n_nodes, num_psi))
+    measure_fwd = np.empty((num_psi, num_psi))
+    measure_rev = np.empty((num_psi, num_psi))
     for i_psi in range(num_psi):
         flow_vec_prd_fwd = select_flow_vec(
             flow_vec_prd[i_psi]["FWD"], flow_vec_pct_thresh
@@ -654,100 +422,45 @@ def compute_edge_measure_pair_wise_all_psi(
             flow_vec_nbr_prd_rev = select_flow_vec(
                 flow_vec_nbr_prd[psinum_neighb]["REV"], flow_vec_pct_thresh
             )
+            measure_fwd[i_psi, psinum_neighb] = compare_orient_matrix(flow_vec_prd_fwd, flow_vec_nbr_prd_fwd)
+            measure_rev[i_psi, psinum_neighb] = compare_orient_matrix(flow_vec_prd_fwd, flow_vec_nbr_prd_rev)
 
-            psi_movie_OF_measures, is_bad_psi_AB_block = (
-                compute_measures_psi_movies_optical_flow(
-                    flow_vec_prd_fwd,
-                    flow_vec_nbr_prd_fwd,
-                    flow_vec_nbr_prd_rev,
-                )
-            )
-
-            measure_OF_nbr_fwd[edge_num][i_psi, psinum_neighb] = psi_movie_OF_measures[
-                "MeasABFWD"
-            ]
-            measure_OF_nbr_rev[edge_num][i_psi, psinum_neighb] = psi_movie_OF_measures[
-                "MeasABREV"
-            ]
-
-            if numtblocks > 1:
-                bad_nodes_psis_block[prd_index, i_psi] = -100 * np.sum(
-                    is_bad_psi_AB_block[0]
-                )
-                bad_nodes_psis_block[neighb_prd_index, psinum_neighb] = -100 * np.sum(
-                    is_bad_psi_AB_block[1]
-                )
-
-                t = psinum_neighb * numtblocks
-                print("t", t, "numtblocks", numtblocks)
-                measure_OF_nbr_fwd_tblock[edge_num][i_psi, t : t + numtblocks] = (
-                    np.transpose(psi_movie_OF_measures["MeasABFWD_tblock"])
-                )
-                measure_OF_nbr_rev_tblock[edge_num][i_psi, t : t + numtblocks] = (
-                    np.transpose(psi_movie_OF_measures["MeasABREV_tblock"])
-                )
-
-    measureOFCurrNbrEdge = np.hstack(
-        (measure_OF_nbr_fwd[edge_num], measure_OF_nbr_rev[edge_num])
-    )
-
-    if numtblocks > 1:
-        measureOFCurrNbrEdge_tblock = np.hstack(
-            (measure_OF_nbr_fwd_tblock[edge_num], measure_OF_nbr_rev_tblock[edge_num])
-        )
-    else:
-        measureOFCurrNbrEdge_tblock = []
-
-    return dict(
-        measureOFCurrNbrEdge=measureOFCurrNbrEdge,
-        measureOFCurrNbrEdge_tblock=measureOFCurrNbrEdge_tblock,
-        badNodesPsisBlock=bad_nodes_psis_block,
-    )
+    return np.hstack((measure_fwd, measure_rev))
 
 
 def compute_edge_measures_all(
-    n_nodes: int,
     edges: list[tuple[int, int]],
     edge_nums: list[int] | npt.NDArray[np.int_],
-    n_psi: int,
     flow_map: dict[int, dict[str, Any]],
     flow_vec_pct_thresh: float,
     ncpu: int = 1,
 ):
     input_data = [
         dict(
-            prd_index=edges[edge_num][0],
-            neighb_prd_index=edges[edge_num][1],
-            edge_num=edge_num,
             flow_vec_prd=flow_map[edges[edge_num][0]]["FlowVecPrD"],
             flow_vec_nbr_prd=flow_map[edges[edge_num][1]]["FlowVecPrD"],
-            n_edges=len(edges),
-            n_nodes=n_nodes,
             flow_vec_pct_thresh=flow_vec_pct_thresh,
         )
         for edge_num in edge_nums
     ]
 
-    edge_measures_dict = dispatch_func(
+    edge_measures_by_position = dispatch_func(
         partial(dispatch_helper, func=compute_edge_measure_pair_wise_all_psi),
         input_data,
         "Computing Edge Measures",
         ncpu=ncpu,
     )
 
+    # dispatch_func numbers the results by their position in edge_nums
     edge_measures = np.empty(len(edges), dtype=object)
-    edge_measures_tblock = np.empty(len(edges), dtype=object)
-    bad_nodes_psis_block = np.zeros((n_nodes, n_psi))
-    for e in edge_nums:
-        bad_nodes_psis_block += edge_measures_dict[e]["badNodesPsisBlock"]
-        edge_measures[e] = edge_measures_dict[e]["measureOFCurrNbrEdge"]
-        edge_measures_tblock[e] = edge_measures_dict[e]["measureOFCurrNbrEdge_tblock"]
+    for position, e in enumerate(edge_nums):
+        edge_measures[e] = edge_measures_by_position[position]
 
     # This rescaling step is to prevent underflow/overflow, should be checked if does not work
     scale_range = [5, 45]
     edge_measures = rescale_linear(edge_measures, edge_nums, scale_range)
 
-    return edge_measures, edge_measures_tblock, bad_nodes_psis_block
+    return edge_measures
 
 
 def calculate_probability_landscape(
@@ -814,15 +527,18 @@ def write_conformational_coords(
 
 def find_conformational_coords(
     prds: ProjectionDirections,
-    nlsa_movies: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
-    nlsa_mask: None | list[NDArray[Shape["Any,Any"], Float]],
+    nlsa_movies: list[list[NDArray[Shape["Any,Any,Any"], Float]]] | list[list[H5Dataset]],
     num_psi: int,
-    return_all_output: bool = False,
     output_file: None | str = None,
-    flow_vec_pct_thresh: float = 0.95,
+    flow_vec_pct_thresh: float = 95,
     allow_empty_clusters: bool = False,
     ncpu: int = 1,
 ):
+    """
+    Finds each PrD's conformational coordinate (psinum, and sense +1/-1) by belief propagation from
+    the anchors, and returns them (-1 and 0 for the PrDs without one). With `output_file`, writes them
+    and the flow data to that prd_analysis.h5.
+    """
     G, Gsub = prds.prune_graphs()
     num_clusters = len(G["NodesConnComp"])
     anchor_list = prds.anchor_ids
@@ -830,13 +546,10 @@ def find_conformational_coords(
     psinums, senses = validate_anchor_nodes(
         G, anchor_list, prds.trash_ids, prds.anchors, allow_empty_clusters
     )
-    # FIXME: different return type
     if psinums is not None:
         if output_file:
             write_conformational_coords(output_file, psinums[0], senses[0])
-        if return_all_output:
-            return psinums, senses, None, None, None, None, None
-        return psinums, senses
+        return psinums[0], senses[0]
 
     node_range, edge_num_range, cluster_no_anchor = get_cluster_nodes_edges(
         Gsub, anchor_list, num_clusters, allow_empty_clusters, prds.trash_ids
@@ -846,28 +559,15 @@ def find_conformational_coords(
     # optical flow only for the PrDs of the anchored components, as main did: the others get no
     # edge measures and no coordinate
     flow_prds = [int(i) for i in node_range]
-    flow_list = optical_flow_movie_list(
-        [nlsa_movies[i] for i in flow_prds],
-        [nlsa_mask[i] for i in flow_prds] if nlsa_mask else None,
-        ncpu,
-    )
+    flow_list = optical_flow_movie_list([nlsa_movies[i] for i in flow_prds], ncpu)
     flow_map = {prd: flow_list[k] for k, prd in enumerate(flow_prds)}
 
-    edge_measures, edge_measures_tblock, bad_nodes_psis_block = (
-        compute_edge_measures_all(
-            G["nNodes"],
-            G["Edges"],
-            edge_num_range,
-            num_psi,
-            flow_map,
-            flow_vec_pct_thresh,
-            ncpu,
-        )
+    edge_measures = compute_edge_measures_all(
+        G["Edges"], edge_num_range, flow_map, flow_vec_pct_thresh, ncpu
     )
 
-    options = BeliefPropagationOptions()
-    node_state_bp, psinums, senses, opt_node_bel, node_belief = belief_propagation(
-        prds, num_psi, G, options, edge_measures, bad_nodes_psis_block
+    psinums, senses, node_belief = belief_propagation(
+        prds, num_psi, G, BeliefPropagationOptions(), edge_measures
     )
 
     if output_file:
@@ -889,20 +589,8 @@ def find_conformational_coords(
                 flow_map=flow_map[index],
                 node_belief=node_belief[:, index],
                 edge_measures=edge_measures_local,
-                bad_nodes_psis=bad_nodes_psis_block[index, :],
             )
 
         write_conformational_coords(output_file, psinums, senses, flow_data)
 
-    if return_all_output:
-        return (
-            psinums,
-            senses,
-            flow_map,
-            edge_measures,
-            edge_measures_tblock,
-            bad_nodes_psis_block,
-            node_belief,
-        )
-    else:
-        return psinums, senses
+    return psinums, senses
