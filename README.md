@@ -26,9 +26,7 @@ This software was initially developed in the [Frank lab](https://joachimfranklab
 
 
 ## Installation
-Should be installable in any modern python/conda environment (python 3.9+, though `mayavi` and
-`pyqt` packages don't always immediately work with the most recent version of python). If you don't
-need the gui, feel free to omit the "[gui]" part of the install command!
+Should be installable in any modern python/conda environment (python 3.9+).
 
 python:
 ```bash
@@ -37,9 +35,9 @@ python3 -m venv ~/envs/manifoldem
 source ~/envs/manifoldem/bin/activate
 
 pip install --upgrade pip
-pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
+pip install "manifoldem @ git+https://github.com/flatironinstitute/ManifoldEM"
 
-manifold-gui
+manifold-cli
 ```
 
 conda:
@@ -47,44 +45,36 @@ conda:
 conda create -n manifoldem python=3.10 -y
 conda activate manifoldem
 
-pip install "manifoldem[gui] @ git+https://github.com/flatironinstitute/ManifoldEM"
+pip install "manifoldem @ git+https://github.com/flatironinstitute/ManifoldEM"
 
-manifold-gui
+manifold-cli
 ```
 
 Note that when using conda, this bypasses conda's package management system and can lead to
 problems if you later install packages into this environment with `conda install`. It's
 recommended to keep an environment purely for `ManifoldEM`.
 
-
-## Running without 3D acceleration
-Some environments might not allow hardware 3D acceleration, such as via X forwarding or most
-VNC/virtual desktop environments. To work around this, you can disable any 3D visualization
-widgets in the GUI. This can be done by setting the environment variable by providing the `-V`
-flag to `manifold-gui`
-
-```bash
-manifold-gui -V
-```
+To inspect results, and to choose thresholds and anchors, use the [tutorial
+notebook](tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb). It needs Jupyter, and its first cell
+installs the plotting packages it uses.
 
 
 ## Basic command line interface
-For most steps in the ManifoldEM pipeline, the GUI is unnecessary and sometimes even burdensome. For
-this reason we supply a basic command line interface. The CLI allows the user to make more granular
-steps through the analysis pipeline and is generally more useful for cluster/remote environment and
-debugging. All CLI invocations start with the program `manifold-cli`. If you run `manifold-cli` with
-no arguments, it will print a help message and exit.
+The ManifoldEM pipeline runs from the command line. The CLI steps through the analysis one stage at
+a time, which also suits cluster/remote environments and debugging. All CLI invocations start with
+the program `manifold-cli`. If you run `manifold-cli` with no arguments, it will print a help
+message and exit.
 
 ```
 % manifold-cli
-ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
+ManifoldEM version: 0.4.0
 
-usage: manifold-cli [-h] [-n NCPU] {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,calc-probabilities,trajectory,utility} ...
+usage: manifold-cli [-h] [-n NCPU] {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,probability-landscape,trajectory,utility} ...
 
 Command-line interface for ManifoldEM package
 
 positional arguments:
-  {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,calc-probabilities,trajectory,utility}
+  {init,threshold,calc-distance,manifold-analysis,psi-analysis,nlsa-movie,find-ccs,probability-landscape,trajectory,utility}
     init                0: Initialize new project
     threshold           1: Set upper/lower thresholds for principal direction detection
     calc-distance       2: Calculate S2 distances
@@ -92,7 +82,8 @@ positional arguments:
     psi-analysis        4: Analyze images to get psis
     nlsa-movie          5: Create 2D psi movies
     find-ccs            7: Find conformational coordinates
-    calc-probabilities  8: Calculate probability landscape
+    probability-landscape
+                        8: Calculate probability landscape
     trajectory          9: Calculate trajectory
     utility             Utility functions
 
@@ -108,7 +99,7 @@ to use a given command, simply run the command with a following `-h` flag, e.g.
 
 ```
 % manifold-cli init -h
-ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
+ManifoldEM version: 0.4.0
 
 usage: manifold-cli init [-h] -p STR [-v FILEPATH] [-a FILEPATH] [-i FILEPATH] [-m FILEPATH] -s FLOAT -d FLOAT -r FLOAT [-x INT] [-o] [--eps FLOAT] [--prd_thres_low INT]
                          [--prd_thres_high INT] [--tess_hemisphere_vec STR] [--tess_hemisphere_type STR] [--distance_filter_type STR] [--distance_filter_cutoff_freq FLOAT]
@@ -151,26 +142,29 @@ options:
 An example invocation then might look like
 
 ```
-manifold-cli init -v J310/J310_003_volume_map.mrc -a J310/from_csparc.star -i J310/signal_subtracted.mrcs -s 1.22 -d 160.0 -r 3.02 -x 1 -p my_J310_analysis
+manifold-cli init -a J310/from_csparc.star -i J310/signal_subtracted.mrcs -s 1.22 -d 160.0 -r 3.02 -x 1 -p my_J310_analysis --num_psi 5
 ```
 
+Parameters are set when the project is created, as `--num_psi 5` (the number of leading
+eigenvectors, "psis", to analyze) is here, or later by editing the project's `.toml` file. The
+average volume (`-v`) is optional and currently unused.
+
 The rest of the commands will take as their final argument the "toml" file generated from the
-initialization step. Let's set the image count thresholds and calculate the distance matrices for
-the leading five eigenvalue decompositions ("psis") next as an example. Note the `-n 16` _before_
-the sub-command. Most processing steps support this option, which specifies how many workers to use
-in processing. In most cases you want roughly the output of the `nproc` command. My workstation has
-16 physical cores, so I specify 16 below for the matrix calculation step. Supplying `-n` for
-commands that don't support parallel processing is harmless.
+initialization step. Let's set the image count thresholds and calculate the distance matrices next
+as an example. Note the `-n 16` _before_ the sub-command. Most processing steps support this
+option, which specifies how many workers to use in processing. In most cases you want roughly the
+output of the `nproc` command. My workstation has 16 physical cores, so I specify 16 below for the
+matrix calculation step. Supplying `-n` for commands that don't support parallel processing is
+harmless.
 
 ```
 % manifold-cli threshold --prd_thres_low 100 --prd_thres_high 4000 params_my_J310_analysis.toml
-ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
+ManifoldEM version: 0.4.0
 
 Changing param prd_thres_high from 2000 to 4000
-% manifold-cli -n 16 calc-distance --num_psi 5 params_my_J310_analysis.toml
-ManifoldEM version: 0.3.1.dev60+ga73affd.d20241113
+% manifold-cli -n 16 calc-distance params_my_J310_analysis.toml
+ManifoldEM version: 0.4.0
 
-Changing param num_psi from 3 to 5
 Computing the distances...
 Calculating projection direction information
 RELION Optics Group found.
@@ -186,9 +180,9 @@ Number of Graph Edges: (464, 2)
 ```
 
 This has created a significant amount of data stored in the `output/my_J310_analysis/distances` --
-one file for each principal direction. Currently there isn't much tooling to visualize these
-outputs, though that is a work in progress. Each file is a python `pickle` file and can be inspected
-using the usual python tooling for the curious user.
+one HDF5 file (`IMGs_prD_<N>.h5`) for each projection direction. The [tutorial
+notebook](tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb) visualizes these and the later outputs,
+and the files can also be inspected with the usual Python tooling (e.g. `h5py`).
 
 Let's finish up the first major stage of the pipeline. I'm hiding the output for clarity's sake.
 
@@ -198,15 +192,16 @@ Let's finish up the first major stage of the pipeline. I'm hiding the output for
 % manifold-cli -n 16 nlsa-movie params_my_J310_analysis.toml &> /dev/null
 ```
 
-At this point, if you wanted to visualize and manually manipulate the principle directions and
-associated data, you could simply `manifold-gui -R params_my_J310_analysis.toml`. Here you could set
-the anchor directions, manually control the sense of each direction, remove directions, and other
-various things. Once you hit the "Compile Results" command, you can continue using the command
-line. Here I set a few anchors and will continue on...
+At this point you choose the anchors: projection directions whose conformational coordinate you set
+by hand (the psi movie that shows the motion, and its sense), which the next step propagates to the
+others. The [tutorial notebook](tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb) shows the movies
+and saves anchors and trash (excluded) projection directions to the project, e.g.
+`viz.set_anchor(prd=53, psi=1, sense="FWD")`; the [tutorial](tutorial/README.md) walks through it.
+Here I set a few anchors and will continue on...
 
 ```
 % manifold-cli -n 16 find-ccs params_my_J310_analysis.toml &> /dev/null
-% manifold-cli -n 16 calc-probabilities params_my_J310_analysis.toml &> /dev/null
+% manifold-cli -n 16 probability-landscape params_my_J310_analysis.toml &> /dev/null
 % manifold-cli -n 16 trajectory params_my_J310_analysis.toml &> /dev/null
 ```
 

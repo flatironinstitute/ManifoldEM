@@ -1,5 +1,30 @@
 Changes made prior to the Flatiron fork not included.
 
+* Unreleased
+  * Removed
+    * The GUI (`manifold-gui`) and the `[gui]` extra (PyQt5, mayavi, vtk, configobj, fabric), including
+      running steps on a remote host over SSH, re-embedding a PrD, and the cluster average (which
+      had been broken since the distance files stopped storing images). The pipeline runs from
+      `manifold-cli`; the tutorial notebook inspects the results.
+    * The average volume (`manifold-cli init -v`) is no longer used; only the GUI's S2 view read it
+    * The `MANIFOLD_DISABLE_VIZ` environment variable, which only the GUI read
+    * The unmaintained pre-2023 `data_viewers/` scripts, and the `opencv-contrib-python` dependency
+      (`opencv-python-headless` has everything the pipeline uses)
+  * Added
+    * Tutorial notebook helpers for what used to need the GUI: occupancy thresholds, anchors, trash
+      PrDs and the trajectory path width (`viz.show_thresholds`, `viz.set_anchor`,
+      `viz.trash_prd`, `viz.show_anchors`, `viz.set_path_width`, ...)
+  * Fixed
+    * **Changes results:** belief propagation used anchors off by one, so an anchor set on psi 1
+      was propagated as psi 2 (and a REV anchor on the last psi crashed)
+    * matplotlib is a core dependency now, so an install without extras can run the whole pipeline
+  * Outputs and project files
+    * No longer written: `topos/PrD_*/psi_*.zip` frame archives (the GIFs remain), the empty
+      `topos/Euler_PrD/` directory, and the unread keys of the trajectory `_vars.pkl` (only
+      `tauAvg` remains)
+    * Older project files still load: parameters that no longer exist (`num_part`, `width_2D`,
+      `vis_s2_*`) are skipped silently
+
 * main branch (since original 0.2.0-beta)
   * Usability
     * Make utility pip installable
