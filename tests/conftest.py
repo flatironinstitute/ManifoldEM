@@ -12,11 +12,11 @@ from ManifoldEM.params import params
 
 
 def _write_inputs(folder, rng):
-    """Write `particles.star` and a matching stack of blank 8-px images.
+    """Write `particles.star` and a matching stack of 8-px noise images.
 
     Binning reads only the orientations: 8 clusters of 150 particles along an arc on S2 (tilt 60°,
     rot 0°–63°). With the settings below, that makes 9 PrDs over a low threshold of 60 (8 over 70),
-    in one connected neighbour graph.
+    in one connected neighbour graph. The noise lets `decompose` run (blank images have no manifold).
     """
     cols = ["rlnVoltage", "rlnSphericalAberration", "rlnAmplitudeContrast", "rlnDefocusU", "rlnDefocusV",
             "rlnOriginX", "rlnOriginY", "rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
@@ -29,7 +29,7 @@ def _write_inputs(folder, rng):
     header = ["", "data_images", "", "loop_"] + [f"_{c} #{i}" for i, c in enumerate(cols, 1)]
     (folder / "particles.star").write_text("\n".join(header + rows) + "\n")
     with mrcfile.new(str(folder / "stack.mrcs")) as m:
-        m.set_data(np.zeros((len(rows), 8, 8), dtype=np.float32))
+        m.set_data(np.random.default_rng(1).normal(size=(len(rows), 8, 8)).astype(np.float32))
         m.set_image_stack()
 
 

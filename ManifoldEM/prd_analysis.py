@@ -650,6 +650,9 @@ def run_nlsa_second_pass(
         DD = local_handle["distances/D"][:]
         mask = local_handle["image_data/mask"][:]
 
+    # as in the first pass (psi_analysis_single): the distances of the images kept by the manifold
+    # trimming (posPath), which is what psi and so psi_sorted_ind index
+    DD = DD[image_indices][:, image_indices]
     psi_sorted_ind = np.argsort(psi[:, psi_index])
     DD = DD[psi_sorted_ind][:, psi_sorted_ind]
     con_order = len(image_indices) // params.con_order_range

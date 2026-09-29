@@ -207,6 +207,7 @@ def build_trajectory():
     image_indices_by_prd = prds.thresholded_image_indices
 
     with data_store.open_analysis() as data_handle:
+        pos_path_by_prd = [data_handle[f"prd_{i_prd}/embedding_data/posPath"][:] for i_prd in active_prds]
         psi_sorted_indices_by_prd = [
             data_handle[f"prd_{i_prd}/nlsa_data_{psinums[i]}/psi_sorted_ind"][:]
             for i, i_prd in enumerate(active_prds)
@@ -218,8 +219,9 @@ def build_trajectory():
     psi_sorted_quats_by_prd: list[NDArray] = []
     for i, i_prd in enumerate(active_prds):
         i_psi = psinums[i]
+        # psi_sorted_ind orders the images kept by the manifold trimming (posPath)
         psi_sorted_indices = psi_sorted_indices_by_prd[i]
-        sorted_raw_indices = image_indices_by_prd[i_prd][psi_sorted_indices]
+        sorted_raw_indices = image_indices_by_prd[i_prd][pos_path_by_prd[i][psi_sorted_indices]]
         psi_sorted_quats_by_prd.append(quats_full[:, sorted_raw_indices])
 
         tau = taus[i][i_psi]
