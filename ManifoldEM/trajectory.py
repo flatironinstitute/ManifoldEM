@@ -78,6 +78,7 @@ def concatenate_bin(
     con_orders: list[int],
     pixel_size: int,
     out_dir: str,
+    traj_name: str,
 ):
     imgs, phis, thetas, psis = [], [], [], []
 
@@ -91,11 +92,12 @@ def concatenate_bin(
         thetas.append(thetas_by_prd[i][i_bin])
         psis.append(psis_by_prd[i][i_bin])
 
-    traj_file_rel = f"imgsRELION_{i_bin + 1}_of_{states_per_coord}.mrcs"
+    # main's names, which `utility mrcs2mrc` and `utility denoise` follow
+    traj_file_rel = f"imgsRELION_{traj_name}_{i_bin + 1}_of_{states_per_coord}.mrcs"
     traj_file = os.path.join(out_dir, traj_file_rel)
     ang_file = os.path.join(
         out_dir,
-        f"EulerAngles_{i_bin + 1}_of_{states_per_coord}.star",
+        f"EulerAngles_{traj_name}_{i_bin + 1}_of_{states_per_coord}.star",
     )
 
     if not imgs:
@@ -185,6 +187,7 @@ def write_relion_s2(
             pixel_size=params.ms_pixel_size,
             con_orders=con_orders,
             out_dir=params.bin_dir,
+            traj_name=params.traj_name,
         )
         bins = range(0, params.states_per_coord - pathw + 1)
         desc = "Outputting RELION stacks and star files..."
