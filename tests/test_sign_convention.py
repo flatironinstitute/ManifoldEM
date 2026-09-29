@@ -39,4 +39,5 @@ def test_diffusion_map_does_not_depend_on_the_solver_sign(monkeypatch):
         return vals, vecs * np.where(np.arange(vecs.shape[1]) % 2, -1.0, 1.0)
 
     monkeypatch.setattr(dm, "eigsh", flipped_eigsh)
-    np.testing.assert_array_equal(diffusion_map_embedding(distances, 60, 3)[1], psi)
+    # the same up to ARPACK's rounding (repeated solves can differ by ~1e-14); a flip would be ~1
+    np.testing.assert_allclose(diffusion_map_embedding(distances, 60, 3)[1], psi, rtol=0, atol=1e-10)
