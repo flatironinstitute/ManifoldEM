@@ -1,6 +1,8 @@
-"""`data_store.get_prds(reload=True)` when more than one project is loaded in a process."""
+"""data_store: `get_prds(reload=True)` when more than one project is loaded in a process, and the guessed anchors."""
 import os
 import pickle
+
+import numpy as np
 
 from ManifoldEM.data_store import Anchor, Sense, data_store
 from ManifoldEM.params import params
@@ -52,3 +54,15 @@ def test_reload_picks_up_changes_saved_elsewhere(make_project):
     anchors = data_store.get_prds(reload=True).anchors
     assert list(anchors) == [2]
     assert (anchors[2].CC, anchors[2].sense) == (4, Sense.REV)
+
+
+def test_guessed_anchors_keep_existing_anchors(make_project):
+    params.load(str(make_project("g")))
+    prds = data_store.get_prds(reload=True)
+    top = int(np.argmax(prds.occupancy))  # one component: the guess goes to the most occupied PrD
+    prds.insert_anchor(top, Anchor(3, Sense.REV))
+
+    prds.guess_and_mark_anchors()
+
+    assert list(prds.anchors) == [top]
+    assert (prds.anchors[top].CC, prds.anchors[top].sense) == (3, Sense.REV)

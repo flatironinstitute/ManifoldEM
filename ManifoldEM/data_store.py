@@ -541,10 +541,15 @@ class ProjectionDirections:
         """
         Guesses and inserts a single anchor node for each cluster. The anchor node is the projection
         direction with the highest occupancy. Sense is assumed to be the default 'FWD'.
-        The user should verify the sense manually.
+        The user should verify the sense manually. A projection direction that already has an
+        anchor keeps it.
         """
         for color in set(self.cluster_ids):
             anchor_id = int(np.argmax((self.cluster_ids == color) * self.occupancy))
+            if anchor_id in self._anchors:
+                kept = self._anchors[anchor_id]
+                print(f"Keeping the anchor of node {anchor_id} (cluster {color}): psi {kept.CC} {kept.sense.name}")
+                continue
             print(
                 f"Guessing anchor node {anchor_id} for cluster {color}. Verify the 'sense' manually!"
             )
