@@ -856,6 +856,41 @@ def calculate_probability_landscape(
     return occupancy, tau_avg
 
 
+def write_conformational_coords(
+    output_file: str,
+    psinums: NDArray[Shape["Any"], Integer],
+    senses: NDArray[Shape["Any"], Integer],
+    flow_data: None | dict[int, dict[str, Any]] = None,
+):
+    """
+    Writes every PrD's psinum and sense (-1 and 0 for the PrDs without a coordinate), and replaces
+    the flow data of the PrDs in `flow_data`. Opened for writing only now: while it is open for
+    writing, the optical-flow workers couldn't read it.
+    """
+    with h5py.File(output_file, "a") as output_handle:
+        for index in range(len(psinums)):
+            group = output_handle.get(f"prd_{index}")
+            if not isinstance(group, h5py.Group):
+                msg = f"path 'prd_{index}' is not a group in the output handle"
+                raise ValueError(msg)
+
+            if "sense" in group:
+                group["sense"][...] = senses[index]
+            else:
+                group["sense"] = senses[index]
+            if "psinum" in group:
+                group["psinum"][...] = psinums[index]
+            else:
+                group["psinum"] = psinums[index]
+
+        for index, data in (flow_data or {}).items():
+            group = output_handle[f"prd_{index}"]
+            if "flow_data" in group:
+                print(f"Deleting existing 'flow_data' group in 'prd_{index}'")
+                del group["flow_data"]
+            recursive_dict_to_hdf5(group.create_group("flow_data"), data)
+
+
 def find_conformational_coords(
     prds: ProjectionDirections,
     nlsa_movies: list[list[NDArray[Shape["Any"], Float]]] | list[list[h5py.Dataset]],
@@ -878,6 +913,8 @@ def find_conformational_coords(
     )
     # FIXME: different return type
     if psinums is not None:
+        if output_file:
+            write_conformational_coords(output_file, psinums[0], senses[0])
         if return_all_output:
             return psinums, senses, None, None, None, None, None
         return psinums, senses
@@ -887,13 +924,17 @@ def find_conformational_coords(
     )
     G.update(ConnCompNoAnchor=cluster_no_anchor)
 
-    flow_map = optical_flow_movie_list(
-        nlsa_movies,
-        taus,
-        nlsa_mask,
+    # optical flow only for the PrDs of the anchored components, as main did: the others get no
+    # edge measures and no coordinate
+    flow_prds = [int(i) for i in node_range]
+    flow_list = optical_flow_movie_list(
+        [nlsa_movies[i] for i in flow_prds],
+        [taus[i] for i in flow_prds],
+        [nlsa_mask[i] for i in flow_prds] if nlsa_mask else None,
         allow_bad_psi_tau,
         ncpu,
     )
+    flow_map = {prd: flow_list[k] for k, prd in enumerate(flow_prds)}
 
     edge_measures, edge_measures_tblock, bad_nodes_psis_block = (
         compute_edge_measures_all(
@@ -917,32 +958,10 @@ def find_conformational_coords(
         prds, num_psi, G, options, edge_measures, bad_nodes_psis_block
     )
 
-    # opened for writing only now: while it is open for writing, the workers above couldn't read it
-    output_handle = h5py.File(output_file, "a") if output_file else None
-    if output_handle:
+    if output_file:
         edges = G["Edges"]
+        flow_data = {}
         for index in flow_map.keys():
-            group = output_handle.get(f"prd_{index}")
-            if not isinstance(group, h5py.Group):
-                msg = f"path 'prd_{index}' is not a group in the output handle"
-                raise ValueError(msg)
-
-            if "sense" in group:
-                group["sense"][...] = senses[index]
-            else:
-                group["sense"] = senses[index]
-            if "psinum" in group:
-                group["psinum"][...] = psinums[index]
-            else:
-                group["psinum"] = psinums[index]
-
-            if "flow_data" in group:
-                print(f"Deleting existing 'flow_data' group in 'prd_{index}'")
-                del group["flow_data"]
-                group.create_group("flow_data")
-            else:
-                group = group.create_group("flow_data")
-
             edge_measure_indices = np.where(
                 (edges[:, 0] == index) | (edges[:, 1] == index)
             )[0]
@@ -954,18 +973,14 @@ def find_conformational_coords(
 
                 edge_measures_local[i] = edge_measures[edge_index]
 
-            recursive_dict_to_hdf5(
-                group,
-                dict(
-                    flow_map=flow_map[index],
-                    node_belief=node_belief[:, index],
-                    edge_measures=edge_measures_local,
-                    bad_nodes_psis=bad_nodes_psis_block[index, :],
-                ),
-                overwrite=True,
+            flow_data[index] = dict(
+                flow_map=flow_map[index],
+                node_belief=node_belief[:, index],
+                edge_measures=edge_measures_local,
+                bad_nodes_psis=bad_nodes_psis_block[index, :],
             )
 
-        output_handle.close()
+        write_conformational_coords(output_file, psinums, senses, flow_data)
 
     if return_all_output:
         return (
