@@ -62,6 +62,20 @@ def L2_distance(a, b):
     return np.sqrt(tmp)
 
 
+def largest_entry_signs(vectors):
+    """
+    The signs that fix the arbitrary sign of each column of `vectors` (eigenvectors, singular
+    vectors): multiplied by them, each column's largest-magnitude entry is positive.
+
+    The solvers return either sign, and which one can depend on rounding, for instance on how memory
+    happens to be laid out (S1-1). Without a fixed sign, two runs on the same data could sort the
+    images of a PrD along a psi in opposite directions, and so give different movies, taus,
+    conformational coordinates and trajectories.
+    """
+    largest = vectors[np.argmax(np.abs(vectors), axis=0), np.arange(vectors.shape[1])]
+    return np.where(largest < 0, -1.0, 1.0)
+
+
 def svdRF(A):
     """
     Performs a singular value decomposition-like operation on matrix A using eigenvalue decomposition.
@@ -126,7 +140,9 @@ def svdRF(A):
         D, U, S, invS = tidyUp(D, U)
         V = np.matmul(A.T, np.matmul(U, invS))
 
-    return (U, S, V)
+    # flip each pair of singular vectors together, which leaves U S V^T unchanged
+    signs = largest_entry_signs(U)
+    return (U * signs, S, V * signs)
 
 
 def fergusonE(D, logEps):

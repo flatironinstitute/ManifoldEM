@@ -7,7 +7,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
 from ManifoldEM.params import params
-from ManifoldEM.core import fergusonE
+from ManifoldEM.core import fergusonE, largest_entry_signs
 
 """
 Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
@@ -90,7 +90,7 @@ def sembedding(yVal, yCol, yRow, nS, options: EmbeddingOptions):
 
     ix = np.argsort(vals)[::-1]
     vals = vals[ix]
-    vecs = vecs[:, ix]
+    vecs = vecs[:, ix] * largest_entry_signs(vecs[:, ix])
 
     return (vals, vecs)
 
