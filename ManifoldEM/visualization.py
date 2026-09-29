@@ -4,7 +4,9 @@
 a `VizSession`; project-specific values (such as `num_psi` and `states_per_coord`) come from
 that file. Each `VizSession.show_*` method renders either a live ipywidgets/Plotly
 viewer (`interactive=True`) or a static matplotlib snapshot that GitHub's
-notebook viewer can display (`interactive=False`).
+notebook viewer can display (`interactive=False`). The static views work with the core
+install (without plotly and kaleido, the S2 sphere is drawn with matplotlib); the interactive
+ones need the `notebook` extra.
 
 The `set_*`, `remove_anchor`, `trash_prd` and `untrash_prd` methods edit the
 project between CLI steps: occupancy thresholds, anchors, trash PrDs and the
@@ -23,7 +25,6 @@ import h5py
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
-import plotly.graph_objects as go
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from scipy import stats
@@ -32,6 +33,17 @@ from scipy import stats
 # The directory the kernel started in (the notebook's, under Jupyter). Relative project paths are
 # resolved against it, because loading a project changes into the project's directory.
 _START_DIR = Path.cwd()
+
+
+def _widgets():
+    """ipywidgets and IPython's `display`, which the interactive viewers need."""
+    try:
+        import ipywidgets
+        from IPython.display import display
+    except ImportError as e:
+        raise ImportError(f"{e}. Interactive viewers need the notebook extra: "
+                          'pip install "manifoldem[notebook]"') from e
+    return ipywidgets, display
 
 
 def load_session(toml_path) -> "VizSession":
@@ -144,6 +156,8 @@ class VizSession:
             self._show_s2_sphere_static()
 
     def _build_sphere_traces(self):
+        import plotly.graph_objects as go
+
         pd = self.pd_data
         bin_centers = pd["bin_centers"]
         occupancy = pd["occupancy_full"]
@@ -199,9 +213,9 @@ class VizSession:
         return sphere, bins_trace, thres_trace, particles_trace
 
     def _show_s2_sphere_interactive(self):
-        import ipywidgets as widgets
-        from IPython.display import display
+        import plotly.graph_objects as go
 
+        widgets, display = _widgets()
         pd = self.pd_data
         sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces()
 
@@ -284,24 +298,30 @@ class VizSession:
     def _show_s2_sphere_static(self):
         """Render the Plotly sphere as a static PNG (via kaleido) so GitHub displays it."""
         pd = self.pd_data
-        sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces()
-        fig = go.Figure(data=[sphere, bins_trace, thres_trace, particles_trace])
-        fig.update_layout(
-            title=dict(text=f"S2 Orientation Distribution — {self.project_name}", x=0.5),
-            scene=dict(
-                xaxis=dict(title="x", showgrid=False, zeroline=False),
-                yaxis=dict(title="y", showgrid=False, zeroline=False),
-                zaxis=dict(title="z", showgrid=False, zeroline=False),
-                aspectmode="cube", bgcolor="rgb(240,240,248)",
-            ),
-            legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.7)"),
-            margin=dict(l=0, r=0, b=0, t=50), width=900, height=680,
-        )
         try:
-            fig.show(renderer="png", width=900, height=680, scale=2)
-        except (ValueError, ImportError) as e:
-            print(f"(Plotly PNG export unavailable — {e}; falling back to matplotlib)")
+            import plotly.graph_objects as go
+        except ImportError as e:
+            print(f"(Plotly unavailable — {e}; falling back to matplotlib)")
             self._show_s2_sphere_static_mpl()
+        else:
+            sphere, bins_trace, thres_trace, particles_trace = self._build_sphere_traces()
+            fig = go.Figure(data=[sphere, bins_trace, thres_trace, particles_trace])
+            fig.update_layout(
+                title=dict(text=f"S2 Orientation Distribution — {self.project_name}", x=0.5),
+                scene=dict(
+                    xaxis=dict(title="x", showgrid=False, zeroline=False),
+                    yaxis=dict(title="y", showgrid=False, zeroline=False),
+                    zaxis=dict(title="z", showgrid=False, zeroline=False),
+                    aspectmode="cube", bgcolor="rgb(240,240,248)",
+                ),
+                legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.7)"),
+                margin=dict(l=0, r=0, b=0, t=50), width=900, height=680,
+            )
+            try:
+                fig.show(renderer="png", width=900, height=680, scale=2)
+            except (ValueError, ImportError) as e:
+                print(f"(Plotly PNG export unavailable — {e}; falling back to matplotlib)")
+                self._show_s2_sphere_static_mpl()
 
         pt = pd["pos_thresholded"]
         print(
@@ -374,7 +394,9 @@ class VizSession:
         plt.show()
 
     def _render_prd_movies(self, prd_num: int):
-        from IPython.display import HTML, display
+        from IPython.display import HTML
+
+        _, display = _widgets()
         prd_dir = self.topos_dir / f"PrD_{prd_num}"
         gifs = sorted(prd_dir.glob("psi_*.gif"),
                       key=lambda p: int(p.stem.split("_")[1]))
@@ -414,9 +436,7 @@ class VizSession:
         plt.show()
 
     def _show_prd_viewer_interactive(self, default_prd: int = 1):
-        import ipywidgets as widgets
-        from IPython.display import display
-
+        widgets, display = _widgets()
         pd = self.pd_data
         n_prds = pd["pos_thresholded"].shape[1]
         phi_thres = pd["phi_thresholded"]
@@ -555,9 +575,7 @@ class VizSession:
                   "Set INTERACTIVE=True to drive this with the PrD slider.]")
 
     def _show_diffusion_map_interactive(self):
-        import ipywidgets as widgets
-        from IPython.display import display
-
+        widgets, display = _widgets()
         dm_out = widgets.Output()
 
         def render(change):
@@ -705,9 +723,7 @@ class VizSession:
                   "Set INTERACTIVE=True for the PrD/ψ sliders.]")
 
     def _show_optical_flow_interactive(self, default_prd: int = 1, default_psi: int = 1):
-        import ipywidgets as widgets
-        from IPython.display import display
-
+        widgets, display = _widgets()
         prd_slider = self._prd_slider
         if prd_slider is None:
             n_prds = self.pd_data["pos_thresholded"].shape[1]

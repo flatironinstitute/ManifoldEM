@@ -61,6 +61,15 @@ dependencies = [
     "tqdm",
 ]
 
+[project.optional-dependencies]
+# the tutorial notebook's plots (ManifoldEM.visualization); matplotlib is a core dependency
+notebook = [
+    "anywidget",
+    "ipywidgets",
+    "kaleido",
+    "plotly",
+]
+
 [project.scripts]
 manifold-cli = "ManifoldEM.interfaces.cli:main"
 

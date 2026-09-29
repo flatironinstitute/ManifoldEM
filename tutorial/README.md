@@ -39,9 +39,10 @@ Note that when using conda, this bypasses conda's package management system and 
 problems if you later install packages into this environment with `conda install`. It's
 recommended to keep an environment purely for `ManifoldEM`.
 
-The tutorial notebook also needs Jupyter; its first cell installs the plotting packages it uses.
-Open it where it is, next to its `visualization.py`, and set `PROJECT_TOML` in its setup cell to
-your project's `params_<project>.toml`.
+The tutorial notebook also needs Jupyter, and the `notebook` extra for its plotting packages:
+`pip install "manifoldem[notebook] @ git+https://github.com/flatironinstitute/ManifoldEM"`.
+Open it from anywhere, and set `PROJECT_TOML` in its setup cell to your project's
+`params_<project>.toml`.
 
 # Preprocessing your cryo-EM data
 

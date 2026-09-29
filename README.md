@@ -55,8 +55,14 @@ problems if you later install packages into this environment with `conda install
 recommended to keep an environment purely for `ManifoldEM`.
 
 To inspect results, and to choose thresholds and anchors, use the [tutorial
-notebook](tutorial/Visualization_Notebook.ipynb). It needs Jupyter, and its first cell
-installs the plotting packages it uses.
+notebook](tutorial/Visualization_Notebook.ipynb). It needs Jupyter, and the `notebook` extra
+for its plotting packages:
+
+```bash
+pip install "manifoldem[notebook] @ git+https://github.com/flatironinstitute/ManifoldEM"
+# or, in a checkout of this repository
+pip install -e ".[notebook]"
+```
 
 
 ## Basic command line interface

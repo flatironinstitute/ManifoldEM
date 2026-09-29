@@ -15,6 +15,10 @@ Changes made prior to the Flatiron fork not included.
       PrDs and the trajectory path width (`viz.show_thresholds`, `viz.set_anchor`,
       `viz.trash_prd`, `viz.show_anchors`, `viz.set_path_width`, ...)
   * Changed
+    * The tutorial notebook's plotting code is part of the package now, as
+      `ManifoldEM.visualization` (`from ManifoldEM.visualization import load_session`). Its
+      packages come with the new `notebook` extra (plotly, kaleido, ipywidgets, anywidget), which
+      replaces the notebook's `%pip` cell. Without the extra, the static plots still work.
     * The tutorial notebook works for any project. It moved to `tutorial/`, its setup cell takes the
       path of the project's `.toml` file (`PROJECT_TOML`), and the number of psis and states, the
       trajectory name and the image size come from the project instead of the RyR1 tutorial
