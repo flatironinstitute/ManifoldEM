@@ -29,7 +29,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Topic :: Software Development :: Libraries",
-    "Topic :: Software Development :: User Interfaces",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Visualization",
@@ -62,19 +61,8 @@ dependencies = [
     "tqdm",
 ]
 
-[project.optional-dependencies]
-# Mayavi 4.8.2 doesn't reliably run on multiple pythons
-gui = [
-    "configobj",
-    "fabric",
-    "mayavi@https://github.com/enthought/mayavi/zipball/main",
-    "PyQt5",
-    "vtk",
-]
-
 [project.scripts]
 manifold-cli = "ManifoldEM.interfaces.cli:main"
-manifold-gui = "ManifoldEM.interfaces.gui:main"
 
 [project.urls]
 Repository = "https://github.com/flatironinstitute/ManifoldEM.git"
