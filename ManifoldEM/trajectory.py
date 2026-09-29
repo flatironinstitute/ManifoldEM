@@ -155,7 +155,8 @@ def write_relion_s2(
                     f[str(i)] = nlsa_builder(prd_indices[i])
                     progress_bar.emit(int(49 * i / n_prds))
             else:
-                with multiprocessing.Pool(processes=params.ncpu) as pool:
+                # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
+                with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
                     for i, nlsa_movie in tqdm(
                         enumerate(pool.imap(nlsa_builder, prd_indices)),
                         total=len(prd_indices),
@@ -186,7 +187,7 @@ def write_relion_s2(
                     concatenator(i)
                     progress_bar.emit(int(50 + 49 * i / len(bins)))
             else:
-                with multiprocessing.Pool(processes=params.ncpu) as pool:
+                with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
                     for i, _ in tqdm(
                         enumerate(pool.imap_unordered(concatenator, bins)),
                         total=len(bins),

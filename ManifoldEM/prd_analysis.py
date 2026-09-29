@@ -768,7 +768,8 @@ def prd_analysis(
                 recursive_dict_to_hdf5(sub_group, result)
                 progress_bar.emit(int(99 * i / len(prd_indices)))
     else:
-        with multiprocessing.Pool(ncpu) as pool:
+        # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
+        with multiprocessing.get_context("fork").Pool(ncpu) as pool:
             for i, result in tqdm(
                 enumerate(pool.imap(run_pipeline, prd_indices)),
                 total=len(prd_indices),

@@ -430,7 +430,8 @@ def dispatch_func(
             )
             progress_bar.emit(progress)
     else:
-        with multiprocessing.Pool(ncpu) as pool:
+        # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
+        with multiprocessing.get_context("fork").Pool(ncpu) as pool:
             for i, result in tqdm(
                 enumerate(pool.imap(func, input_data)),
                 total=len(input_data),

@@ -264,7 +264,7 @@ def mrcs2mrc(_):
         return
 
     print(f"Converting {len(star_files)} star+mrcs files to mrc")
-    with multiprocessing.Pool(processes=params.ncpu) as pool:
+    with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
         for _ in tqdm.tqdm(
             enumerate(pool.imap_unordered(reconstruct_local, star_files)),
             total=len(star_files),
@@ -323,7 +323,8 @@ def denoise(args):
 
     os.makedirs(params.postproc_denoise_dir, exist_ok=True)
 
-    with multiprocessing.Pool(processes=params.ncpu) as pool:
+    # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
+    with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
         for _ in tqdm.tqdm(
             enumerate(pool.imap_unordered(denoise_local, bins)), total=len(bins)
         ):
