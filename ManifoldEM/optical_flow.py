@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import h5py
 import math
