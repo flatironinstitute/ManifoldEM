@@ -98,6 +98,13 @@ def concatenate_bin(
         f"EulerAngles_{i_bin + 1}_of_{states_per_coord}.star",
     )
 
+    if not imgs:
+        # no particle in this state: write nothing (as main did), and drop an earlier run's files
+        for stale in (traj_file, ang_file):
+            if os.path.exists(stale):
+                os.remove(stale)
+        return
+
     imgs = np.concatenate(imgs)
     phis = np.concatenate(phis)
     thetas = np.concatenate(thetas)
