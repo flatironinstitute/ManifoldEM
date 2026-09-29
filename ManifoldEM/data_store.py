@@ -782,10 +782,6 @@ class _DataStore:
         """
         return h5py.File(params.analysis_file, mode)
 
-    def analysis_data(self, prd_index: int) -> dict:
-        with self.open_analysis() as f:
-            return _read_group(f[f"prd_{prd_index}"])
-
     def distance_data(self, prd_index: int) -> dict:
         with self.open_analysis() as f:
             return _read_group(f[f"prd_{prd_index}/distances"])
@@ -844,9 +840,6 @@ class _DataStore:
         self, prd_list: List[int] | NDArray[Shape["Any"], Int]
     ):
         return [self.get_nlsa_movies(i) for i in prd_list]
-
-    def get_active_nlsa_movies(self):
-        return self.get_nlsa_movies_prd_list(self.get_active_prd_indices())
 
     def get_all_nlsa_movies(self):
         return self.get_nlsa_movies_prd_list(list(range(self.get_prds().n_thresholded)))
