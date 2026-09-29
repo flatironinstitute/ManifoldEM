@@ -614,13 +614,21 @@ class VizSession:
         plt.show()
 
         if interactive and self._sphere_fig is not None:
+            from plotly.colors import sample_colorscale
+
+            # one colour band per ψ, and a grey band at 0 for the PrDs without a coordinate (ψ = -1)
+            n = params.num_psi
+            bands = ["lightgrey"] + sample_colorscale("Turbo", list(np.linspace(0, 1, n)))
+            colorscale = [[(k + edge) / (n + 1), c] for k, c in enumerate(bands) for edge in (0, 1)]
             with self._sphere_fig.batch_update():
-                self._sphere_fig.data[2].marker.color = psinums_all + 1
-                self._sphere_fig.data[2].marker.colorscale = "Turbo"
-                self._sphere_fig.data[2].marker.colorbar = dict(
+                marker = self._sphere_fig.data[2].marker
+                marker.color = psinums_all + 1
+                marker.colorscale = colorscale
+                marker.cmin, marker.cmax = -0.5, n + 0.5
+                marker.colorbar = dict(
                     title="Chosen ψ", thickness=14, x=1.20,
-                    tickvals=list(range(1, params.num_psi + 1)),
-                    ticktext=[f"ψ{k}" for k in range(1, params.num_psi + 1)],
+                    tickvals=list(range(n + 1)),
+                    ticktext=["none"] + [f"ψ{k}" for k in range(1, n + 1)],
                 )
 
         psis, counts = np.unique(psinums_all[psinums_all >= 0] + 1, return_counts=True)

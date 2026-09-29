@@ -40,6 +40,8 @@ Changes made prior to the Flatiron fork not included.
       * The CC voting plot marks PrDs that have no coordinate. It used to leave them as gaps and
         count them as "psi 0".
       * The trajectory section shows the probability P and -ln P, not a free energy in k_BT
+      * On the interactive S2 sphere, CC voting coloured PrDs without a coordinate as the lowest
+        psi. They're grey now, and each psi keeps the same colour whichever psis were chosen.
   * Outputs and project files
     * No longer written: `topos/PrD_*/psi_*.zip` frame archives (the GIFs remain), the empty
       `topos/Euler_PrD/` directory, and the unread keys of the trajectory `_vars.pkl` (only
