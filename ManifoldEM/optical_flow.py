@@ -13,7 +13,6 @@ from numpy import linalg as LA
 import numpy.typing as npt
 from ManifoldEM.data_store import ProjectionDirections
 from ManifoldEM.util import (
-    NullEmitter,
     recursive_dict_to_hdf5,
     dispatch_func,
     dispatch_helper,
@@ -420,8 +419,6 @@ def optical_flow_movie_list(
     mask: None | list[NDArray[Shape["Any,Any"], Float]],
     find_bad_psi_tau: bool,
     ncpu: int = 1,
-    progress_bar=NullEmitter(),
-    progress_bounds=(0, 100),
 ):
     input_data = [
         dict(
@@ -438,8 +435,6 @@ def optical_flow_movie_list(
         input_data,
         "Computing Optical Flow",
         ncpu=ncpu,
-        progress_bar=progress_bar,
-        progress_bounds=progress_bounds,
     )
 
 
@@ -775,8 +770,6 @@ def compute_edge_measures_all(
     flow_map: dict[int, dict[str, Any]],
     flow_vec_pct_thresh: float,
     ncpu: int = 1,
-    progress_bar=NullEmitter(),
-    progress_bounds=(0, 100),
 ):
     input_data = [
         dict(
@@ -797,8 +790,6 @@ def compute_edge_measures_all(
         input_data,
         "Computing Edge Measures",
         ncpu=ncpu,
-        progress_bar=progress_bar,
-        progress_bounds=progress_bounds,
     )
 
     edge_measures = np.empty(len(edges), dtype=object)
@@ -874,7 +865,6 @@ def find_conformational_coords(
     allow_empty_clusters: bool = False,
     allow_bad_psi_tau: bool = True,
     ncpu: int = 1,
-    progress_bar=NullEmitter(),
 ):
     G, Gsub = prds.prune_graphs()
     num_clusters = len(G["NodesConnComp"])
@@ -900,8 +890,6 @@ def find_conformational_coords(
         nlsa_mask,
         allow_bad_psi_tau,
         ncpu,
-        progress_bar=progress_bar,
-        progress_bounds=(0, 50),
     )
 
     edge_measures, edge_measures_tblock, bad_nodes_psis_block = (
@@ -913,8 +901,6 @@ def find_conformational_coords(
             flow_map,
             flow_vec_pct_thresh,
             ncpu,
-            progress_bar=progress_bar,
-            progress_bounds=(50, 99),
         )
     )
 
@@ -977,8 +963,6 @@ def find_conformational_coords(
             )
 
         output_handle.close()
-
-    progress_bar.emit(100)
 
     if return_all_output:
         return (

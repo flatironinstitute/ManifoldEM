@@ -19,7 +19,6 @@ from ManifoldEM.util import (
     get_CTFs,
     rotate_fill,
     get_tqdm,
-    NullEmitter,
 )
 from ManifoldEM.DMembeddingII import diffusion_map_embedding
 from ManifoldEM.fit_1D_open_manifold_3D import fit_1D_open_manifold_3D
@@ -704,7 +703,6 @@ def prd_analysis(
     return_output: bool = True,
     output_handle: None | h5py.File = None,
     ncpu: int = 1,
-    progress_bar: Any = None,
 ):
     """Runs the preprocessing analysis pipeline for a set of projection directions.
 
@@ -744,8 +742,6 @@ def prd_analysis(
 
     tqdm = get_tqdm()
     prd_data: dict[int, Any] = {}
-    if progress_bar is None:
-        progress_bar = NullEmitter()
 
     if ncpu == 1:
         for i in tqdm(
@@ -762,7 +758,6 @@ def prd_analysis(
                     del output_handle[group_name]
                 sub_group = output_handle.create_group(group_name)
                 recursive_dict_to_hdf5(sub_group, result)
-                progress_bar.emit(int(99 * i / len(prd_indices)))
     else:
         # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
         with multiprocessing.get_context("fork").Pool(ncpu) as pool:
@@ -780,15 +775,11 @@ def prd_analysis(
                     sub_group = output_handle.create_group(group_name)
                     recursive_dict_to_hdf5(sub_group, result)
 
-                progress_bar.emit(int(99 * i / len(prd_indices)))
-
     prds.guess_and_mark_anchors()
     prds.save()
 
     if output_handle:
         output_handle.flush()
-
-    progress_bar.emit(100)
 
     if return_output:
         return prd_data

@@ -19,14 +19,6 @@ Copyright (c) Columbia University Hstau Liao 2018 (python version)
 """
 
 
-class NullEmitter:
-    """No-op progress emitter, still used as a default argument by the modules merged from
-    origin/in-memory; removed together with those arguments (D15)."""
-
-    def emit(self, percent):
-        pass
-
-
 def get_tqdm():
     """
     Get jupyter version of tqdm function if in jupyter notebook, otherwise returns the terminal variant.
@@ -413,11 +405,8 @@ def dispatch_func(
     input_data: list[Any],
     desc: str = "",
     ncpu: int = 1,
-    progress_bar=NullEmitter(),
-    progress_bounds=(0, 100),
 ):
     tqdm = get_tqdm()
-    progress_min, progress_max = progress_bounds
     data: dict[int, Any] = {}
     if ncpu == 1:
         for i in tqdm(
@@ -425,10 +414,6 @@ def dispatch_func(
             desc=desc,
         ):
             data[i] = func(input_data[i])
-            progress = int(
-                progress_min + i / len(input_data) * (progress_max - progress_min)
-            )
-            progress_bar.emit(progress)
     else:
         # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
         with multiprocessing.get_context("fork").Pool(ncpu) as pool:
@@ -438,10 +423,6 @@ def dispatch_func(
                 desc=desc,
             ):
                 data[i] = result
-                progress = int(
-                    progress_min + i / len(input_data) * (progress_max - progress_min)
-                )
-                progress_bar.emit(progress)
 
     return data
 

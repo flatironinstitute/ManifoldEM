@@ -13,7 +13,7 @@ from ManifoldEM.data_store import data_store, H5Dataset
 from ManifoldEM.params import params, ProjectLevel
 from ManifoldEM.star import write_star
 from ManifoldEM import quaternion
-from ManifoldEM.util import get_tqdm, NullEmitter, hist_match
+from ManifoldEM.util import get_tqdm, hist_match
 from ManifoldEM.prd_analysis import run_nlsa_second_pass
 
 
@@ -117,7 +117,6 @@ def write_relion_s2(
     psi_sorted_quats_by_prd,
     prd_indices: list[int] | NDArray[Shape["Any"], Int],
     tau_avg,
-    progress_bar: Any = NullEmitter(),
 ):
     pathw = params.width_1D
     tqdm = get_tqdm()
@@ -153,7 +152,6 @@ def write_relion_s2(
                     desc=desc,
                 ):
                     f[str(i)] = nlsa_builder(prd_indices[i])
-                    progress_bar.emit(int(49 * i / n_prds))
             else:
                 # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
                 with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
@@ -163,7 +161,6 @@ def write_relion_s2(
                         desc=desc,
                     ):
                         f[str(i)] = nlsa_movie
-                        progress_bar.emit(int(49 * i / n_prds))
 
         # read in the workers below, once the file is closed for writing
         nlsa_movies = [H5Dataset(f_tmp.name, str(i)) for i in prd_indices]
@@ -186,20 +183,17 @@ def write_relion_s2(
         if params.ncpu == 1:
             for i in tqdm(bins, desc=desc):
                 concatenator(i)
-                progress_bar.emit(int(50 + 49 * i / len(bins)))
         else:
             with multiprocessing.get_context("fork").Pool(processes=params.ncpu) as pool:
-                for i, _ in tqdm(
-                    enumerate(pool.imap_unordered(concatenator, bins)),
+                for _ in tqdm(
+                    pool.imap_unordered(concatenator, bins),
                     total=len(bins),
                     desc=desc,
                 ):
-                    progress_bar.emit(int(50 + 49 * i / len(bins)))
-
-    progress_bar.emit(100)
+                    pass
 
 
-def build_trajectory(progress_bar: Any = NullEmitter()):
+def build_trajectory():
     """This script prepares the image stacks and orientations for 3D reconstruction."""
     # Copyright (c) UWM, Ali Dashti 2016 (matlab version)
     # Copyright (c) Columbia Univ Hstau Liao 2018 (python version)
@@ -243,11 +237,9 @@ def build_trajectory(progress_bar: Any = NullEmitter()):
         psi_sorted_quats_by_prd,
         active_prds,
         tau_avg,
-        progress_bar,
     )
 
     params.project_level = ProjectLevel.TRAJECTORY
     params.save()
 
-    progress_bar.emit(100)
     print(f"Trajectory generation complete! Check {params.bin_dir} for output.")

@@ -5,8 +5,6 @@ import shutil
 from typing import Union
 from threadpoolctl import threadpool_limits
 
-from ManifoldEM.util import NullEmitter
-
 
 def init(
     project_name: str,
@@ -103,7 +101,7 @@ def threshold(**kwargs):
 
 
 def decompose(
-    prd_list: Union[list[int], None] = None, blas_threads=1, progress_bar=NullEmitter(), **kwargs
+    prd_list: Union[list[int], None] = None, blas_threads=1, **kwargs
 ):
     from ManifoldEM.prd_analysis import prd_analysis
 
@@ -114,16 +112,13 @@ def decompose(
             return_output=False,
             output_handle=output_handle,
             ncpu=params.ncpu,
-            progress_bar=progress_bar,
         )
 
     params.project_level = ProjectLevel.DECOMPOSITION
     params.save()
 
 
-def find_conformational_coordinates(
-    blas_threads=1, progress_bar=NullEmitter(), **kwargs
-):
+def find_conformational_coordinates(blas_threads=1, **kwargs):
     from ManifoldEM.optical_flow import find_conformational_coords
 
     # FIXME: The simple interface shouldn't force the user to use analysis store
@@ -141,7 +136,6 @@ def find_conformational_coordinates(
             output_file=params.analysis_file,
             flow_vec_pct_thresh=params.opt_movie["flowVecPctThresh"],
             ncpu=params.ncpu,
-            progress_bar=progress_bar,
         )
         params.project_level = ProjectLevel.FIND_CCS
         params.save()
@@ -163,8 +157,8 @@ def probability_landscape(**kwargs):
     params.save()
 
 
-def compute_trajectory(blas_threads=1, progress_bar=NullEmitter(), **kwargs):
+def compute_trajectory(blas_threads=1, **kwargs):
     from ManifoldEM.trajectory import build_trajectory
 
     with threadpool_limits(limits=blas_threads, user_api="blas"):
-        build_trajectory(progress_bar=progress_bar)
+        build_trajectory()
