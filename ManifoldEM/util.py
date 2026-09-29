@@ -4,14 +4,12 @@ import h5py
 import mrcfile
 import multiprocessing
 import numpy as np
-import traceback
 
 from typing import Any
 from nptyping import NDArray, Shape, Float64
 
 from scipy.ndimage import rotate
 
-from ManifoldEM.params import params
 from ManifoldEM.quaternion import q_product
 
 """
@@ -78,27 +76,6 @@ def get_image_width_from_stack(stack_file: str):
         raise ValueError("Particles must be in mrc or mrcs format.")
 
     return img_width
-
-
-def debug_print(msg: str = ""):
-    """
-    Prints a debug message along with the caller's stack trace.
-
-    Parameters
-    ----------
-    msg : str
-        The debug message to print. If empty, only the stack trace is printed.
-
-    Returns
-    -------
-    None
-    """
-
-    if msg:
-        print(msg)
-    stack = traceback.format_stack()
-
-    print(stack[-2].split("\n")[0])
 
 
 def hist_match(source, template):  # by ali_m
@@ -335,42 +312,10 @@ def rotate_fill(
     return rotate(img, angle, reshape=False, mode="grid-wrap")
 
 
-def annotate_hdf_hierachy(group: h5py.Group, data: None | dict = None) -> dict:
-    """
-    Recursively annotates the hierarchy of an HDF5 group.
-
-    Parameters
-    ----------
-    group : h5py.Group
-        The group to annotate.
-    data : dict, optional
-        The data dictionary to populate. If None, a new dictionary is created. Defaults to None.
-
-    Returns
-    -------
-    dict
-        A dictionary representing the hierarchy. The keys are the group names, with datasets represented as tuples
-        containing the number of dimensions and the data type.
-    """
-    if data is None:
-        data = {}
-    for key, item in group.items():
-        if isinstance(item, h5py.Group):
-            data[key] = {}
-            data[key] = annotate_hdf_hierachy(item, data[key])
-        elif isinstance(item, h5py.Dataset):
-            data[key] = (len(item.shape) if item.shape else 0, item.dtype.name)
-        else:
-            # Shouldn't be possible to reach this point
-            data[key] = None
-
-    return data
-
-
-def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any], overwrite=False):
-    """Recursively writes a dictionary to an HDF5 group.
+def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any]):
+    """Recursively writes a dictionary to an HDF5 group, which must not have these keys yet.
     Data must be something convertible to an HDF5 dataset (e.g. a numpy array).
-    Adds groups based on dictionary keys. Existing data will be overwritten.
+    Adds groups based on dictionary keys.
 
     Params
     ------
@@ -381,21 +326,15 @@ def recursive_dict_to_hdf5(group: h5py.Group, data: dict[Any, Any], overwrite=Fa
         Lists will be converted to have the list key suffixed by the index (i.e. {key}_{i}).
     """
     for key, item in data.items():
-        if overwrite and str(key) in group:
-            del group[key]
-
         if isinstance(item, dict):
             sub_group = group.create_group(str(key))
-            recursive_dict_to_hdf5(sub_group, item, overwrite)
+            recursive_dict_to_hdf5(sub_group, item)
         elif isinstance(item, list):
             for i, sub_item in enumerate(item):
                 keyi = f"{key}_{i}"
-                if overwrite and keyi in group:
-                    del group[keyi]
-
                 if isinstance(sub_item, dict):
                     sub_group = group.create_group(keyi)
-                    recursive_dict_to_hdf5(sub_group, sub_item, overwrite)
+                    recursive_dict_to_hdf5(sub_group, sub_item)
                 else:
                     group.create_dataset(keyi, data=sub_item)
         else:

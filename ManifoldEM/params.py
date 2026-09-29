@@ -40,6 +40,7 @@ _RETIRED_PARAMS = {
     "find_bad_psi_tau",
     "tau_occ_thresh",
     "use_pruned_graph",
+    "prd_n_active",
 }
 
 
@@ -137,9 +138,6 @@ class Params:
             [ProjectLevel.BINNING],
         ),
     ] = 2000
-    prd_n_active: Annotated[
-        int, ParamInfo("Total number of bins to consider for manifold embedding")
-    ] = 0
     tess_hemisphere_vec: Annotated[
         list[float],
         ParamInfo(

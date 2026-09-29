@@ -7,7 +7,7 @@ import multiprocessing
 import numpy as np
 
 import dataclasses
-from typing import Any, Tuple, Iterable, cast
+from typing import Any, Iterable, cast
 from nptyping import NDArray, Shape, Float, Int, Bool
 from numpy.fft import fft2, ifft2, ifftshift
 from scipy.ndimage import shift
@@ -294,11 +294,11 @@ def transform_images(
     offsets: NDArray[Shape["Any,2"], Float],
     rotations: NDArray[Shape["Any"], Float],
     mirror: NDArray[Shape["Any"], Bool],
-    in_place: bool = False,
 ):
+    """Transforms the images in place, and returns them."""
     n_images = raw_images.shape[0]
 
-    transformed_images = raw_images if in_place else np.copy(raw_images)
+    transformed_images = raw_images
     for i in range(n_images):
         transformed_images[i] = shift(
             transformed_images[i],
@@ -509,9 +509,6 @@ def psi_analysis_single(
 
     res = []
     for psinum in psi_list:  # for each reaction coordinates do the following:
-        if psinum == -1:
-            continue
-
         # e.g., shape=(numPDs,): reordering image indices along each diff map coord
         psi_sorted_ind = np.argsort(psi[:, psinum])
         # distance matrix with indices of images re-arranged along current diffusion map coordinate
@@ -600,7 +597,6 @@ def get_transformed_images_CTFs_and_image_data(prd_index: int):
         image_offsets,
         image_data.rotations,
         image_mirrored,
-        in_place=True,
     )
     image_CTFs = get_CTFs(
         image_defocus,
@@ -704,43 +700,30 @@ def run_pipeline(prd_index: int):
     return res
 
 
+def _write_prd(output_handle: h5py.File, prd_index: int, result: dict):
+    group_name = f"prd_{prd_index}"
+    if output_handle.get(group_name):
+        del output_handle[group_name]
+    recursive_dict_to_hdf5(output_handle.create_group(group_name), result)
+
+
 def prd_analysis(
-    project_file: None | str,
+    output_handle: h5py.File,
     prd_indices: None | Iterable[int] = None,
-    return_output: bool = True,
-    output_handle: None | h5py.File = None,
     ncpu: int = 1,
 ):
-    """Runs the preprocessing analysis pipeline for a set of projection directions.
+    """Runs the preprocessing analysis pipeline for a set of projection directions, and writes each
+    one's results to the group prd_<index> of `output_handle`.
 
     Parameters
     ----------
-    project_file : str
-        The path to the project file containing the parameters
+    output_handle : h5py.File
+        The project's prd_analysis.h5, open for writing.
     prd_indices : None | Iterable[int], optional
         The indices of the projection directions to analyze. If None, all active projection directions are analyzed
-    return_output : bool, optional
-        Whether to return the output data. More memory intensive, but allows direct manipulation of return data
-    output_handle : None | h5py.File, optional
-        The HDF5 file handle to write the output data to. If None, no output data is written
-
-    Returns
-    -------
-    dict[int, Any] | None
-        A dictionary of the output data for each projection direction, indexed by the projection direction index.
-        If return_output is False, this is None.
-
-    Raises
-    ------
-    ValueError
-        If neither return_output nor output_handle is specified.
+    ncpu : int, default=1
+        The number of processes.
     """
-    if not return_output and not output_handle:
-        raise ValueError("Either return_output or output_handle must be specified")
-
-    if project_file is not None:
-        params.load(project_file)
-
     prds = data_store.get_prds()
     if prd_indices is None:
         prd_indices = list(range(prds.n_thresholded))
@@ -750,7 +733,6 @@ def prd_analysis(
     prd_indices.sort(key=lambda i: len(prds.thresholded_image_indices[i]), reverse=True)
 
     tqdm = get_tqdm()
-    prd_data: dict[int, Any] = {}
 
     if ncpu == 1:
         for i in tqdm(
@@ -758,15 +740,7 @@ def prd_analysis(
             total=len(prd_indices),
             desc="Running manifold decomposition...",
         ):
-            result = run_pipeline(i)
-            if return_output:
-                prd_data[i] = result
-            if output_handle:
-                group_name = f"prd_{i}"
-                if output_handle.get(group_name):
-                    del output_handle[group_name]
-                sub_group = output_handle.create_group(group_name)
-                recursive_dict_to_hdf5(sub_group, result)
+            _write_prd(output_handle, i, run_pipeline(i))
     else:
         # fork: the workers need the loaded params and data_store; spawned workers (the macOS default) start from the defaults
         with multiprocessing.get_context("fork").Pool(ncpu) as pool:
@@ -775,20 +749,9 @@ def prd_analysis(
                 total=len(prd_indices),
                 desc="Running manifold decomposition...",
             ):
-                if return_output:
-                    prd_data[i] = result
-                if output_handle:
-                    group_name = f"prd_{i}"
-                    if output_handle.get(group_name):
-                        del output_handle[group_name]
-                    sub_group = output_handle.create_group(group_name)
-                    recursive_dict_to_hdf5(sub_group, result)
+                _write_prd(output_handle, i, result)
 
     prds.guess_and_mark_anchors()
     prds.save()
 
-    if output_handle:
-        output_handle.flush()
-
-    if return_output:
-        return prd_data
+    output_handle.flush()

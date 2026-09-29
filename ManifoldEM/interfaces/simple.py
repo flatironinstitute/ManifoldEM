@@ -106,13 +106,7 @@ def decompose(
     from ManifoldEM.prd_analysis import prd_analysis
 
     with threadpool_limits(limits=blas_threads, user_api="blas"), data_store.open_analysis("a") as output_handle:
-        prd_analysis(
-            None,
-            prd_list,
-            return_output=False,
-            output_handle=output_handle,
-            ncpu=params.ncpu,
-        )
+        prd_analysis(output_handle, prd_list, ncpu=params.ncpu)
 
     params.project_level = ProjectLevel.DECOMPOSITION
     params.save()

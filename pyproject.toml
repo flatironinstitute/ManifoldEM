@@ -46,7 +46,6 @@ classifiers = [
 dependencies = [
     "fasthog",
     "h5py",
-    "imageio",
     "matplotlib",
     "nptyping",
     "numpy",

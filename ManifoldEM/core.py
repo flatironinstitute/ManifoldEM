@@ -1,13 +1,10 @@
 """Utilities that can be defined with basically one function."""
-import os
-import imageio
 import warnings
 import numpy as np
 
 from scipy.ndimage import affine_transform
 from scipy.optimize import curve_fit, OptimizeWarning
 
-from ManifoldEM.params import params
 from ManifoldEM.quaternion import pd_to_spider_euler
 
 warnings.simplefilter(action='ignore', category=OptimizeWarning)
@@ -130,25 +127,6 @@ def svdRF(A):
         V = np.matmul(A.T, np.matmul(U, invS))
 
     return (U, S, V)
-
-
-def makeMovie(IMG1, prD, psinum, fps):
-    # Copyright (c) UWM, Ali Dashti 2016 (original matlab version)
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    # Copyright (c) Columbia University Hstau Liao 2018 (python version)
-    # Copyright (c) Columbia University Evan Seitz 2019 (python version)
-
-    dim = int(np.sqrt(max(IMG1.shape)))  # window size
-    nframes = IMG1.shape[1]
-    images = -IMG1
-    gif_path = os.path.join(params.out_dir, "topos", f"PrD_{prD + 1}", f'psi_{psinum + 1}.gif')
-    frame_dt = 1000.0 / fps
-    with imageio.get_writer(gif_path, mode='I', duration=frame_dt) as writer:
-        movie_min, movie_max = np.min(images), np.max(images)
-        for i in range(nframes):
-            img = images[:, i].reshape(dim, dim)
-            frame = np.round(255 * (img - movie_min) / (movie_max - movie_min)).astype(np.uint8)
-            writer.append_data(frame)
 
 
 def fergusonE(D, logEps):

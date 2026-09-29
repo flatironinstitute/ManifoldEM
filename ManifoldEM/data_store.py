@@ -434,7 +434,7 @@ class ProjectionDirections:
         with open(params.pd_file, "wb") as f:
             pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
 
-    def update(self, force_rebuild=0):
+    def update(self):
         """
         Updates/builds the projection direction data based on external parameters or
         files. If data is uninitialized, the threshold values have changed, or the environment
@@ -446,7 +446,7 @@ class ProjectionDirections:
             self.load(params.pd_file)
 
         # If uninitialized or things have changed, actually update
-        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", force_rebuild))
+        force_rebuild = bool(os.environ.get("MANIFOLD_REBUILD_DS", 0))
         if (
             force_rebuild
             or self.pos_full.size == 0
@@ -455,8 +455,7 @@ class ProjectionDirections:
         ):
             if force_rebuild:
                 print("Rebuilding data store")
-                if "MANIFOLD_REBUILD_DS" in os.environ:
-                    os.environ.pop("MANIFOLD_REBUILD_DS")
+                os.environ.pop("MANIFOLD_REBUILD_DS")
 
             print("Calculating projection direction information")
             self.microscope_origin, self.quats_raw, U, V = get_align_data(params.align_param_file)
@@ -513,8 +512,6 @@ class ProjectionDirections:
                 return nodesColor
 
             self.cluster_ids = get_cluster_ids(self.neighbor_graph)
-
-            params.prd_n_active = len(self.thres_ids)
 
             params.save()
             self.save()
