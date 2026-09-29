@@ -3,7 +3,7 @@ from ManifoldEM.data_store import Anchor, Sense
 
 def test_anchor_state_index():
     """
-    Anchor.CC counts psi from 1 (psi_1.gif, the GUI spin box, the Anchor default), while belief
+    Anchor.CC counts psi from 1 (psi_1.gif, the Anchor default), while belief
     propagation uses 0-based states with reverse senses offset by the number of psis.
     """
     num_psis = 8

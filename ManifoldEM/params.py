@@ -24,9 +24,16 @@ from typing import Annotated, get_type_hints, get_args
 
 # Keys that older project files may still contain but that no longer exist. They are skipped
 # silently on load instead of triggering the unknown-parameter warning.
-_RETIRED_PARAMS = {"num_part", "width_2D"}
+_RETIRED_PARAMS = {
+    "num_part",
+    "width_2D",
+    "vis_s2_scale",
+    "vis_s2_density",
+    "vis_s2_isosurface_level",
+}
 
 
+# Project files store the integer value, so keep the numbering stable (6 was the GUI's PrD selection).
 class ProjectLevel(Enum):
     INIT = 0
     BINNING = 1
@@ -34,7 +41,6 @@ class ProjectLevel(Enum):
     MANIFOLD_ANALYSIS = 3
     PSI_ANALYSIS = 4
     NLSA_MOVIE = 5
-    PRD_SELECTION = 6
     FIND_CCS = 7
     PROBABILITY_LANDSCAPE = 8
     TRAJECTORY = 9
@@ -249,10 +255,6 @@ class Params:
     tau_occ_thresh: Annotated[float, ParamInfo()] = 0.35
     use_pruned_graph: Annotated[bool, ParamInfo()] = False
 
-    vis_s2_scale: Annotated[float, ParamInfo()] = 1.0
-    vis_s2_density: Annotated[int, ParamInfo()] = 1000
-    vis_s2_isosurface_level: Annotated[int, ParamInfo()] = 3
-
     @property
     def ang_width(self) -> float:
         if not self.particle_diameter:
@@ -264,10 +266,6 @@ class Params:
                 np.sqrt(4 * np.pi),
             )
         )
-
-    @property
-    def sh(self) -> float:
-        return self.ms_estimated_resolution / self.particle_diameter
 
     @property
     def user_dir(self) -> str:
@@ -352,11 +350,6 @@ class Params:
     @property
     def bin_dir(self) -> str:
         return os.path.join(self.out_dir, "bin")
-
-    @property
-    def user_dimensions(self) -> int:
-        "Placeholder parameter for when we support 2d later"
-        return 1
 
     @property
     def postproc_mrcs2mrc_dir(self) -> str:

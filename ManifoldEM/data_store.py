@@ -35,40 +35,12 @@ class Sense(Enum):
 
     Methods
     -------
-    from_index(idx: int) -> 'Sense'
-        Static method that converts an integer index to a Sense enum.
     to_index() -> int
         Converts the Sense enum to an integer index.
     """
 
     FWD = 1
     REV = -1
-
-    @staticmethod
-    def from_index(idx: int) -> "Sense":
-        """
-        Converts an integer index to a Sense enum.
-
-        Parameters
-        ----------
-        idx : int
-            The index to convert.
-
-        Returns
-        -------
-        Sense
-            The corresponding Sense enum value.
-
-        Raises
-        ------
-        ValueError
-            Raised if the index is invalid.
-        """
-        if idx == 0:
-            return Sense.FWD
-        if idx == 1:
-            return Sense.REV
-        raise ValueError("Invalid index")
 
     def to_index(self) -> int:
         """
@@ -109,7 +81,7 @@ class Anchor:
         """
         Index of this anchor's state in the belief-propagation state vector.
 
-        `CC` is 1-based (psi_1 ... psi_N, as numbered in the movies and the GUI). BP states are
+        `CC` is 1-based (psi_1 ... psi_N, as numbered in the movie files). BP states are
         0-based: forward senses occupy [0, num_psis) and reverse senses [num_psis, 2 * num_psis).
         """
         return self.CC - 1 + self.sense.to_index() * num_psis
@@ -413,7 +385,6 @@ class _ProjectionDirections:
 
         self.anchors: Dict[int, Anchor] = {}
         self.trash_ids: Set[int] = set()
-        self.reembed_ids: Set[int] = set()
 
         self.neighbor_graph: Dict[str, Any] = {}
         self.neighbor_subgraph: List[Dict[str, Any]] = []

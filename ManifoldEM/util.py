@@ -1,6 +1,5 @@
 import mrcfile
 import numpy as np
-import os
 import traceback
 
 from typing import Any
@@ -64,32 +63,6 @@ def get_tqdm():
     from tqdm import tqdm
 
     return tqdm
-
-
-def remote_runner(hostname, cmd, progress_callback):
-    from fabric import Connection
-
-    with Connection(hostname, inline_ssh_env=True) as c:
-        c.config.run.env = {
-            k: v
-            for k, v in os.environ.items()
-            if k.startswith(("PATH", "PYTHON", "VIRTUAL_ENV"))
-        }
-        param_file = os.path.join(os.getcwd(), f"params_{params.project_name}.toml")
-        c.run(f"{cmd} {param_file}")
-        progress_callback.emit(100)
-
-
-def is_valid_host(hostname):
-    from fabric import Connection
-
-    try:
-        with Connection(hostname) as c:
-            c.run("true")
-    except:
-        return False
-
-    return True
 
 
 def get_image_width_from_stack(stack_file: str):

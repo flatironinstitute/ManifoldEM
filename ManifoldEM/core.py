@@ -7,26 +7,10 @@ import numpy as np
 from scipy.ndimage import affine_transform
 from scipy.optimize import curve_fit, OptimizeWarning
 
-from ManifoldEM import myio
 from ManifoldEM.params import params
 from ManifoldEM.quaternion import q2Spider
 
 warnings.simplefilter(action='ignore', category=OptimizeWarning)
-
-
-def clusterAvg(clust, PrD):
-    dist_file = params.get_dist_file(PrD)
-    data = myio.fin1(dist_file)
-
-    imgAll = data['imgAll']
-    boxSize = np.shape(imgAll)[1]
-
-    imgAvg = np.zeros(shape=(boxSize, boxSize), dtype=float)
-
-    for i in clust:
-        imgAvg += imgAll[i]
-
-    return imgAvg
 
 
 def L2_distance(a, b):
