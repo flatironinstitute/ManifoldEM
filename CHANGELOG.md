@@ -10,6 +10,7 @@ Changes made prior to the Flatiron fork not included.
     * The `MANIFOLD_DISABLE_VIZ` environment variable, which only the GUI read
     * The unmaintained pre-2023 `data_viewers/` scripts, and the `opencv-contrib-python` dependency
       (`opencv-python-headless` has everything the pipeline uses)
+    * The `numba` dependency, which only the replaced Euler-angle fit (`q2Spider`) used
   * Added
     * Tutorial notebook helpers for what used to need the GUI: occupancy thresholds, anchors, trash
       PrDs and the trajectory path width (`viz.show_thresholds`, `viz.set_anchor`,

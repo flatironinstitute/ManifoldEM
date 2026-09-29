@@ -49,7 +49,6 @@ dependencies = [
     "imageio",
     "matplotlib",
     "nptyping",
-    "numba",
     "numpy",
     "mrcfile",
     "opencv-python-headless",
