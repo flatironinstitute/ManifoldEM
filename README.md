@@ -55,7 +55,7 @@ problems if you later install packages into this environment with `conda install
 recommended to keep an environment purely for `ManifoldEM`.
 
 To inspect results, and to choose thresholds and anchors, use the [tutorial
-notebook](tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb). It needs Jupyter, and its first cell
+notebook](tutorial/Visualization_Notebook.ipynb). It needs Jupyter, and its first cell
 installs the plotting packages it uses.
 
 
@@ -181,7 +181,7 @@ Number of Graph Edges: (464, 2)
 
 This has created a significant amount of data stored in the `output/my_J310_analysis/distances` --
 one HDF5 file (`IMGs_prD_<N>.h5`) for each projection direction. The [tutorial
-notebook](tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb) visualizes these and the later outputs,
+notebook](tutorial/Visualization_Notebook.ipynb) visualizes these and the later outputs,
 and the files can also be inspected with the usual Python tooling (e.g. `h5py`).
 
 Let's finish up the first major stage of the pipeline. I'm hiding the output for clarity's sake.
@@ -194,7 +194,7 @@ Let's finish up the first major stage of the pipeline. I'm hiding the output for
 
 At this point you choose the anchors: projection directions whose conformational coordinate you set
 by hand (the psi movie that shows the motion, and its sense), which the next step propagates to the
-others. The [tutorial notebook](tutorial/RyR1GCs_demo/Visualization_Notebook.ipynb) shows the movies
+others. The [tutorial notebook](tutorial/Visualization_Notebook.ipynb) shows the movies
 and saves anchors and trash (excluded) projection directions to the project, e.g.
 `viz.set_anchor(prd=53, psi=1, sense="FWD")`; the [tutorial](tutorial/README.md) walks through it.
 Here I set a few anchors and will continue on...

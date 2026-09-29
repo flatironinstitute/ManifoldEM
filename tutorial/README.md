@@ -3,7 +3,7 @@
 
 ## Introduction
 
-This tutorial walks through the analysis of two datasets. First a quick tutorial of a great circle Ryanodine Receptor (RyR) dataset. Then a more in depth walk through with a synthetic thyroglobulin dataset generated for the [Flatiron Institute Cryo-EM Heterogeneity Challenge](https://www.simonsfoundation.org/flatiron/center-for-computational-biology/structural-and-molecular-biophysics-collaboration/heterogeneity-in-cryo-electron-microscopy/). Both of these analyses using FI-ManifoldEM are also presented in [Ojha et al *Acta Cryst D*. 2025](https://doi.org/10.1107/S2059798325001469). Both run the pipeline with the command line interface (`manifold-cli`), and use [the tutorial notebook](RyR1GCs_demo/Visualization_Notebook.ipynb) to inspect the results and to choose thresholds and anchors. The CLI is more fully described in [the main README.md](../README.md#basic-command-line-interface). If you have any issues with or find any errors in this tutorial, please let us know by [opening a new issue](https://github.com/flatironinstitute/ManifoldEM/issues).
+This tutorial walks through the analysis of two datasets. First a quick tutorial of a great circle Ryanodine Receptor (RyR) dataset. Then a more in depth walk through with a synthetic thyroglobulin dataset generated for the [Flatiron Institute Cryo-EM Heterogeneity Challenge](https://www.simonsfoundation.org/flatiron/center-for-computational-biology/structural-and-molecular-biophysics-collaboration/heterogeneity-in-cryo-electron-microscopy/). Both of these analyses using FI-ManifoldEM are also presented in [Ojha et al *Acta Cryst D*. 2025](https://doi.org/10.1107/S2059798325001469). Both run the pipeline with the command line interface (`manifold-cli`), and use [the tutorial notebook](Visualization_Notebook.ipynb) to inspect the results and to choose thresholds and anchors. The CLI is more fully described in [the main README.md](../README.md#basic-command-line-interface). If you have any issues with or find any errors in this tutorial, please let us know by [opening a new issue](https://github.com/flatironinstitute/ManifoldEM/issues).
 
 
 ### A brief history of ManifoldEM
@@ -127,7 +127,7 @@ prds.insert_anchor(45, Anchor(sense=Sense.REV))
 prds.save()
 ```
 
-The [tutorial notebook](RyR1GCs_demo/Visualization_Notebook.ipynb) does the same without the index bookkeeping. `viz.show_anchors()` plots the PDs by cluster and names the most populated PD of each cluster that has no anchor yet, `viz.show_prd_viewer(default_prd=53, interactive=True)` plays the movies, and PD numbers there count from 1, like the `PrD_N` folders:
+The [tutorial notebook](Visualization_Notebook.ipynb) does the same without the index bookkeeping. `viz.show_anchors()` plots the PDs by cluster and names the most populated PD of each cluster that has no anchor yet, `viz.show_prd_viewer(default_prd=53, interactive=True)` plays the movies, and PD numbers there count from 1, like the `PrD_N` folders:
 
 ```python
 viz.set_anchor(prd=53, psi=1, sense="FWD")
@@ -149,7 +149,7 @@ Finally you can build volumes along this conformational coordinate. Note this re
 ```
 These volumes can be found in the `postproc` folder.
 
-Congrats! You have finished running FI-ManifoldEM on this dataset! You can inspect your results further with [the tutorial notebook](RyR1GCs_demo/Visualization_Notebook.ipynb).
+Congrats! You have finished running FI-ManifoldEM on this dataset! You can inspect your results further with [the tutorial notebook](Visualization_Notebook.ipynb).
 
 # Thyroglobulin Tutorial
 
@@ -235,6 +235,6 @@ Finally you can build volumes along this conformational coordinate. Note this re
 > manifold-cli utility denoise params_20260101_thyroglobulin_tutorial.toml
 ```
 
-Congrats! You have finished running FI-ManifoldEM on this dataset! You can inspect your results further with [the tutorial notebook](RyR1GCs_demo/Visualization_Notebook.ipynb).
+Congrats! You have finished running FI-ManifoldEM on this dataset! You can inspect your results further with [the tutorial notebook](Visualization_Notebook.ipynb).
 
 
